@@ -93,28 +93,7 @@ class MarchMadnessPlugin(BasePlugin):
         super().__init__(plugin_id, config, display_manager, cache_manager, plugin_manager)
 
         # Config
-        leagues_config = config.get("leagues", {})
-        self.show_ncaam: bool = leagues_config.get("ncaam", True)
-        self.show_ncaaw: bool = leagues_config.get("ncaaw", True)
-        self.favorite_teams: List[str] = [t.upper() for t in config.get("favorite_teams", [])]
-
-        display_options = config.get("display_options", {})
-        self.show_seeds: bool = display_options.get("show_seeds", True)
-        self.show_round_logos: bool = display_options.get("show_round_logos", True)
-        self.highlight_upsets: bool = display_options.get("highlight_upsets", True)
-        self.loop: bool = display_options.get("loop", True)
-        self.dynamic_duration_enabled: bool = display_options.get("dynamic_duration", True)
-        self.min_duration: int = display_options.get("min_duration", 30)
-        self.max_duration: int = display_options.get("max_duration", 300)
-        if self.min_duration > self.max_duration:
-            self.logger.warning(
-                f"min_duration ({self.min_duration}) > max_duration ({self.max_duration}); swapping values"
-            )
-            self.min_duration, self.max_duration = self.max_duration, self.min_duration
-
-        data_settings = config.get("data_settings", {})
-        self.update_interval: int = data_settings.get("update_interval", 300)
-        self.request_timeout: int = data_settings.get("request_timeout", 30)
+        self._load_settings(config)
 
         # Scrolling flag for display controller
         self.enable_scrolling = True
@@ -147,26 +126,7 @@ class MarchMadnessPlugin(BasePlugin):
         # ScrollHelper
         if ScrollHelper:
             self.scroll_helper = ScrollHelper(self.display_width, self.display_height, logger=self.logger)
-            # Speed comes from display_options.scroll_speed/scroll_delay via
-            # the shared resolver, which also reports the frame hold display()
-            # applies. The frame-based setup and target_fps that used to run
-            # here were overwritten by it on every core this plugin admits.
-            if _scroll_config is not None:
-                self._scroll_settings = _scroll_config.configure(
-                    self.scroll_helper,
-                    plugin_config=self.config,
-                    global_config=self.config.get('global', {}) or {},
-                    display_manager=self.display_manager,
-                    plugin_logger=self.logger,
-                )
-            else:  # unreachable under the manifest floor (core 3.4.0)
-                self._scroll_settings = None
-            self.scroll_helper.set_dynamic_duration_settings(
-                enabled=self.dynamic_duration_enabled,
-                min_duration=self.min_duration,
-                max_duration=self.max_duration,
-                buffer=0.1,
-            )
+            self._configure_scroll()
         else:
             self.scroll_helper = None
             self.logger.warning("ScrollHelper not available")
@@ -949,6 +909,80 @@ class MarchMadnessPlugin(BasePlugin):
         self._end_reached_logged = False
         if self.scroll_helper:
             self.scroll_helper.reset_scroll()
+
+    # ------------------------------------------------------------------
+    # Configuration
+    # ------------------------------------------------------------------
+
+    def _load_settings(self, config: Dict[str, Any]) -> None:
+        """Read leagues, favourites, display options and data settings."""
+        leagues_config = config.get("leagues", {}) or {}
+        self.show_ncaam: bool = leagues_config.get("ncaam", True)
+        self.show_ncaaw: bool = leagues_config.get("ncaaw", True)
+        self.favorite_teams: List[str] = [t.upper() for t in config.get("favorite_teams", [])]
+
+        display_options = config.get("display_options", {}) or {}
+        self.show_seeds: bool = display_options.get("show_seeds", True)
+        self.show_round_logos: bool = display_options.get("show_round_logos", True)
+        self.highlight_upsets: bool = display_options.get("highlight_upsets", True)
+        self.loop: bool = display_options.get("loop", True)
+        self.dynamic_duration_enabled: bool = display_options.get("dynamic_duration", True)
+        self.min_duration: int = display_options.get("min_duration", 30)
+        self.max_duration: int = display_options.get("max_duration", 300)
+        if self.min_duration > self.max_duration:
+            self.logger.warning(
+                f"min_duration ({self.min_duration}) > max_duration ({self.max_duration}); swapping values"
+            )
+            self.min_duration, self.max_duration = self.max_duration, self.min_duration
+
+        data_settings = config.get("data_settings", {}) or {}
+        self.update_interval: int = data_settings.get("update_interval", 300)
+        self.request_timeout: int = data_settings.get("request_timeout", 30)
+
+    def _configure_scroll(self) -> None:
+        """Speed, frame hold and dynamic duration for the scroll helper.
+
+        Speed comes from display_options.scroll_speed/scroll_delay via the
+        shared resolver, which also reports the frame hold display() applies.
+        The frame-based setup and target_fps that used to run here were
+        overwritten by it on every core this plugin admits.
+        """
+        if _scroll_config is not None:
+            self._scroll_settings = _scroll_config.configure(
+                self.scroll_helper,
+                plugin_config=self.config,
+                global_config=self.config.get('global', {}) or {},
+                display_manager=self.display_manager,
+                plugin_logger=self.logger,
+            )
+        else:  # unreachable under the manifest floor (core 3.4.0)
+            self._scroll_settings = None
+        self.scroll_helper.set_dynamic_duration_settings(
+            enabled=self.dynamic_duration_enabled,
+            min_duration=self.min_duration,
+            max_duration=self.max_duration,
+            buffer=0.1,
+        )
+
+    def on_config_change(self, new_config: Dict[str, Any]) -> None:
+        """Apply a web-UI save the way a restart would.
+
+        BasePlugin only swaps self.config, so league toggles, favourites,
+        display options, the update interval and the scroll speed all kept
+        their load-time values until a restart.
+        """
+        super().on_config_change(new_config)
+        self._load_settings(self.config)
+        if self.scroll_helper:
+            self._configure_scroll()
+            # Seeds, favourites and upset highlighting are drawn into the
+            # strip; display() rebuilds it from games_data when the cache is
+            # empty.
+            self.scroll_helper.clear_cache()
+        # League toggles decide what is fetched: refetch on the next update().
+        self.last_update = 0
+        self._cached_dynamic_duration = None
+        self.logger.info("March Madness configuration reloaded")
 
     # ------------------------------------------------------------------
     # Vegas mode

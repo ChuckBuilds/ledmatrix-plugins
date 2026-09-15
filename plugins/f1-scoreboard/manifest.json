@@ -33,7 +33,7 @@
       "version": "1.9.0",
       "released": "2026-09-15",
       "ledmatrix_min_version": "3.4.0",
-      "notes": "Requires LEDMatrix core 3.4.0. The standings header and title-battle cards count the season from the full schedule: the total was the number of upcoming calendar session entries (ten or so), so the header read \"Rd 17/10\" with a full bar and races remaining showed 0. Modes toggled in config now appear and disappear without a restart: core reads plugin.modes once, so all eight are registered and a disabled one returns False. A scroll mode with no data no longer re-renders every mode on every rotation (each render measured 12.46s on a Pi). upcoming.show_session_times, upcoming.countdown_enabled and qualifying.show_gaps now do what the README said; nothing read them before. scroll.scroll_speed and scroll.scroll_delay now set the speed: the shared resolver was handed the whole config and never looked in the scroll block. While scrolling the frame hold the resolver reports is applied (set_scrolling_state(True, frame_hold=...), a 3.4.0 argument, hence the floor) and released when a scroll completes or a static card is drawn. Removed the legacy frame-based setup, which read scroll.frame_based, scroll.min_duration and scroll.max_duration (never in the schema, so no one could set them), and the target_fps writes nothing read."
+      "notes": "Requires LEDMatrix core 3.4.0. The standings header and title-battle cards count the season from the full schedule: the total was the number of upcoming calendar session entries (ten or so), so the header read \"Rd 17/10\" with a full bar and races remaining showed 0. Cancelled weekends are left out: ESPN keeps them in the schedule (2026 lists 25 events, Bahrain and Saudi Arabia cancelled), which would have read \"Rd 14/25\" with 11 races left instead of 14/23 with 9. Modes toggled in config now appear and disappear without a restart: core reads plugin.modes once, so all eight are registered and a disabled one returns False. A scroll mode with no data no longer re-renders every mode on every rotation (each render measured 12.46s on a Pi). upcoming.show_session_times, upcoming.countdown_enabled and qualifying.show_gaps now do what the README said; nothing read them before. scroll.scroll_speed and scroll.scroll_delay now set the speed: the shared resolver was handed the whole config and never looked in the scroll block. The default speed is unchanged at 100 px/s, what every install ran at: scroll_delay now defaults to 0.01 (it was 0.03), and a config that still holds the old default pair (scroll_speed 1, scroll_delay 0.03) is read as that default, so it keeps 100 px/s too. Any other values are used as set (scroll_speed / scroll_delay pixels per second). While scrolling the frame hold the resolver reports is applied (set_scrolling_state(True, frame_hold=...), a 3.4.0 argument, hence the floor) and released when a scroll completes or a static card is drawn. Removed the legacy frame-based setup, which read scroll.frame_based, scroll.min_duration and scroll.max_duration (never in the schema, so no one could set them), and the target_fps writes nothing read."
     },
     {
       "version": "1.8.10",
@@ -310,7 +310,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-03",
+  "last_updated": "2026-09-15",
   "stars": 0,
   "downloads": 0,
   "verified": true,

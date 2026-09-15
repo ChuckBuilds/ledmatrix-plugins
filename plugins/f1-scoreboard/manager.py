@@ -418,10 +418,35 @@ class F1ScoreboardPlugin(BasePlugin):
         full progress bar and the battle cards showed 0 races remaining.
         fetch_schedule() is the whole season (one entry per race weekend) and
         is cached for six hours, so this costs nothing between refreshes.
+
+        Cancelled weekends stay in ESPN's schedule (2026 lists 25 events, two
+        of them cancelled, for 23 races), so they are left out of the count:
+        otherwise the header read "Rd 14/25" and the battle cards counted races
+        that will never run.
         """
         events = self.data_source.fetch_schedule()
         if events:
-            self._season_rounds = len(events)
+            held = [e for e in events if not self._is_cancelled_event(e)]
+            self._season_rounds = len(held) or None
+
+    @staticmethod
+    def _is_cancelled_event(event: Dict) -> bool:
+        """True when ESPN reports the weekend's race as cancelled.
+
+        ESPN marks every session of a cancelled weekend STATUS_CANCELED with
+        state "post" and completed false. The status name is the direct signal;
+        schedules parsed before it was kept (cached up to six hours) only carry
+        state and completed, and "finished but not completed" is not a state a
+        race that actually ran ends in, so that pair is the fallback.
+        """
+        sessions = event.get("sessions") or []
+        race = next((s for s in sessions if s.get("type_abbr") == "Race"), None)
+        if race is None:
+            return False
+        name = str(race.get("status_name", "")).upper()
+        if name:
+            return name in ("STATUS_CANCELED", "STATUS_CANCELLED")
+        return race.get("status_state") == "post" and not race.get("status_completed", False)
 
     # ─── Gap Trend Helper ──────────────────────────────────────────────
 

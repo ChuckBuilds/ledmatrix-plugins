@@ -124,6 +124,28 @@ p._is_tournament_window = lambda: True
 check("no games during the tournament: placeholder drawn, display() True",
       p.display() is True and p.display_manager.frames == 1)
 
+print("config save applies without a restart")
+p = _plugin()
+p.last_update = 1234.0
+p._cached_dynamic_duration = 5.0
+p.on_config_change({
+    "enabled": True,
+    "leagues": {"ncaam": True, "ncaaw": False},
+    "favorite_teams": ["duke"],
+    "display_options": {"scroll_speed": 2.0, "scroll_delay": 0.02,
+                        "show_seeds": False, "max_duration": 120},
+    "data_settings": {"update_interval": 600},
+})
+check("league toggles and favourites follow the save",
+      p.show_ncaaw is False and p.favorite_teams == ["DUKE"])
+check("display options and update interval follow the save",
+      p.show_seeds is False and p.update_interval == 600)
+s = getattr(p, "_scroll_settings", None)
+check("the resolver re-ran for the saved speed (2 / 0.02 = 100 px/s)",
+      s is not None and abs(s.requested_pixels_per_second - 100.0) < 0.01)
+check("dynamic-duration settings reach the helper (max 120)", p.scroll_helper.max_duration == 120)
+check("the next update refetches", p.last_update == 0 and p._cached_dynamic_duration is None)
+
 if failures:
     print(f"\n{len(failures)} failure(s)")
     sys.exit(1)

@@ -53,6 +53,27 @@ def check(cond, msg):
         failures.append(msg)
 
 
+class _ChecksFailed(AssertionError):
+    """Raised after a test whose check() calls recorded failures."""
+
+
+def _fail_loudly(test):
+    """Make a check() failure fail the test under pytest too.
+
+    check() records failures for script mode's exit code; without this, pytest
+    collected each test_* as passing whatever it recorded.
+    """
+    import functools
+
+    @functools.wraps(test)
+    def wrapper(*args, **kwargs):
+        before = len(failures)
+        test(*args, **kwargs)
+        if len(failures) > before:
+            raise _ChecksFailed("; ".join(failures[before:]))
+    return wrapper
+
+
 class FakeDisplay:
     refresh_hz = 100.0
 
@@ -101,6 +122,7 @@ def make(global_config, customization=None):
     return NewsTickerPlugin("news", config, FakeDisplay(), FakeCache(), plugin_manager())
 
 
+@_fail_loudly
 def test_font_size():
     print("[global.font_size]")
     plugin = make({"font_size": 8})
@@ -123,7 +145,20 @@ def test_font_size():
     check(plugin.font_size == 16,
           f"a live save without font_size keeps the 16 default, as at load (got {plugin.font_size})")
 
+    # Web-UI saves before 1.6.0 wrote the old schema default, 12, beside the
+    # PressStart2P @ 16 customization; those installs drew 16px and must still.
+    plugin = make({"font_size": 12})
+    check(plugin.font_size == 16 and plugin.fonts["headline"].size == 16,
+          f"a saved config holding the old default 12 keeps drawing 16px "
+          f"(got font_size {plugin.font_size}, headline {plugin.fonts['headline'].size})")
+    plugin = make({"font_size": 16})
+    plugin.on_config_change({"enabled": True, "feeds": {"enabled_feeds": []},
+                             "global": {"font_size": 12}, "customization": SCHEMA_CUSTOMIZATION})
+    check(plugin.fonts["headline"].size == 16,
+          f"a live save holding 12 keeps 16px too (got {plugin.fonts['headline'].size})")
 
+
+@_fail_loudly
 def test_scroll_settings():
     print("[scroll speed and dynamic duration]")
     plugin = make({"display": {"scroll_speed": 1.0, "scroll_delay": 0.016},
@@ -140,6 +175,7 @@ def test_scroll_settings():
           f"(got {helper.min_duration}/{helper.max_duration}/{helper.duration_buffer})")
 
 
+@_fail_loudly
 def test_static_frames_release_scroll_state():
     print("[no headlines]")
     plugin = make({"font_size": 16})
@@ -154,6 +190,8 @@ if __name__ == "__main__":
     for test in (test_font_size, test_scroll_settings, test_static_frames_release_scroll_state):
         try:
             test()
+        except _ChecksFailed:
+            pass  # its checks are already recorded in failures
         except Exception as exc:  # a crash is a failure, not a skip
             failures.append(f"{test.__name__} raised {exc!r}")
             print(f"  FAIL: {test.__name__} raised {exc!r}")

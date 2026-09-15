@@ -11,9 +11,13 @@
 - **`ufc.scroll_settings.scroll_speed` / `scroll_delay` set the scroll speed
   again.** The shared scroll resolver was handed the whole plugin config and
   never looks in `ufc.scroll_settings`, so every user ran at its 100 px/s
-  default. The setting is now passed as pixels per second (a value under 10
-  keeps meaning pixels per `scroll_delay` step) and snapped to the nearest
-  speed the panel can move in whole pixels.
+  default. `scroll_speed` is now passed as pixels per second, as the schema
+  and README describe (every value, including those under 10), and snapped to
+  the nearest speed the panel can move in whole pixels.
+- **Default speed change (Vegas fight cards).** Because the setting now takes
+  effect, an install at defaults scrolls at 50 px/s instead of the 100 px/s it
+  actually ran at. Set `ufc.scroll_settings.scroll_speed` to `100` for the old
+  speed.
 - **The frame hold is applied.** It was computed and never passed to core,
   so a snapped sub-refresh speed still presented a new frame every refresh.
   It is set while a scroll frame is drawn and released when the scroll

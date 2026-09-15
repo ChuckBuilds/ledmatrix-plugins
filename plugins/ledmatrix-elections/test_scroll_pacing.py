@@ -49,6 +49,27 @@ def check(cond, msg):
         failures.append(msg)
 
 
+class _ChecksFailed(AssertionError):
+    """Raised after a test whose check() calls recorded failures."""
+
+
+def _fail_loudly(test):
+    """Make a check() failure fail the test under pytest too.
+
+    check() records failures for script mode's exit code; without this, pytest
+    collected each test_* as passing whatever it recorded.
+    """
+    import functools
+
+    @functools.wraps(test)
+    def wrapper(*args, **kwargs):
+        before = len(failures)
+        test(*args, **kwargs)
+        if len(failures) > before:
+            raise _ChecksFailed("; ".join(failures[before:]))
+    return wrapper
+
+
 class FakeDisplay:
     refresh_hz = 100.0
 
@@ -88,6 +109,7 @@ def make(config, display=None):
                           FakeCache(), object())
 
 
+@_fail_loudly
 def test_default_delay_matches_schema():
     print("[scroll_delay default]")
     plugin = make({"scroll_speed": 1.0})
@@ -98,6 +120,7 @@ def test_default_delay_matches_schema():
           f"resolver was asked for 33.3 px/s (got {requested:.2f})")
 
 
+@_fail_loudly
 def test_resolver_pacing_not_overwritten():
     print("[no FPS write after the resolver]")
     plugin = make({"scroll_speed": 1.0, "scroll_delay": 0.03})
@@ -118,6 +141,7 @@ def test_resolver_pacing_not_overwritten():
           "after a live edit the resolver's whole-pixel step is still applied")
 
 
+@_fail_loudly
 def test_duration_uses_resolved_speed():
     print("[one-pass duration]")
     plugin = make({"scroll_speed": 1.0, "scroll_delay": 0.016})  # asks for 62.5 px/s
@@ -132,6 +156,7 @@ def test_duration_uses_resolved_speed():
           f"duration uses the applied {applied:.1f} px/s: {expected:.2f}s (got {got:.2f}s)")
 
 
+@_fail_loudly
 def test_scroll_state_is_released():
     print("[scroll state held and released]")
     display = FakeDisplay()
@@ -156,12 +181,23 @@ def test_scroll_state_is_released():
     check(display.calls[-1:] == [(False, 1)],
           f"a static called card releases the scroll state (calls {display.calls})")
 
+    def _broken():
+        raise RuntimeError("draw failed")
+
+    plugin.scroll_helper.get_visible_portion = _broken
+    display.calls.clear()
+    shown = plugin.display(display_mode="election_ticker")
+    check(shown is False and display.calls[-1:] == [(False, 1)],
+          f"a frame that raises while drawing releases the scroll state (calls {display.calls})")
+
 
 if __name__ == "__main__":
     for test in (test_default_delay_matches_schema, test_resolver_pacing_not_overwritten,
                  test_duration_uses_resolved_speed, test_scroll_state_is_released):
         try:
             test()
+        except _ChecksFailed:
+            pass  # its checks are already recorded in failures
         except Exception as exc:  # a crash is a failure, not a skip
             failures.append(f"{test.__name__} raised {exc!r}")
             print(f"  FAIL: {test.__name__} raised {exc!r}")

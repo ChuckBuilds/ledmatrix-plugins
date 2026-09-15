@@ -130,21 +130,20 @@ class ScrollDisplayManager:
             buffer=0.2,
         )
 
-        # ufc.scroll_settings.scroll_speed is pixels per second (schema), with
-        # this plugin's long-standing reading of a value under 10 as pixels per
-        # step of scroll_delay. The shared resolver never looks in
-        # ufc.scroll_settings, so handing it self.config left both settings
-        # dead at its 100 px/s default. scroll_pixels_per_second is its px/s
-        # input and outranks the global display pair.
+        # ufc.scroll_settings.scroll_speed is pixels per second, always: that
+        # is what the schema (minimum 1) and README (1.0-200.0 px/s) promise.
+        # Reading a value under 10 as pixels per scroll_delay step turned a
+        # stored 5 into 500 px/s. scroll_delay does not enter the speed. The
+        # shared resolver never looks in ufc.scroll_settings, so handing it
+        # self.config left the setting dead at its 100 px/s default;
+        # scroll_pixels_per_second is its px/s input and outranks the global
+        # display pair.
         try:
-            speed = float(scroll_speed)
-            delay = float(scroll_delay)
+            pixels_per_second = float(scroll_speed)
         except (TypeError, ValueError):
-            speed, delay = 50.0, 0.01
-        if speed < 10.0 and delay > 0:
-            pixels_per_second = speed / delay
-        else:
-            pixels_per_second = speed
+            pixels_per_second = 50.0
+        if pixels_per_second <= 0:
+            pixels_per_second = 50.0
 
         if _scroll_config is not None:
             self._scroll_settings = _scroll_config.configure(

@@ -140,8 +140,9 @@ class NewsTickerPlugin(BasePlugin):
         self.rotation_enabled = self.global_config.get('rotation_enabled', True)
         self.rotation_threshold = self.global_config.get('rotation_threshold', 3)
         self.headlines_per_feed = self.global_config.get('headlines_per_feed', 2)
-        self.font_size = self.global_config.get('font_size', 16)  # PressStart2P's
-        # pixel grid is 8; 12 was off it and anti-aliased on the panel.
+        # PressStart2P's pixel grid is 8; 12 was off it and anti-aliased on the
+        # panel. A stored 12 is the old schema default, not a choice.
+        self.font_size = self._resolve_font_size(self.global_config)
 
         # Headline paging settings
         self._load_paging_settings()
@@ -572,12 +573,27 @@ class NewsTickerPlugin(BasePlugin):
         # between raw scroll time and the wall the controller enforces:
         # ScrollHelper adds buffer_ratio when it derives the cycle duration, and
         # get_cycle_duration() adds overrun slack on top of that.
-        divisor = (1.0 + max(0.0, self.duration_buffer)) * (1.0 + max(0.0, self.duration_overrun_allowance))
+        buffer_factor = 1.0 + max(0.0, self.duration_buffer)
+        divisor = buffer_factor * (1.0 + max(0.0, self.duration_overrun_allowance))
         usable_seconds = cap / divisor if divisor > 0 else cap
+
+        # The helper also clamps its own estimate at the max_duration it is
+        # given (set_dynamic_duration_settings), before any overrun slack. The
+        # plugin cap is that same max_duration times the overrun, so the two
+        # limits coincide and a page sized to either one is estimated at exactly
+        # the clamp -- one pixel of rounding and the estimate is clipped. Size
+        # from the helper's clamp as well, and leave a second of headroom.
+        if self.max_duration and self.max_duration > 0:
+            usable_seconds = min(usable_seconds, float(self.max_duration) / buffer_factor)
+        usable_seconds = max(0.0, usable_seconds - 1.0)
+
+        # The helper scrolls one panel width past the content so the last
+        # headline leaves the screen; that distance comes out of the budget.
+        width = pixels_per_second * usable_seconds - self.display_width
 
         # Never go below two panel-widths, or a narrow panel with a slow scroll
         # would produce pages that can't hold a single headline.
-        return max(float(self.display_width * 2), pixels_per_second * usable_seconds)
+        return max(float(self.display_width * 2), width)
 
     def _scroll_frame_hold(self) -> int:
         """Refreshes to hold each frame for, from the resolved scroll settings.
@@ -807,8 +823,8 @@ class NewsTickerPlugin(BasePlugin):
         self.rotation_enabled = self.global_config.get('rotation_enabled', True)
         self.rotation_threshold = self.global_config.get('rotation_threshold', 3)
         self.headlines_per_feed = self.global_config.get('headlines_per_feed', 2)
-        # Same default as __init__ and the schema (16; it was 12 here).
-        self.font_size = self.global_config.get('font_size', 16)
+        # Same resolution as __init__ (default 16; it was 12 here).
+        self.font_size = self._resolve_font_size(self.global_config)
 
         # Reload paging settings - page size depends on scroll speed and the
         # duration cap, so any of those changing invalidates the current strip
@@ -835,6 +851,30 @@ class NewsTickerPlugin(BasePlugin):
         self._headline_image_cache = {}
         # ...and into the strip, so the same headlines must render again
         self._headlines_signature = None
+
+    #: global.font_size's schema default before 1.6.0. Web-UI saves wrote it
+    #: into configs that never chose a size.
+    LEGACY_DEFAULT_FONT_SIZE = 12
+    DEFAULT_FONT_SIZE = 16
+
+    @classmethod
+    def _resolve_font_size(cls, global_config: Dict[str, Any]) -> int:
+        """global.font_size, reading the old default 12 as "not customised".
+
+        Before 1.6.0 the schema default was 12, and every web-UI save wrote it
+        into the config; the headline still drew at 16 because the merged
+        customization.headline_text override (PressStart2P @ 16) always won.
+        Now that font_size is honoured, taking that stored 12 literally would
+        shrink every such install to an off-grid, blurry 12px. A stored 12 is
+        therefore treated as the default, 16; any other size is used as set.
+        """
+        try:
+            size = int(global_config.get('font_size', cls.DEFAULT_FONT_SIZE))
+        except (TypeError, ValueError):
+            return cls.DEFAULT_FONT_SIZE
+        if size == cls.LEGACY_DEFAULT_FONT_SIZE:
+            return cls.DEFAULT_FONT_SIZE
+        return size
 
     def _headline_signature(self) -> tuple:
         """Identify the headline set the current strip was rendered from.

@@ -53,6 +53,27 @@ def check(cond, msg):
         failures.append(msg)
 
 
+class _ChecksFailed(AssertionError):
+    """Raised after a test whose check() calls recorded failures."""
+
+
+def _fail_loudly(test):
+    """Make a check() failure fail the test under pytest too.
+
+    check() records failures for script mode's exit code; without this, pytest
+    collected each test_* as passing whatever it recorded.
+    """
+    import functools
+
+    @functools.wraps(test)
+    def wrapper(*args, **kwargs):
+        before = len(failures)
+        test(*args, **kwargs)
+        if len(failures) > before:
+            raise _ChecksFailed("; ".join(failures[before:]))
+    return wrapper
+
+
 class FakeDisplay:
     refresh_hz = 100.0
 
@@ -77,6 +98,7 @@ def make(config, display=None):
                              types.SimpleNamespace(), types.SimpleNamespace())
 
 
+@_fail_loudly
 def test_bdf_renders():
     for size, label in ((7, "native size"), (12, "a non-native size")):
         print(f"[.bdf at {label}]")
@@ -94,6 +116,7 @@ def test_bdf_renders():
               f"static text releases the scroll state (calls {display.calls})")
 
 
+@_fail_loudly
 def test_live_speed_edit_re_resolves():
     print("[live speed edit]")
     display = FakeDisplay()
@@ -118,11 +141,32 @@ def test_live_speed_edit_re_resolves():
     check(display.calls[-1:] == [(True, settings.frame_hold)],
           f"display() passes the re-resolved frame hold {settings.frame_hold} (calls {display.calls})")
 
+    def _broken():
+        raise RuntimeError("draw failed")
+
+    real_portion = plugin.scroll_helper.get_visible_portion
+    plugin.scroll_helper.get_visible_portion = _broken
+    display.calls.clear()
+    plugin.display()
+    check(display.calls[-1:] == [(False, 1)],
+          f"a frame that raises while drawing releases the scroll state (calls {display.calls})")
+    plugin.scroll_helper.get_visible_portion = real_portion
+
+    text = plugin.text
+    plugin.text = ""
+    display.calls.clear()
+    plugin.display()
+    check(display.calls[-1:] == [(False, 1)],
+          f"empty text releases the scroll state (calls {display.calls})")
+    plugin.text = text
+
 
 if __name__ == "__main__":
     for test in (test_bdf_renders, test_live_speed_edit_re_resolves):
         try:
             test()
+        except _ChecksFailed:
+            pass  # its checks are already recorded in failures
         except Exception as exc:  # a crash is a failure, not a skip
             failures.append(f"{test.__name__} raised {exc!r}")
             print(f"  FAIL: {test.__name__} raised {exc!r}")

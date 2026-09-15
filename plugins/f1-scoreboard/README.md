@@ -142,8 +142,8 @@ its own display modes running.
 |---|---|---|
 | `dynamic_duration.enabled` | `true` | Run a scroll until its full cycle completes instead of the fixed timer |
 | `dynamic_duration.max_duration_seconds` | `120` | Hard cap even with dynamic duration |
-| `scroll.scroll_speed` | `1` | Pixels per step. With `scroll_delay` it sets the speed: `scroll_speed / scroll_delay` pixels per second (33.3 by default), snapped to the nearest speed the panel can move in whole pixels |
-| `scroll.scroll_delay` | `0.03` | Seconds per step; see `scroll.scroll_speed` |
+| `scroll.scroll_speed` | `1` | Pixels per step. With `scroll_delay` it sets the speed: `scroll_speed / scroll_delay` pixels per second (100 by default, the speed F1 has always scrolled at), snapped to the nearest speed the panel can move in whole pixels |
+| `scroll.scroll_delay` | `0.01` | Seconds per step; see `scroll.scroll_speed`. Older configs saved with `0.03` now scroll at 33.3 px/s; set `0.01` for 100 px/s |
 | `scroll.game_card_width` | `128` | Card width in pixels (lower on multi-panel chains) |
 
 ### Visual features

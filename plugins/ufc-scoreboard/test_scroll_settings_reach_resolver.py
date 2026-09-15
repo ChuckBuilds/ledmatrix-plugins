@@ -78,11 +78,15 @@ m, dm = _manager({"scroll_speed": 50.0, "scroll_delay": 0.01})
 s = getattr(m, "_scroll_settings", None)
 check("scroll_speed=50 px/s is what the resolver was asked for (not 100)",
       s is not None and abs(s.requested_pixels_per_second - 50.0) < 0.01)
-m2, _ = _manager({"scroll_speed": 2.0, "scroll_delay": 0.02})
+m2, _ = _manager({"scroll_speed": 5.0, "scroll_delay": 0.01})
 s2 = getattr(m2, "_scroll_settings", None)
-check("a value under 10 keeps meaning px per scroll_delay step (2 / 0.02 = 100 px/s)",
-      s2 is not None and abs(s2.requested_pixels_per_second - 100.0) < 0.01
+check("a value under 10 is px/s like any other, as schema and README say (5, not 5 / 0.01 = 500)",
+      s2 is not None and abs(s2.requested_pixels_per_second - 5.0) < 0.01
       and s2.source != "default")
+m3, _ = _manager({"scroll_speed": 100.0, "scroll_delay": 0.03})
+s3 = getattr(m3, "_scroll_settings", None)
+check("scroll_delay does not change the speed (100 px/s with delay 0.03)",
+      s3 is not None and abs(s3.requested_pixels_per_second - 100.0) < 0.01)
 
 print("frame hold")
 hold = s.frame_hold if s is not None else 1

@@ -53,6 +53,27 @@ def check(cond, msg):
         failures.append(msg)
 
 
+class _ChecksFailed(AssertionError):
+    """Raised after a test whose check() calls recorded failures."""
+
+
+def _fail_loudly(test):
+    """Make a check() failure fail the test under pytest too.
+
+    check() records failures for script mode's exit code; without this, pytest
+    collected each test_* as passing whatever it recorded.
+    """
+    import functools
+
+    @functools.wraps(test)
+    def wrapper(*args, **kwargs):
+        before = len(failures)
+        test(*args, **kwargs)
+        if len(failures) > before:
+            raise _ChecksFailed("; ".join(failures[before:]))
+    return wrapper
+
+
 class FakeDisplay:
     refresh_hz = 100.0
 
@@ -82,6 +103,7 @@ def make(config, display):
                              types.SimpleNamespace(), types.SimpleNamespace())
 
 
+@_fail_loudly
 def test_display_does_not_fetch():
     print("[display() with no data]")
     fetches = []
@@ -107,6 +129,7 @@ def test_display_does_not_fetch():
           f"(got {plugin.get_update_interval()})")
 
 
+@_fail_loudly
 def test_update_interval_and_live_save():
     print("[update_interval and on_config_change]")
     data_fetcher.DataFetcher.fetch_standings = lambda self, cfg: [
@@ -134,6 +157,7 @@ def test_update_interval_and_live_save():
           f"(got {plugin.league_config.get_enabled_leagues()})")
 
 
+@_fail_loudly
 def test_hockey_show_ranking():
     print("[ncaam_hockey.show_ranking]")
     display = FakeDisplay()
@@ -151,6 +175,8 @@ if __name__ == "__main__":
                  test_hockey_show_ranking):
         try:
             test()
+        except _ChecksFailed:
+            pass  # its checks are already recorded in failures
         except Exception as exc:  # a crash is a failure, not a skip
             failures.append(f"{test.__name__} raised {exc!r}")
             print(f"  FAIL: {test.__name__} raised {exc!r}")

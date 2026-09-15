@@ -266,6 +266,9 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         
         # State variables
         self.last_update = 0
+        # Bumped by on_config_change; _perform_update compares it across the
+        # fetch so a save that lands mid-fetch still triggers a refetch.
+        self._config_generation = 0
         self.games_data = []
         self.current_game_index = 0
         self.ticker_image = None # This will hold the single, wide image
@@ -2596,9 +2599,15 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         self._load_filter_settings()
         self._load_league_configs()
 
+        # customization.*_text fonts are baked into the strip; the refetch
+        # below rebuilds it with them.
+        self.fonts = self._load_fonts()
+
         # Leagues, favourites and filters decide which games are fetched, so
         # refetch: display() sees the elapsed interval and defers the refresh
-        # off the render thread.
+        # off the render thread. A fetch already in flight would overwrite
+        # last_update when it lands; bumping the generation tells it not to.
+        self._config_generation += 1
         self.last_update = 0
         self._cached_dynamic_duration = None
         self.logger.info("Odds ticker configuration reloaded")
@@ -2784,6 +2793,7 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         # Use lock to prevent concurrent modifications during live updates
         with self._update_lock:
             try:
+                generation = self._config_generation
                 # Reload config settings that can change at runtime (support both old and new config structure)
                 filtering = self.odds_ticker_config.get('filtering', {})
                 display_options = self.odds_ticker_config.get('display_options', {})
@@ -2803,7 +2813,13 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
                     logger.debug(f"Preserving scroll position: {saved_scroll_position}")
 
                 self.games_data = self._fetch_upcoming_games()
-                self.last_update = current_time
+                if self._config_generation == generation:
+                    self.last_update = current_time
+                else:
+                    # Settings were saved while this fetch ran, so it used the
+                    # old leagues and filters. Leave the interval elapsed so
+                    # the next update() fetches with the new ones.
+                    logger.info("Configuration changed during fetch; refetching on the next update")
 
                 # Only reset scroll if not preserving and (looping is enabled or scroll hasn't completed)
                 if not preserve_scroll:
@@ -2838,7 +2854,14 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
                 logger.warning(f"Odds ticker update failed, games_data may be empty: {e}")
 
     def display(self, display_mode: str = None, force_clear: bool = False):
-        """Display the odds ticker."""
+        """Display the odds ticker.
+
+        Returns False while there is nothing to scroll (disabled, no games yet,
+        no strip built), so the display controller moves on instead of holding
+        a "no data" placeholder for the whole slot; it skips a plugin only on a
+        boolean False. The placeholder is still drawn for callers that ignore
+        the result (Vegas capture). Otherwise returns None, as before.
+        """
         logger.debug("Entering display method")
         logger.debug(f"Odds ticker enabled: {self.is_enabled}")
         logger.debug(f"Current scroll position: {self.scroll_helper.scroll_position}")
@@ -2847,7 +2870,7 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         
         if not self.is_enabled:
             logger.debug("Odds ticker is disabled, exiting display method.")
-            return
+            return False
 
         # Check if we need to update live game data (respects update interval internally)
         # This ensures live game scores/times are refreshed during scrolling
@@ -2918,7 +2941,7 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
                 # Fetch still in flight. Show the placeholder for these frames
                 # rather than waiting on the network from the render thread.
                 self._display_fallback_message()
-                return
+                return False
         
         # Rebuild when *either* our composite or the ScrollHelper's cache is
         # gone. Testing ticker_image alone was not enough: Vegas invalidates the
@@ -2968,7 +2991,7 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
                 # lands, which is also what keeps the render thread from reading
                 # the helper while the worker is publishing into it.
                 self._display_fallback_message()
-                return
+                return False
 
         try:
             # Use ScrollHelper for scrolling functionality

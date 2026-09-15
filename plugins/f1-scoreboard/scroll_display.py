@@ -69,6 +69,7 @@ class ScrollDisplay:
             scroll_cfg = self.config.get("scroll", {})
             if not isinstance(scroll_cfg, dict):
                 scroll_cfg = {}
+            scroll_cfg = self._without_legacy_default_delay(scroll_cfg)
 
             # scroll.scroll_speed (px per step) and scroll.scroll_delay (s per
             # step) are the resolver's speed pair. They live in the "scroll"
@@ -90,6 +91,31 @@ class ScrollDisplay:
         self._content_items: List[Image.Image] = []
         self._vegas_content_items: List[Image.Image] = []
         self._is_prepared = False
+
+    #: scroll.scroll_speed / scroll.scroll_delay schema defaults before 1.9.0.
+    LEGACY_DEFAULT_PAIR = (1.0, 0.03)
+    DEFAULT_DELAY = 0.01
+
+    @classmethod
+    def _without_legacy_default_delay(cls, scroll_cfg: dict) -> dict:
+        """Read the old default pair (1, 0.03) as today's default (1, 0.01).
+
+        Every F1 install scrolled at 100 px/s: the resolver never saw the
+        scroll block. Web-UI saves still wrote the then-default 0.03 into it,
+        so honouring it literally would slow those installs to 33.3 px/s the
+        moment the setting started to work. The pair cannot have been chosen
+        for how it looked -- it never did anything -- so it is treated as "not
+        customised". Any other value is used as set.
+        """
+        try:
+            pair = (float(scroll_cfg.get("scroll_speed", 1.0)),
+                    float(scroll_cfg.get("scroll_delay", cls.DEFAULT_DELAY)))
+        except (TypeError, ValueError):
+            return scroll_cfg
+        if (abs(pair[0] - cls.LEGACY_DEFAULT_PAIR[0]) < 1e-9
+                and abs(pair[1] - cls.LEGACY_DEFAULT_PAIR[1]) < 1e-9):
+            return dict(scroll_cfg, scroll_delay=cls.DEFAULT_DELAY)
+        return scroll_cfg
 
     def prepare_scroll_content(self, cards: List[Image.Image],
                                 separator: Image.Image = None):

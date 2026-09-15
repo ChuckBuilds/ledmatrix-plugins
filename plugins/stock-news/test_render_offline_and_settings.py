@@ -58,6 +58,27 @@ def check(cond, msg):
         failures.append(msg)
 
 
+class _ChecksFailed(AssertionError):
+    """Raised after a test whose check() calls recorded failures."""
+
+
+def _fail_loudly(test):
+    """Make a check() failure fail the test under pytest too.
+
+    check() records failures for script mode's exit code; without this, pytest
+    collected each test_* as passing whatever it recorded.
+    """
+    import functools
+
+    @functools.wraps(test)
+    def wrapper(*args, **kwargs):
+        before = len(failures)
+        test(*args, **kwargs)
+        if len(failures) > before:
+            raise _ChecksFailed("; ".join(failures[before:]))
+    return wrapper
+
+
 class FakeDisplay:
     refresh_hz = 100.0
 
@@ -113,6 +134,7 @@ def make(global_config=None, display=None):
                                  FakeCache(), types.SimpleNamespace())
 
 
+@_fail_loudly
 def test_loads_without_matrix():
     print("[display_manager.matrix is None]")
     try:
@@ -123,6 +145,7 @@ def test_loads_without_matrix():
         check(False, f"plugin failed to load: {exc!r}")
 
 
+@_fail_loudly
 def test_logos_not_downloaded_while_drawing():
     print("[logos on the render path]")
     plugin = make({"display_style": "logo_and_ticker", "logo_fetch_enabled": True})
@@ -141,6 +164,15 @@ def test_logos_not_downloaded_while_drawing():
     check(any("ZZTEST" in url for url in session.urls),
           f"update() downloads the missing logo (requests {session.urls})")
     check((plugin._logo_dir / "ZZTEST.png").exists(), "the logo is cached to disk by update()")
+    check(not list(plugin._logo_dir.glob("*.part")), "no partial logo file is left behind")
+    check(plugin.scroll_helper.cached_image is not None and plugin._logo_rebuild_pending,
+          "a logo landing mid-pass does not clear the strip; the rebuild waits for the pass to end")
+
+    plugin.rotation_enabled = False
+    plugin.scroll_helper.is_scroll_complete = lambda: True
+    plugin.display()
+    check(not plugin._logo_rebuild_pending and plugin.scroll_helper.cached_image is None,
+          "the strip is rebuilt once the pass completes")
 
     session.urls.clear()
     plugin._vegas_cache = None
@@ -150,6 +182,7 @@ def test_logos_not_downloaded_while_drawing():
           "the story is drawn with the downloaded logo in front of it")
 
 
+@_fail_loudly
 def test_settings_reach_the_helpers():
     print("[scroll_pixels_per_second, durations, max_retries]")
     plugin = make({"scroll_pixels_per_second": 20.0, "min_duration": 45, "max_duration": 200,
@@ -174,6 +207,7 @@ def test_settings_reach_the_helpers():
     check(retries == 5, f"a saved max_retries change applies (got {retries})")
 
 
+@_fail_loudly
 def test_static_frames_release_scroll_state():
     print("[no stories]")
     display = FakeDisplay()
@@ -188,6 +222,8 @@ if __name__ == "__main__":
                  test_settings_reach_the_helpers, test_static_frames_release_scroll_state):
         try:
             test()
+        except _ChecksFailed:
+            pass  # its checks are already recorded in failures
         except Exception as exc:  # a crash is a failure, not a skip
             failures.append(f"{test.__name__} raised {exc!r}")
             print(f"  FAIL: {test.__name__} raised {exc!r}")

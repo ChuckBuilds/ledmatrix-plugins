@@ -468,9 +468,16 @@ class StockNewsTickerPlugin(BasePlugin):
         # Logos are downloaded here, never while drawing: the render path and
         # get_vegas_content() only read the disk cache. A story whose logo
         # arrives now is drawn with it on the next strip rebuild.
+        #
+        # Not by clearing the strip here: rebuilding resets the scroll to the
+        # start, and at startup logos land one update() after another, so the
+        # ticker restarted mid-pass again and again. display() rebuilds once
+        # the current pass completes; a strip not built yet picks them up
+        # anyway. Vegas fetches its content per cycle, so its cache can go now.
         if self._download_missing_logos():
-            self.scroll_helper.clear_cache()
             self._vegas_cache = None
+            if self.scroll_helper.cached_image is not None:
+                self._logo_rebuild_pending = True
 
     def _get_stocks_plugin_symbols(self) -> List[str]:
         """Return equity symbols from the ledmatrix-stocks plugin when sync is enabled."""
@@ -818,7 +825,12 @@ class StockNewsTickerPlugin(BasePlugin):
             try:
                 resp = self._session.get(url, timeout=10)
                 if resp.status_code == 200 and resp.content:
-                    logo_path.write_bytes(resp.content)
+                    # Atomic: Vegas reads logos without the plugin lock, and a
+                    # half-written file would fail to decode (and look present,
+                    # so it would never be fetched again).
+                    tmp_path = logo_path.with_name(logo_path.name + '.part')
+                    tmp_path.write_bytes(resp.content)
+                    tmp_path.replace(logo_path)
                     self.logger.info("[Stock News] Downloaded logo for %s", symbol)
                     downloaded = True
                     continue
@@ -876,6 +888,12 @@ class StockNewsTickerPlugin(BasePlugin):
                     self.scroll_helper.clear_cache()
                     self.scroll_helper.reset_scroll()
                     return
+            if getattr(self, '_logo_rebuild_pending', False):
+                # Logos fetched during this pass: rebuild between passes.
+                self._logo_rebuild_pending = False
+                self.scroll_helper.clear_cache()
+                self.scroll_helper.reset_scroll()
+                return
 
         visible_portion = self.scroll_helper.get_visible_portion()
         if visible_portion:
@@ -894,6 +912,8 @@ class StockNewsTickerPlugin(BasePlugin):
                 return
             self.scroll_helper.create_scrolling_image(item_images, item_gap=self.item_gap)
             self._cycle_complete = False
+            # Any build reads every logo already on disk.
+            self._logo_rebuild_pending = False
             self.logger.info("[Stock News] Ticker: %d items, %dpx wide, gap=%dpx",
                              len(item_images), self.scroll_helper.total_scroll_width, self.item_gap)
         except Exception as e:

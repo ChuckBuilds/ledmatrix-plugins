@@ -52,7 +52,7 @@ The full schema is [`config_schema.json`](config_schema.json).
 
 | Key | Default | Notes |
 |---|---|---|
-| `global.scroll_pixels_per_second` | `60.0` | Scroll speed in pixels per second (5.0–100.0). The LEDMatrix core moves it to the nearest speed the panel can draw in whole pixels — on a 100Hz panel the default 60 runs at 66.7 — and logs the result as `Scroll configured: …`. |
+| `global.scroll_pixels_per_second` | `60.0` | Scroll speed in pixels per second (5.0–100.0). The LEDMatrix core moves it to the nearest speed the panel can draw in whole pixels — on a 100Hz panel the default 60 runs at 66.7 — and logs the result as `Scroll configured: …`. **Changed in 2.8.0:** this setting used to be ignored and every install scrolled at 100 px/s; set `100` for that speed. |
 | `global.item_gap` | `0` | Blank pixels between stories. Set to 0 for auto (= display width) (0–512). Advanced. |
 | `global.dynamic_duration` | `true` | Let display time match actual scroll time (recommended). Advanced. |
 | `global.display_duration` | `30` | Fallback display duration in seconds when dynamic_duration is off (10–300). Advanced. |

@@ -162,6 +162,44 @@ check("the helper keeps the resolver's whole-pixel step after a save",
 check("a league enabled on save is fetched", "nba" in p.enabled_leagues)
 check("BasePlugin.on_config_change ran (enabled follows the save)", p.enabled is False)
 
+print("save during a fetch")
+p = _plugin()
+p.last_update = 0
+p._create_ticker_image = lambda: None
+
+
+def _fetch_while_saving():
+    p.on_config_change(copy.deepcopy(CONFIG))   # a web-UI save lands mid-fetch
+    return []
+
+
+p._fetch_upcoming_games = _fetch_while_saving
+p._perform_update()
+check("a save that lands mid-fetch leaves the refresh due (last_update not stamped)",
+      p.last_update == 0)
+refetches = []
+p._fetch_upcoming_games = lambda: refetches.append(1) or []
+p._perform_update()
+check("the next update fetches again, and stamps last_update",
+      refetches == [1] and p.last_update > 0)
+
+print("fonts reload on save")
+p = _plugin()
+new = copy.deepcopy(CONFIG)
+new["customization"] = {"team_text": {"font": "5x7.bdf", "font_size": 8}}
+p.on_config_change(new)
+check("customization.team_text applies on save (5x7.bdf loaded)",
+      str(getattr(p.team_font, "path", "")).endswith("5x7.bdf"))
+
+print("no data")
+p = _plugin()
+p._pump_background = lambda *a, **k: None
+placeholders = []
+p._display_fallback_message = lambda: placeholders.append(1)
+result = p.display()
+check("display() returns False with no games, so the rotation moves on", result is False)
+check("the placeholder is still drawn for callers that ignore the result", placeholders == [1])
+
 print("render path")
 p = _plugin()
 fetches = []

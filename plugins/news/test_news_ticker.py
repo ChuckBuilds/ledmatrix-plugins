@@ -319,7 +319,7 @@ def test_every_draw_surface_disables_anti_aliasing():
 def test_headlines_render_with_no_anti_aliased_pixels():
     """The real defect: PIL's default anti-aliasing blurs glyphs on the LED grid.
 
-    Font size 12 (this plugin's default) does not land on Press Start 2P's 8px
+    Font size 20 does not land on Press Start 2P's 8px
     design grid, so with anti-aliasing on FreeType blends glyph edges into dim
     partial-lit pixels. Those read as blur on a 1:1 matrix, not as smoothing.
     """
@@ -327,7 +327,7 @@ def test_headlines_render_with_no_anti_aliased_pixels():
     if not font_path:
         pytest.skip("PressStart2P-Regular.ttf not reachable from this checkout")
 
-    plugin = make_plugin({"global": {"font_path": font_path, "font_size": 12}})
+    plugin = make_plugin({"global": {"font_path": font_path, "font_size": 20}})
     assert isinstance(plugin.fonts["headline"], ImageFont.FreeTypeFont), \
         "test must run against the real pixel font, not PIL's bitmap fallback"
 
@@ -354,7 +354,7 @@ def test_fallback_screens_render_crisp():
     if not font_path:
         pytest.skip("PressStart2P-Regular.ttf not reachable from this checkout")
 
-    plugin = make_plugin({"global": {"font_path": font_path, "font_size": 12}})
+    plugin = make_plugin({"global": {"font_path": font_path, "font_size": 20}})
     plugin.current_headlines = []
     plugin._display_no_headlines()
     assert count_blended(plugin.display_manager.image, [(220, 220, 220)]) == 0

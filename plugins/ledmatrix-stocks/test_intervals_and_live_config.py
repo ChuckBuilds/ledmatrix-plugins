@@ -51,6 +51,27 @@ def check(cond, msg):
         failures.append(msg)
 
 
+class _ChecksFailed(AssertionError):
+    """Raised after a test whose check() calls recorded failures."""
+
+
+def _fail_loudly(test):
+    """Make a check() failure fail the test under pytest too.
+
+    check() records failures for script mode's exit code; without this, pytest
+    collected each test_* as passing whatever it recorded.
+    """
+    import functools
+
+    @functools.wraps(test)
+    def wrapper(*args, **kwargs):
+        before = len(failures)
+        test(*args, **kwargs)
+        if len(failures) > before:
+            raise _ChecksFailed("; ".join(failures[before:]))
+    return wrapper
+
+
 class FakeDisplay:
     refresh_hz = 100.0
 
@@ -94,6 +115,7 @@ CONFIG = {
 }
 
 
+@_fail_loudly
 def test_intervals():
     print("[update_interval and crypto.update_interval]")
     cache = RecordingCache()
@@ -111,6 +133,7 @@ def test_intervals():
           f"crypto quotes are cached for crypto.update_interval (max_age {cache.max_ages.get('stock_data_BTC')})")
 
 
+@_fail_loudly
 def test_live_config():
     print("[on_config_change]")
     display = FakeDisplay()
@@ -134,6 +157,7 @@ def test_live_config():
           f"the fetcher uses the new symbols (got {plugin.data_fetcher.stock_symbols})")
 
 
+@_fail_loudly
 def test_error_display_fits():
     print("[No Data Available fallback]")
     display = FakeDisplay(128, 32)
@@ -151,6 +175,8 @@ if __name__ == "__main__":
     for test in (test_intervals, test_live_config, test_error_display_fits):
         try:
             test()
+        except _ChecksFailed:
+            pass  # its checks are already recorded in failures
         except Exception as exc:  # a crash is a failure, not a skip
             failures.append(f"{test.__name__} raised {exc!r}")
             print(f"  FAIL: {test.__name__} raised {exc!r}")

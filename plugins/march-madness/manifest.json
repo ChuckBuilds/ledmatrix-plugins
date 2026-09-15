@@ -24,7 +24,7 @@
       "version": "2.1.0",
       "released": "2026-09-15",
       "ledmatrix_min_version": "3.4.0",
-      "notes": "Requires LEDMatrix core 3.4.0. Off-season the plugin now drops out of the rotation: display() returned None there, and core skips a plugin only on a boolean False, so an \"Off-season\" card took a full rotation slot eleven months a year although the README said nothing is shown. While scrolling, display() now applies the frame hold the shared scroll resolver reports (set_scrolling_state(True, frame_hold=...), a 3.4.0 argument, hence the floor) and releases it when the scroll stops or a fallback is drawn; before, the hold was computed and never used, so a snapped sub-refresh speed still presented a new frame every refresh. display_options.target_fps is deprecated and ignored, and the frame-based setup it fed is removed: the resolver overwrote both on every core, so the setting did nothing. It stays in the schema as a hidden property, so configs that still carry it load and save valid. Speed is still display_options.scroll_speed / scroll_delay."
+      "notes": "Requires LEDMatrix core 3.4.0. Off-season the plugin now drops out of the rotation: display() returned None there, and core skips a plugin only on a boolean False, so an \"Off-season\" card took a full rotation slot eleven months a year although the README said nothing is shown. While scrolling, display() now applies the frame hold the shared scroll resolver reports (set_scrolling_state(True, frame_hold=...), a 3.4.0 argument, hence the floor) and releases it when the scroll stops or a fallback is drawn; before, the hold was computed and never used, so a snapped sub-refresh speed still presented a new frame every refresh. display_options.target_fps is deprecated and ignored, and the frame-based setup it fed is removed: the resolver overwrote both on every core, so the setting did nothing. It is kept for compatibility and ignored (still shown in the settings form, marked deprecated), so configs that still carry it load and save valid. Speed is still display_options.scroll_speed / scroll_delay. Web-UI saves now apply without a restart (new on_config_change: leagues, favourites, display options, update interval, scroll speed and duration)."
     },
     {
       "version": "2.0.1",
@@ -99,7 +99,7 @@
   ],
   "stars": 0,
   "downloads": 0,
-  "last_updated": "2026-09-07",
+  "last_updated": "2026-09-15",
   "verified": true,
   "screenshot": "",
   "display_modes": [

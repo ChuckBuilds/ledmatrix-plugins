@@ -480,6 +480,9 @@ class TextDisplayPlugin(BasePlugin):
             force_clear: If True, clear display before rendering
         """
         if not self.text:
+            # Nothing to draw: drop any scroll state and frame hold a previous
+            # frame (before the text was cleared) left set.
+            self.display_manager.set_scrolling_state(False)
             return
 
         try:
@@ -602,7 +605,13 @@ class TextDisplayPlugin(BasePlugin):
             
         except Exception as e:
             self.logger.error(f"Error displaying text: {e}")
-    
+            # The scroll path sets the scroll state and frame hold before it
+            # draws; don't leave them set when drawing raised.
+            try:
+                self.display_manager.set_scrolling_state(False)
+            except Exception as release_error:
+                self.logger.debug(f"Could not release scroll state: {release_error}")
+
     def _log_frame_rate(self):
         """Log frame rate statistics for scrolling text."""
         if not self.scroll_enabled:

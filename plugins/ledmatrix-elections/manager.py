@@ -478,6 +478,13 @@ class ElectionPlugin(BasePlugin):
             return self._display_ticker(force_clear)
         except Exception as e:
             self.logger.error("Error during display: %s", e, exc_info=True)
+            # _display_ticker sets the scroll state and frame hold before it
+            # draws; a draw that raised must not leave them set for whichever
+            # plugin comes next.
+            try:
+                self.display_manager.set_scrolling_state(False)
+            except Exception as release_error:
+                self.logger.debug("Could not release scroll state: %s", release_error)
             return False
 
     def _display_called_card(self, race: Race, force_clear: bool) -> None:

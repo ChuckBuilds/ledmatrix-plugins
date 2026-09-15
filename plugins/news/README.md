@@ -226,6 +226,9 @@ which reads more like a stream of letters than a headline. Dropping to 8 roughly
 doubles it. This is the setting to change first if the ticker feels
 unreadable. Press Start 2P, the default face, is crisp at multiples of 8.
 
+A config holding `12` (the old default, which earlier web-UI saves wrote in)
+keeps drawing at 16, as it always did; any other value is used as set.
+
 `customization.headline_text.font_size` overrides it only when set to something
 other than its default, so leave that one at `16` if you use `global.font_size`.
 

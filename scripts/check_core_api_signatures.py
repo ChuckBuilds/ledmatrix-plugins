@@ -131,14 +131,30 @@ def _handler_names(handler: ast.ExceptHandler) -> Set[str]:
             for n in nodes}
 
 
-def _hasattr_names(test: ast.AST) -> Set[str]:
-    names = set()
-    for node in ast.walk(test):
-        if (isinstance(node, ast.Call) and getattr(node.func, "id", None) == "hasattr"
-                and len(node.args) == 2 and isinstance(node.args[1], ast.Constant)
-                and isinstance(node.args[1].value, str)):
-            names.add(node.args[1].value)
-    return names
+def _hasattr_branches(test: ast.AST) -> Tuple[frozenset, frozenset]:
+    """Method names an ``if`` test proves present in (body, orelse).
+
+    Only a branch that runs *because* ``hasattr`` was true is guarded: in
+    ``if not hasattr(dm, "m"): dm.m()`` the call runs exactly when the method
+    is missing, so counting it as guarded inverted the check. ``not`` swaps the
+    branches; ``and`` proves every operand in the body and nothing in the else
+    (any one may have failed); ``or`` is the mirror image. Anything else proves
+    nothing.
+    """
+    empty = frozenset()
+    if (isinstance(test, ast.Call) and getattr(test.func, "id", None) == "hasattr"
+            and len(test.args) == 2 and isinstance(test.args[1], ast.Constant)
+            and isinstance(test.args[1].value, str)):
+        return frozenset({test.args[1].value}), empty
+    if isinstance(test, ast.UnaryOp) and isinstance(test.op, ast.Not):
+        body, orelse = _hasattr_branches(test.operand)
+        return orelse, body
+    if isinstance(test, ast.BoolOp):
+        parts = [_hasattr_branches(v) for v in test.values]
+        if isinstance(test.op, ast.And):
+            return frozenset().union(*[p[0] for p in parts]), empty
+        return empty, frozenset().union(*[p[1] for p in parts])
+    return empty, empty
 
 
 def tracked_calls(source: str, methods: Set[str]) -> List[Call]:
@@ -160,10 +176,11 @@ def tracked_calls(source: str, methods: Set[str]) -> List[Call]:
             return
         if isinstance(node, ast.If):
             visit(node.test, narrow, has)
+            proven_body, proven_else = _hasattr_branches(node.test)
             for child in node.body:
-                visit(child, narrow, has | _hasattr_names(node.test))
+                visit(child, narrow, has | proven_body)
             for child in node.orelse:
-                visit(child, narrow, has)
+                visit(child, narrow, has | proven_else)
             return
         if (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
                 and node.func.attr in methods):
