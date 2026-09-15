@@ -28,11 +28,6 @@ except ImportError:
     BasePlugin = None
     VegasDisplayMode = None
 
-try:
-    from src.background_data_service import get_background_service
-except ImportError:
-    get_background_service = None
-
 from cricket_data_fetcher import CricketDataFetcher
 from cricket_renderer import CricketRenderer
 
@@ -68,7 +63,10 @@ class CricketScoreboardPlugin(BasePlugin if BasePlugin else object):
         self.display_manager = display_manager
         self.cache_manager = cache_manager
         self.plugin_manager = plugin_manager
-        self.logger = logger
+        # Keep BasePlugin's logger, which carries the plugin id; the module
+        # logger is only a stand-in when running without the core.
+        if not BasePlugin or not getattr(self, "logger", None):
+            self.logger = logger
 
         self.is_enabled = self.config.get("enabled", False)
 
@@ -115,23 +113,10 @@ class CricketScoreboardPlugin(BasePlugin if BasePlugin else object):
         self.renderer = CricketRenderer(self.display_width, self.display_height,
                                         self.config)
 
-        # Optional background service (best-effort, same pattern as soccer).
-        self.background_service = None
-        if get_background_service:
-            try:
-                # background_service.max_workers is a real setting; it used to
-                # be pinned at 1 here, so raising it in the web UI did nothing.
-                # The service is a process-wide singleton, so the first plugin
-                # to construct it decides for everyone -- which is why the
-                # schema default stays at 1 rather than the factory's 3.
-                self.background_service = get_background_service(
-                    cache_manager,
-                    max_workers=int(
-                        (self.config.get("background_service") or {}).get("max_workers", 1)
-                    ),
-                )
-            except Exception as e:
-                self.logger.warning("Cricket background service init failed: %s", e)
+        # No background data service: every fetch runs synchronously in
+        # update() through self.fetcher. The service used to be created here
+        # and never used, and because it is a process-wide singleton, creating
+        # it could size the shared worker pool for every other plugin.
 
         # Categorized match state.
         self._lock = threading.Lock()
