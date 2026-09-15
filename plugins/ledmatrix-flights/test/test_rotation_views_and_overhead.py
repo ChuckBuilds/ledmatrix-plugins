@@ -103,9 +103,13 @@ def _set(p, *aircraft):
 # _get_available_modes
 # ---------------------------------------------------------------------------
 
+# The live slot is registered even with live_priority off: the core reads
+# plugin.modes once at load, so a slot added only when the setting is on could
+# never be registered by a live config change. display() skips it while off.
+
 def test_legacy_single_slot():
     p = make_plugin({})  # no rotation_views, live_priority off
-    assert p.modes == ["flight_tracker"], p.modes
+    assert p.modes == ["flight_tracker", "flight_tracker_live"], p.modes
 
 
 def test_legacy_with_overhead_priority():
@@ -115,13 +119,13 @@ def test_legacy_with_overhead_priority():
 
 def test_rotation_views_subset_preserves_order():
     p = make_plugin({"rotation_views": ["stats", "map"]})
-    assert p.modes == ["flight_tracker_stats", "flight_tracker_map"], p.modes
+    assert p.modes == ["flight_tracker_stats", "flight_tracker_map", "flight_tracker_live"], p.modes
 
 
 def test_rotation_views_filters_invalid_and_overhead():
     # 'overhead' and unknown views are not valid rotation views.
     p = make_plugin({"rotation_views": ["map", "overhead", "bogus", "area"]})
-    assert p.modes == ["flight_tracker_map", "flight_tracker_area"], p.modes
+    assert p.modes == ["flight_tracker_map", "flight_tracker_area", "flight_tracker_live"], p.modes
 
 
 def test_none_rotation_with_overhead_only():
@@ -129,9 +133,9 @@ def test_none_rotation_with_overhead_only():
     assert p.modes == ["flight_tracker_live"], p.modes
 
 
-def test_none_rotation_without_priority_is_empty():
+def test_none_rotation_without_priority_is_live_slot_only():
     p = make_plugin({"rotation_views": []})
-    assert p.modes == [], p.modes
+    assert p.modes == ["flight_tracker_live"], p.modes
 
 
 def test_rotation_views_plus_overhead():

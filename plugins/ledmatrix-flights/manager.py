@@ -3510,8 +3510,7 @@ class FlightTrackerPlugin(BasePlugin):
             for view in rotation_views:
                 if view in self._VALID_ROTATION_VIEWS:
                     modes.append(f'flight_tracker_{view}')
-        if self.proximity_enabled and self.live_priority_enabled:
-            modes.append('flight_tracker_live')
+        modes.append('flight_tracker_live')
         return modes
 
     def _closest_in_radius(self):
