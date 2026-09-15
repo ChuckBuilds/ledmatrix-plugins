@@ -14,7 +14,7 @@ API Version: 1.0.0
 """
 
 import logging
-from datetime import date
+from datetime import date, datetime
 from typing import Dict, Any, Tuple, Optional
 from pathlib import Path
 from PIL import Image, ImageDraw
@@ -90,6 +90,30 @@ class ChristmasCountdownPlugin(BasePlugin):
             self.logger.warning(f"Error loading tree image: {e}, will use programmatic drawing")
             self.tree_image = None
     
+    def _get_global_timezone(self) -> Optional[str]:
+        """The LEDMatrix timezone setting, or None when it cannot be read."""
+        try:
+            if hasattr(self.plugin_manager, 'config_manager') and self.plugin_manager.config_manager:
+                return self.plugin_manager.config_manager.get_timezone()
+            if hasattr(self.cache_manager, 'config_manager') and self.cache_manager.config_manager:
+                return self.cache_manager.config_manager.get_timezone()
+        except Exception as e:
+            self.logger.warning(f"Error getting global timezone: {e}")
+        return None
+
+    def _today(self) -> date:
+        """Today's date in the LEDMatrix timezone, falling back to system time."""
+        tz_name = self._get_global_timezone()
+        if tz_name:
+            try:
+                from zoneinfo import ZoneInfo
+                return datetime.now(ZoneInfo(tz_name)).date()
+            except Exception:
+                if getattr(self, '_bad_tz_warned', None) != tz_name:
+                    self.logger.warning(f"Invalid timezone '{tz_name}'; using system time")
+                    self._bad_tz_warned = tz_name
+        return date.today()
+
     def _calculate_days_until_christmas(self) -> Tuple[int, bool]:
         """
         Calculate days until Christmas.
@@ -100,7 +124,7 @@ class ChristmasCountdownPlugin(BasePlugin):
             - If on Christmas: (0, True)
             - If after Christmas: (negative days, False)
         """
-        today = date.today()
+        today = self._today()
         current_year = today.year
 
         # Christmas for current year
@@ -403,7 +427,7 @@ class ChristmasCountdownPlugin(BasePlugin):
             self.is_christmas = is_christmas
             
             # Only log when the day changes
-            today = date.today()
+            today = self._today()
             if self.last_calculated_date != today:
                 if is_christmas:
                     self.logger.info("Merry Christmas!")
@@ -423,9 +447,11 @@ class ChristmasCountdownPlugin(BasePlugin):
             force_clear: If True, clear display before rendering
         """
         try:
-            # Ensure update() has been called
-            if not hasattr(self, 'days_until_christmas'):
-                self.update()
+            # Recompute the count on every frame. It is pure date arithmetic
+            # (no I/O), and relying on update() showed "MERRY CHRISTMAS" before
+            # the first update() (days_until_christmas starts at 0) and left the
+            # count up to update_interval stale after midnight.
+            self.days_until_christmas, self.is_christmas = self._calculate_days_until_christmas()
             
             # Get display dimensions
             width = self.display_manager.width
