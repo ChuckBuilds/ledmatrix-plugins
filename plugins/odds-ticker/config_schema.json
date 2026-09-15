@@ -69,6 +69,20 @@
           "maximum": 0.1,
           "default": 0.02
         },
+        "scroll_pixels_per_second": {
+          "x-advanced": true,
+          "x-display": "hidden",
+          "type": "number",
+          "description": "Deprecated: ignored. The scroll speed comes from scroll_speed and scroll_delay. Kept so existing configs that still carry it stay valid.",
+          "title": "Scroll Pixels Per Second (deprecated)"
+        },
+        "target_fps": {
+          "x-advanced": true,
+          "x-display": "hidden",
+          "type": "number",
+          "description": "Deprecated: ignored. Frame pacing follows the panel refresh rate. Kept so existing configs that still carry it stay valid.",
+          "title": "Target FPS (deprecated)"
+        },
         "loop": {
           "x-advanced": true,
           "type": "boolean",
