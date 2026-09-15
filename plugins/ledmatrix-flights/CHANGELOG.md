@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.13.5] - 2026-09-15
+
+### Fixed
+- **Turning on Overhead Live Priority works without a restart.** The core reads
+  a plugin's display modes once, when the plugin loads. `flight_tracker_live`
+  was listed only while live priority was already on, so a board started with
+  it off never registered the slot; enabling it from the web UI rebuilt
+  `self.modes`, but the core's live scan ignores slots it has not registered and
+  nothing preempted until the display restarted. The slot is now always
+  registered and is skipped while live priority is off or nothing is overhead.
+- **Code defaults match `config_schema.json`.** `tile_provider`,
+  `fade_intensity`, `custom_tile_server`, `show_trails`, `header_color`,
+  `show_aircraft_icon` and `max_api_calls_per_hour` fell back to different
+  values in code than the schema declares. That only mattered when a key was
+  missing from the saved config, where the board then disagreed with the web UI.
+
+### Removed
+- **`max_ledmatrix_version` from the manifest.** The core never reads it, and a
+  core that started honouring `"3.0.0"` would lock the plugin out. Added a
+  manifest `category` so the registry can sync it.
+
 ## [1.13.4] - 2026-09-12
 
 ### Removed
