@@ -2999,14 +2999,12 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             if self.loop or not self.scroll_helper.is_scroll_complete():
                 # Update scroll position (handles time-based scrolling automatically)
                 self.scroll_helper.update_scroll_position()
-            else:
-                # Non-looping and scroll complete - stop scrolling
-                if not self._end_reached_logged:
-                    logger.info("Odds ticker reached end - scroll complete")
-                    self._end_reached_logged = True
-                # Signal that scrolling has stopped
-                self.display_manager.set_scrolling_state(False)
-            
+            elif not self._end_reached_logged:
+                # Non-looping and scroll complete: the end frame stays parked
+                # on screen for the rest of the slot.
+                logger.info("Odds ticker reached end - scroll complete")
+                self._end_reached_logged = True
+
             # Get the visible portion of the scrolling image
             visible_image = self.scroll_helper.get_visible_portion()
             
@@ -3015,13 +3013,16 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
                 self._display_fallback_message()
                 return
             
-            # Signal scrolling state, with the frame hold the resolver reports
-            if self.loop or not self.scroll_helper.is_scroll_complete():
-                self.display_manager.set_scrolling_state(
-                    True, frame_hold=self._scroll_frame_hold())
-            else:
-                self.display_manager.set_scrolling_state(False)
-            
+            # Signal scrolling state, with the frame hold the resolver reports,
+            # on every frame the strip is on screen -- including a parked end
+            # frame, as news and stocks do. Releasing it there (as this used
+            # to, with loop off) let core's update_display() skip the identical
+            # frame without waiting for vsync, so the controller's 8ms loop
+            # ran unpaced for the rest of the slot and dropped the frame hold:
+            # 113-124 fps in the frame stats on a 100 Hz panel.
+            self.display_manager.set_scrolling_state(
+                True, frame_hold=self._scroll_frame_hold())
+
             # Update dynamic duration from ScrollHelper
             self.dynamic_duration = self.scroll_helper.get_dynamic_duration()
             
