@@ -115,23 +115,12 @@ class NewsTickerPlugin(BasePlugin):
         # Display settings
         self.display_duration = self.global_config.get('display_duration', 30)
         
-        # Scroll configuration - prefer display object (frame-based), fallback to legacy
-        display_config = self.global_config.get('display', {})
-        if display_config and ('scroll_speed' in display_config or 'scroll_delay' in display_config):
-            # New format: use frame-based scrolling
-            self.scroll_speed = display_config.get('scroll_speed', 1.0)
-            self.scroll_delay = display_config.get('scroll_delay', 0.01)
-            self.scroll_pixels_per_second = None
-            self.logger.info(f"Using global.display.scroll_speed={self.scroll_speed} px/frame, global.display.scroll_delay={self.scroll_delay}s (frame-based mode)")
-        else:
-            # Legacy format: use global scroll_speed/scroll_delay
-            self.scroll_speed = self.global_config.get('scroll_speed', 1.0)
-            self.scroll_delay = self.global_config.get('scroll_delay', 0.01)
-            self.scroll_pixels_per_second = self.global_config.get('scroll_pixels_per_second')
-            if self.scroll_pixels_per_second is not None:
-                self.logger.info(f"Using scroll_pixels_per_second={self.scroll_pixels_per_second} px/s (time-based mode)")
-            else:
-                self.logger.info(f"Using legacy scroll_speed={self.scroll_speed}, scroll_delay={self.scroll_delay}")
+        # Scroll speed: global.display.scroll_speed / scroll_delay (pixels per
+        # step, seconds per step). The core's shared resolver turns the pair
+        # into the applied speed in _configure_scroll_settings.
+        display_config = self.global_config.get('display', {}) or {}
+        self.scroll_speed = display_config.get('scroll_speed', 1.0)
+        self.scroll_delay = display_config.get('scroll_delay', 0.01)
 
         # Dynamic duration settings
         dynamic_duration_config = self.global_config.get('dynamic_duration', {})
@@ -153,7 +142,6 @@ class NewsTickerPlugin(BasePlugin):
         self.headlines_per_feed = self.global_config.get('headlines_per_feed', 2)
         self.font_size = self.global_config.get('font_size', 16)  # PressStart2P's
         # pixel grid is 8; 12 was off it and anti-aliased on the panel.
-        self.target_fps = self.global_config.get('target_fps') or self.global_config.get('scroll_target_fps', 100)
 
         # Headline paging settings
         self._load_paging_settings()
@@ -182,12 +170,10 @@ class NewsTickerPlugin(BasePlugin):
         # New format uses logo objects in feed items
         self.feed_logo_map = self.feeds_config.get('feed_logo_map', {})
 
-        # Background service configuration
+        # HTTP settings. Only request_timeout is read: feeds are fetched
+        # synchronously in update(), one attempt each.
         self.background_config = self.global_config.get('background_service', {
-            'enabled': True,
             'request_timeout': 30,
-            'max_retries': 3,
-            'priority': 2
         })
 
         # State
@@ -244,15 +230,7 @@ class NewsTickerPlugin(BasePlugin):
         self.logger.info(f"Enabled predefined feeds: {enabled_feeds}")
         self.logger.info(f"Custom feeds: {custom_feed_names}")
         self.logger.info(f"Display dimensions: {self.display_width}x{self.display_height}")
-        if hasattr(self.scroll_helper, 'frame_based_scrolling') and self.scroll_helper.frame_based_scrolling:
-            pixels_per_second = self.scroll_speed / self.scroll_delay if self.scroll_delay > 0 else self.scroll_speed * 100
-            self.logger.info(f"Scroll speed: {self.scroll_speed} px/frame, {self.scroll_delay}s delay ({pixels_per_second:.1f} px/s effective)")
-        else:
-            if hasattr(self, 'scroll_pixels_per_second') and self.scroll_pixels_per_second is not None:
-                self.logger.info(f"Scroll speed: {self.scroll_pixels_per_second} px/s")
-            else:
-                pixels_per_second = self.scroll_speed / self.scroll_delay if self.scroll_delay > 0 else self.scroll_speed * 100
-                self.logger.info(f"Scroll speed: {pixels_per_second:.1f} px/s")
+        self.logger.info("Scroll speed: %.1f px/s", self._effective_pixels_per_second())
         self.logger.info(
             "Dynamic duration settings: enabled=%s, min=%ss, max=%ss, buffer=%.2f",
             self.dynamic_duration_enabled,
@@ -298,7 +276,10 @@ class NewsTickerPlugin(BasePlugin):
             font_path = self.global_config.get('font_path', 'assets/fonts/PressStart2P-Regular.ttf')
             fonts['headline'] = ImageFont.truetype(font_path, self.font_size)
             fonts['separator'] = ImageFont.truetype(font_path, self.font_size)
-            fonts['info'] = ImageFont.truetype(font_path, 6)
+            # 8 is customization.source_text.font_size's schema default, which
+            # merged configs always carry, so this is what the source label
+            # has been drawn at on every install with a saved config.
+            fonts['info'] = ImageFont.truetype(font_path, 8)
             self.logger.info("Successfully loaded Press Start 2P font")
         except IOError:
             self.logger.warning("Press Start 2P font not found, trying 4x6 font")
@@ -414,15 +395,18 @@ class NewsTickerPlugin(BasePlugin):
         disagree with rendering. At schema defaults every override resolves to
         None and self.fonts is left exactly as _load_fonts() built it.
 
-        Schema-default sentinels: headline_text is PressStart2P-Regular.ttf @ 12
-        (mirroring global.font_path / global.font_size defaults) and source_text
-        is PressStart2P-Regular.ttf @ 6 (the hardcoded 'info' font size).
+        Schema-default sentinels: headline_text is PressStart2P-Regular.ttf @ 16
+        and source_text is PressStart2P-Regular.ttf @ 8 -- exactly the schema
+        defaults, and the sizes _load_fonts() uses at global.font_size's
+        default. They used to be 12 and 6 while the schema defaults were 16
+        and 8, so the merged defaults always counted as "customised" and a
+        PressStart2P@16 override replaced whatever global.font_size said.
         """
         if not isinstance(customization, dict):
             return
 
         headline_cfg = customization.get('headline_text', {}) or {}
-        headline_font = self._load_element_font(headline_cfg, 'PressStart2P-Regular.ttf', 12)
+        headline_font = self._load_element_font(headline_cfg, 'PressStart2P-Regular.ttf', 16)
         if headline_font is not None:
             self.fonts['headline'] = headline_font
             # The separator has always shared the headline's face and size
@@ -430,7 +414,7 @@ class NewsTickerPlugin(BasePlugin):
             self.fonts['separator'] = headline_font
 
         source_cfg = customization.get('source_text', {}) or {}
-        source_font = self._load_element_font(source_cfg, 'PressStart2P-Regular.ttf', 6)
+        source_font = self._load_element_font(source_cfg, 'PressStart2P-Regular.ttf', 8)
         if source_font is not None:
             self.fonts['info'] = source_font
 
@@ -556,9 +540,15 @@ class NewsTickerPlugin(BasePlugin):
         return min(self._plugin_duration_cap(), self._read_core_duration_cap())
 
     def _effective_pixels_per_second(self) -> float:
-        """Nominal scroll rate in pixels per second, whichever mode is active."""
-        if getattr(self, 'scroll_pixels_per_second', None):
-            return float(self.scroll_pixels_per_second)
+        """Scroll rate in pixels per second: what the shared resolver applied.
+
+        The resolver snaps speed/delay to a whole-pixel speed (62.5 px/s runs
+        at 66.7), so the paging budget must use the applied figure, not the
+        raw ratio.
+        """
+        settings = getattr(self, '_scroll_settings', None)
+        if settings is not None:
+            return float(settings.pixels_per_second)
         if self.scroll_delay and self.scroll_delay > 0:
             return float(self.scroll_speed) / float(self.scroll_delay)
         return float(self.scroll_speed) * 100.0
@@ -600,17 +590,17 @@ class NewsTickerPlugin(BasePlugin):
 
     def _configure_scroll_settings(self) -> None:
         """
-        Configure scroll helper with current settings.
-        
-        Assumes scroll configuration variables (scroll_speed, scroll_delay, etc.)
-        and scroll_helper are already set up. This method applies those settings
-        to the scroll_helper instance.
+        Resolve scroll pacing through the core's shared resolver.
+
+        The resolver reads global.display.scroll_speed / scroll_delay from the
+        block passed as global_config, snaps the speed to one the panel can draw
+        in whole pixels, and reports the frame hold display() passes to
+        set_scrolling_state. Nothing writes the helper's speed or FPS
+        afterwards. Called from __init__ and on_config_change.
         """
         if not hasattr(self, 'scroll_helper') or not self.scroll_helper:
             return
-        
-        # Determine if we should use frame-based scrolling
-        # Check if scroll_pixels_per_second is None (frame-based) or set (time-based)
+
         if _scroll_config is not None:
             self._scroll_settings = _scroll_config.configure(
                 self.scroll_helper,
@@ -619,42 +609,15 @@ class NewsTickerPlugin(BasePlugin):
                 display_manager=self.display_manager,
                 plugin_logger=self.logger,
             )
-            return
-
-        # Legacy path for cores without src.common.scroll_config. Plugins
-        # update independently of the core, so this must keep working.
-        self._scroll_settings = None
-
-        display_config = self.global_config.get('display', {})
-        use_frame_based = (self.scroll_pixels_per_second is None and 
-                          display_config and 
-                          ('scroll_speed' in display_config or 'scroll_delay' in display_config))
-        
-        if use_frame_based:
-            # Frame-based scrolling
-            if hasattr(self.scroll_helper, 'set_frame_based_scrolling'):
-                self.scroll_helper.set_frame_based_scrolling(True)
-            self.scroll_helper.set_scroll_speed(self.scroll_speed)
-            self.scroll_helper.set_scroll_delay(self.scroll_delay)
-            pixels_per_second = self.scroll_speed / self.scroll_delay if self.scroll_delay > 0 else self.scroll_speed * 100
-            self.logger.info(f"Effective scroll speed: {pixels_per_second:.1f} px/s ({self.scroll_speed} px/frame at {1.0/self.scroll_delay:.0f} FPS)")
         else:
-            # Time-based scrolling (backward compatibility)
-            if self.scroll_pixels_per_second is not None:
-                pixels_per_second = self.scroll_pixels_per_second
-            else:
-                pixels_per_second = self.scroll_speed / self.scroll_delay if self.scroll_delay > 0 else self.scroll_speed * 100
-            self.scroll_helper.set_scroll_speed(pixels_per_second)
-            self.scroll_helper.set_scroll_delay(self.scroll_delay)
-        
-        # Set target FPS
-        if hasattr(self.scroll_helper, 'set_target_fps'):
-            self.scroll_helper.set_target_fps(self.target_fps)
-        else:
-            self.scroll_helper.target_fps = max(30.0, min(200.0, self.target_fps))
-            self.scroll_helper.frame_time_target = 1.0 / self.scroll_helper.target_fps
-        
-        # Configure dynamic duration
+            # Unreachable on the 3.4.0 floor; the import stays guarded only
+            # because the module gate does not yet list scroll_config as
+            # released. The helper keeps its own default pacing.
+            self._scroll_settings = None
+
+        # Configure dynamic duration. Applied on every path: it used to run
+        # only on the pre-resolver path, so min/max_duration_seconds and
+        # buffer_ratio never reached the helper on a core with the resolver.
         self.scroll_helper.set_dynamic_duration_settings(
             enabled=self.dynamic_duration_enabled,
             min_duration=self.min_duration,
@@ -820,19 +783,11 @@ class NewsTickerPlugin(BasePlugin):
         # Update display duration
         self.display_duration = self.global_config.get('display_duration', 30)
         
-        # Update scroll configuration variables (handle both formats)
-        display_config = self.global_config.get('display', {})
-        if display_config and ('scroll_speed' in display_config or 'scroll_delay' in display_config):
-            # New format: frame-based scrolling
-            self.scroll_speed = display_config.get('scroll_speed', 1.0)
-            self.scroll_delay = display_config.get('scroll_delay', 0.01)
-            self.scroll_pixels_per_second = None
-        else:
-            # Legacy format: time-based scrolling
-            self.scroll_speed = self.global_config.get('scroll_speed', 1.0)
-            self.scroll_delay = self.global_config.get('scroll_delay', 0.01)
-            self.scroll_pixels_per_second = self.global_config.get('scroll_pixels_per_second')
-        
+        # Scroll speed (resolved again below by _configure_scroll_settings)
+        display_config = self.global_config.get('display', {}) or {}
+        self.scroll_speed = display_config.get('scroll_speed', 1.0)
+        self.scroll_delay = display_config.get('scroll_delay', 0.01)
+
         # Update dynamic duration settings
         dynamic_duration_config = self.global_config.get('dynamic_duration', {})
         if isinstance(dynamic_duration_config, bool):
@@ -852,8 +807,8 @@ class NewsTickerPlugin(BasePlugin):
         self.rotation_enabled = self.global_config.get('rotation_enabled', True)
         self.rotation_threshold = self.global_config.get('rotation_threshold', 3)
         self.headlines_per_feed = self.global_config.get('headlines_per_feed', 2)
-        self.font_size = self.global_config.get('font_size', 12)
-        self.target_fps = self.global_config.get('target_fps') or self.global_config.get('scroll_target_fps', 100)
+        # Same default as __init__ and the schema (16; it was 12 here).
+        self.font_size = self.global_config.get('font_size', 16)
 
         # Reload paging settings - page size depends on scroll speed and the
         # duration cap, so any of those changing invalidates the current strip
@@ -865,12 +820,9 @@ class NewsTickerPlugin(BasePlugin):
         # Apply scroll settings to scroll_helper
         self._configure_scroll_settings()
         
-        # Update background service configuration
+        # HTTP settings (only request_timeout is read)
         self.background_config = self.global_config.get('background_service', {
-            'enabled': True,
             'request_timeout': 30,
-            'max_retries': 3,
-            'priority': 2
         })
         
         # Rebuild base fonts, then re-apply per-element customization. Always
