@@ -1,7 +1,7 @@
 {
   "id": "nfl-draft",
   "name": "NFL Draft",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "author": "ChuckBuilds",
   "description": "Displays projected NFL draft picks from ESPN with live draft tracking support during the annual NFL Draft event. Includes simulate_live mode to replay a completed draft using real ESPN core API data. Shows team logos, player names, positions, and pick numbers in a scrolling display.",
   "entry_point": "manager.py",
@@ -20,10 +20,16 @@
   "update_interval": 300,
   "default_duration": 60,
   "compatible_versions": [
-    ">=2.0.0"
+    ">=3.4.0"
   ],
   "icon": "fas fa-football-ball",
   "versions": [
+    {
+      "version": "2.1.0",
+      "released": "2026-09-15",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Requires LEDMatrix core 3.4.0. scroll_speed (pixels per second) now sets the scroll speed: the shared resolver was handed the root config, where it looks for a scroll_speed + scroll_delay pair this plugin never declared, so every user got its 100 px/s default instead of the documented 30. The speed is passed as pixels per second and snapped to the nearest speed the panel can move in whole pixels (30 becomes 33.3 px/s on a 100 Hz panel). The frame hold that snap needs is now applied while scrolling (set_scrolling_state(True, frame_hold=...), a 3.4.0 argument, hence the floor) and released when the scroll completes or nothing is drawn. Removed the legacy set_scroll_speed/set_scroll_delay setup and the target_fps writes after the resolver, which nothing read. The auto-detected draft_year is re-resolved on every update, so a Pi left running since last year's draft recognises this year's draft days instead of polling daily at the old year. vegas_mode is unchanged: core reads it (BasePlugin.get_vegas_display_mode)."
+    },
     {
       "version": "2.0.0",
       "released": "2026-09-07",
