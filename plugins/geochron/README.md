@@ -263,7 +263,10 @@ on your panel, at 12:00 UTC on the real dates.
 
 **The local time is wrong.**
 `timezone` is `null` by default and inherits the global LEDMatrix setting.
-Check that first, then set it here if you want this plugin to differ.
+Check that first, then set it here if you want this plugin to differ. An
+unrecognised timezone name is not fatal: the plugin logs a warning and falls
+back to the global LEDMatrix timezone, then to the host's system time. The same
+goes for a city's `timezone` — that city's local time is simply left out.
 
 **The map is centred on the wrong part of the world.**
 On a square or tall panel that is `map_center_longitude` — see

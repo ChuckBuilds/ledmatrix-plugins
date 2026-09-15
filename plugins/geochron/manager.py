@@ -19,7 +19,10 @@ import solar
 import worldmap
 
 FONT_PATH = os.path.join(os.path.dirname(__file__), "assets", "fonts", "4x6-font.ttf")
-FONT_SIZE = 6
+# 4x6-font is crisp only at multiples of 7 (its pixel grid, #480); at 6 the
+# FreeType rasteriser anti-aliases to fake in-between stroke widths.
+# render_preview.py loads the same face at the same size.
+FONT_SIZE = 7
 
 DEFAULT_COLORS = {
     "ocean_color": (10, 35, 90),
@@ -119,10 +122,24 @@ class GeochronPlugin(BasePlugin):
         try:
             return pytz.timezone(self.timezone_str)
         except Exception:
-            self.logger.warning(
-                "Invalid timezone '%s'. Falling back to UTC.", self.timezone_str
-            )
-            return pytz.utc
+            pass
+        # A typo must not blank the clock: fall back to the LEDMatrix timezone,
+        # then the host's own zone.
+        fallback = self._get_global_timezone()
+        if fallback and fallback != self.timezone_str:
+            try:
+                tz = pytz.timezone(fallback)
+                self.logger.warning(
+                    "Invalid timezone '%s'. Falling back to the LEDMatrix timezone '%s'.",
+                    self.timezone_str, fallback,
+                )
+                return tz
+            except Exception:
+                pass
+        self.logger.warning(
+            "Invalid timezone '%s'. Falling back to system time.", self.timezone_str
+        )
+        return datetime.now().astimezone().tzinfo
 
     def _derive_map_center_longitude(self):
         try:
@@ -301,11 +318,12 @@ class GeochronPlugin(BasePlugin):
         if not super().validate_config():
             return False
 
+        # A bad timezone string is not fatal: _get_timezone() already warned and
+        # fell back. Failing here made core refuse to load the plugin.
         try:
             pytz.timezone(self.timezone_str)
         except Exception:
-            self.logger.error("Invalid timezone: %s", self.timezone_str)
-            return False
+            self.logger.warning("Invalid timezone '%s'; using the fallback zone", self.timezone_str)
 
         if self.clock_format not in ("12h", "24h"):
             self.logger.error("Invalid clock_format: %s", self.clock_format)
@@ -328,8 +346,8 @@ class GeochronPlugin(BasePlugin):
                 try:
                     pytz.timezone(tz_name)
                 except Exception:
-                    self.logger.error("Invalid city timezone: %s", tz_name)
-                    return False
+                    # The readout skips a city whose zone does not resolve.
+                    self.logger.warning("Invalid city timezone: %s", tz_name)
 
         for key, value in self.colors.items():
             if not (isinstance(value, tuple) and len(value) == 3 and all(0 <= c <= 255 for c in value)):
