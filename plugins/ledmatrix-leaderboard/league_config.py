@@ -153,7 +153,8 @@ class LeagueConfig:
                 'league_logo': 'assets/sports/ncaa_logos/ncaah.png',
                 'rankings_url': 'https://site.api.espn.com/apis/site/v2/sports/hockey/mens-college-hockey/rankings',
                 'enabled': self.enabled_sports.get('ncaam_hockey', {}).get('enabled', get_enabled_default('ncaam_hockey')),
-                'top_teams': self.enabled_sports.get('ncaam_hockey', {}).get('top_teams', 25)
+                'top_teams': self.enabled_sports.get('ncaam_hockey', {}).get('top_teams', 10),
+                'show_ranking': self.enabled_sports.get('ncaam_hockey', {}).get('show_ranking', True)
             },
         }
     

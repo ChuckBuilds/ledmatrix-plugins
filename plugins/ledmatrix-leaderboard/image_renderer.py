@@ -537,7 +537,7 @@ class ImageRenderer:
                     return team['record_summary']
                 else:
                     return f"{index+1}."
-        elif league_key in ('ncaam_basketball', 'ncaaw_basketball'):
+        elif league_key in ('ncaam_basketball', 'ncaaw_basketball', 'ncaam_hockey'):
             if league_config.get('show_ranking', True) and team.get('rank', 0) > 0:
                 return f"#{team['rank']}"
             return f"{index+1}."

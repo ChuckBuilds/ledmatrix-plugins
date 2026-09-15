@@ -9,13 +9,6 @@
       "default": false,
       "description": "Enable or disable the leaderboard plugin"
     },
-    "display_duration": {
-      "type": "number",
-      "default": 30,
-      "minimum": 10,
-      "maximum": 300,
-      "description": "How long to display the leaderboard in seconds"
-    },
     "update_interval": {
       "x-advanced": true,
       "type": "integer",
@@ -33,30 +26,6 @@
           "minimum": 10,
           "maximum": 300,
           "description": "Duration in seconds to display the leaderboard"
-        },
-        "scroll_speed": {
-          "x-advanced": true,
-          "type": "number",
-          "default": 1,
-          "minimum": 0.1,
-          "maximum": 10,
-          "description": "Scrolling speed multiplier"
-        },
-        "target_fps": {
-          "x-advanced": true,
-          "type": "integer",
-          "default": 100,
-          "minimum": 30,
-          "maximum": 200,
-          "description": "Target frames per second for scrolling"
-        },
-        "scroll_speed_scale": {
-          "x-advanced": true,
-          "type": "number",
-          "default": 8,
-          "minimum": 1,
-          "maximum": 20,
-          "description": "Scroll speed scale factor"
         },
         "request_timeout": {
           "x-advanced": true,
@@ -150,14 +119,6 @@
           "maximum": 1800,
           "description": "[Deprecated] Use dynamic_duration.controller_cap_seconds instead."
         },
-        "scroll_pixels_per_second": {
-          "x-advanced": true,
-          "type": "number",
-          "default": 15.0,
-          "minimum": 5.0,
-          "maximum": 50.0,
-          "description": "[Deprecated] Scroll speed in pixels per second. Use display.scroll_speed and display.scroll_delay for finer control"
-        },
         "display": {
           "type": "object",
           "description": "Display and scrolling settings",
@@ -181,14 +142,6 @@
           },
           "additionalProperties": false
         },
-        "scroll_target_fps": {
-          "x-advanced": true,
-          "type": "number",
-          "default": 100.0,
-          "minimum": 30.0,
-          "maximum": 200.0,
-          "description": "Target FPS for scrolling"
-        },
         "scroll_mode": {
           "x-advanced": true,
           "type": "string",
@@ -198,30 +151,6 @@
           ],
           "default": "one_shot",
           "description": "Scrolling mode"
-        },
-        "scroll_direction": {
-          "x-advanced": true,
-          "type": "string",
-          "enum": [
-            "left",
-            "right"
-          ],
-          "default": "left",
-          "description": "Scroll direction"
-        },
-        "enable_scroll_metrics": {
-          "x-advanced": true,
-          "type": "boolean",
-          "default": false,
-          "description": "Enable scroll performance metrics"
-        },
-        "scroll_delay": {
-          "x-advanced": true,
-          "type": "number",
-          "default": 0.01,
-          "minimum": 0.001,
-          "maximum": 0.1,
-          "description": "Delay between scroll steps in seconds"
         },
         "loop": {
           "x-advanced": true,

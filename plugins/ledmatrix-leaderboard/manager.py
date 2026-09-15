@@ -56,123 +56,19 @@ class LeaderboardPlugin(BasePlugin):
         self.display_width = display_manager.width
         self.display_height = display_manager.height
         
-        # Configuration
-        self.global_config = config.get('global', {})
-        self.update_interval = self.global_config.get('update_interval', 3600)
-        
-        # Display settings
-        self.display_duration = self.global_config.get('display_duration', 30)
-        
-        # Scroll speed configuration - prefer display object (granular control), fallback to scroll_pixels_per_second for backward compatibility
-        # Seeded so get_info()/logging never touch an unset attribute on the
-        # time-based path, which does not assign scroll_speed.
-        self.scroll_speed = self.global_config.get('scroll_speed', 1.0)
-        display_config = self.global_config.get('display', {})
-        if display_config and ('scroll_speed' in display_config or 'scroll_delay' in display_config):
-            # New format: use display object for granular control
-            self.scroll_speed = display_config.get('scroll_speed', 1.0)
-            self.scroll_delay = display_config.get('scroll_delay', 0.01)
-            self.scroll_pixels_per_second = None  # Not using pixels per second mode
-            self.logger.info(f"Using global.display.scroll_speed={self.scroll_speed} px/frame, global.display.scroll_delay={self.scroll_delay}s (frame-based mode)")
-        else:
-            # Old format: use scroll_pixels_per_second (backward compatibility)
-            self.scroll_pixels_per_second = self.global_config.get('scroll_pixels_per_second', 15.0)
-            self.scroll_delay = self.global_config.get('scroll_delay', 0.01)
-            if self.scroll_pixels_per_second is not None:
-                self.logger.info(f"Using scroll_pixels_per_second={self.scroll_pixels_per_second} px/s (time-based mode, backward compatibility)")
-            else:
-                # Calculate from legacy scroll_speed/scroll_delay
-                self.scroll_speed = self.global_config.get('scroll_speed', 1)
-                self.logger.info(f"Using legacy scroll_speed={self.scroll_speed}, scroll_delay={self.scroll_delay} (backward compatibility)")
-        self.dynamic_duration_settings = self._load_dynamic_duration_settings(
-            self.global_config.get('dynamic_duration')
-        )
-        self.dynamic_duration_enabled = self.dynamic_duration_settings['enabled']
-        self.min_duration = self.dynamic_duration_settings['min_duration_seconds']
-        self.max_duration = self.dynamic_duration_settings['max_duration_seconds']
-        self.duration_buffer = self.dynamic_duration_settings['buffer_ratio']
-        self.dynamic_duration_cap = self.dynamic_duration_settings['controller_cap_seconds']
-        # Determine loop behavior: scroll_mode takes precedence, then loop boolean
-        scroll_mode = self.global_config.get('scroll_mode', 'one_shot')
-        self.loop = scroll_mode == 'continuous' or bool(self.global_config.get('loop', False))
-        
-        # Request timeout
-        self.request_timeout = self.global_config.get('request_timeout', 30)
-        
+        # Configuration. Every config-derived setting is read by _load_config,
+        # so on_config_change re-reads it exactly the same way.
+        self._load_config(config)
+
         # Initialize components
-        self.appearance = self.global_config.get('appearance', {}) or {}
         self.league_config = LeagueConfig(config, self.logger)
         self.data_fetcher = DataFetcher(cache_manager, self.logger, self.request_timeout)
         self.image_renderer = ImageRenderer(self.display_height, self.logger, self.appearance)
-        
-        # Initialize scroll helper
-        self.scroll_helper = ScrollHelper(self.display_width, self.display_height, self.logger)
-        
-        # Configure ScrollHelper with plugin settings
-        # Check if we should use frame-based scrolling (new format) or time-based (old format)
-        use_frame_based = (self.scroll_pixels_per_second is None and 
-                          display_config and 
-                          ('scroll_speed' in display_config or 'scroll_delay' in display_config))
-        
-        if use_frame_based:
-            # New format: use frame-based scrolling for finer control
-            if hasattr(self.scroll_helper, 'set_frame_based_scrolling'):
-                self.scroll_helper.set_frame_based_scrolling(True)
-                self.logger.info(f"Frame-based scrolling enabled: {self.scroll_speed} px/frame, {self.scroll_delay}s delay")
-            # In frame-based mode, scroll_speed is pixels per frame
-            self.scroll_helper.set_scroll_speed(self.scroll_speed)
-            self.scroll_helper.set_scroll_delay(self.scroll_delay)
-            # Log effective pixels per second for reference
-            pixels_per_second = self.scroll_speed / self.scroll_delay if self.scroll_delay > 0 else self.scroll_speed * 100
-            self.logger.info(f"Effective scroll speed: {pixels_per_second:.1f} px/s ({self.scroll_speed} px/frame at {1.0/self.scroll_delay:.0f} FPS)")
-        else:
-            # Old format: use time-based scrolling (backward compatibility)
-            if self.scroll_pixels_per_second is not None:
-                pixels_per_second = self.scroll_pixels_per_second
-                self.logger.info(f"Using scroll_pixels_per_second: {pixels_per_second} px/s (time-based mode)")
-            else:
-                # Convert scroll_speed from pixels per frame to pixels per second (backward compatibility)
-                pixels_per_second = self.scroll_speed / self.scroll_delay if self.scroll_delay > 0 else self.scroll_speed * 100
-                self.logger.info(f"Calculated scroll speed: {pixels_per_second} px/s (from scroll_speed={self.scroll_speed}, scroll_delay={self.scroll_delay})")
-            
-            self.scroll_helper.set_scroll_speed(pixels_per_second)
-            self.scroll_helper.set_scroll_delay(self.scroll_delay)
-        
-        # Set target FPS for high-performance scrolling (default 100 FPS)
-        target_fps = self.global_config.get('target_fps') or self.global_config.get('scroll_target_fps', 100)
-        if hasattr(self.scroll_helper, 'set_target_fps'):
-            self.scroll_helper.set_target_fps(target_fps)
-            self.logger.info(f"Target FPS set to: {target_fps} FPS")
-        else:
-            # Fallback for older ScrollHelper versions - set target_fps directly
-            self.scroll_helper.target_fps = max(30.0, min(200.0, target_fps))
-            self.scroll_helper.frame_time_target = 1.0 / self.scroll_helper.target_fps
-            self.logger.debug(f"Target FPS set to: {self.scroll_helper.target_fps} FPS (using fallback method)")
 
-        # The shared resolver takes precedence over the block above, which is
-        # kept as the fallback for cores that predate it. Running both costs a
-        # few microseconds once at construction and avoids re-indenting logic
-        # that other config shapes still depend on.
-        if _scroll_config is not None:
-            self._scroll_settings = _scroll_config.configure(
-                self.scroll_helper,
-                plugin_config=self.config,
-                global_config=self.global_config,
-                display_manager=self.display_manager,
-                plugin_logger=self.logger,
-            )
-            self.logger.info(
-                "Scroll pacing came from the shared resolver; any scroll speed "
-                "logged above this line by the legacy path was superseded")
-        else:
-            self._scroll_settings = None
-        
-        self.scroll_helper.set_dynamic_duration_settings(
-            enabled=self.dynamic_duration_enabled,
-            min_duration=self.min_duration,
-            max_duration=self.max_duration,
-            buffer=self.duration_buffer
-        )
+        # Initialize scroll helper. Speed, pacing and the frame hold come only
+        # from the core's shared resolver; see _configure_scroll.
+        self.scroll_helper = ScrollHelper(self.display_width, self.display_height, self.logger)
+        self._configure_scroll()
         
         # State
         self.leaderboard_data = []
@@ -190,16 +86,7 @@ class LeaderboardPlugin(BasePlugin):
         self.logger.info("Leaderboard plugin initialized")
         self.logger.info(f"Enabled leagues: {enabled_leagues}")
         self.logger.info(f"Display dimensions: {self.display_width}x{self.display_height}")
-        # Log scroll speed (check if frame-based mode was used)
-        if hasattr(self.scroll_helper, 'frame_based_scrolling') and self.scroll_helper.frame_based_scrolling:
-            pixels_per_second = self.scroll_speed / self.scroll_delay if self.scroll_delay > 0 else self.scroll_speed * 100
-            self.logger.info(f"Scroll speed: {self.scroll_speed} px/frame, {self.scroll_delay}s delay ({pixels_per_second:.1f} px/s effective)")
-        else:
-            if hasattr(self, 'scroll_pixels_per_second') and self.scroll_pixels_per_second is not None:
-                self.logger.info(f"Scroll speed: {self.scroll_pixels_per_second} px/s")
-            else:
-                pixels_per_second = self.scroll_speed / self.scroll_delay if self.scroll_delay > 0 else self.scroll_speed * 100
-                self.logger.info(f"Scroll speed: {pixels_per_second:.1f} px/s")
+        self.logger.info("Scroll speed: %.1f px/s", self._effective_pixels_per_second())
         self.logger.info(f"Scroll mode: {'continuous' if self.loop else 'one_shot'}")
         self.logger.info(
             "Dynamic duration settings: enabled=%s, min=%ss, max=%ss, buffer=%.2f, controller_cap=%ss",
@@ -227,6 +114,109 @@ class LeaderboardPlugin(BasePlugin):
         settings = getattr(self, "_scroll_settings", None)
         return getattr(settings, "frame_hold", 1) if settings else 1
 
+    #: How soon update() is asked for again while there is nothing to show.
+    #: display() never fetches, so this is the only retry after a failed fetch;
+    #: without it an ESPN outage at startup left the fallback up for a full
+    #: update_interval (an hour by default).
+    NO_DATA_RETRY_SECONDS = 300
+
+    def _load_config(self, config: Dict[str, Any]) -> None:
+        """Read every config-derived setting. Called from __init__ and on_config_change."""
+        self.global_config = config.get('global', {}) or {}
+        # update_interval is declared at the top level of the schema. The
+        # global.update_interval this used to read is not in the schema, so the
+        # web UI could never set it; it stays only as a fallback for hand-edited
+        # configs. Default and minimum mirror config_schema.json.
+        self.update_interval = self._safe_int(
+            config.get('update_interval', self.global_config.get('update_interval', 3600)),
+            3600, min_value=300,
+        )
+
+        # Display settings
+        self.display_duration = self.global_config.get('display_duration', 30)
+        self.dynamic_duration_settings = self._load_dynamic_duration_settings(
+            self.global_config.get('dynamic_duration')
+        )
+        self.dynamic_duration_enabled = self.dynamic_duration_settings['enabled']
+        self.min_duration = self.dynamic_duration_settings['min_duration_seconds']
+        self.max_duration = self.dynamic_duration_settings['max_duration_seconds']
+        self.duration_buffer = self.dynamic_duration_settings['buffer_ratio']
+        self.dynamic_duration_cap = self.dynamic_duration_settings['controller_cap_seconds']
+        # Determine loop behavior: scroll_mode takes precedence, then loop boolean
+        scroll_mode = self.global_config.get('scroll_mode', 'one_shot')
+        self.loop = scroll_mode == 'continuous' or bool(self.global_config.get('loop', False))
+
+        # Request timeout
+        self.request_timeout = self.global_config.get('request_timeout', 30)
+        self.appearance = self.global_config.get('appearance', {}) or {}
+
+    def _configure_scroll(self) -> None:
+        """Resolve scroll pacing through the core's shared resolver.
+
+        The resolver reads global.display.scroll_speed / scroll_delay (pixels
+        per step, seconds per step) from the block passed as global_config,
+        snaps the speed to one the panel can draw in whole pixels, and applies
+        it; display() passes the frame hold it reports to set_scrolling_state.
+        Nothing writes the helper's speed or FPS afterwards, since that would
+        override the resolved pacing.
+        """
+        if _scroll_config is not None:
+            self._scroll_settings = _scroll_config.configure(
+                self.scroll_helper,
+                plugin_config=self.config,
+                global_config=self.global_config,
+                display_manager=self.display_manager,
+                plugin_logger=self.logger,
+            )
+        else:
+            # Unreachable on the 3.4.0 floor; the import stays guarded only
+            # because the module gate does not yet list scroll_config as
+            # released. The helper keeps its own default pacing.
+            self._scroll_settings = None
+
+        self.scroll_helper.set_dynamic_duration_settings(
+            enabled=self.dynamic_duration_enabled,
+            min_duration=self.min_duration,
+            max_duration=self.max_duration,
+            buffer=self.duration_buffer
+        )
+
+    def get_update_interval(self) -> Optional[float]:
+        """Seconds between update() calls: the configured update_interval.
+
+        The manifest's update_interval (3600) is only the default. Core prefers
+        the manifest over the plugin's config, so without this hook a user's
+        shorter update_interval was ignored. While nothing has been fetched,
+        ask again sooner so a failed fetch is retried (NO_DATA_RETRY_SECONDS).
+        Attribute reads only: core calls this on every scheduling tick.
+        """
+        interval = float(self.update_interval)
+        if not self.leaderboard_data:
+            return min(interval, float(self.NO_DATA_RETRY_SECONDS))
+        return interval
+
+    def on_config_change(self, new_config: Dict[str, Any]) -> None:
+        """Apply a web-UI save without a restart.
+
+        Re-reads every setting, rebuilds the league list and the renderer
+        (appearance), re-runs the scroll resolver, and schedules a re-fetch.
+        The fetch itself is left to update(): this runs on the web thread.
+        """
+        super().on_config_change(new_config)
+        self._load_config(self.config)
+        self.league_config = LeagueConfig(self.config, self.logger)
+        self.data_fetcher.request_timeout = self.request_timeout
+        self.image_renderer = ImageRenderer(self.display_height, self.logger, self.appearance)
+        self._configure_scroll()
+        self.scroll_helper.clear_cache()
+        self._cycle_complete = False
+        self.last_update = 0  # the next update() re-fetches with the new leagues
+        self.logger.info(
+            "Leaderboard config updated live: leagues=%s, update_interval=%ss, %.1f px/s",
+            self.league_config.get_enabled_leagues(), self.update_interval,
+            self._effective_pixels_per_second(),
+        )
+
     def update(self, force: bool = False) -> None:
         """
         Update standings data for all enabled leagues.
@@ -236,8 +226,11 @@ class LeaderboardPlugin(BasePlugin):
         """
         current_time = time.time()
         
-        # Check if it's time to update (unless forced)
-        if not force and current_time - self.last_update < self.update_interval:
+        # Check if it's time to update (unless forced). With nothing to show,
+        # always fetch: the core's scheduler already spaces these calls out
+        # (get_update_interval), and display() no longer fetches on its own.
+        if (not force and self.leaderboard_data
+                and current_time - self.last_update < self.update_interval):
             self.logger.debug(f"Skipping update - only {current_time - self.last_update:.1f}s since last update (interval: {self.update_interval}s)")
             return
         
@@ -306,20 +299,18 @@ class LeaderboardPlugin(BasePlugin):
             return
         
         if not self.leaderboard_data:
+            # Never fetch from here. display() runs on the render loop, and a
+            # league fetch is a blocking request with a 30s timeout: this used
+            # to call update(force=True) on every frame while data was empty.
+            # update() retries on the core's schedule (get_update_interval).
             current_time = time.time()
-            should_warn = (current_time - self.last_warning_time) >= self.warning_cooldown
-            
-            if should_warn:
-                self.logger.warning("No leaderboard data available. Attempting to force update...")
+            if (current_time - self.last_warning_time) >= self.warning_cooldown:
+                self.logger.warning(
+                    "No leaderboard data available yet; showing fallback until update() fetches it")
                 self.last_warning_time = current_time
-            
-            self.update(force=True)
-            if not self.leaderboard_data:
-                if should_warn:
-                    self.logger.warning("Still no data after forced update, showing fallback")
-                    self.logger.debug("Will check again on next display() call - warning suppressed for 5 minutes")
-                self._display_fallback_message()
-                return
+            self.display_manager.set_scrolling_state(False)
+            self._display_fallback_message()
+            return
         
         # Create scrolling image if needed
         if not self.scroll_helper.cached_image or force_clear:
@@ -327,6 +318,7 @@ class LeaderboardPlugin(BasePlugin):
             self._create_leaderboard_image()
             if not self.scroll_helper.cached_image:
                 self.logger.error("Failed to create leaderboard image, showing fallback")
+                self.display_manager.set_scrolling_state(False)
                 self._display_fallback_message()
                 return
             self.logger.info("Leaderboard image created successfully")
@@ -434,12 +426,11 @@ class LeaderboardPlugin(BasePlugin):
         return self.CORE_DEFAULT_DYNAMIC_CAP
 
     def _effective_pixels_per_second(self) -> float:
-        """Resolve the configured scroll speed to pixels per second."""
-        if getattr(self, 'scroll_pixels_per_second', None):
-            return float(self.scroll_pixels_per_second)
-        if self.scroll_delay and self.scroll_delay > 0:
-            return float(self.scroll_speed) / float(self.scroll_delay)
-        return float(self.scroll_speed) * 100.0
+        """The scroll speed the shared resolver applied, in pixels per second."""
+        settings = getattr(self, '_scroll_settings', None)
+        if settings is not None:
+            return float(settings.pixels_per_second)
+        return float(getattr(self.scroll_helper, 'scroll_speed', 0.0) or 0.0)
 
     def _warn_if_content_will_be_truncated(self, image_width: int) -> None:
         """
@@ -496,34 +487,63 @@ class LeaderboardPlugin(BasePlugin):
         try:
             width = self.display_width
             height = self.display_height
-            
+
             image = Image.new('RGB', (width, height), (0, 0, 0))
             from PIL import ImageDraw
             draw = ImageDraw.Draw(image)
             draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
-            
-            text = "No Leaderboard Data"
-            # Use default font if available
-            try:
-                font = self.image_renderer.fonts['medium']
-            except (KeyError, AttributeError):
-                from PIL import ImageFont
-                font = ImageFont.load_default()
-            
+
+            font, text = self._fit_fallback_text(draw, "No Leaderboard Data", width)
+
             text_bbox = draw.textbbox((0, 0), text, font=font)
             text_width = text_bbox[2] - text_bbox[0]
             text_height = text_bbox[3] - text_bbox[1]
-            
-            x = (width - text_width) // 2
-            y = (height - text_height) // 2
-            
+
+            # Clamped: centring text wider than the panel started it off the
+            # left edge, so both ends were cut.
+            x = max(0, (width - text_width) // 2)
+            y = max(0, (height - text_height) // 2)
+
             draw.text((x, y), text, font=font, fill=(255, 255, 255))
-            
+
             self.display_manager.image = image
             self.display_manager.update_display()
-            
+
         except Exception as e:
             self.logger.error(f"Error displaying fallback message: {e}")
+
+    def _fit_fallback_text(self, draw, text: str, max_width: int):
+        """The largest font that fits ``text`` on the panel, as (font, text).
+
+        "No Leaderboard Data" is 152px in the renderer's 8px Press Start 2P,
+        wider than a 128px panel. Try the renderer's fonts, then its 4x6
+        fallback face at its crisp 7px size; if even that is too wide, truncate
+        with an ellipsis (the pattern news and stock-news use).
+        """
+        from PIL import ImageFont
+
+        def width_of(candidate_text, font):
+            return draw.textbbox((0, 0), candidate_text, font=font)[2]
+
+        fonts = getattr(self.image_renderer, 'fonts', None) or {}
+        candidates = [f for f in (fonts.get('medium'), fonts.get('small')) if f is not None]
+        try:
+            candidates.append(ImageFont.truetype(ImageRenderer.FALLBACK_FONT, 7))
+        except (OSError, AttributeError):
+            pass
+        if not candidates:
+            candidates = [ImageFont.load_default()]
+
+        for font in candidates:
+            if width_of(text, font) <= max_width:
+                return font, text
+
+        font = candidates[-1]
+        ellipsis = ".."
+        trimmed = text
+        while trimmed and width_of(trimmed + ellipsis, font) > max_width:
+            trimmed = trimmed[:-1]
+        return font, (trimmed.rstrip() + ellipsis) if trimmed else ellipsis
 
     def _load_dynamic_duration_settings(self, dynamic_value: Any) -> Dict[str, Any]:
         """Normalize dynamic duration configuration with backward compatibility."""
@@ -688,43 +708,6 @@ class LeaderboardPlugin(BasePlugin):
             return float(self.scroll_helper.get_dynamic_duration())
         return float(self.display_duration)
     
-    def set_scroll_speed(self, speed: float) -> None:
-        """Set the scroll speed (pixels per frame, 0.5-5.0)."""
-        # Clamp to valid range
-        self.scroll_speed = max(0.5, min(5.0, speed))
-        self.logger.info(f"Scroll speed set to: {self.scroll_speed} pixels/frame")
-        
-        # Update ScrollHelper based on current mode
-        if hasattr(self.scroll_helper, 'frame_based_scrolling') and self.scroll_helper.frame_based_scrolling:
-            # Frame-based mode: set pixels per frame directly
-            self.scroll_helper.set_scroll_speed(self.scroll_speed)
-            # Log effective pixels per second
-            pixels_per_second = self.scroll_speed / self.scroll_delay if self.scroll_delay > 0 else self.scroll_speed * 100
-            self.logger.info(f"Effective scroll speed: {pixels_per_second:.1f} px/s")
-        else:
-            # Time-based mode: convert to pixels per second
-            pixels_per_second = self.scroll_speed / self.scroll_delay if self.scroll_delay > 0 else self.scroll_speed * 100
-            self.scroll_helper.set_scroll_speed(pixels_per_second)
-    
-    def set_scroll_delay(self, delay: float) -> None:
-        """Set the scroll delay (seconds between frames, 0.001-0.1)."""
-        # Clamp to valid range
-        self.scroll_delay = max(0.001, min(0.1, delay))
-        self.logger.info(f"Scroll delay set to: {self.scroll_delay}s")
-        
-        # Update ScrollHelper
-        self.scroll_helper.set_scroll_delay(self.scroll_delay)
-        
-        # Recalculate pixels per second if in time-based mode
-        if hasattr(self.scroll_helper, 'frame_based_scrolling') and self.scroll_helper.frame_based_scrolling:
-            # Frame-based mode: log effective pixels per second
-            pixels_per_second = self.scroll_speed / self.scroll_delay if self.scroll_delay > 0 else self.scroll_speed * 100
-            self.logger.info(f"Effective scroll speed: {pixels_per_second:.1f} px/s ({self.scroll_speed} px/frame at {1.0/self.scroll_delay:.0f} FPS)")
-        else:
-            # Time-based mode: recalculate pixels per second
-            pixels_per_second = self.scroll_speed / self.scroll_delay if self.scroll_delay > 0 else self.scroll_speed * 100
-            self.scroll_helper.set_scroll_speed(pixels_per_second)
-    
     def get_info(self) -> Dict[str, Any]:
         """Return plugin info for web UI."""
         info = super().get_info()
@@ -747,7 +730,7 @@ class LeaderboardPlugin(BasePlugin):
             'enabled_leagues': self.league_config.get_enabled_leagues(),
             'last_update': self.last_update,
             'display_duration': self.get_display_duration(),
-            'scroll_speed': self.scroll_speed,
+            'scroll_pixels_per_second': self._effective_pixels_per_second(),
             'dynamic_duration': self.dynamic_duration_enabled,
             'dynamic_duration_settings': self.dynamic_duration_settings,
             'dynamic_duration_cap': self.dynamic_duration_cap,

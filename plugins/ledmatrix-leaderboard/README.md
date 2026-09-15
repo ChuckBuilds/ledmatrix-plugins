@@ -29,26 +29,40 @@ A plugin for LEDMatrix that displays scrolling leaderboards and standings for mu
 
 ## Features
 
-- **Multi-Sport Support**: NFL, NBA, MLB, NCAA Football, NCAA Basketball, NCAA Women's Basketball, NHL
+- **Multi-Sport Support**: NFL, NBA, MLB, NHL, NCAA Football, NCAA Men's and Women's Basketball, NCAA Men's Hockey, NCAA Baseball
 - **Scrolling Ticker Display**: Continuous scrolling of standings and rankings
-- **Conference/Division Filtering**: Filter by conference, division, or league
-- **NCAA Rankings**: Display college football and basketball rankings
-- **Team Records**: Show win-loss records and statistics
+- **NCAA Rankings**: Poll rank (`#1`) for college football, basketball and hockey
 - **Dynamic Duration**: Adjust display time based on content width
-- **Configurable Display**: Adjustable scroll speed, duration, and filtering options
-- **Background Data Fetching**: Efficient API calls without blocking display
+- **Live settings**: Changes saved in the web UI apply without a restart
 
 ## Configuration
 
 ### Global Settings
 
-- `display_duration`: How long to show the leaderboard (10-300 seconds, default: 30)
-- `scroll_speed`: Scrolling speed multiplier (0.5-10, default: 2)
-- `scroll_delay`: Delay between scroll steps (0.001-0.1 seconds, default: 0.01)
-- `dynamic_duration`: Enable dynamic duration based on content width (default: true)
-- `min_duration`: Minimum display duration (10-300 seconds, default: 30)
-- `max_duration`: Maximum display duration (30-600 seconds, default: 300)
-- `loop`: Continuously loop the leaderboard (default: true)
+All of these sit under `global`; the full list is in the [`global`](#global)
+table below.
+
+- `update_interval` (top level, default `3600`): seconds between standings
+  fetches (300–86400).
+- `global.display.scroll_speed` / `global.display.scroll_delay` (defaults `1.0`
+  / `0.01`): the scroll speed — see [Scroll speed](#scroll-speed).
+- `global.dynamic_duration.*`: size the turn to the length of the ticker
+  (default on, 45–600 seconds).
+- `global.display_duration` (default `30`): seconds on screen when dynamic
+  duration is off.
+- `global.scroll_mode` / `global.loop` (defaults `one_shot` / `false`): scroll
+  the list once per turn, or loop it.
+
+### Scroll speed
+
+```text
+pixels per second = global.display.scroll_speed / global.display.scroll_delay
+```
+
+The defaults (1 pixel every 0.01s) give 100 px/s. The LEDMatrix core moves the
+figure to the nearest speed the panel can draw in whole pixels (on a 100Hz
+panel: 100, 50, 33.3, 66.7 px/s and so on) and logs the result at startup as
+`Scroll configured: …`.
 
 ### Appearance (`global.appearance`)
 
@@ -88,8 +102,8 @@ settings:
 | `display.dynamic_duration.max_duration_seconds` | LEDMatrix core config | 180 |
 
 The **lowest** of the three wins, so the core's 180s default is usually the one
-that decides it. All 32 NFL teams is roughly 3,200px of ticker: about 240s at
-the default 15 px/s, or about 36s at 100 px/s.
+that decides it. All 32 NFL teams is roughly 3,200px of ticker: about 36s at
+the default 100 px/s, or about 70s at 50 px/s.
 
 If the content will not fit the budget, the plugin logs a warning at startup
 naming which cap is limiting it and roughly how much of the list will not be
@@ -98,107 +112,46 @@ reached. Raise that cap, increase the scroll speed
 
 ### Per-League Settings
 
-#### NFL Configuration
+Leagues live under `enabled_sports`, one block per league. Every league takes
+`enabled` and `top_teams`; the college rankings leagues (`ncaa_fb`,
+`ncaam_basketball`, `ncaaw_basketball`, `ncaam_hockey`) also take
+`show_ranking`, and `ncaa_baseball` takes `season`, `level` and `sort`. There
+are no conference or division filters: each league shows its overall standings
+(or poll), top `top_teams` first.
 
 ```json
 {
-  "leagues": {
-    "nfl": {
-      "enabled": true,
-      "conference": "both",
-      "division": "all"
-    }
-  }
-}
-```
-
-#### NBA Configuration
-
-```json
-{
-  "leagues": {
-    "nba": {
-      "enabled": true,
-      "conference": "both"
-    }
-  }
-}
-```
-
-#### MLB Configuration
-
-```json
-{
-  "leagues": {
-    "mlb": {
-      "enabled": true,
-      "league": "both",
-      "division": "all"
-    }
-  }
-}
-```
-
-#### NCAA Football Configuration
-
-```json
-{
-  "leagues": {
-    "ncaa_fb": {
-      "enabled": true,
-      "division": "fbs",
-      "show_rankings": true
-    }
-  }
-}
-```
-
-#### NCAA Basketball Configuration
-
-```json
-{
-  "leagues": {
-    "ncaam_basketball": {
-      "enabled": true,
-      "show_rankings": true
+  "ledmatrix-leaderboard": {
+    "enabled": true,
+    "update_interval": 3600,
+    "enabled_sports": {
+      "nfl": { "enabled": true, "top_teams": 10 },
+      "nba": { "enabled": true, "top_teams": 10 },
+      "ncaa_fb": { "enabled": true, "top_teams": 25, "show_ranking": true },
+      "ncaam_hockey": { "enabled": false, "top_teams": 10, "show_ranking": true }
     },
-    "ncaaw_basketball": {
-      "enabled": true,
-      "show_rankings": true
+    "global": {
+      "display": { "scroll_speed": 1.0, "scroll_delay": 0.01 },
+      "loop": false
     }
   }
 }
 ```
 
-#### NHL Configuration
-
-```json
-{
-  "leagues": {
-    "nhl": {
-      "enabled": true,
-      "conference": "both"
-    }
-  }
-}
-```
+The full key list is in the [`enabled_sports`](#enabled_sports) table below.
 
 ### Top level
 
 | Key | Default | Notes |
 |---|---|---|
 | `enabled` | `false` | Enable or disable the leaderboard plugin. |
-| `display_duration` | `30` | How long to display the leaderboard in seconds (10–300). |
-| `update_interval` | `3600` | How often to fetch new leaderboard data in seconds (300–86400). |
+| `update_interval` | `3600` | How often to fetch new leaderboard data in seconds (300–86400). While nothing has been fetched yet (for example ESPN was unreachable), the plugin retries every 5 minutes. |
 
 ### `global`
 
 | Key | Default | Notes |
 |---|---|---|
-| `global.display_duration` | `30` | Duration in seconds to display the leaderboard (10–300). |
-| `global.scroll_speed` | `1` | Scrolling speed multiplier (0.1–10). |
-| `global.target_fps` | `100` | Target frames per second for scrolling (30–200). |
-| `global.scroll_speed_scale` | `8` | Scroll speed scale factor (1–20). **Not implemented**. |
+| `global.display_duration` | `30` | Duration in seconds to display the leaderboard when dynamic duration is off (10–300). |
 | `global.request_timeout` | `30` | Request timeout in seconds (5–120). |
 | `global.dynamic_duration.enabled` | `true` | Enable dynamic duration based on content width. |
 | `global.dynamic_duration.min_duration_seconds` | `45` | Minimum display duration when dynamic duration is enabled (10–300). |
@@ -209,15 +162,17 @@ reached. Raise that cap, increase the scroll speed
 | `global.max_duration` | `600` | [Deprecated] Use dynamic_duration.max_duration_seconds instead (30–1200). |
 | `global.duration_buffer` | `0.1` | [Deprecated] Use dynamic_duration.buffer_ratio instead (0.01–1.0). |
 | `global.max_display_time` | `600` | [Deprecated] Use dynamic_duration.controller_cap_seconds instead (60–1800). |
-| `global.scroll_pixels_per_second` | `15.0` | [Deprecated] Scroll speed in pixels per second. Use display.scroll_speed and display.scroll_delay for finer control (5.0–50.0). |
-| `global.display.scroll_speed` | `1.0` | Scrolling speed in pixels per frame (0.5–5.0). |
-| `global.display.scroll_delay` | `0.01` | Delay between scroll steps in seconds (0.001–0.1). |
-| `global.scroll_target_fps` | `100.0` | Target FPS for scrolling (30.0–200.0). |
+| `global.display.scroll_speed` | `1.0` | Pixels moved per scroll step (0.5–5.0). Speed is `scroll_speed / scroll_delay` px/s — see [Scroll speed](#scroll-speed). |
+| `global.display.scroll_delay` | `0.01` | Seconds per scroll step (0.001–0.1). |
 | `global.scroll_mode` | `"one_shot"` | Scrolling mode — one of `one_shot`, `continuous`. |
-| `global.scroll_direction` | `"left"` | Scroll direction — one of `left`, `right`. **Not implemented**. |
-| `global.enable_scroll_metrics` | `false` | Enable scroll performance metrics. **Not implemented**. |
-| `global.scroll_delay` | `0.01` | Delay between scroll steps in seconds (0.001–0.1). |
 | `global.loop` | `false` | Continuously loop the leaderboard. |
+
+Removed in 1.5.0 because nothing read them: `global.scroll_speed`,
+`global.scroll_delay`, `global.scroll_pixels_per_second`, `global.target_fps`,
+`global.scroll_target_fps`, `global.scroll_speed_scale`,
+`global.scroll_direction`, `global.enable_scroll_metrics`, and the top-level
+`display_duration`. A config that still has them loads with a schema warning
+until it is next saved from the web UI.
 | `global.appearance.pixel_perfect_text` | `true` | Render text with hard pixel edges. Disable only if you prefer the older anti-aliased (softer, blurrier) look. |
 | `global.appearance.crisp_logos` | `true` | Give logos hard edges instead of a ring of half-lit pixels. |
 | `global.appearance.text_outline` | `true` | Draw a black outline around text so it stays readable over logos. |
@@ -246,7 +201,7 @@ Each league takes the same four or five keys.
 | `enabled_sports.ncaam_basketball.show_ranking` | `true` | Show rankings/seeds instead of sequential numbering. During March Madness, automatically shows tournament seeds. |
 | `enabled_sports.ncaam_hockey.enabled` | `false` | Enable NCAA Men's Hockey rankings. |
 | `enabled_sports.ncaam_hockey.top_teams` | `10` | Number of top NCAA Men's Hockey teams to display. 0 shows every team the standings return (up to 60). Long lists need a matching display duration - see the README (0–60). |
-| `enabled_sports.ncaam_hockey.show_ranking` | `true` | Show NCAA Men's Hockey rankings instead of standings. |
+| `enabled_sports.ncaam_hockey.show_ranking` | `true` | Show the poll rank (`#1`) instead of sequential numbering. |
 | `enabled_sports.ncaaw_basketball.enabled` | `false` | Enable NCAA Women's Basketball rankings. |
 | `enabled_sports.ncaaw_basketball.top_teams` | `25` | Number of top NCAA Women's Basketball teams to display. 0 shows every team the standings return (up to 350). Long lists need a matching display duration - see the README (0–350). |
 | `enabled_sports.ncaaw_basketball.show_ranking` | `true` | Show rankings/seeds instead of sequential numbering. During March Madness, automatically shows tournament seeds. |
@@ -262,7 +217,9 @@ Each league takes the same four or five keys.
 ![text_outline and logo_scale](../../docs/assets/ledmatrix-leaderboard/appearance.png)
 
 `show_ranking` is the one setting that changes *what information* appears
-rather than how it looks, and only for NCAA football:
+rather than how it looks. For college basketball and hockey it swaps the
+position number for the poll rank; for NCAA football, turning it off shows each
+team's record instead:
 
 ![show_ranking on and off](../../docs/assets/ledmatrix-leaderboard/ncaa-ranking.png)
 
@@ -270,51 +227,36 @@ rather than how it looks, and only for NCAA football:
 
 ## Display Format
 
-The leaderboard displays information in a scrolling format showing:
+Each team is drawn as a scrolling group of:
 
-- **Rank**: Team's current position
-- **Team Name**: Full team name or abbreviation
-- **Record**: Win-loss record (e.g., "12-3")
-- **Conference**: For pro leagues (AFC, NFC, East, West)
-- **Statistics**: Additional stats when available
+- **Position or rank**: `1.`, `2.` … in standings order, or the poll rank
+  (`#1`) for the college rankings leagues with `show_ranking` on
+- **Team logo**
+- **Abbreviation**
+
+The only place a record appears is NCAA football with `show_ranking` off, where
+it replaces the number.
 
 ## Supported Leagues
 
-The plugin supports the following sports leagues:
+The plugin supports the following sports leagues (the `enabled_sports` keys):
 
-- **nfl**: NFL (National Football League) - conferences and divisions
-- **nba**: NBA (National Basketball Association) - conferences
-- **mlb**: MLB (Major League Baseball) - leagues and divisions
-- **nhl**: NHL (National Hockey League) - conferences
-- **ncaa_fb**: NCAA Football - FBS/FCS divisions, rankings
-- **ncaam_basketball**: NCAA Men's Basketball - rankings
-- **ncaaw_basketball**: NCAA Women's Basketball - rankings
+- **nfl**, **nba**, **mlb**, **nhl**: overall league standings, best win
+  percentage first
+- **ncaa_fb**: NCAA Football AP poll (records with `show_ranking` off)
+- **ncaam_basketball**, **ncaaw_basketball**: NCAA Basketball polls, or
+  tournament seeds during March Madness
+- **ncaam_hockey**: NCAA Men's Hockey poll
+- **ncaa_baseball**: NCAA Baseball standings
 
-## Filtering Options
+## Data fetching
 
-### NFL Filtering
-- **conference**: `both`, `afc`, `nfc`
-- **division**: `all`, `east`, `west`, `north`, `south`
-
-### NBA Filtering
-- **conference**: `both`, `east`, `west`
-
-### MLB Filtering
-- **league**: `both`, `american`, `national`
-- **division**: `all`, `east`, `central`, `west`
-
-### NCAA Filtering
-- **division**: `fbs`, `fcs` (Football only)
-- **show_rankings**: `true`, `false` (show rankings vs standings)
-
-## Background Service
-
-The plugin uses background data fetching for efficient API calls:
-
-- Requests timeout after 30 seconds (configurable)
-- Up to 3 retries for failed requests
-- Priority level 2 (medium priority)
-- Updates every hour by default (configurable)
+- Standings are fetched in `update()`, never while drawing, and cached.
+- Requests time out after `global.request_timeout` seconds (default 30); there
+  are no automatic retries within a fetch.
+- Fetches run every `update_interval` seconds (default one hour). Until the
+  first successful fetch the panel shows "No Leaderboard Data" and the plugin
+  tries again every 5 minutes.
 
 ## Data Sources
 
