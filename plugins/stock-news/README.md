@@ -90,12 +90,6 @@ The full schema is [`config_schema.json`](config_schema.json).
 | `global.background_service.request_timeout` | `30` | HTTP timeout in seconds for headline and price requests (5–120). Logo downloads use a fixed 10s. Advanced. |
 | `global.background_service.max_retries` | `3` | Retries with exponential backoff when a request fails with a connection error or a 429/5xx response (1–10). Advanced. |
 
-Removed in 2.8.0 because nothing read them: `global.scroll_speed`,
-`global.scroll_delay`, `global.scroll_target_fps`, `global.scroll_direction`,
-`global.background_service.enabled` and `global.background_service.priority`.
-A config that still has them loads with a schema warning until it is next saved
-from the web UI.
-
 ### Feeds and colours
 
 | Key | Default | Notes |
