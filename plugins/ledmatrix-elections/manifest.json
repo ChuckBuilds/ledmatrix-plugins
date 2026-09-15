@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-elections",
   "name": "Election Results",
-  "version": "1.2.4",
+  "version": "1.3.0",
   "author": "rpierce99",
   "description": "Live election results: a scrolling ticker of important races plus a full-screen interrupt when a race is newly called. Auto-activates for your state's primary + general (dormant otherwise), drains stale calls from the ticker, and survives restarts. Filterable to your state. NYT baseline provider + optional California SoS county/city rollup.",
   "entry_point": "manager.py",
@@ -22,6 +22,12 @@
     "cache_manager"
   ],
   "versions": [
+    {
+      "released": "2026-09-15",
+      "version": "1.3.0",
+      "changelog": "Requires LEDMatrix core 3.4.0 or newer. The ticker passes frame_hold to display_manager.set_scrolling_state(), which core 3.3.x does not accept; the call used to sit in a try that swallowed the TypeError, so on those cores the ticker drew but never marked itself as scrolling. The try is gone and the floor (versions[0] and compatible_versions) is raised instead, so the store asks users on an older core to update LEDMatrix first. Scroll pacing now comes only from the core's resolver: the set_target_fps(100) and frame-based speed writes that ran around it at startup and on every config save are removed, scroll_delay defaults to 0.03 in code as the schema and README already said (it was 0.01, three times faster, for configs without the key), and the one-pass duration uses the speed the resolver actually applied. The ticker now releases the scroll state when it has nothing to show and while a race-called card is up, instead of leaving it to the core's inactivity timeout.",
+      "ledmatrix_min_version": "3.4.0"
+    },
     {
       "released": "2026-09-07",
       "version": "1.2.4",
@@ -85,7 +91,7 @@
       "ledmatrix_min": "2.0.0"
     }
   ],
-  "last_updated": "2026-07-31",
+  "last_updated": "2026-09-15",
   "stars": 0,
   "downloads": 0,
   "verified": false,
@@ -93,6 +99,6 @@
   "license": "GPL-3.0",
   "config_schema": "config_schema.json",
   "compatible_versions": [
-    ">=2.0.0"
+    ">=3.4.0"
   ]
 }

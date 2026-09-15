@@ -131,8 +131,8 @@ These are real settings the table above left out.
 |---|---|---|
 | `lower_chamber_district` | `""` | Your state legislature lower-chamber district number — whatever your state calls it (Assembly, House of Delegates). Set it to have that local race appear in the ticker; leave blank to omit it. |
 | `upper_chamber_district` | `""` | Your state senate district number. Same idea. |
-| `scroll_speed` | `1.0` | Ticker speed in pixels per frame. |
-| `scroll_delay` | `0.03` | Delay between scroll steps; lower is faster. Around `0.03` reads comfortably, `0.01` is brisk. |
+| `scroll_speed` | `1.0` | Pixels moved per scroll step. The ticker runs at `scroll_speed / scroll_delay` pixels per second (default 33.3), moved by the LEDMatrix core to the nearest speed the panel can draw in whole pixels. |
+| `scroll_delay` | `0.03` | Seconds per scroll step; lower is faster. Around `0.03` reads comfortably, `0.01` is brisk. |
 | `providers.nyt.enabled` | `true` | Use the NYT static feed as the national baseline. |
 | `providers.nyt.base_url` | `https://static01.nyt.com/elections-assets/pages/data` | Where the NYT feeds are fetched from. Change it only to point at a mirror or a local capture. |
 | `providers.nyt.election_date` | `2026-06-02` | Drives the feed URL. Normally set for you by the calendar or `override` — see the note below. |
