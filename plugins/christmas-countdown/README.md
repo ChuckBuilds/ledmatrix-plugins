@@ -44,8 +44,9 @@ The text has three states, driven by the date:
 itself](../../docs/assets/christmas-countdown/countdown.png)
 
 On a panel **narrower than 64 pixels** the last word is abbreviated to `XMAS`
-so the text still fits. Everything is computed from the host's local date, so
-the count changes at local midnight.
+so the text still fits. The count is computed from today's date in the
+LEDMatrix `timezone` setting (the host's system time if none is set) every time
+the screen is drawn, so it changes at midnight in that timezone.
 
 ---
 
@@ -71,7 +72,7 @@ Five settings work:
 |--------|------|---------|--------------|
 | `enabled` | boolean | `false` | Whether the plugin runs at all |
 | `display_duration` | number | `15` | Seconds on screen before the rotation moves on (1–300) |
-| `update_interval` | integer | `3600` | Seconds between recomputes (60–86400). The count changes daily, so an hour is already generous |
+| `update_interval` | integer | `3600` | Seconds between the core's update() calls (60–86400). The count shown is recomputed every time the screen is drawn, so this only affects logging |
 | `text_color` | array | `[255, 0, 0]` | Countdown text colour, `[R, G, B]` |
 | `tree_color` | array | `[0, 128, 0]` | Tree colour — **only used when the tree image is missing**, see [The Tree Image](#the-tree-image) |
 
@@ -146,8 +147,10 @@ plugin draws.
 `enabled` defaults to `false`.
 
 **The day count looks off by one.**
-The count is computed from the host's local date and changes at local midnight,
-not UTC midnight. Check the Pi's timezone if it disagrees with your calendar.
+The count is computed from the date in the LEDMatrix `timezone` setting and
+changes at midnight there, not at UTC midnight. Check that setting (and the Pi's
+system timezone, which is used when none is set) if it disagrees with your
+calendar.
 
 **It says MERRY CHRISTMAS in July.**
 It should not — that message is shown on and shortly after 25 December only. If

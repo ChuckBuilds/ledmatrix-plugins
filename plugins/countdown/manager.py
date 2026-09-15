@@ -499,6 +499,36 @@ class CountdownPlugin(BasePlugin):
 
     # ─── Time calculation ─────────────────────────────────────────────────────
 
+    def _get_global_timezone(self) -> Optional[str]:
+        """The LEDMatrix timezone setting, or None when it cannot be read."""
+        try:
+            if hasattr(self.plugin_manager, 'config_manager') and self.plugin_manager.config_manager:
+                return self.plugin_manager.config_manager.get_timezone()
+            if hasattr(self.cache_manager, 'config_manager') and self.cache_manager.config_manager:
+                return self.cache_manager.config_manager.get_timezone()
+        except Exception as e:
+            self.logger.warning(f"Error getting global timezone: {e}")
+        return None
+
+    def _now(self) -> datetime:
+        """Naive wall-clock time in the configured LEDMatrix timezone.
+
+        target_date/target_time are wall-clock values the user typed, so they
+        are compared against wall-clock time in the board's timezone, not the
+        Pi's system zone (often UTC). Falls back to system time when no
+        timezone is configured or the name does not resolve.
+        """
+        tz_name = self._get_global_timezone()
+        if tz_name:
+            try:
+                from zoneinfo import ZoneInfo
+                return datetime.now(ZoneInfo(tz_name)).replace(tzinfo=None)
+            except Exception:
+                if getattr(self, '_bad_tz_warned', None) != tz_name:
+                    self.logger.warning(f"Invalid timezone '{tz_name}'; using system time")
+                    self._bad_tz_warned = tz_name
+        return datetime.now()
+
     def _calculate_time_remaining(self, target_date_str: str,
                                    target_time_str: str = "00:00",
                                    mode: str = "until") -> Dict[str, Any]:
@@ -521,7 +551,7 @@ class CountdownPlugin(BasePlugin):
                 datetime.strptime(target_date_str, '%Y-%m-%d').date(),
                 target_time
             )
-            now = datetime.now()
+            now = self._now()
             delta_seconds = (target_dt - now).total_seconds()
 
             if mode == "since":
@@ -751,9 +781,15 @@ class CountdownPlugin(BasePlugin):
             name_font  = self._resolve_font(cd_id, 'name',  eff_name_font_family, eff_name_font_size, eff_name_color  or (200, 200, 200))
             value_font = self._resolve_font(cd_id, 'value', eff_font_family, eff_font_size,       eff_font_color  or (255, 255, 255))
 
+            # The font manager ignores the registration colour when drawing, so
+            # the colours must be passed to draw_text explicitly.
+            name_color  = eff_name_color or (200, 200, 200)
+            value_color = eff_font_color or (255, 255, 255)
+
             # For "now/today" events use a bright yellow highlight
             if is_today and value_font:
-                today_font = self._resolve_font(cd_id, 'value_today', eff_font_family, eff_font_size, (255, 255, 0))
+                value_color = (255, 255, 0)
+                today_font = self._resolve_font(cd_id, 'value_today', eff_font_family, eff_font_size, value_color)
                 if today_font:
                     value_font = today_font
 
@@ -769,14 +805,14 @@ class CountdownPlugin(BasePlugin):
                         return text_area_x + text_area_w - tw - 4
 
                     if name_font:
-                        self.display_manager.draw_text(cd_name, x=_right_x(cd_name, name_font),  y=name_y,  font=name_font,  centered=False)
+                        self.display_manager.draw_text(cd_name, x=_right_x(cd_name, name_font),  y=name_y,  color=name_color,  font=name_font,  centered=False)
                     if value_font:
-                        self.display_manager.draw_text(cd_text, x=_right_x(cd_text, value_font), y=value_y, font=value_font, centered=False)
+                        self.display_manager.draw_text(cd_text, x=_right_x(cd_text, value_font), y=value_y, color=value_color, font=value_font, centered=False)
                 else:
                     if name_font:
-                        self.display_manager.draw_text(cd_name, x=name_x,  y=name_y,  font=name_font,  centered=_text_centered)
+                        self.display_manager.draw_text(cd_name, x=name_x,  y=name_y,  color=name_color,  font=name_font,  centered=_text_centered)
                     if value_font:
-                        self.display_manager.draw_text(cd_text, x=value_x, y=value_y, font=value_font, centered=_text_centered)
+                        self.display_manager.draw_text(cd_text, x=value_x, y=value_y, color=value_color, font=value_font, centered=_text_centered)
 
             self.display_manager.update_display()
             self.logger.debug(f"Displayed: {cd_name} — {cd_text} [{layout_preset}/{text_align}]")
@@ -796,8 +832,9 @@ class CountdownPlugin(BasePlugin):
                                        self.name_font_size,
                                        self.name_font_color or (200, 200, 200))
             if font:
-                self.display_manager.draw_text("No Active",  x=dw // 2, y=dh // 3,        font=font, centered=True)
-                self.display_manager.draw_text("Countdowns", x=dw // 2, y=(dh * 2) // 3,  font=font, centered=True)
+                color = self.name_font_color or (200, 200, 200)
+                self.display_manager.draw_text("No Active",  x=dw // 2, y=dh // 3,        color=color, font=font, centered=True)
+                self.display_manager.draw_text("Countdowns", x=dw // 2, y=(dh * 2) // 3,  color=color, font=font, centered=True)
             self.display_manager.update_display()
         except Exception as e:
             self.logger.error(f"Error displaying no-countdowns message: {e}")
@@ -811,8 +848,8 @@ class CountdownPlugin(BasePlugin):
             self.display_manager.draw = ImageDraw.Draw(self.display_manager.image)
             font = self._resolve_font('_system', 'error', 'press_start', 8, (255, 0, 0))
             if font:
-                self.display_manager.draw_text("Countdown", x=dw // 2, y=dh // 3,       font=font, centered=True)
-                self.display_manager.draw_text("Error",     x=dw // 2, y=(dh * 2) // 3, font=font, centered=True)
+                self.display_manager.draw_text("Countdown", x=dw // 2, y=dh // 3,       color=(255, 0, 0), font=font, centered=True)
+                self.display_manager.draw_text("Error",     x=dw // 2, y=(dh * 2) // 3, color=(255, 0, 0), font=font, centered=True)
             self.display_manager.update_display()
         except Exception as e:
             self.logger.error(f"Error displaying error message: {e}")

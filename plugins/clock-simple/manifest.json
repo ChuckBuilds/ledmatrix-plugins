@@ -1,7 +1,7 @@
 {
   "id": "clock-simple",
   "name": "Simple Clock",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": "ChuckBuilds",
   "description": "A simple clock display with current time and date",
   "category": "time",
@@ -16,6 +16,12 @@
     "clock-simple"
   ],
   "versions": [
+    {
+      "version": "1.1.1",
+      "released": "2026-09-15",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "position_x and position_y now move the clock, as the README always said: they were read and never used. The whole rendered frame is shifted by the offsets and clipped at the edges; the default 0/0 renders exactly as before. An unrecognised timezone string now logs a warning and falls back to the LEDMatrix timezone, then system time, instead of failing validate_config -- which made core refuse to load the plugin, so a typo blanked the clock."
+    },
     {
       "version": "1.1.0",
       "released": "2026-09-02",

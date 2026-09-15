@@ -73,10 +73,10 @@
     },
     "display_format": {
       "x-advanced": true,
+      "x-display": "hidden",
       "type": "string",
-      "default": "{temp}°F\n{condition}",
-      "description": "Display format for current weather. Supports placeholders: {temp}, {condition}, {humidity}, {wind}",
-      "title": "Display Format"
+      "description": "Deprecated — no longer used. The current-conditions layout is set under customization. Kept for backward compatibility with existing configs.",
+      "title": "Display Format (deprecated)"
     },
     "show_current_weather": {
       "type": "boolean",

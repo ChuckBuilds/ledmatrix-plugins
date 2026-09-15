@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-weather",
   "name": "Weather Display",
-  "version": "2.7.0",
+  "version": "2.7.1",
   "author": "ChuckBuilds",
   "class_name": "WeatherPlugin",
   "update_interval": 60,
@@ -26,6 +26,12 @@
     "radar"
   ],
   "versions": [
+    {
+      "released": "2026-09-15",
+      "version": "2.7.1",
+      "notes": "Fix daily-forecast day labels running a day early east of UTC: the day filter and labels used naive Pi time while Open-Meteo stamps each day at the location's midnight, so on a UTC Pi a Berlin or Tokyo forecast drew 'Wed 09/16' as 'Tue 09/15'. Both now use the location's timezone, as the hourly forecast already did. display_format, which nothing ever read, is hidden and marked deprecated like api_key (kept in the schema so saved configs still validate), and both are dropped from the README.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-09-11",
       "version": "2.7.0",

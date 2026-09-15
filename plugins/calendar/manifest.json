@@ -1,7 +1,7 @@
 {
   "id": "calendar",
   "name": "Google Calendar",
-  "version": "1.2.6",
+  "version": "1.2.7",
   "author": "ChuckBuilds",
   "description": "Display upcoming events from Google Calendar with date, time, and event details. Shows next 1-3 events with automatic rotation and timezone support.",
   "category": "productivity",
@@ -35,6 +35,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.2.7",
+      "released": "2026-09-15",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Never start an interactive OAuth flow at runtime: when the saved token could not be refreshed, plugin load called InstalledAppFlow.run_local_server(), which on a headless Pi waits for a browser callback with no timeout. The plugin now logs what to do and the panel shows 'Auth needed / See web UI' until the web UI's Authenticate Google Calendar action (calendar_registration.py) has run. Events are fetched from now rather than from the start of today, so events already over no longer use up max_events. Also removes the dead get_manager_font branch (not a core API) and the unreferenced get_calendars method, and gitignores the PKCE .pkce_code_verifier file."
+    },
     {
       "version": "1.2.6",
       "released": "2026-09-05",

@@ -173,10 +173,11 @@ HIGH/LOW captions) each take `font`, `font_size` and `text_color`.
 | `PressStart2P-Regular.ttf` | Scalable | Chunky; readable further away, at the cost of fitting less |
 | `5by7.regular.ttf` | Scalable | A rounder 5×7 face |
 | `5x7.bdf` | Bitmap | Crisp; drawn at its native 7px |
-| `4x6.bdf` | Bitmap | Native 6px, which matches the default `font_size` |
+| `4x6.bdf` | Bitmap | Native 6px, one below the default `font_size` |
 
 **`font_size` only affects the scalable faces.** A `.bdf` is drawn at the one
-pixel size its file declares. Defaults are `font_size: 6` with
+pixel size its file declares. Defaults are `font_size: 7` (the 4x6 face's
+pixel grid) with
 `tide_text.text_color` `[205, 225, 255]` and `label_text.text_color`
 `[120, 150, 200]`.
 
@@ -220,7 +221,10 @@ Three requests per refresh, all for the configured station:
 
 Predictions use the **MLLW** datum and the station's local time including
 daylight saving, which is why the times shown match published local tide
-tables.
+tables. The plugin compares them with the current time in the LEDMatrix
+`timezone` setting (the host's system time if none is set), so that setting
+should be the station's zone — for a board showing a nearby station, it already
+is.
 
 ### Caching and what happens offline
 
@@ -261,7 +265,8 @@ several feet, and the nearest one by road is not always the nearest by water.
 **The times are off by an hour.**
 Predictions come back in the station's local time including daylight saving. If
 they disagree with a published table, the table may be in standard time
-year-round.
+year-round. If instead the highlighted next tide or the chart's "now" marker is
+hours off, the LEDMatrix `timezone` setting is not the station's zone.
 
 **I picked a font and nothing changed.**
 On a current version all five faces work. Older versions loaded a `.bdf` only

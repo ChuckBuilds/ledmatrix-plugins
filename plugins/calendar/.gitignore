@@ -145,7 +145,11 @@ Thumbs.db
 config.json
 *.pem
 
-# Google OAuth artifacts (also covered by root .gitignore)
+# Google OAuth artifacts. The root .gitignore does NOT cover these (it lists
+# only config_secrets.json), so this file is what keeps them out of git.
 credentials.json
 token.pickle
 *.pickle
+# PKCE code_verifier persisted between the two web-UI auth steps
+# (calendar_registration.py)
+.pkce_code_verifier

@@ -140,6 +140,9 @@ Two consequences worth knowing:
   hour matters.
 - **A passed countdown is hidden by default.** `Nd ago` is only ever visible
   with [`show_expired`](#global-settings) turned on.
+- **The last 24 hours are drawn in yellow.** Once the target is less than a day
+  away (or, in `since` mode, less than a day past) the value switches from
+  `font_color` to yellow, whatever colour you chose.
 
 In `since` mode the same granularity applies with elapsed wording: `Just now`,
 `Nm ago`, `Nh Nm ago`, `N Days ago`.
@@ -325,8 +328,9 @@ On a current version all four families work. Older versions offered `tiny` and
 default for every bitmap family. If you had one of those selected, pick again.
 
 **The date arithmetic looks off by a day.**
-Countdowns are computed in the host's local time against `target_date` at
-`target_time` (midnight if unset). A target early in the morning can therefore
+Countdowns are computed in the LEDMatrix `timezone` setting (the host's system
+time if none is set) against `target_date` at `target_time` (midnight if
+unset). A target early in the morning can therefore
 tick over a day sooner than you expect.
 
 ---

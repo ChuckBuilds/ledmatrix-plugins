@@ -68,14 +68,12 @@ generated from it. The keys you'll touch most often:
 |---|---|---|
 | `enabled` | `false` | Master switch |
 | `location_latitude` / `location_longitude` | `null` | Set both to skip geocoding and pin an exact position. Left null, the city/state/country above are geocoded once and cached. Advanced |
-| `api_key` | `null` | Not needed for the default setup — Open-Meteo requires no key. Kept for deployments that proxy a keyed weather service. Advanced |
 | `location_city` | `"Dallas"` | City name |
 | `location_state` | `"Texas"` | State/province (optional, helps US disambiguation) |
 | `location_country` | `"US"` | ISO 3166-1 alpha-2 code |
 | `units` | `"imperial"` | `"imperial"` (°F) or `"metric"` (°C) |
 | `display_duration` | `30` | Seconds per mode (5–300) |
 | `update_interval` | `1800` | Seconds between weather fetches (min 300) |
-| `display_format` | `"{temp}°F\n{condition}"` | Placeholders: `{temp}`, `{condition}`, `{humidity}`, `{wind}` |
 | `show_current_weather` | `true` | Toggle current conditions mode |
 | `show_hourly_forecast` | `true` | Toggle hourly mode |
 | `show_daily_forecast` | `true` | Toggle daily mode |
