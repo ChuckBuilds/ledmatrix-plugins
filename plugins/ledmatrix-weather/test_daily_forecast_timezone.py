@@ -56,7 +56,7 @@ def _forecast(tz_name):
     return {"timezone": tz_name, "hourly": [], "daily": daily}, today
 
 
-plugin = WeatherPlugin.__new__(WeatherPlugin)
+plugin = WeatherPlugin.__new__(WeatherPlugin)  # pylint: disable=no-value-for-parameter
 plugin.logger = logging.getLogger("weather-test")
 
 # Zones on both sides of the date line: wherever the host is, at least one is

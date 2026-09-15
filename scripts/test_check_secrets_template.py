@@ -39,8 +39,8 @@ SCHEMA = {"type": "object", "properties": {
     "plain": {"type": "string"},
 }}
 
-GOOD = {"github": {"api_token": "YOUR_GITHUB_PERSONAL_ACCESS_TOKEN"},
-        "p": {"api_key": "", "mqtt": {"password": ""}, "accounts": []}}
+GOOD = {"github": {"api_token": "YOUR_GITHUB_PERSONAL_ACCESS_TOKEN"},  # nosec B105 - placeholder fixture, not a secret
+        "p": {"api_key": "", "mqtt": {"password": ""}, "accounts": []}}  # nosec B105 - empty placeholders
 
 
 def run(template, schemas=None):

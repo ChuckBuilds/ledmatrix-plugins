@@ -49,6 +49,9 @@ logging.basicConfig(level=logging.CRITICAL)
 ART_URL = "http://art.invalid/cover.png"
 PLACEHOLDER_FILL = (10, 10, 10)
 
+# The manager module's real `time`, saved while a test swaps in a stub.
+music_manager_time_module = None
+
 
 def _png_bytes():
     buf = io.BytesIO()

@@ -18,7 +18,7 @@ Run: <core-venv>/bin/python plugins/calendar/test_no_interactive_auth.py
 
 import logging
 import os
-import pickle
+import pickle  # nosec B403 - writes a fake token.pickle, the format the plugin reads
 import sys
 import tempfile
 from datetime import datetime, timezone
@@ -63,7 +63,7 @@ class FakeCreds:
     """A saved token whose refresh fails (revoked / expired refresh token)."""
     valid = False
     expired = True
-    refresh_token = "stale"
+    refresh_token = "stale"  # nosec B105 - fake token for the test double
 
     def refresh(self, request):
         raise RuntimeError("invalid_grant: Token has been expired or revoked.")
@@ -124,7 +124,7 @@ def main():
             with open(creds_path, "w") as fh:
                 fh.write("{}")
             with open(token_path, "wb") as fh:
-                pickle.dump(FakeCreds(), fh)
+                pickle.dump(FakeCreds(), fh)  # nosec B301 # nosemgrep - test double written to a temp dir
             plugin = _bare_plugin()
             plugin.credentials_file = creds_path
             plugin.token_file = token_path

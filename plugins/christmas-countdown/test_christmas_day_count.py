@@ -16,7 +16,7 @@ Run: <core-venv>/bin/python plugins/christmas-countdown/test_christmas_day_count
 
 import os
 import sys
-from datetime import date, datetime, timedelta
+from datetime import date, datetime
 from pathlib import Path
 
 PLUGIN_DIR = Path(__file__).resolve().parent
