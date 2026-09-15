@@ -1432,6 +1432,9 @@ class NewsTickerPlugin(BasePlugin):
 
     def _display_no_headlines(self):
         """Display message when no headlines are available."""
+        # A static frame: release the scroll state and its frame hold, so this
+        # message is presented every refresh and deferred work can run.
+        self.display_manager.set_scrolling_state(False)
         img = Image.new('RGB', (self.display_width, self.display_height), (0, 0, 0))
         draw = self._pixel_draw(img)
 
@@ -1477,6 +1480,7 @@ class NewsTickerPlugin(BasePlugin):
 
     def _display_error(self, message: str):
         """Display error message."""
+        self.display_manager.set_scrolling_state(False)  # static frame
         img = Image.new('RGB', (self.display_width, self.display_height), (0, 0, 0))
         draw = self._pixel_draw(img)
         draw.text((5, 12), message, font=self.fonts.get('headline', ImageFont.load_default()), fill=(255, 0, 0))

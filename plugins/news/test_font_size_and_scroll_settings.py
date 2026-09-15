@@ -60,9 +60,10 @@ class FakeDisplay:
         self.width = width
         self.height = height
         self.image = Image.new("RGB", (width, height))
+        self.calls = []
 
     def set_scrolling_state(self, is_scrolling, frame_hold=1):
-        pass
+        self.calls.append((is_scrolling, frame_hold))
 
     def process_deferred_updates(self):
         pass
@@ -139,8 +140,18 @@ def test_scroll_settings():
           f"(got {helper.min_duration}/{helper.max_duration}/{helper.duration_buffer})")
 
 
+def test_static_frames_release_scroll_state():
+    print("[no headlines]")
+    plugin = make({"font_size": 16})
+    display = plugin.display_manager
+    display.calls.clear()
+    plugin.display()
+    check(display.calls[-1:] == [(False, 1)],
+          f"the no-headlines message releases the scroll state (calls {display.calls})")
+
+
 if __name__ == "__main__":
-    for test in (test_font_size, test_scroll_settings):
+    for test in (test_font_size, test_scroll_settings, test_static_frames_release_scroll_state):
         try:
             test()
         except Exception as exc:  # a crash is a failure, not a skip
