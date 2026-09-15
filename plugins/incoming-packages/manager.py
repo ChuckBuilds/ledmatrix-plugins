@@ -32,6 +32,11 @@ from PIL import Image, ImageDraw, ImageFont, ImageSequence
 
 from src.plugin_system.base_plugin import BasePlugin
 
+try:
+    import pytz
+except ImportError:  # pragma: no cover - core ships pytz; fall back to system time
+    pytz = None
+
 from incoming_packages_sources import (
     AuthError,
     ProviderError,
@@ -104,7 +109,10 @@ class IncomingPackagesPlugin(BasePlugin):
         self.base_color = self._parse_color(
             customization.get("title_text", {}).get("text_color"), (255, 255, 255))
 
+        self.timezone_name = (config.get("timezone") or "").strip()
+
         self.provider = make_provider(self.provider_name, config, self.logger)
+        self.provider.tz = self._resolve_timezone()
 
         # State
         self._snapshot: Optional[Snapshot] = None
@@ -147,6 +155,33 @@ class IncomingPackagesPlugin(BasePlugin):
         except (ValueError, TypeError):
             pass
         return tuple(default)
+
+    def _resolve_timezone(self):
+        """The tzinfo that decides what "today" means.
+
+        The `timezone` override wins, then the global LEDMatrix timezone, then
+        None (system time). The override used to be declared and documented
+        but never read. A bad name warns and falls through instead of failing
+        validation, so a typo can't stop the plugin loading.
+        """
+        if pytz is None:
+            return None
+        candidates = [("timezone", self.timezone_name)]
+        try:
+            config_manager = (getattr(self.plugin_manager, "config_manager", None)
+                              or getattr(self.cache_manager, "config_manager", None))
+            if config_manager:
+                candidates.append(("global timezone", config_manager.get_timezone()))
+        except Exception as exc:
+            self.logger.warning("Error getting global timezone: %s", exc)
+        for label, name in candidates:
+            if not name:
+                continue
+            try:
+                return pytz.timezone(name)
+            except Exception:
+                self.logger.warning("Invalid %s '%s'; ignoring it", label, name)
+        return None
 
     def _load_font(self, font_name: str, font_size: int):
         cache_key = (font_name, font_size)
@@ -416,7 +451,11 @@ class IncomingPackagesPlugin(BasePlugin):
         if not self.enabled:
             return
         if not self._has_fetched:
-            self.update()
+            # First paint can land before the core's first update() tick. Draw
+            # a placeholder and leave the fetch to update(): fetching here put a
+            # 10 s provider request on the render thread.
+            self._render_static("Loading...", IDLE_COLOR, force_clear)
+            return
 
         if self._error:
             self._render_static(self._error, ERROR_TEXT_COLOR, force_clear)
