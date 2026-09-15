@@ -101,7 +101,9 @@ Six settings, and all six do something:
 ![The plugin with the clock shown and hidden](../../docs/assets/hello-world/show-time.png)
 
 With `show_time` on, the message sits a third of the way down and the clock two
-thirds. With it off, the message alone is drawn on the centre line.
+thirds. With it off, the message alone is drawn on the centre line. The clock
+shows the LEDMatrix timezone from the main settings, falling back to the Pi's
+system time when that setting is missing or invalid.
 
 **The message is not shrunk or wrapped.** It is drawn centred at whatever size
 the font gives, so a message wider than the panel is clipped at both ends:

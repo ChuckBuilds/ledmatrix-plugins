@@ -73,7 +73,7 @@ text run down the right:
 | Line | Content |
 |---|---|
 | Top | Channel name |
-| Middle | Subscriber count, comma-formatted, followed by `subs` |
+| Middle | Subscriber count, comma-formatted, followed by `subs`; `subs hidden` for a channel that hides its count |
 | Bottom | Total view count, comma-formatted, followed by `views` |
 
 A channel name longer than the space available is truncated.
@@ -154,6 +154,11 @@ the display redraws from cache between fetches rather than re-requesting.
 **Nothing appears.** `enabled` defaults to `false`; set it to `true`. Then check
 that `channel_id` is right and that the API key is present in
 `config/config_secrets.json`.
+
+**The panel shows `Loading` or `No data`.** `Loading` is the first frame, before
+the first fetch has run. `No data` means a fetch ran and returned nothing: the
+network is down, the quota is exhausted or the channel was not found. The log
+says which, once rather than every frame.
 
 **The panel shows `YT: Update API Key`.** The plugin could not authenticate.
 Confirm the key is correct and unexpired, that **YouTube Data API v3** is

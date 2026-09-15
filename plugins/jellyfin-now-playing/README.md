@@ -124,6 +124,7 @@ Set `username` to pin the display to one account.
 | `Jellyfin: Update API Key` | The server rejected the key (revoked or mistyped). Create a new one. |
 | `Jellyfin: Unreachable` | Wrong URL, server down, or a firewall is blocking the LEDMatrix host. |
 | `Nothing Playing` | No client is actively streaming (sessions idle longer than ~60s don't count). |
+| `Loading...` | The first frame after start-up, before the first session poll has run. |
 | Series poster instead of an episode still | By design — episodes show the show's poster, which reads far better at 21–42 px wide. |
 | Gray placeholder instead of a poster | The item has no primary image, or the image fetch failed; the text still shows. |
 

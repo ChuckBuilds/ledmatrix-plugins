@@ -18,11 +18,16 @@ import os
 import json
 import logging
 import time
-from datetime import date
+from datetime import date, datetime
 from typing import Dict, Any, List, Optional
 from PIL import Image, ImageDraw, ImageFont
 
 from src.plugin_system.base_plugin import BasePlugin
+
+try:
+    import pytz
+except ImportError:  # pragma: no cover - core ships pytz; fall back to system date
+    pytz = None
 
 # Shared element-style resolver (newer cores): user-customizable per-element
 # fonts/sizes/colors/offsets, declared once in config_schema.json via
@@ -264,9 +269,34 @@ class OfTheDayPlugin(BasePlugin):
         self.logger.warning(f"Data file not found: {data_file}")
         return None
     
+    def _today(self) -> date:
+        """Today's date in the configured LEDMatrix timezone.
+
+        date.today() is the Pi's system zone, which is often UTC while
+        LEDMatrix is set to the user's zone, so the entry changed hours away
+        from local midnight. Falls back to the system date when pytz or the
+        setting is unavailable, warning once on a bad name.
+        """
+        tz_name = None
+        try:
+            config_manager = (getattr(self.plugin_manager, 'config_manager', None)
+                              or getattr(self.cache_manager, 'config_manager', None))
+            if config_manager:
+                tz_name = config_manager.get_timezone()
+        except Exception as e:
+            self.logger.warning(f"Error getting global timezone: {e}")
+        if tz_name and pytz is not None:
+            try:
+                return datetime.now(pytz.timezone(tz_name)).date()
+            except Exception:
+                if getattr(self, '_warned_timezone', None) != tz_name:
+                    self._warned_timezone = tz_name
+                    self.logger.warning(f"Invalid timezone '{tz_name}'; using the system date")
+        return date.today()
+
     def _load_todays_items(self):
         """Load items for today's date from all enabled categories."""
-        today = date.today()
+        today = self._today()
         
         if self.current_day == today and self.current_items:
             return  # Already loaded for today
@@ -304,7 +334,7 @@ class OfTheDayPlugin(BasePlugin):
         self.last_update = current_time
         
         # Check if it's a new day
-        today = date.today()
+        today = self._today()
         if self.current_day != today:
             self.logger.info(f"New day detected, loading items for {today}")
             self._load_todays_items()
@@ -883,8 +913,9 @@ class OfTheDayPlugin(BasePlugin):
         """Handle configuration changes (called when user updates config via web UI)."""
         self.logger.info("Config changed, reloading categories")
 
-        # Update configuration
-        self.config = config
+        # Update configuration. super() stores the config and refreshes
+        # self.enabled; assigning self.config directly left enabled stale.
+        super().on_config_change(config)
         self.update_interval = config.get('update_interval', 3600)
         self.display_rotate_interval = config.get('display_rotate_interval', 20)
         self.subtitle_rotate_interval = config.get('subtitle_rotate_interval', 10)

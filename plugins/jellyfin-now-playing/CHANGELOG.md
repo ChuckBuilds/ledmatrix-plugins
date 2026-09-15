@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.4] - 2026-09-15
+
+### Fixed
+- **First frame polled Jellyfin on the render thread**: `display()` called
+  `update()` when nothing had been fetched yet, so the `/Sessions` request and
+  the poster download blocked the render loop. It now draws `Loading...` (or
+  the setup message when the URL or API key is missing, which needs no
+  request) and leaves the fetch to `update()`.
+
 ## [1.1.0] - 2026-07-29
 
 ### Fixed
