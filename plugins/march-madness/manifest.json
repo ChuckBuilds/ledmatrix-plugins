@@ -1,7 +1,7 @@
 {
   "id": "march-madness",
   "name": "March Madness",
-  "version": "2.0.1",
+  "version": "2.1.0",
   "description": "NCAA March Madness tournament bracket tracker with round branding, seeded matchups, live scores, and upset highlighting",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -17,9 +17,15 @@
   "branch": "main",
   "plugin_path": "plugins/march-madness",
   "compatible_versions": [
-    ">=2.0.0"
+    ">=3.4.0"
   ],
   "versions": [
+    {
+      "version": "2.1.0",
+      "released": "2026-09-15",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Requires LEDMatrix core 3.4.0. Off-season the plugin now drops out of the rotation: display() returned None there, and core skips a plugin only on a boolean False, so an \"Off-season\" card took a full rotation slot eleven months a year although the README said nothing is shown. While scrolling, display() now applies the frame hold the shared scroll resolver reports (set_scrolling_state(True, frame_hold=...), a 3.4.0 argument, hence the floor) and releases it when the scroll stops or a fallback is drawn; before, the hold was computed and never used, so a snapped sub-refresh speed still presented a new frame every refresh. display_options.target_fps is deprecated and ignored, and the frame-based setup it fed is removed: the resolver overwrote both on every core, so the setting did nothing. It stays in the schema as a hidden property, so configs that still carry it load and save valid. Speed is still display_options.scroll_speed / scroll_delay."
+    },
     {
       "version": "2.0.1",
       "released": "2026-09-11",

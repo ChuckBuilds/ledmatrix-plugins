@@ -102,9 +102,8 @@ truth. The keys below are the ones you'll typically set.
 | `show_seeds` | `true` | — | Show tournament seeds (1–16) next to team names. |
 | `show_round_logos` | `true` | — | Show round-logo separators between game groups. |
 | `highlight_upsets` | `true` | — | Draw an upset winner's name and score in gold. An upset is a bigger seed number beating a smaller one — an 11 seed past a 1 seed. |
-| `scroll_speed` | `1.0` | 0.5–5.0 | Scroll speed in pixels per frame. |
-| `scroll_delay` | `0.02` | 0.001–0.1 | Delay between scroll frames, in seconds (smaller = smoother, more CPU). |
-| `target_fps` | `120` | 30–200 | Target frames per second for the scroll. |
+| `scroll_speed` | `1.0` | 0.5–5.0 | Pixels per step. With `scroll_delay` it sets the speed: `scroll_speed / scroll_delay` pixels per second (50 by default), snapped to the nearest speed the panel can move in whole pixels. |
+| `scroll_delay` | `0.02` | 0.001–0.1 | Seconds per step; see `scroll_speed`. |
 | `loop` | `true` | — | Loop the scroll continuously. |
 | `dynamic_duration` | `true` | — | Adjust the on-screen duration automatically based on content width. |
 | `min_duration` | `30` | 10–300 | Minimum display duration in seconds (used with `dynamic_duration`). |
@@ -140,8 +139,9 @@ games are live).
   an empty slate and the ticker stays idle.
 - **Only one tournament appears** — Check `leagues.ncaam` / `leagues.ncaaw`; both
   default to on.
-- **Scrolling looks choppy on a Pi** — Lower `target_fps` and/or increase
-  `scroll_delay` to reduce CPU load.
+- **Scrolling looks stepped** — Very slow speeds are shown as one pixel every
+  few panel refreshes. Raise `scroll_speed` (or lower `scroll_delay`) for
+  smoother motion.
 - **My team isn't highlighted** — Confirm the abbreviation in `favorite_teams`
   matches ESPN's (e.g. `DUKE`, `UNC`, `UCONN`).
 

@@ -102,13 +102,6 @@ class MarchMadnessPlugin(BasePlugin):
         self.show_seeds: bool = display_options.get("show_seeds", True)
         self.show_round_logos: bool = display_options.get("show_round_logos", True)
         self.highlight_upsets: bool = display_options.get("highlight_upsets", True)
-        self.scroll_speed: float = display_options.get("scroll_speed", 1.0)
-        self.scroll_delay: float = display_options.get("scroll_delay", 0.02)
-        # Plugin-level target_fps wins; otherwise honor the global FPS target.
-        _global_cfg = self.config.get('global', {}) or {}
-        self.target_fps: int = (display_options.get("target_fps")
-                                or _global_cfg.get("target_fps")
-                                or _global_cfg.get("scroll_target_fps", 120))
         self.loop: bool = display_options.get("loop", True)
         self.dynamic_duration_enabled: bool = display_options.get("dynamic_duration", True)
         self.min_duration: int = display_options.get("min_duration", 30)
@@ -154,18 +147,10 @@ class MarchMadnessPlugin(BasePlugin):
         # ScrollHelper
         if ScrollHelper:
             self.scroll_helper = ScrollHelper(self.display_width, self.display_height, logger=self.logger)
-            if hasattr(self.scroll_helper, "set_frame_based_scrolling"):
-                self.scroll_helper.set_frame_based_scrolling(True)
-            self.scroll_helper.set_scroll_speed(self.scroll_speed)
-            self.scroll_helper.set_scroll_delay(self.scroll_delay)
-            if hasattr(self.scroll_helper, "set_target_fps"):
-                self.scroll_helper.set_target_fps(self.target_fps)
-            else:
-                self.scroll_helper.target_fps = max(30.0, min(200.0, self.target_fps))
-                self.scroll_helper.frame_time_target = 1.0 / self.scroll_helper.target_fps
-
-            # Shared resolver wins over the setup above, which stays as the
-            # fallback for cores that predate it.
+            # Speed comes from display_options.scroll_speed/scroll_delay via
+            # the shared resolver, which also reports the frame hold display()
+            # applies. The frame-based setup and target_fps that used to run
+            # here were overwritten by it on every core this plugin admits.
             if _scroll_config is not None:
                 self._scroll_settings = _scroll_config.configure(
                     self.scroll_helper,
@@ -174,7 +159,7 @@ class MarchMadnessPlugin(BasePlugin):
                     display_manager=self.display_manager,
                     plugin_logger=self.logger,
                 )
-            else:
+            else:  # unreachable under the manifest floor (core 3.4.0)
                 self._scroll_settings = None
             self.scroll_helper.set_dynamic_duration_settings(
                 enabled=self.dynamic_duration_enabled,
@@ -814,10 +799,19 @@ class MarchMadnessPlugin(BasePlugin):
             except Exception as e:
                 self.logger.error(f"Update error: {e}", exc_info=True)
 
-    def display(self, force_clear: bool = False) -> None:
-        """Render one scroll frame."""
+    def display(self, force_clear: bool = False) -> bool:
+        """Render one scroll frame.
+
+        Returns False outside the tournament window so the display controller
+        skips this plugin. It only skips on a boolean False; returning None
+        drew "Off-season" for a full rotation slot eleven months a year.
+        """
         if not self.enabled:
-            return
+            return False
+
+        if not self.games_data and not self._is_tournament_window():
+            self._release_scrolling_state()
+            return False
 
         if force_clear or self._display_start_time is None:
             self._display_start_time = time.time()
@@ -834,15 +828,17 @@ class MarchMadnessPlugin(BasePlugin):
             self._create_ticker_image()
 
         if not self.games_data or self.ticker_image is None:
+            self._release_scrolling_state()
             self._display_fallback()
-            return
+            return True
 
         if not self.scroll_helper:
             self._display_fallback()
-            return
+            return True
 
         try:
-            if self.loop or not self.scroll_helper.is_scroll_complete():
+            scrolling = self.loop or not self.scroll_helper.is_scroll_complete()
+            if scrolling:
                 self.scroll_helper.update_scroll_position()
             elif not self._end_reached_logged:
                 self.logger.info("Scroll complete")
@@ -850,8 +846,19 @@ class MarchMadnessPlugin(BasePlugin):
 
             visible = self.scroll_helper.get_visible_portion()
             if visible is None:
+                self._release_scrolling_state()
                 self._display_fallback()
-                return
+                return True
+
+            # Tell core the panel is scrolling and for how many refreshes to
+            # hold each frame; configure() only reports the hold. Without it a
+            # snapped sub-refresh speed still presented a new frame every
+            # refresh. Released once a non-looping scroll has stopped.
+            if scrolling:
+                self.display_manager.set_scrolling_state(
+                    True, frame_hold=self._scroll_frame_hold())
+            else:
+                self._release_scrolling_state()
 
             self.dynamic_duration = self.scroll_helper.get_dynamic_duration()
 
@@ -865,7 +872,17 @@ class MarchMadnessPlugin(BasePlugin):
 
         except Exception as e:
             self.logger.error(f"Display error: {e}", exc_info=True)
+            self._release_scrolling_state()
             self._display_fallback()
+        return True
+
+    def _release_scrolling_state(self) -> None:
+        """Drop the scrolling flag and frame hold.
+
+        Both are global to the display manager, so leaving them set would pace
+        and defer work for whichever plugin draws next.
+        """
+        self.display_manager.set_scrolling_state(False)
 
     def _display_fallback(self) -> None:
         w = self.display_manager.matrix.width
@@ -915,13 +932,16 @@ class MarchMadnessPlugin(BasePlugin):
     def is_cycle_complete(self) -> bool:
         if not self.supports_dynamic_duration():
             return True
+        complete = False
         if self._display_start_time is not None and self.dynamic_duration > 0:
             elapsed = time.time() - self._display_start_time
             if elapsed >= self.dynamic_duration:
-                return True
+                complete = True
         if not self.loop and self.scroll_helper and self.scroll_helper.is_scroll_complete():
-            return True
-        return False
+            complete = True
+        if complete:
+            self._release_scrolling_state()
+        return complete
 
     def reset_cycle_state(self) -> None:
         super().reset_cycle_state()
@@ -958,6 +978,10 @@ class MarchMadnessPlugin(BasePlugin):
         return info
 
     def cleanup(self) -> None:
+        try:
+            self._release_scrolling_state()
+        except Exception as e:  # teardown must not raise
+            self.logger.debug(f"Could not release scrolling state: {e}")
         self.games_data = []
         self.ticker_image = None
         if self.scroll_helper:

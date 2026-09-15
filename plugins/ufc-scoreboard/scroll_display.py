@@ -121,23 +121,6 @@ class ScrollDisplayManager:
         scroll_speed = scroll_settings.get("scroll_speed", 50.0)
         scroll_delay = scroll_settings.get("scroll_delay", 0.01)
 
-        self.scroll_helper.set_scroll_delay(scroll_delay)
-
-        # Honor the global smooth-scrolling FPS target (older cores lack the setter)
-        target_fps = self.global_config.get('target_fps') or self.global_config.get('scroll_target_fps')
-        try:
-            # Coerce before comparing: a malformed global config value
-            # must degrade to today's scroll_delay pacing, not raise.
-            target_fps = float(target_fps) if target_fps is not None else None
-        except (TypeError, ValueError):
-            target_fps = None
-        if target_fps:
-            if hasattr(self.scroll_helper, 'set_target_fps'):
-                self.scroll_helper.set_target_fps(target_fps)
-            else:
-                self.scroll_helper.target_fps = max(30.0, min(200.0, target_fps))
-                self.scroll_helper.frame_time_target = 1.0 / self.scroll_helper.target_fps
-
         # Enable dynamic duration
         dynamic_duration = scroll_settings.get("dynamic_duration", True)
         self.scroll_helper.set_dynamic_duration_settings(
@@ -147,36 +130,36 @@ class ScrollDisplayManager:
             buffer=0.2,
         )
 
-        # Use frame-based scrolling
-        self.scroll_helper.set_frame_based_scrolling(True)
-
-        # Convert scroll_speed to pixels per frame
-        if scroll_speed < 10.0:
-            pixels_per_frame = scroll_speed
+        # ufc.scroll_settings.scroll_speed is pixels per second (schema), with
+        # this plugin's long-standing reading of a value under 10 as pixels per
+        # step of scroll_delay. The shared resolver never looks in
+        # ufc.scroll_settings, so handing it self.config left both settings
+        # dead at its 100 px/s default. scroll_pixels_per_second is its px/s
+        # input and outranks the global display pair.
+        try:
+            speed = float(scroll_speed)
+            delay = float(scroll_delay)
+        except (TypeError, ValueError):
+            speed, delay = 50.0, 0.01
+        if speed < 10.0 and delay > 0:
+            pixels_per_second = speed / delay
         else:
-            pixels_per_frame = scroll_speed * scroll_delay
+            pixels_per_second = speed
 
-        pixels_per_frame = max(0.1, min(5.0, pixels_per_frame))
-        self.scroll_helper.set_scroll_speed(pixels_per_frame)
-
-        # Shared resolver wins over the setup above, which stays as the
-        # fallback for cores that predate it.
         if _scroll_config is not None:
             self._scroll_settings = _scroll_config.configure(
                 self.scroll_helper,
-                plugin_config=self.config,
+                plugin_config={"scroll_pixels_per_second": pixels_per_second},
                 global_config=self.global_config,
                 display_manager=self.display_manager,
                 plugin_logger=self.logger,
             )
-        else:
+        else:  # unreachable under the manifest floor (core 3.4.0)
             self._scroll_settings = None
 
-        effective_pps = pixels_per_frame / scroll_delay if scroll_delay > 0 else pixels_per_frame * 100
-
         self.logger.info(
-            f"ScrollHelper configured: {pixels_per_frame:.2f} px/frame, delay={scroll_delay}s "
-            f"(effective {effective_pps:.1f} px/s), dynamic_duration={dynamic_duration}"
+            f"ScrollHelper configured from ufc.scroll_settings: {pixels_per_second:.1f} px/s "
+            f"requested, dynamic_duration={dynamic_duration}"
         )
 
     def _get_scroll_settings(self) -> Dict[str, Any]:
@@ -393,6 +376,10 @@ class ScrollDisplayManager:
             return False
 
         try:
+            # Tell core the panel is scrolling and for how many refreshes to
+            # hold each frame; configure() only reports the hold.
+            self.display_manager.set_scrolling_state(
+                True, frame_hold=self._scroll_frame_hold())
             self.display_manager.image = visible
             self.display_manager.update_display()
 
@@ -421,10 +408,23 @@ class ScrollDisplayManager:
         """Check if the scroll has completed one full cycle."""
         if not self.scroll_helper:
             return True
-        return self.scroll_helper.is_scroll_complete()
+        complete = self.scroll_helper.is_scroll_complete()
+        if complete:
+            self._release_scrolling_state()
+        return complete
+
+    def _release_scrolling_state(self) -> None:
+        """Drop the scrolling flag and frame hold.
+
+        Both are global to the display manager, so leaving them set would pace
+        and defer work for whichever plugin draws next.
+        """
+        self.display_manager.set_scrolling_state(False)
 
     def reset(self) -> None:
         """Reset scroll state."""
+        if self._is_scrolling:
+            self._release_scrolling_state()
         self._is_scrolling = False
         self._current_fights = []
         self._vegas_content_items = []

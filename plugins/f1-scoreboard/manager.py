@@ -126,8 +126,18 @@ class F1ScoreboardPlugin(BasePlugin):
         # Display state tracking (for dynamic duration)
         self._current_display_mode: Optional[str] = None
 
-        # Build enabled modes
-        self.modes = self._build_enabled_modes()
+        # Events in the season schedule, for the "Rd N/M" header and races
+        # remaining. None until the schedule has been fetched.
+        self._season_rounds: Optional[int] = None
+        # Scroll modes the last build covered, including those it found empty,
+        # so display() does not rebuild everything for a mode with no data.
+        self._built_modes: set = set()
+
+        # Core reads plugin.modes once, at registration, so a mode toggled on
+        # later never appeared and one toggled off kept its slot. Register
+        # every manifest mode and let display() decline the disabled ones.
+        self._enabled_modes = self._build_enabled_modes()
+        self.modes = list(self._ALL_MODES)
 
         # Preload logos
         self.logo_loader.preload_all_teams(
@@ -135,7 +145,7 @@ class F1ScoreboardPlugin(BasePlugin):
             self.renderer.logo_max)
 
         self.logger.info("F1 Scoreboard initialized with %d modes: %s",
-                        len(self.modes), ", ".join(self.modes))
+                        len(self._enabled_modes), ", ".join(self._enabled_modes))
 
     def _resolve_timezone(self, config: Dict, cache_manager, plugin_manager=None) -> str:
         """Resolve timezone: plugin config → global config → system zone → UTC.
@@ -223,6 +233,7 @@ class F1ScoreboardPlugin(BasePlugin):
                      self._update_practice,
                      self._update_sprint,
                      self._update_calendar,
+                     self._update_season_rounds,
                      self._prepare_scroll_content):
             try:
                 step()
@@ -233,7 +244,7 @@ class F1ScoreboardPlugin(BasePlugin):
     def _update_standings(self):
         """Update driver and constructor standings."""
         # Driver standings
-        if "f1_driver_standings" in self.modes:
+        if "f1_driver_standings" in self._enabled_modes:
             standings = self.data_source.fetch_driver_standings()
             if standings:
                 # Calculate poles
@@ -269,7 +280,7 @@ class F1ScoreboardPlugin(BasePlugin):
                     always_show_favorite=always_show)
 
         # Constructor standings
-        if "f1_constructor_standings" in self.modes:
+        if "f1_constructor_standings" in self._enabled_modes:
             standings = self.data_source.fetch_constructor_standings()
             if standings:
                 # Annotate with championship gap data
@@ -297,7 +308,7 @@ class F1ScoreboardPlugin(BasePlugin):
 
     def _update_recent_races(self):
         """Update recent race results."""
-        if "f1_recent_races" not in self.modes:
+        if "f1_recent_races" not in self._enabled_modes:
             return
 
         count = self.config.get("recent_races", {}).get("number_of_races", 3)
@@ -326,7 +337,7 @@ class F1ScoreboardPlugin(BasePlugin):
 
     def _update_upcoming(self):
         """Update upcoming race data."""
-        if "f1_upcoming" not in self.modes:
+        if "f1_upcoming" not in self._enabled_modes:
             return
 
         upcoming = self.data_source.get_upcoming_race()
@@ -335,7 +346,7 @@ class F1ScoreboardPlugin(BasePlugin):
 
     def _update_qualifying(self):
         """Update qualifying results."""
-        if "f1_qualifying" not in self.modes:
+        if "f1_qualifying" not in self._enabled_modes:
             return
 
         qualifying = self.data_source.fetch_qualifying()
@@ -344,7 +355,7 @@ class F1ScoreboardPlugin(BasePlugin):
 
     def _update_practice(self):
         """Update free practice results."""
-        if "f1_practice" not in self.modes:
+        if "f1_practice" not in self._enabled_modes:
             return
 
         sessions = self.config.get(
@@ -372,7 +383,7 @@ class F1ScoreboardPlugin(BasePlugin):
 
     def _update_sprint(self):
         """Update sprint race results."""
-        if "f1_sprint" not in self.modes:
+        if "f1_sprint" not in self._enabled_modes:
             return
 
         sprint = self.data_source.fetch_sprint_results()
@@ -386,7 +397,7 @@ class F1ScoreboardPlugin(BasePlugin):
 
     def _update_calendar(self):
         """Update race calendar."""
-        if "f1_calendar" not in self.modes:
+        if "f1_calendar" not in self._enabled_modes:
             return
 
         cal_config = self.config.get("calendar", {})
@@ -397,6 +408,20 @@ class F1ScoreboardPlugin(BasePlugin):
             max_events=cal_config.get("max_events", 5))
         if calendar:
             self._calendar = calendar
+
+    def _update_season_rounds(self):
+        """Count the season's events from the full schedule.
+
+        The round total used to be len(self._calendar), but the calendar holds
+        one entry per upcoming *session* for at most calendar.max_events
+        weekends -- ten or so -- so the standings header read "Rd 17/10" with a
+        full progress bar and the battle cards showed 0 races remaining.
+        fetch_schedule() is the whole season (one entry per race weekend) and
+        is cached for six hours, so this costs nothing between refreshes.
+        """
+        events = self.data_source.fetch_schedule()
+        if events:
+            self._season_rounds = len(events)
 
     # ─── Gap Trend Helper ──────────────────────────────────────────────
 
@@ -483,6 +508,8 @@ class F1ScoreboardPlugin(BasePlugin):
                 "prepared scroll content")
             return
         self._scroll_content_sig = signature
+        # Every scroll mode is considered below, whether or not it has data.
+        self._built_modes = set(self._MODE_KEY_MAP.values())
 
         r = self._scroll_renderer
         separator = r.render_f1_separator()
@@ -492,7 +519,9 @@ class F1ScoreboardPlugin(BasePlugin):
         # Round / season info (used by headers and battle card)
         season = datetime.now(timezone.utc).year
         round_num = self.data_source.get_latest_round(season)
-        total_rounds = len(self._calendar) if self._calendar else 24
+        # Before the schedule has loaded, fall back to a typical season length,
+        # never below the round already reached.
+        total_rounds = max(self._season_rounds or 24, round_num)
         remaining_races = max(0, total_rounds - round_num)
 
         # Championship leaders intro card (very first in Vegas scroll)
@@ -783,7 +812,13 @@ class F1ScoreboardPlugin(BasePlugin):
             return False
 
         if display_mode is None:
-            display_mode = self.modes[0] if self.modes else "f1_driver_standings"
+            display_mode = (self._enabled_modes[0] if self._enabled_modes
+                            else "f1_driver_standings")
+
+        # Every manifest mode is registered (see __init__); a disabled one
+        # declines here so the controller rotates past it.
+        if display_mode in self._ALL_MODES and display_mode not in self._enabled_modes:
+            return False
 
         self._current_display_mode = display_mode
 
@@ -830,6 +865,10 @@ class F1ScoreboardPlugin(BasePlugin):
         if not self._upcoming_race:
             return False
 
+        # A static card: drop any scrolling state and frame hold a scroll mode
+        # left set, or this card is presented at the scroll's reduced rate.
+        self.display_manager.set_scrolling_state(False)
+
         if force_clear:
             self.display_manager.image.paste(
                 Image.new("RGB",
@@ -848,8 +887,12 @@ class F1ScoreboardPlugin(BasePlugin):
         """Display a scrolling mode."""
         mode_key = self._MODE_KEY_MAP.get(display_mode, display_mode)
 
-        if not self._scroll_manager.is_mode_prepared(mode_key):
-            # Unprepared despite a matching signature -- force past the skip.
+        if mode_key not in self._built_modes:
+            # No build has covered this mode yet (first display before the
+            # first update, or right after a config change) -- force past the
+            # signature skip. A mode a build found empty stays unprepared but
+            # is in _built_modes, so it no longer re-renders every mode on
+            # every rotation; the next data change rebuilds it.
             self._prepare_scroll_content(force=True)
 
         if not self._scroll_manager.is_mode_prepared(mode_key):
@@ -988,6 +1031,13 @@ class F1ScoreboardPlugin(BasePlugin):
 
     # ─── Dynamic Duration ──────────────────────────────────────────────
 
+    #: Manifest display_modes, in manifest order.
+    _ALL_MODES = (
+        "f1_driver_standings", "f1_constructor_standings",
+        "f1_recent_races", "f1_upcoming", "f1_qualifying",
+        "f1_practice", "f1_sprint", "f1_calendar",
+    )
+
     _SCROLL_MODES = frozenset({
         "f1_driver_standings", "f1_constructor_standings",
         "f1_recent_races", "f1_qualifying", "f1_practice",
@@ -1036,8 +1086,8 @@ class F1ScoreboardPlugin(BasePlugin):
         info = super().get_info()
         info.update({
             "name": "F1 Scoreboard",
-            "enabled_modes": self.modes,
-            "mode_count": len(self.modes),
+            "enabled_modes": self._enabled_modes,
+            "mode_count": len(self._enabled_modes),
             "last_update": self._last_update,
             "has_driver_standings": bool(self._driver_standings),
             "has_constructor_standings": bool(self._constructor_standings),
@@ -1066,7 +1116,8 @@ class F1ScoreboardPlugin(BasePlugin):
         self._base_update_interval = new_config.get("update_interval", 3600)
         self._update_interval = self._base_update_interval
         self.display_duration = new_config.get("display_duration", 30)
-        self.modes = self._build_enabled_modes()
+        # self.modes stays the full manifest list: core registered it once.
+        self._enabled_modes = self._build_enabled_modes()
 
         # Re-resolve timezone in case global config changed. Kept in a shallow
         # copy (never written back into `new_config`) so it never gets
@@ -1088,6 +1139,9 @@ class F1ScoreboardPlugin(BasePlugin):
             global_config=getattr(self, 'global_config', {}) or {})
         self.enable_scrolling = self._scroll_manager is not None
         self._scroll_content_sig = None
+        self._built_modes = set()
+        # The old manager may have left a hold set mid-scroll.
+        self.display_manager.set_scrolling_state(False)
 
         # Force data refresh
         self._last_update = 0

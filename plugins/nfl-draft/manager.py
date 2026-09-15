@@ -132,38 +132,24 @@ class NFLDraftPlugin(BasePlugin):
             pick_color.get("b", 255)
         )
 
-        # Scroll settings
+        # Scroll settings. scroll_speed is pixels per second (schema). The
+        # shared resolver reads a root scroll_speed only as a px/step pair with
+        # scroll_delay, which this plugin has never declared, so handing it
+        # self.config left the setting dead at the resolver's 100 px/s default.
+        # scroll_pixels_per_second is the resolver's px/s input and outranks
+        # the global display pair, so the plugin setting wins as documented.
         self.scroll_speed = self.config.get("scroll_speed", 30)
-        self.scroll_helper.set_scroll_speed(self.scroll_speed)
-        # Pace frames explicitly (previously unset, leaving the helper default)
-        self.scroll_delay = self.config.get("scroll_delay", 0.01)
-        if hasattr(self.scroll_helper, 'set_scroll_delay'):
-            self.scroll_helper.set_scroll_delay(self.scroll_delay)
-
-        # Shared resolver wins over the setup above, which stays as the
-        # fallback for cores that predate it.
+        self.global_config = self.config.get('global', {}) or {}
         if _scroll_config is not None:
             self._scroll_settings = _scroll_config.configure(
                 self.scroll_helper,
-                plugin_config=self.config,
-                global_config=self.config.get('global', {}) or {},
+                plugin_config={"scroll_pixels_per_second": self.scroll_speed},
+                global_config=self.global_config,
                 display_manager=self.display_manager,
                 plugin_logger=self.logger,
             )
-        else:
+        else:  # unreachable under the manifest floor (core 3.4.0)
             self._scroll_settings = None
-
-        # Honor the global smooth-scrolling FPS target (older cores lack the setter).
-        # The convention (news, leaderboard) is a `global` section in the plugin config.
-        self.global_config = self.config.get('global', {}) or {}
-        global_config = self.global_config
-        target_fps = global_config.get('target_fps') or global_config.get('scroll_target_fps', 100)
-        if hasattr(self.scroll_helper, 'set_target_fps'):
-            self.scroll_helper.set_target_fps(target_fps)
-            self.logger.info(f"Target FPS set to: {target_fps}")
-        else:
-            self.scroll_helper.target_fps = max(30.0, min(200.0, target_fps))
-            self.scroll_helper.frame_time_target = 1.0 / self.scroll_helper.target_fps
 
         # Refresh intervals
         self.live_refresh_interval = self.config.get("live_refresh_interval", 600)  # 10 minutes
@@ -196,16 +182,12 @@ class NFLDraftPlugin(BasePlugin):
             buffer=0.1
         )
 
-        # Draft year (0 = auto-detect current/upcoming)
-        self.draft_year = self.config.get("draft_year", 0)
-        if self.draft_year == 0:
-            self.draft_year = self._get_current_draft_year()
-
         # Simulation settings — override draft_year when active
         self.simulate_live = self.config.get("simulate_live", False)
         self.simulate_year = self.config.get("simulate_year", 2025)
-        if self.simulate_live:
-            self.draft_year = self.simulate_year
+
+        # Draft year (0 = auto-detect current/upcoming)
+        self.draft_year = self._resolve_draft_year()
 
         # Favorite teams for live-mode highlights (up to 3 abbreviations)
         fav_raw = self.config.get("favorite_teams", [])
@@ -229,6 +211,15 @@ class NFLDraftPlugin(BasePlugin):
             self.logger.warning(f"Could not load font {self.font_name} at size {size}: {e}")
 
         return ImageFont.load_default()
+
+    def _resolve_draft_year(self) -> int:
+        """The draft year to track: simulate_year, a pinned draft_year, or auto."""
+        if self.simulate_live:
+            return self.simulate_year
+        pinned = self.config.get("draft_year", 0)
+        if pinned:
+            return pinned
+        return self._get_current_draft_year()
 
     def _get_current_draft_year(self) -> int:
         """Determine the current/upcoming draft year."""
@@ -1167,6 +1158,17 @@ class NFLDraftPlugin(BasePlugin):
         """
         current_time = time.time()
 
+        # Auto-detected draft_year was resolved once at config load, so a Pi
+        # left running past the post-draft window kept last year's draft: on
+        # the next draft day _is_draft_date() compared against the old year and
+        # polling stayed at the daily projection interval. Re-resolve it here;
+        # a pinned draft_year and simulate_year are returned unchanged.
+        year = self._resolve_draft_year()
+        if year != self.draft_year:
+            self.logger.info(f"Draft year rolled over: {self.draft_year} -> {year}")
+            self.draft_year = year
+            self.last_update_time = None  # the cached picks are last year's
+
         # Use live_refresh_interval whenever the draft is active or we are
         # inside the date window (April 20-27) so polling ramps up automatically
         # on draft day even before ESPN flips state to "in".  Off-season this
@@ -1252,11 +1254,14 @@ class NFLDraftPlugin(BasePlugin):
         # paint the blank frame first -- returning False means the controller
         # never shows it.
         if status == "complete" and not self._is_post_draft_window():
+            self._release_scrolling_state()
             return False
         if status not in ("live", "complete", "simulate") and self._is_off_season():
+            self._release_scrolling_state()
             return False
 
         if not picks_loaded:
+            self._release_scrolling_state()
             self._display_no_data()
             return True
 
@@ -1277,16 +1282,32 @@ class NFLDraftPlugin(BasePlugin):
             visible_image = self.scroll_helper.get_visible_portion()
 
             if visible_image:
+                # Tell core the panel is scrolling and how many refreshes to
+                # hold each frame. configure() only reports the hold; without
+                # this a snapped sub-refresh speed (30 px/s is 1px every 3rd
+                # refresh at 100Hz) still presented a new frame every refresh.
+                self.display_manager.set_scrolling_state(
+                    True, frame_hold=self._scroll_frame_hold())
                 # Set image to display manager
                 self.display_manager.image = visible_image
                 self.display_manager.update_display()
                 return True
+            self._release_scrolling_state()
             return False
 
         except Exception as e:
             self.logger.error(f"Error displaying draft: {e}")
+            self._release_scrolling_state()
             self._display_error()
             return True
+
+    def _release_scrolling_state(self) -> None:
+        """Drop the scrolling flag and frame hold.
+
+        Both are global to the display manager, so leaving them set would pace
+        and defer work for whichever plugin draws next.
+        """
+        self.display_manager.set_scrolling_state(False)
 
     def _display_blank(self) -> None:
         """Render a solid black frame (off-season silence — no text, no errors)."""
@@ -1342,7 +1363,10 @@ class NFLDraftPlugin(BasePlugin):
 
     def is_cycle_complete(self) -> bool:
         """Check if scroll cycle is complete."""
-        return self.scroll_helper.is_scroll_complete()
+        complete = self.scroll_helper.is_scroll_complete()
+        if complete:
+            self._release_scrolling_state()
+        return complete
 
     def reset_cycle_state(self) -> None:
         """Reset scroll state for new cycle."""
@@ -1416,6 +1440,10 @@ class NFLDraftPlugin(BasePlugin):
 
     def cleanup(self) -> None:
         """Cleanup resources."""
+        try:
+            self._release_scrolling_state()
+        except Exception as e:  # teardown must not raise
+            self.logger.debug(f"Could not release scrolling state: {e}")
         if hasattr(self, 'scroll_helper'):
             self.scroll_helper.clear_cache()
         if hasattr(self, 'logo_helper'):

@@ -43,7 +43,7 @@ Plugin path: plugins/nfl-draft
 | `detail_font_size` | integer | `8` | Font size for pick number / position / college |
 | `player_name_color` | object | `{r:255,g:255,b:255}` | Player-name colour, as separate `player_name_color.r`, `player_name_color.g` and `player_name_color.b` values (0–255) |
 | `pick_number_color` | object | `{r:255,g:255,b:255}` | Detail-line colour, as separate `pick_number_color.r`, `pick_number_color.g` and `pick_number_color.b` values (0–255) |
-| `scroll_speed` | number | `30` | Scroll speed in pixels per second |
+| `scroll_speed` | number | `30` | Scroll speed in pixels per second, snapped to the nearest speed the panel can move in whole pixels (30 runs at 33.3 on a 100 Hz panel) |
 | `live_refresh_interval` | integer | `600` | Refresh interval during live draft (seconds) |
 | `projection_refresh_interval` | integer | `86400` | Refresh interval for projections (seconds) |
 | `draft_year` | integer | `0` | Draft year (0 = auto-detect current/upcoming) |
@@ -112,7 +112,7 @@ The plugin detects the draft automatically — **no config change is required**.
 
 ## Requirements
 
-- LEDMatrix v2.0.0 or higher
+- LEDMatrix v3.4.0 or higher
 - Minimum display size: 64×32 pixels
 - Python 3.9+
 

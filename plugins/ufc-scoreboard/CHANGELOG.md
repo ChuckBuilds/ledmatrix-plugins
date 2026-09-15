@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.13.0] - 2026-09-15
+
+### Changed
+- **Requires LEDMatrix core 3.4.0.** The scroll frame hold is passed to
+  `display_manager.set_scrolling_state(True, frame_hold=...)`, an argument
+  older cores do not have.
+
+### Fixed
+- **`ufc.scroll_settings.scroll_speed` / `scroll_delay` set the scroll speed
+  again.** The shared scroll resolver was handed the whole plugin config and
+  never looks in `ufc.scroll_settings`, so every user ran at its 100 px/s
+  default. The setting is now passed as pixels per second (a value under 10
+  keeps meaning pixels per `scroll_delay` step) and snapped to the nearest
+  speed the panel can move in whole pixels.
+- **The frame hold is applied.** It was computed and never passed to core,
+  so a snapped sub-refresh speed still presented a new frame every refresh.
+  It is set while a scroll frame is drawn and released when the scroll
+  completes or is reset.
+
+### Removed
+- The frame-based scroll setup and `target_fps` writes that ran before the
+  resolver and were overwritten by it.
+
 ## [1.12.2] - 2026-09-14
 
 ### Fixed

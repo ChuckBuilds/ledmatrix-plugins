@@ -162,6 +162,9 @@ def main():
 
     class _Display:
         matrix = _Matrix()
+        # The strip is sized from display_manager.width/height now, not
+        # .matrix (which is None when the hardware failed to initialise).
+        width, height = _Matrix.width, _Matrix.height
 
     t = _Ticker(weight=2)
     t.games_data = t._select_games(slate(), cfg)
