@@ -74,12 +74,11 @@
           "x-advanced": true
         },
         "target_fps": {
-          "type": "integer",
-          "default": 120,
-          "minimum": 30,
-          "maximum": 200,
-          "description": "Target frames per second",
-          "x-advanced": true
+          "x-advanced": true,
+          "x-display": "hidden",
+          "type": "number",
+          "description": "Deprecated: ignored. Frame pacing follows the panel refresh rate. Kept so existing configs that still carry it stay valid.",
+          "title": "Target FPS (deprecated)"
         },
         "loop": {
           "type": "boolean",

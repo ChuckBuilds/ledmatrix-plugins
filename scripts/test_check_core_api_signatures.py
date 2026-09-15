@@ -121,6 +121,21 @@ check("hasattr does not guard a keyword",
 check("hasattr does guard a new method",
       run({"m.py": method("if hasattr(self.dm, 'set_frame_hold'):\n"
                           "    self.dm.set_frame_hold(2)")}) == [])
+check("a call under `if not hasattr` is not guarded (it runs when the method is missing)",
+      len(run({"m.py": method("if not hasattr(self.dm, 'set_frame_hold'):\n"
+                              "    self.dm.set_frame_hold(2)")})) == 1)
+check("the else of `if not hasattr` is guarded",
+      run({"m.py": method("if not hasattr(self.dm, 'set_frame_hold'):\n    pass\n"
+                          "else:\n    self.dm.set_frame_hold(2)")}) == [])
+check("the else of a plain `if hasattr` is not guarded",
+      len(run({"m.py": method("if hasattr(self.dm, 'set_frame_hold'):\n    pass\n"
+                              "else:\n    self.dm.set_frame_hold(2)")})) == 1)
+check("`if hasattr(...) and ...` guards its body",
+      run({"m.py": method("if hasattr(self.dm, 'set_frame_hold') and self.on:\n"
+                          "    self.dm.set_frame_hold(2)")}) == [])
+check("`if not hasattr(...) or ...` does not guard its body",
+      len(run({"m.py": method("if not hasattr(self.dm, 'set_frame_hold') or self.on:\n"
+                              "    self.dm.set_frame_hold(2)")})) == 1)
 check("except AttributeError around just the call guards a new method",
       run({"m.py": method("try:\n    self.dm.set_frame_hold(2)\n"
                           "except AttributeError:\n    pass")}) == [])
@@ -187,7 +202,7 @@ check("the tree is clean", not remaining, "; ".join(remaining[:3]))
 print("\ntable vs core")
 
 core = os.environ.get("LEDMATRIX_CORE", "")
-TAGS = ["3.0.0", "3.1.0", "3.2.0", "3.3.0", "3.3.1"]
+TAGS = ["3.0.0", "3.1.0", "3.2.0", "3.3.0", "3.3.1", "3.4.0"]
 
 
 def show(ref, path):
@@ -247,15 +262,20 @@ else:
         m = re.search(r'__version__\s*=\s*["\']([^"\']+)', show(ref, "src/__init__.py") or "")
         return m.group(1) if m else None
 
-    head_reports = reported("HEAD")
-    check("UNTAGGED_SATISFIED_BY is what core HEAD reports",
-          head_reports == gate.UNTAGGED_SATISFIED_BY,
-          f"HEAD reports {head_reports}")
-    parse = gate.modgate.parse_version
-    too_high = [t for t in TAGS
-                if parse(reported(f"v{t}") or "0") >= parse(gate.UNTAGGED_SATISFIED_BY)]
-    check("no tracked release tag reports UNTAGGED_SATISFIED_BY or higher",
-          not too_high, ", ".join(too_high))
+    # UNTAGGED_SATISFIED_BY is only consulted by None rows; its invariants
+    # matter (and are only satisfiable) while core main is ahead of every tag.
+    if any(c.first_version is None for c in gate.API_FIRST_VERSION):
+        head_reports = reported("HEAD")
+        check("UNTAGGED_SATISFIED_BY is what core HEAD reports",
+              head_reports == gate.UNTAGGED_SATISFIED_BY,
+              f"HEAD reports {head_reports}")
+        parse = gate.modgate.parse_version
+        too_high = [t for t in TAGS
+                    if parse(reported(f"v{t}") or "0") >= parse(gate.UNTAGGED_SATISFIED_BY)]
+        check("no tracked release tag reports UNTAGGED_SATISFIED_BY or higher",
+              not too_high, ", ".join(too_high))
+    else:
+        print("  SKIP  UNTAGGED_SATISFIED_BY checks: no None entries in the table")
 
 # --------------------------------------------------------------------------
 print("\n" + "=" * 62)

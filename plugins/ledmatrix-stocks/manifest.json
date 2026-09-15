@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-stocks",
   "name": "Stock & Crypto Ticker",
-  "version": "2.10.0",
+  "version": "2.11.0",
   "description": "Displays stock tickers with prices, changes, and optional charts for stocks and cryptocurrencies. Supports scroll and switch display modes.",
   "author": "LEDMatrix Team",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/ledmatrix-stocks",
@@ -38,6 +38,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "2.11.0",
+      "released": "2026-09-15",
+      "notes": "update_interval is honoured: the manifest's 600 used to win over the configured value, so an interval below 600 did nothing; get_update_interval() now returns it. crypto.update_interval works: crypto quotes are cached for it and the plugin asks to update at the shorter of the two intervals (it was read and never used). Web-UI saves apply without a restart (new on_config_change: symbols, fonts, colours, chart and scroll speed; the scroll resolver re-runs). Scroll pacing comes only from the core's resolver: the pre-resolver speed path and the set_scroll_speed / set_scroll_delay methods that overwrote it are removed. The \"No Data Available\" message fits the panel instead of running off both edges, and releases the scroll state. Declared settings the code already read but the schema did not, so the web UI stripped them on save: show_change, show_percentage, crypto.show_change, crypto.show_percentage, and api.timeout / retry_count / rate_limit_delay. stocks.display_format and crypto.display_format, whose placeholders nothing used (the layout is fixed), are kept for compatibility and ignored (still shown in the settings form, marked deprecated), so saved configs that carry them stay valid. Removed dead code: chart_renderer.py (built, never drawn with; the chart comes from display_renderer), a background-service path that called a method the core service does not have, an unused HTML-JSON extractor, the unused API and text helpers, _get_stock_color, and get_info's hard-coded name and 2.2.0 version. Requires LEDMatrix core 3.4.0, as before.",
+      "ledmatrix_min_version": "3.4.0"
+    },
     {
       "version": "2.10.0",
       "released": "2026-09-15",

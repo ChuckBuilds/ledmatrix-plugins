@@ -1,12 +1,10 @@
 """
 Data Fetcher for Stock Ticker Plugin
 
-Handles all API calls, data fetching, and background service integration
-for stock and cryptocurrency data from Yahoo Finance.
+Handles all API calls and data fetching for stock and cryptocurrency data
+from Yahoo Finance.
 """
 
-import re
-import json
 import time
 from typing import Dict, Any, Optional
 from datetime import datetime
@@ -14,9 +12,6 @@ from datetime import datetime
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
-
-# Import common utilities
-from src.common import APIHelper
 
 class StockDataFetcher:
     """Handles fetching stock and cryptocurrency data from Yahoo Finance API."""
@@ -41,14 +36,7 @@ class StockDataFetcher:
         
         # Initialize HTTP session
         self._init_http_session()
-        
-        # Initialize API helper
-        self.api_helper = APIHelper(cache_manager=cache_manager, logger=logger)
-        
-        # Background service
-        self.background_service = None
-        self._init_background_service()
-    
+
     def _init_http_session(self):
         """Initialize HTTP session with retry strategy."""
         self.session = requests.Session()
@@ -68,18 +56,6 @@ class StockDataFetcher:
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
         })
-    
-    def _init_background_service(self):
-        """Initialize background data service if available."""
-        try:
-            from src.background_data_service import get_background_service
-            self.background_service = get_background_service(self.cache_manager)
-            if self.background_service:
-                self.logger.info("Background service initialized")
-            else:
-                self.logger.warning("Background service not available")
-        except ImportError:
-            self.logger.warning("Background service not available")
     
     _CHUNK_SIZE = 15  # symbols per burst; longer pause inserted between chunks
 
@@ -141,19 +117,18 @@ class StockDataFetcher:
         
         # Check cache first
         cache_key = f"stock_data_{display_symbol}"
-        cache_ttl = self.config_manager.update_interval if hasattr(self.config_manager, 'update_interval') else 300
-        
+        # Each type is cached for its own interval: crypto.update_interval for
+        # crypto (it was read and never used), update_interval for stocks.
+        cache_ttl = (self.config_manager.crypto_update_interval if is_crypto
+                     else self.config_manager.update_interval)
+
         if self.cache_manager:
             cached_data = self.cache_manager.get(cache_key, max_age=cache_ttl)
             if cached_data:
                 self.logger.debug("Using cached data for %s", display_symbol)
                 return cached_data
-        
-        # Try background service first
-        if self.background_service and hasattr(self.background_service, 'submit'):
-            result = self._fetch_via_background_service(api_symbol, display_symbol, is_crypto)
-        else:
-            result = self._fetch_direct(api_symbol, display_symbol, is_crypto)
+
+        result = self._fetch_direct(api_symbol, display_symbol, is_crypto)
         
         # Cache the result if successful
         if result and self.cache_manager:
@@ -161,21 +136,6 @@ class StockDataFetcher:
             self.logger.debug("Cached data for %s (max_age: %ds)", display_symbol, cache_ttl)
         
         return result
-    
-    def _fetch_via_background_service(self, api_symbol: str, display_symbol: str, is_crypto: bool) -> Optional[Dict[str, Any]]:
-        """Fetch data using background service."""
-        def fetch_task():
-            return self._fetch_direct(api_symbol, display_symbol, is_crypto)
-        
-        try:
-            if hasattr(self.background_service, 'submit'):
-                result = self.background_service.submit(fetch_task)
-                return result
-            else:
-                return self._fetch_direct(api_symbol, display_symbol, is_crypto)
-        except Exception as e:
-            self.logger.error("Background service fetch failed for %s: %s", api_symbol, e)
-            return self._fetch_direct(api_symbol, display_symbol, is_crypto)
     
     def _fetch_direct(self, api_symbol: str, display_symbol: str, is_crypto: bool) -> Optional[Dict[str, Any]]:
         """Fetch data directly from Yahoo Finance API."""
@@ -245,22 +205,6 @@ class StockDataFetcher:
         except Exception as e:
             self.logger.error("Unexpected error fetching data for %s: %s", api_symbol, e)
             return None
-    
-    def _extract_json_from_html(self, html: str) -> Dict:
-        """Extract JSON data from HTML response (fallback method)."""
-        try:
-            # Look for JSON data in script tags
-            pattern = r'root\.App\.main\s*=\s*({.*?});'
-            match = re.search(pattern, html, re.DOTALL)
-            
-            if match:
-                json_str = match.group(1)
-                return json.loads(json_str)
-            
-            return {}
-        except (json.JSONDecodeError, AttributeError) as e:
-            self.logger.error("Error extracting JSON from HTML: %s", e)
-            return {}
     
     def cleanup(self):
         """Clean up resources."""

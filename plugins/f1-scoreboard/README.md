@@ -46,7 +46,7 @@ Data is sourced from public ESPN F1 endpoints, Jolpica/Ergast, and OpenF1.
 
 ## Display Modes
 
-The plugin registers eight granular modes. The display controller rotates through any that are enabled in your config:
+The plugin registers eight granular modes. The display controller rotates through any that are enabled in your config; turning a mode on or off takes effect without a restart. Requires LEDMatrix core 3.4.0 or newer.
 
 | Mode | What it shows |
 |---|---|
@@ -94,11 +94,11 @@ Each mode section has an `enabled` toggle and mode-specific options:
 | `recent_races` | `show_winners_summary` | `true` | Show a compact winners summary card at the start of the recent races section |
 | `recent_races` | `show_gap_chart` | `true` | Show a horizontal bar chart of each finisher's time gap from the winner (team-colored bars) |
 | `recent_races` | `gap_chart_drivers` | `5` | Number of drivers to show on the race gap bar chart (3–10) |
-| `upcoming` | `show_session_times` | `true` | **Not implemented.** Nothing reads it; the session times are always drawn. |
-| `upcoming` | `countdown_enabled` | `true` | **Not implemented.** Nothing reads it; the countdown is always drawn. |
+| `upcoming` | `show_session_times` | `true` | Show the next session's day and time (e.g. `QUALI: SAT 02:00PM`) on the upcoming race card |
+| `upcoming` | `countdown_enabled` | `true` | Show the countdown strip at the bottom of the upcoming race card; off gives its rows the space |
 | `upcoming` | `show_circuit_info` | `true` | Show circuit stats card after upcoming race card (laps, km, lap record) |
 | `qualifying` | `show_q1` / `show_q2` / `show_q3` | `true` | Toggle each qualifying segment |
-| `qualifying` | `show_gaps` | `true` | **Not implemented.** Nothing reads it. |
+| `qualifying` | `show_gaps` | `true` | Show each driver's gap to the fastest time in that segment |
 | `qualifying` | `show_team_duel` | `true` | Show team H2H summary card (who outqualified their teammate) |
 | `practice` | `sessions_to_show` | `["FP1","FP2","FP3"]` | Which sessions to render |
 | `practice` | `top_n` | `10` | Drivers per practice session |
@@ -142,8 +142,8 @@ its own display modes running.
 |---|---|---|
 | `dynamic_duration.enabled` | `true` | Run a scroll until its full cycle completes instead of the fixed timer |
 | `dynamic_duration.max_duration_seconds` | `120` | Hard cap even with dynamic duration |
-| `scroll.scroll_speed` | `1` | Pixels per frame |
-| `scroll.scroll_delay` | `0.03` | Seconds between frames |
+| `scroll.scroll_speed` | `1` | Pixels per step. With `scroll_delay` it sets the speed: `scroll_speed / scroll_delay` pixels per second (100 by default, the speed F1 has always scrolled at), snapped to the nearest speed the panel can move in whole pixels |
+| `scroll.scroll_delay` | `0.01` | Seconds per step; see `scroll.scroll_speed`. Older configs saved with `0.03` now scroll at 33.3 px/s; set `0.01` for 100 px/s |
 | `scroll.game_card_width` | `128` | Card width in pixels (lower on multi-panel chains) |
 
 ### Visual features

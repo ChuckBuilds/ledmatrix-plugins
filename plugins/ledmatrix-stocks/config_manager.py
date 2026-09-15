@@ -53,16 +53,14 @@ class StockConfigManager:
         self.show_percentage = True
         self.show_volume = False
         self.show_market_cap = False
-        self.stock_display_format = "{symbol}: ${price} ({change}%)"
-        
+
         # Display settings for crypto (loaded from crypto object)
         self.crypto_text_color = [255, 215, 0]  # Default from schema
         self.crypto_positive_color = [0, 255, 0]
         self.crypto_negative_color = [255, 0, 0]
         self.crypto_show_change = True
         self.crypto_show_percentage = True
-        self.crypto_display_format = "{symbol}: ${price} ({change}%)"
-        
+
         self.stock_symbols = []
         self.stocks_enabled = True  # Default to enabled for backward compatibility
         self.crypto_symbols = []
@@ -132,11 +130,9 @@ class StockConfigManager:
                 else:
                     # Old format - check top level for backward compatibility
                     self.stock_symbols = self.plugin_config.get('symbols', ["ASTS", "SCHD", "INTC", "NVDA", "T", "VOO", "SMCI"])
-                self.stock_display_format = stocks_config.get('display_format', "{symbol}: ${price} ({change}%)")
             else:
                 # Stocks disabled - clear symbols
                 self.stock_symbols = []
-                self.stock_display_format = "{symbol}: ${price} ({change}%)"
             
             # Crypto configuration (nested under 'crypto' object)
             # Support both new format (crypto.symbols) and old format (crypto.crypto_symbols)
@@ -150,11 +146,11 @@ class StockConfigManager:
                     old_symbols = crypto_config.get('crypto_symbols', ["BTC-USD", "ETH-USD"])
                     # Convert old format (BTC) to new format (BTC-USD) if needed
                     self.crypto_symbols = [s if '-USD' in s else f"{s}-USD" for s in old_symbols]
-                self.crypto_display_format = crypto_config.get('display_format', "{symbol}: ${price} ({change}%)")
+                # How long a crypto quote is cached, and how often update()
+                # is asked for while crypto is on (manager._update_interval).
                 self.crypto_update_interval = crypto_config.get('update_interval', self.update_interval)
             else:
                 self.crypto_symbols = []
-                self.crypto_display_format = "{symbol}: ${price} ({change}%)"
                 self.crypto_update_interval = self.update_interval
             
             # Customization settings (nested under 'customization' object)
@@ -219,13 +215,11 @@ class StockConfigManager:
         self.negative_color = [255, 0, 0]
         self.show_change = True
         self.show_percentage = True
-        self.stock_display_format = "{symbol}: ${price} ({change}%)"
         self.crypto_text_color = [255, 215, 0]
         self.crypto_positive_color = [0, 255, 0]
         self.crypto_negative_color = [255, 0, 0]
         self.crypto_show_change = True
         self.crypto_show_percentage = True
-        self.crypto_display_format = "{symbol}: ${price} ({change}%)"
         self.stock_symbols = []
         self.stocks_enabled = True
         self.crypto_symbols = []
@@ -258,17 +252,6 @@ class StockConfigManager:
         self.toggle_chart = enabled
         self.logger.debug("Chart toggle set to: %s", enabled)
     
-    def set_scroll_speed(self, speed: float) -> None:
-        """Set the scroll speed (pixels per frame, 0.5-5.0)."""
-        # Clamp to valid range per schema
-        self.scroll_speed = max(0.5, min(5.0, speed))
-        self.logger.debug("Scroll speed set to: %.2f pixels per frame", self.scroll_speed)
-    
-    def set_scroll_delay(self, delay: float) -> None:
-        """Set the scroll delay."""
-        self.scroll_delay = max(0.001, min(1.0, delay))
-        self.logger.debug("Scroll delay set to: %.3f", self.scroll_delay)
-    
     def set_display_mode(self, mode: str) -> None:
         """Set the display mode ('scroll' or 'switch')."""
         if mode not in ("scroll", "switch"):
@@ -281,22 +264,6 @@ class StockConfigManager:
     def set_enable_scrolling(self, enabled: bool) -> None:
         """Set whether scrolling is enabled (legacy, maps to display_mode)."""
         self.set_display_mode("scroll" if enabled else "switch")
-    
-    def get_plugin_info(self) -> Dict[str, Any]:
-        """Get plugin information for display."""
-        return {
-            'name': 'Stock Ticker Plugin',
-            'version': '2.2.0',
-            'enabled': self.enabled,
-            'display_mode': self.display_mode,
-            'scrolling': self.enable_scrolling,
-            'chart_enabled': self.toggle_chart,
-            'stocks_enabled': self.stocks_enabled,
-            'stocks_count': len(self.stock_symbols),
-            'crypto_count': len(self.crypto_symbols),
-            'scroll_speed': self.scroll_speed,  # Pixels per frame
-            'display_duration': self.display_duration
-        }
     
     def validate_config(self) -> bool:
         """Validate the current configuration."""

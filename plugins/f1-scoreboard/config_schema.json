@@ -550,16 +550,16 @@
           "default": 1,
           "minimum": 0.01,
           "maximum": 10,
-          "description": "Pixels per frame to scroll (frame-based mode)"
+          "description": "Pixels per scroll step. The speed is scroll_speed / scroll_delay pixels per second (100 by default)."
         },
         "scroll_delay": {
           "x-advanced": true,
           "type": "number",
           "title": "Scroll Delay",
-          "default": 0.03,
+          "default": 0.01,
           "minimum": 0.001,
           "maximum": 0.1,
-          "description": "Delay between scroll frames in seconds"
+          "description": "Seconds per scroll step; lower is faster. See Scroll Speed."
         }
       },
       "additionalProperties": false

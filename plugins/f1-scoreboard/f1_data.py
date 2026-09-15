@@ -218,6 +218,9 @@ class F1DataSource:
                     "type_id": comp_type.get("id", ""),
                     "type_abbr": comp_type.get("abbreviation", ""),
                     "date": comp.get("date", ""),
+                    # STATUS_FINAL, STATUS_CANCELED, ...: the only field that
+                    # tells a cancelled weekend from one that ran.
+                    "status_name": status_type.get("name", ""),
                     "status_state": status_type.get("state", "pre"),
                     "status_completed": status_type.get("completed", False),
                     "status_detail": status_type.get("detail", ""),

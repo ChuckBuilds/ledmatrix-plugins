@@ -240,7 +240,7 @@ scoreboards. Mode length comes from dynamic duration or the per-fight durations.
 
 | Key | Type | Default | What it does |
 |---|---|---|---|
-| `ufc.scroll_settings.scroll_speed` | 1.0–200.0 px/s | `50.0` | **Advanced.** Higher scrolls faster. |
+| `ufc.scroll_settings.scroll_speed` | 1.0–200.0 px/s | `50.0` | **Advanced.** Every value is pixels per second; higher scrolls faster. **Changed in 1.13.0:** this setting used to be ignored and the Vegas fight cards scrolled at 100 px/s; set `100` for that speed. |
 | `ufc.scroll_settings.scroll_delay` | 0.001–0.1 s | `0.01` | **Advanced.** Frame delay; `0.01` is 100 FPS. |
 | `ufc.scroll_settings.gap_between_games` | 8–128 px | `48` | Gap between fight cards. |
 | `ufc.scroll_settings.show_league_separators` | boolean | `true` | Draw the UFC icon between leagues. |

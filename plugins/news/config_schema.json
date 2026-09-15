@@ -34,14 +34,14 @@
             "scroll_speed": {
               "x-advanced": true,
               "type": "number",
-              "description": "Scrolling speed in pixels per frame",
+              "description": "Pixels moved per scroll step. Speed is scroll_speed / scroll_delay pixels per second (default 1.0 / 0.01 = 100 px/s), moved to the nearest speed the panel can draw in whole pixels.",
               "minimum": 0.5,
               "maximum": 5.0,
               "default": 1.0
             },
             "scroll_delay": {
               "type": "number",
-              "description": "Delay between scroll steps in seconds",
+              "description": "Seconds per scroll step. A smaller delay scrolls faster.",
               "minimum": 0.001,
               "maximum": 0.1,
               "default": 0.01,
@@ -51,19 +51,18 @@
           "additionalProperties": false
         },
         "target_fps": {
-          "type": "integer",
-          "default": 100,
-          "minimum": 30,
-          "maximum": 200,
-          "description": "Target frames per second for scrolling",
-          "x-advanced": true
+          "x-advanced": true,
+          "x-display": "hidden",
+          "type": "number",
+          "description": "Deprecated: ignored. Nothing reads it, so it never changed the scroll speed. Kept for backward compatibility with existing configs.",
+          "title": "Target FPS (deprecated)"
         },
         "font_size": {
           "type": "integer",
-          "default": 12,
+          "default": 16,
           "minimum": 8,
           "maximum": 20,
-          "description": "Font size for headlines",
+          "description": "Font size for headlines and separators, in pixels. Press Start 2P is crisp at multiples of 8. customization.headline_text overrides it only when set to something other than its defaults.",
           "x-advanced": true
         },
         "font_path": {
@@ -155,7 +154,7 @@
           "default": 3,
           "minimum": 1,
           "maximum": 10,
-          "description": "Number of cycles before rotating headlines (only used when headline paging is disabled)",
+          "description": "Number of complete passes of the strip before the headline order rotates (only used when headline paging is disabled)",
           "x-advanced": true
         },
         "headlines_per_feed": {
@@ -168,36 +167,36 @@
         },
         "background_service": {
           "type": "object",
+          "description": "Feed request settings",
           "properties": {
             "enabled": {
+              "x-advanced": true,
+              "x-display": "hidden",
               "type": "boolean",
-              "default": true,
-              "description": "Enable background data fetching",
-              "x-advanced": true
+              "description": "Deprecated: ignored. Feeds are fetched in update(). Kept for backward compatibility with existing configs.",
+              "title": "Enabled (deprecated)"
             },
             "request_timeout": {
               "type": "integer",
               "default": 30,
               "minimum": 10,
               "maximum": 120,
-              "description": "Request timeout in seconds",
+              "description": "Seconds before a feed request gives up",
               "x-advanced": true
             },
             "max_retries": {
+              "x-advanced": true,
+              "x-display": "hidden",
               "type": "integer",
-              "default": 3,
-              "minimum": 1,
-              "maximum": 10,
-              "description": "Maximum number of retries for failed requests",
-              "x-advanced": true
+              "description": "Deprecated: ignored. Each feed is requested once per update. Kept for backward compatibility with existing configs.",
+              "title": "Max Retries (deprecated)"
             },
             "priority": {
+              "x-advanced": true,
+              "x-display": "hidden",
               "type": "integer",
-              "default": 2,
-              "minimum": 1,
-              "maximum": 5,
-              "description": "Priority for background requests (1=highest, 5=lowest)",
-              "x-advanced": true
+              "description": "Deprecated: ignored. Kept for backward compatibility with existing configs.",
+              "title": "Priority (deprecated)"
             }
           },
           "additionalProperties": false

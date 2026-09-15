@@ -10,8 +10,8 @@ seven scrolling plugins call::
 
     self.display_manager.set_scrolling_state(True, frame_hold=...)
 
-``frame_hold`` arrived with core #523, which is on core main but in no tagged
-release: v3.3.1 still has ``set_scrolling_state(self, is_scrolling)``. Every
+``frame_hold`` arrived with core #523, then on core main in no tagged release
+(it first shipped in v3.4.0): v3.3.1 has ``set_scrolling_state(self, is_scrolling)``. Every
 module those plugins import exists in 3.3.1, so the module gate passed, the
 manifests still floored at 2.0.0, and the store served them to 3.3.x cores,
 where the call raises ``TypeError`` on every frame and the ticker is blank.
@@ -52,11 +52,16 @@ A version string is the first core release tag that ships the API.
 ``None`` means "on core main, in no tagged release yet" -- the same spelling
 ``MODULE_FIRST_VERSION`` uses. Unlike an untagged module, an untagged API here
 is satisfied by a floor at or above ``UNTAGGED_SATISFIED_BY``: the version
-core main already reports in ``src/__init__.py``. No tagged release reports
-that version, so a core that passes such a floor is core main after its
-version bump (#580, 2026-09-14), which contains every ``None`` entry below
-(#523 landed 2026-09-07). When that version is tagged, replace each ``None``
-with it.
+core main reports in ``src/__init__.py``, provided no tagged release reports
+it: then a core that passes such a floor is core main after its version bump,
+which contains the untagged API. When that version is tagged, replace each
+``None`` with it. While any ``None`` entry exists, the test (with
+LEDMATRIX_CORE) insists HEAD reports ``UNTAGGED_SATISFIED_BY`` and no tag does.
+
+Every entry below first shipped in v3.4.0 (tagged at core 9e3f184d), so none
+is ``None`` today. ``UNTAGGED_SATISFIED_BY`` is only consulted by a ``None``
+row: before adding one, set it to the version core main reports once main is
+bumped past the latest tag.
 
 Limits: an API not in the table is assumed old enough (add a row when core
 changes a signature plugins call); ``**kwargs`` unpacking and ``getattr``
@@ -100,14 +105,15 @@ class ApiChange(NamedTuple):
 #: ships them. Add a row whenever core adds a keyword or method plugins call.
 API_FIRST_VERSION: Tuple[ApiChange, ...] = (
     ApiChange("set_scrolling_state", "frame_hold", 1, "src/display_manager.py",
-              None, "core #523, planned 3.4.0"),
+              "3.4.0", "core #523"),
     ApiChange("set_frame_hold", None, None, "src/display_manager.py",
-              None, "core #523, planned 3.4.0"),
+              "3.4.0", "core #523"),
     ApiChange("set_pixels_per_frame", None, None, "src/common/scroll_helper.py",
-              None, "core main, planned 3.4.0"),
+              "3.4.0", "core scroll_helper"),
 )
 
-#: The version core main reports. See "entries in no tagged release".
+#: Floor that satisfies a ``None`` (untagged) entry; none exist today. See
+#: "entries in no tagged release" before adding one.
 UNTAGGED_SATISFIED_BY = "3.4.0"
 
 _BROAD = {"Exception", "BaseException"}
@@ -131,14 +137,30 @@ def _handler_names(handler: ast.ExceptHandler) -> Set[str]:
             for n in nodes}
 
 
-def _hasattr_names(test: ast.AST) -> Set[str]:
-    names = set()
-    for node in ast.walk(test):
-        if (isinstance(node, ast.Call) and getattr(node.func, "id", None) == "hasattr"
-                and len(node.args) == 2 and isinstance(node.args[1], ast.Constant)
-                and isinstance(node.args[1].value, str)):
-            names.add(node.args[1].value)
-    return names
+def _hasattr_branches(test: ast.AST) -> Tuple[frozenset, frozenset]:
+    """Method names an ``if`` test proves present in (body, orelse).
+
+    Only a branch that runs *because* ``hasattr`` was true is guarded: in
+    ``if not hasattr(dm, "m"): dm.m()`` the call runs exactly when the method
+    is missing, so counting it as guarded inverted the check. ``not`` swaps the
+    branches; ``and`` proves every operand in the body and nothing in the else
+    (any one may have failed); ``or`` is the mirror image. Anything else proves
+    nothing.
+    """
+    empty = frozenset()
+    if (isinstance(test, ast.Call) and getattr(test.func, "id", None) == "hasattr"
+            and len(test.args) == 2 and isinstance(test.args[1], ast.Constant)
+            and isinstance(test.args[1].value, str)):
+        return frozenset({test.args[1].value}), empty
+    if isinstance(test, ast.UnaryOp) and isinstance(test.op, ast.Not):
+        body, orelse = _hasattr_branches(test.operand)
+        return orelse, body
+    if isinstance(test, ast.BoolOp):
+        parts = [_hasattr_branches(v) for v in test.values]
+        if isinstance(test.op, ast.And):
+            return frozenset().union(*[p[0] for p in parts]), empty
+        return empty, frozenset().union(*[p[1] for p in parts])
+    return empty, empty
 
 
 def tracked_calls(source: str, methods: Set[str]) -> List[Call]:
@@ -160,10 +182,11 @@ def tracked_calls(source: str, methods: Set[str]) -> List[Call]:
             return
         if isinstance(node, ast.If):
             visit(node.test, narrow, has)
+            proven_body, proven_else = _hasattr_branches(node.test)
             for child in node.body:
-                visit(child, narrow, has | _hasattr_names(node.test))
+                visit(child, narrow, has | proven_body)
             for child in node.orelse:
-                visit(child, narrow, has)
+                visit(child, narrow, has | proven_else)
             return
         if (isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute)
                 and node.func.attr in methods):

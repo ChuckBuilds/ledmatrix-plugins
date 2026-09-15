@@ -162,6 +162,8 @@ def main():
         # The real method, so the guard under test is the shipped one rather
         # than a copy of it.
         _prepare_scroll_content = F1ScoreboardPlugin._prepare_scroll_content
+        # The build records which modes it covered, keyed by this map.
+        _MODE_KEY_MAP = F1ScoreboardPlugin._MODE_KEY_MAP
 
         def __init__(self):
             super().__init__()

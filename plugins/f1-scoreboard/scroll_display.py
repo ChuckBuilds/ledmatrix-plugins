@@ -69,51 +69,53 @@ class ScrollDisplay:
             scroll_cfg = self.config.get("scroll", {})
             if not isinstance(scroll_cfg, dict):
                 scroll_cfg = {}
-            self.scroll_helper.set_frame_based_scrolling(
-                scroll_cfg.get("frame_based", True))
-            self.scroll_helper.set_scroll_speed(
-                scroll_cfg.get("scroll_speed", 1))
-            self.scroll_helper.set_scroll_delay(
-                scroll_cfg.get("scroll_delay", 0.03))
-            self.scroll_helper.set_dynamic_duration_settings(
-                enabled=True,
-                min_duration=scroll_cfg.get("min_duration", 15),
-                max_duration=scroll_cfg.get("max_duration", 120),
-                buffer=self.display_width
-            )
+            scroll_cfg = self._without_legacy_default_delay(scroll_cfg)
 
-            # Shared resolver wins over the setup above, which stays as the
-            # fallback for cores that predate it.
+            # scroll.scroll_speed (px per step) and scroll.scroll_delay (s per
+            # step) are the resolver's speed pair. They live in the "scroll"
+            # block, which the resolver never looks in, so it is handed that
+            # block: passing the whole config left both settings dead at the
+            # global display speed or the 100 px/s default.
             if _scroll_config is not None:
                 self._scroll_settings = _scroll_config.configure(
                     self.scroll_helper,
-                    plugin_config=self.config,
+                    plugin_config=scroll_cfg,
                     global_config=self.global_config,
                     display_manager=self.display_manager,
                     plugin_logger=self.logger,
                 )
-            else:
+            else:  # unreachable under the manifest floor (core 3.4.0)
                 self._scroll_settings = None
-
-            # Honor the global smooth-scrolling FPS target (older cores lack the setter)
-            target_fps = self.global_config.get('target_fps') or self.global_config.get('scroll_target_fps')
-            try:
-                # Coerce before comparing: a malformed global config value
-                # must degrade to today's scroll_delay pacing, not raise.
-                target_fps = float(target_fps) if target_fps is not None else None
-            except (TypeError, ValueError):
-                target_fps = None
-            if target_fps:
-                if hasattr(self.scroll_helper, 'set_target_fps'):
-                    self.scroll_helper.set_target_fps(target_fps)
-                else:
-                    self.scroll_helper.target_fps = max(30.0, min(200.0, target_fps))
-                    self.scroll_helper.frame_time_target = 1.0 / self.scroll_helper.target_fps
 
         # Content state
         self._content_items: List[Image.Image] = []
         self._vegas_content_items: List[Image.Image] = []
         self._is_prepared = False
+
+    #: scroll.scroll_speed / scroll.scroll_delay schema defaults before 1.9.0.
+    LEGACY_DEFAULT_PAIR = (1.0, 0.03)
+    DEFAULT_DELAY = 0.01
+
+    @classmethod
+    def _without_legacy_default_delay(cls, scroll_cfg: dict) -> dict:
+        """Read the old default pair (1, 0.03) as today's default (1, 0.01).
+
+        Every F1 install scrolled at 100 px/s: the resolver never saw the
+        scroll block. Web-UI saves still wrote the then-default 0.03 into it,
+        so honouring it literally would slow those installs to 33.3 px/s the
+        moment the setting started to work. The pair cannot have been chosen
+        for how it looked -- it never did anything -- so it is treated as "not
+        customised". Any other value is used as set.
+        """
+        try:
+            pair = (float(scroll_cfg.get("scroll_speed", 1.0)),
+                    float(scroll_cfg.get("scroll_delay", cls.DEFAULT_DELAY)))
+        except (TypeError, ValueError):
+            return scroll_cfg
+        if (abs(pair[0] - cls.LEGACY_DEFAULT_PAIR[0]) < 1e-9
+                and abs(pair[1] - cls.LEGACY_DEFAULT_PAIR[1]) < 1e-9):
+            return dict(scroll_cfg, scroll_delay=cls.DEFAULT_DELAY)
+        return scroll_cfg
 
     def prepare_scroll_content(self, cards: List[Image.Image],
                                 separator: Image.Image = None):
@@ -160,6 +162,7 @@ class ScrollDisplay:
             True if scroll is complete (looped), False otherwise
         """
         if not self.scroll_helper or not self._is_prepared:
+            self._release_scrolling_state()
             # Static fallback: show first card when scrolling unavailable
             if self._content_items:
                 first = self._content_items[0]
@@ -175,6 +178,12 @@ class ScrollDisplay:
         visible = self.scroll_helper.get_visible_portion()
 
         if visible:
+            # Tell core the panel is scrolling and for how many refreshes to
+            # hold each frame. configure() only reports the hold; without this
+            # a snapped sub-refresh speed (the 33.3 px/s default is 1px every
+            # 3rd refresh at 100Hz) still presented a new frame every refresh.
+            self.display_manager.set_scrolling_state(
+                True, frame_hold=self._scroll_frame_hold())
             if isinstance(visible, Image.Image):
                 self.display_manager.image.paste(visible, (0, 0))
             else:
@@ -183,7 +192,15 @@ class ScrollDisplay:
                 self.display_manager.image.paste(pil_image, (0, 0))
             self.display_manager.update_display()
 
-        return self.scroll_helper.is_scroll_complete()
+        return self.is_scroll_complete()
+
+    def _release_scrolling_state(self):
+        """Drop the scrolling flag and frame hold.
+
+        Both are global to the display manager, so leaving them set would pace
+        and defer work for whichever plugin draws next.
+        """
+        self.display_manager.set_scrolling_state(False)
 
     def reset(self):
         """Reset scroll position to beginning."""
@@ -199,10 +216,13 @@ class ScrollDisplay:
         return len(self._content_items)
 
     def is_scroll_complete(self) -> bool:
-        """Check if the scroll cycle has completed."""
+        """Check if the scroll cycle has completed; releases the hold if so."""
         if not self.scroll_helper or not self._is_prepared:
             return True
-        return self.scroll_helper.is_scroll_complete()
+        complete = self.scroll_helper.is_scroll_complete()
+        if complete:
+            self._release_scrolling_state()
+        return complete
 
     def get_vegas_items(self) -> List[Image.Image]:
         """Get the vegas content items for this display."""
@@ -213,11 +233,6 @@ class ScrollDisplayManager:
     """
     Manages multiple ScrollDisplay instances, one per display mode.
     """
-
-    def _scroll_frame_hold(self) -> int:
-        """Refreshes to hold each frame for, from the resolved scroll settings."""
-        settings = getattr(self, "_scroll_settings", None)
-        return getattr(settings, "frame_hold", 1) if settings else 1
 
     def __init__(self, display_manager, config: Optional[Dict[str, Any]] = None,
                  custom_logger: Optional[logging.Logger] = None,

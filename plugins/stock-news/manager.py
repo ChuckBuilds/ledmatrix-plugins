@@ -63,9 +63,10 @@ class StockNewsTickerPlugin(BasePlugin):
         self.feeds_config = config.get('feeds', {})
         self.global_config = config.get('global', {})
 
-        # Display dimensions
-        self.display_width = self.display_manager.matrix.width
-        self.display_height = self.display_manager.matrix.height
+        # Display dimensions. display_manager.width/height, not .matrix: matrix
+        # is None when hardware init fails, which raised AttributeError here.
+        self.display_width = self.display_manager.width
+        self.display_height = self.display_manager.height
 
         self._apply_config()
 
@@ -164,8 +165,9 @@ class StockNewsTickerPlugin(BasePlugin):
 
         # Scroll / duration
         self.display_duration = gc.get('display_duration', 30)
-        self.scroll_speed = gc.get('scroll_speed', 1)
-        self.scroll_delay = gc.get('scroll_delay', 0.01)
+        # The one speed setting, in pixels per second (schema default 60).
+        # _configure_scroll_settings hands it to the core's resolver.
+        self.scroll_pixels_per_second = gc.get('scroll_pixels_per_second', 60.0)
         self.dynamic_duration = gc.get('dynamic_duration', True)
         self.min_duration = gc.get('min_duration', 30)
         self.max_duration = gc.get('max_duration', 300)
@@ -244,9 +246,10 @@ class StockNewsTickerPlugin(BasePlugin):
         # Stale threshold
         self.stale_threshold_multiplier = gc.get('stale_threshold_multiplier', 2)
 
-        # Background service
+        # HTTP settings (the schema's "background_service" block; fetching is
+        # synchronous in update()). Defaults mirror config_schema.json.
         self.background_config = gc.get('background_service', {
-            'enabled': True, 'request_timeout': 30,
+            'request_timeout': 30, 'max_retries': 3,
         })
 
     # -------------------------------------------------------------------------
@@ -328,67 +331,33 @@ class StockNewsTickerPlugin(BasePlugin):
         return getattr(settings, "frame_hold", 1) if settings else 1
 
     def _configure_scroll_settings(self) -> None:
-        """Apply scroll speed / FPS to the ScrollHelper.
+        """Resolve the scroll speed through the core's shared resolver.
 
-        Prefers the shared resolver so this plugin agrees with every other one
-        about what a given config means, and so slow speeds get the frame hold
-        that keeps them crisp.
+        The resolver does not look inside this plugin's ``global`` block, where
+        the schema keeps ``scroll_pixels_per_second``; handed ``self.config`` it
+        found nothing and every install scrolled at the core's 100 px/s default
+        whatever was configured. So pass the one setting in the flat shape the
+        resolver reads. It snaps the speed to one the panel can draw in whole
+        pixels and reports the frame hold display() passes on. Nothing writes
+        the helper's speed or FPS afterwards.
         """
         if _scroll_config is not None:
             self._scroll_settings = _scroll_config.configure(
                 self.scroll_helper,
-                plugin_config=self.config,
+                plugin_config={'scroll_pixels_per_second': self.scroll_pixels_per_second},
                 global_config=self.global_config,
                 display_manager=self.display_manager,
                 plugin_logger=self.logger,
             )
-            return
-
-        # Legacy path for cores without src.common.scroll_config. Plugins
-        # update independently of the core, so this must keep working.
-        self._scroll_settings = None
-
-        if 'scroll_pixels_per_second' in self.global_config:
-            pps = float(self.global_config['scroll_pixels_per_second'])
-        elif self.scroll_delay and self.scroll_delay > 0:
-            pps = self.scroll_speed / self.scroll_delay
         else:
-            pps = 25.0
+            # Unreachable on the 3.4.0 floor; the import stays guarded only
+            # because the module gate does not yet list scroll_config as
+            # released. The helper keeps its own default pacing.
+            self._scroll_settings = None
 
-        if 'scroll_target_fps' in self.global_config:
-            fps = float(self.global_config['scroll_target_fps'])
-        elif self.scroll_delay and self.scroll_delay > 0:
-            fps = 1.0 / self.scroll_delay
-        else:
-            fps = 100.0
-
-        # Convert to per-frame advancement for smooth, consistent scrolling.
-        # Frame-based mode advances exactly pixels_per_frame each frame regardless
-        # of wall-clock jitter, preventing multi-pixel jumps on slow frames.
-        _MIN_PPF = 0.1  # minimum pixels-per-frame the scroll helper accepts
-        pixels_per_frame = pps / fps if fps > 0 else pps / 100.0
-        if pixels_per_frame < _MIN_PPF:
-            # Lower effective FPS to preserve requested px/s rather than bumping px/frame
-            effective_fps = min(fps, max(1.0, int(pps / _MIN_PPF)))
-            pixels_per_frame = pps / effective_fps
-        else:
-            effective_fps = fps
-        pixels_per_frame = min(5.0, pixels_per_frame)  # retain upper clamp
-
-        if hasattr(self.scroll_helper, 'set_frame_based_scrolling'):
-            self.scroll_helper.set_frame_based_scrolling(True)
-        if hasattr(self.scroll_helper, 'set_scroll_delay'):
-            self.scroll_helper.set_scroll_delay(1.0 / effective_fps)
-        self.scroll_helper.set_scroll_speed(pixels_per_frame)
-
-        if hasattr(self.scroll_helper, 'set_target_fps'):
-            self.scroll_helper.set_target_fps(fps)
-
-        self.logger.info(
-            "[Stock News] Scroll: %.2f px/frame at %.0f FPS (%.1f px/s)",
-            pixels_per_frame, fps, pixels_per_frame * fps,
-        )
-
+        # Applied on every path. It used to run only on the pre-resolver path,
+        # so min_duration / max_duration / dynamic_duration never reached the
+        # helper on any core that has the resolver.
         self.scroll_helper.set_dynamic_duration_settings(
             enabled=self.dynamic_duration,
             min_duration=self.min_duration,
@@ -411,9 +380,18 @@ class StockNewsTickerPlugin(BasePlugin):
         except Exception as e:
             self.logger.warning("[Stock News] Font registration error: %s", e)
 
+    def _max_retries(self) -> int:
+        """background_service.max_retries (schema default 3), as a sane int."""
+        try:
+            return max(0, int(self.background_config.get('max_retries', 3)))
+        except (TypeError, ValueError, AttributeError):
+            return 3
+
     def _create_session(self) -> requests.Session:
         session = requests.Session()
-        retry = Retry(total=4, backoff_factor=1,
+        # Retry count is the documented background_service.max_retries; it was
+        # hard-coded to 4 and the setting did nothing.
+        retry = Retry(total=self._max_retries(), backoff_factor=1,
                       status_forcelist=[429, 500, 502, 503, 504],
                       allowed_methods=["GET"])
         adapter = HTTPAdapter(max_retries=retry)
@@ -486,6 +464,20 @@ class StockNewsTickerPlugin(BasePlugin):
 
         if fetched:
             self._rebuild_all_news_items()
+
+        # Logos are downloaded here, never while drawing: the render path and
+        # get_vegas_content() only read the disk cache. A story whose logo
+        # arrives now is drawn with it on the next strip rebuild.
+        #
+        # Not by clearing the strip here: rebuilding resets the scroll to the
+        # start, and at startup logos land one update() after another, so the
+        # ticker restarted mid-pass again and again. display() rebuilds once
+        # the current pass completes; a strip not built yet picks them up
+        # anyway. Vegas fetches its content per cycle, so its cache can go now.
+        if self._download_missing_logos():
+            self._vegas_cache = None
+            if self.scroll_helper.cached_image is not None:
+                self._logo_rebuild_pending = True
 
     def _get_stocks_plugin_symbols(self) -> List[str]:
         """Return equity symbols from the ledmatrix-stocks plugin when sync is enabled."""
@@ -779,47 +771,75 @@ class StockNewsTickerPlugin(BasePlugin):
     # Logo fetching
     # -------------------------------------------------------------------------
 
+    def _logo_file(self, symbol: str) -> Tuple[str, Path]:
+        """(cache key, disk path) for a symbol's logo."""
+        # Sanitize symbol to safe filename characters — prevents path traversal
+        safe_name = re.sub(r'[^A-Za-z0-9.\-]', '_', symbol)[:20]
+        return safe_name, self._logo_dir / f"{safe_name}.png"
+
     def _get_symbol_logo(self, symbol: str) -> Optional[Image.Image]:
-        """Return a logo PIL Image sized to display_height, downloading once if needed.
+        """Return a logo PIL Image sized to display_height, from the disk cache only.
 
         Logos are constrained by height only (max_width is generous) so landscape
         company logos render at full panel height without being squeezed into a square.
-        Failed downloads are remembered for the session to avoid repeated attempts.
+        This runs on the render path, so it never downloads: that happens in
+        update() via _download_missing_logos(). It used to download here, through
+        a session that retries with backoff and a 10s timeout, stalling the
+        scroll (and Vegas) for tens of seconds per new symbol.
         """
         if not self.logo_fetch_enabled:
             return None
         if symbol in self._logo_failed:
             return None
 
-        # Sanitize symbol to safe filename characters — prevents path traversal
-        safe_name = re.sub(r'[^A-Za-z0-9.\-]', '_', symbol)[:20]
+        safe_name, logo_path = self._logo_file(symbol)
+        if not logo_path.exists():
+            return None
 
         # Width can be up to 4× height — lets landscape logos breathe
-        max_w = self.logo_size * 4
+        return self.logo_helper.load_logo(safe_name, logo_path,
+                                          max_width=self.logo_size * 4,
+                                          max_height=self.logo_size)
 
-        logo_path = self._logo_dir / f"{safe_name}.png"
-        if logo_path.exists():
-            return self.logo_helper.load_logo(safe_name, logo_path,
-                                              max_width=max_w,
-                                              max_height=self.logo_size)
+    def _download_missing_logos(self) -> bool:
+        """Download logos the current stories need and the disk cache lacks.
 
-        # Download and cache to disk on first use (URL uses original symbol)
-        url = self.logo_url_template.replace('{symbol}', symbol)
-        try:
-            resp = self._session.get(url, timeout=10)
-            if resp.status_code == 200 and resp.content:
-                logo_path.write_bytes(resp.content)
-                self.logger.info("[Stock News] Downloaded logo for %s", symbol)
-                return self.logo_helper.load_logo(safe_name, logo_path,
-                                                  max_width=max_w,
-                                                  max_height=self.logo_size)
-            self.logger.debug("[Stock News] Logo not available for %s (HTTP %d)",
-                              symbol, resp.status_code)
-        except Exception as e:
-            self.logger.debug("[Stock News] Logo fetch failed for %s: %s", symbol, e)
-
-        self._logo_failed.add(symbol)
-        return None
+        Called from update() only. Failed downloads are remembered for the
+        session to avoid repeated attempts. Returns True if any logo was saved,
+        so the caller can rebuild the strip with it.
+        """
+        if not self.logo_fetch_enabled or self.display_style not in ('logo_and_ticker', 'logo_only'):
+            return False
+        downloaded = False
+        seen = set()
+        for item in self.all_news_items:
+            symbol = item.get('symbol', item.get('feed_name', '?'))
+            if symbol in seen or symbol in self._logo_failed:
+                continue
+            seen.add(symbol)
+            _, logo_path = self._logo_file(symbol)
+            if logo_path.exists():
+                continue
+            # URL uses the original symbol
+            url = self.logo_url_template.replace('{symbol}', symbol)
+            try:
+                resp = self._session.get(url, timeout=10)
+                if resp.status_code == 200 and resp.content:
+                    # Atomic: Vegas reads logos without the plugin lock, and a
+                    # half-written file would fail to decode (and look present,
+                    # so it would never be fetched again).
+                    tmp_path = logo_path.with_name(logo_path.name + '.part')
+                    tmp_path.write_bytes(resp.content)
+                    tmp_path.replace(logo_path)
+                    self.logger.info("[Stock News] Downloaded logo for %s", symbol)
+                    downloaded = True
+                    continue
+                self.logger.debug("[Stock News] Logo not available for %s (HTTP %d)",
+                                  symbol, resp.status_code)
+            except Exception as e:
+                self.logger.debug("[Stock News] Logo fetch failed for %s: %s", symbol, e)
+            self._logo_failed.add(symbol)
+        return downloaded
 
     # -------------------------------------------------------------------------
     # Display
@@ -868,6 +888,12 @@ class StockNewsTickerPlugin(BasePlugin):
                     self.scroll_helper.clear_cache()
                     self.scroll_helper.reset_scroll()
                     return
+            if getattr(self, '_logo_rebuild_pending', False):
+                # Logos fetched during this pass: rebuild between passes.
+                self._logo_rebuild_pending = False
+                self.scroll_helper.clear_cache()
+                self.scroll_helper.reset_scroll()
+                return
 
         visible_portion = self.scroll_helper.get_visible_portion()
         if visible_portion:
@@ -886,6 +912,8 @@ class StockNewsTickerPlugin(BasePlugin):
                 return
             self.scroll_helper.create_scrolling_image(item_images, item_gap=self.item_gap)
             self._cycle_complete = False
+            # Any build reads every logo already on disk.
+            self._logo_rebuild_pending = False
             self.logger.info("[Stock News] Ticker: %d items, %dpx wide, gap=%dpx",
                              len(item_images), self.scroll_helper.total_scroll_width, self.item_gap)
         except Exception as e:
@@ -1040,6 +1068,9 @@ class StockNewsTickerPlugin(BasePlugin):
     # -------------------------------------------------------------------------
 
     def _display_no_news(self) -> None:
+        # A static frame: release the scroll state and its frame hold, so this
+        # message is presented every refresh and deferred work can run.
+        self.display_manager.set_scrolling_state(False)
         img = Image.new('RGB', (self.display_width, self.display_height), (0, 0, 0))
         draw = self._pixel_draw(img)
         text = "No Stock News"
@@ -1081,6 +1112,7 @@ class StockNewsTickerPlugin(BasePlugin):
         return font
 
     def _display_error(self, message: str) -> None:
+        self.display_manager.set_scrolling_state(False)  # static frame
         img = Image.new('RGB', (self.display_width, self.display_height), (0, 0, 0))
         draw = self._pixel_draw(img)
         draw.text((4, self.display_height // 2 - 4), message, fill=(255, 0, 0))
@@ -1102,11 +1134,16 @@ class StockNewsTickerPlugin(BasePlugin):
         old_publisher_font_path = getattr(self, 'publisher_font_path', '')
         old_age_font_size = getattr(self, 'age_font_size', 0)
         old_age_font_path = getattr(self, 'age_font_path', '')
+        old_max_retries = self._max_retries()
 
         self.feeds_config = new_config.get('feeds', {})
         self.global_config = new_config.get('global', {})
         self._apply_config()
         self._configure_scroll_settings()
+
+        if self._max_retries() != old_max_retries:
+            self._session.close()
+            self._session = self._create_session()
 
         font_changed = (self.font_size != old_font_size or
                         self.global_config.get('font_path', '') != old_font_path or

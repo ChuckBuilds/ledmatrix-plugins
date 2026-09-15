@@ -1,7 +1,7 @@
 {
   "id": "odds-ticker",
   "name": "Odds Ticker",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "description": "Displays scrolling odds and betting lines for upcoming games across multiple sports leagues including NFL, NBA, MLB, NCAA Football, and more",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -20,6 +20,12 @@
   "branch": "main",
   "plugin_path": "plugins/odds-ticker",
   "versions": [
+    {
+      "version": "1.7.0",
+      "released": "2026-09-15",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Saving settings in the web UI now takes effect the way a restart would. on_config_change re-applied speed through legacy setters that cleared the shared resolver's whole-pixel step while keeping the old frame hold, ignored league, favourite-team and filter changes, and skipped BasePlugin.on_config_change, so enabled went stale; it now re-runs the resolver, reloads leagues, filters and customization fonts, and refetches -- including when the save lands while a fetch is already running, which used to overwrite the refetch request. With nothing to scroll (no games yet, or none matching the filters) display() returns False, so the rotation moves on instead of holding the no-data message for the whole slot. get_display_duration() no longer fetches games, odds and rankings and rebuilds the strip on the render loop, Vegas and web-UI polling when no strip exists (every call off-season); it reports the cached duration and update() fetches. Odds requests use core's identifying session, a 5s timeout and a 60s cooldown after a failure, as core BaseOddsManager does. A .bdf face picked in customization now loads at its native size instead of silently falling back to PressStart2P. show_odds_only and multi-league soccer no longer stop collecting at max_games_per_league in two remaining places. ESPN 404/429/503 responses now reach their own handling (an error Response is falsy). A failed import of an unrelated optional core module no longer replaces ScrollHelper with a stub. display_manager.width replaces display_manager.matrix.width, which raised when the matrix failed to initialise. The plugin's log lines keep its plugin id. The fallback message fits a 64px panel. display_options.scroll_pixels_per_second (outranked by scroll_speed/scroll_delay, which always carry schema defaults) and display_options.target_fps (read by nothing) are deprecated and ignored: they are kept for compatibility and ignored (still shown in the settings form, marked deprecated), so configs that still carry them load and save valid. Removed the hand-rolled speed precedence and conversions the resolver superseded, the public set_scroll_speed/set_scroll_delay, and the unused _fetch_team_record."
+    },
     {
       "version": "1.6.0",
       "released": "2026-09-15",

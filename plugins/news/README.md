@@ -27,7 +27,7 @@ pixels. The headlines are genuine ESPN copy from 2 September 2026.*
    - [Font size](#font-size)
    - [Fonts](#fonts)
    - [Colours and logos](#colours-and-logos)
-   - [Background fetching](#background-fetching)
+   - [Fetching](#fetching)
 7. [Panel Sizes](#panel-sizes)
 8. [Troubleshooting](#troubleshooting)
 9. [Development](#development)
@@ -151,8 +151,8 @@ without `<item>` elements will fetch successfully and yield nothing.
 | Option | Default | What it does |
 |--------|---------|--------------|
 | `global.headlines_per_feed` | `2` | Headlines taken from each enabled feed per fetch |
-| `global.rotation_enabled` | `true` | Rotate which feeds appear when many are enabled |
-| `global.rotation_threshold` | `3` | Number of feeds above which rotation kicks in |
+| `global.rotation_enabled` | `true` | Rotate the headline order after `rotation_threshold` passes. Only used when `headline_paging` is off (it is on by default) |
+| `global.rotation_threshold` | `3` | Complete passes of the strip before the order rotates — a count of scroll cycles, not of feeds |
 
 With three feeds and the default `headlines_per_feed: 2`, a cycle carries six
 headlines. Raising it makes the strip longer, and therefore each lap slower —
@@ -168,7 +168,6 @@ the same trade as any ticker.
 | `global.update_interval` | `300` | Seconds between feed fetches |
 | `global.display.scroll_speed` | `1.0` | Pixels moved per step |
 | `global.display.scroll_delay` | `0.01` | Seconds per step |
-| `global.target_fps` | `100` | Target frame rate |
 
 ### How fast it moves
 
@@ -178,8 +177,10 @@ As with the scrolling-text plugin, the rate is:
 pixels per second = scroll_speed / scroll_delay
 ```
 
-The defaults — 1 pixel every 0.01s — give 100 px/s, which the plugin logs on
-startup so you can check what it actually resolved to.
+The defaults — 1 pixel every 0.01s — give 100 px/s. The LEDMatrix core moves
+the figure to the nearest speed the panel can draw in whole pixels (on a 100Hz
+panel: 100, 50, 33.3, 66.7 px/s and so on) and logs the result as
+`Scroll configured: …`, so you can check what it actually resolved to.
 
 ### Dynamic duration and paging
 
@@ -215,15 +216,21 @@ plugin works out how long a pass takes and asks for that much time.
 
 ### Font size
 
-`global.font_size` (default `12`) is the biggest lever on how much headline is
+`global.font_size` (default `16`) is the biggest lever on how much headline is
 readable at once.
 
 ![Three 128x32 panels at font_size 12, 8 and 6](../../docs/assets/news/font-size.png)
 
-At the default 12 on a 128-wide panel only about ten characters are on screen
-at a time, which reads more like a stream of letters than a headline. Dropping
-to 8 roughly doubles it. This is the setting to change first if the ticker feels
-unreadable.
+At 16 on a 128-wide panel only about eight characters are on screen at a time,
+which reads more like a stream of letters than a headline. Dropping to 8 roughly
+doubles it. This is the setting to change first if the ticker feels
+unreadable. Press Start 2P, the default face, is crisp at multiples of 8.
+
+A config holding `12` (the old default, which earlier web-UI saves wrote in)
+keeps drawing at 16, as it always did; any other value is used as set.
+
+`customization.headline_text.font_size` overrides it only when set to something
+other than its default, so leave that one at `16` if you use `global.font_size`.
 
 ### Fonts
 
@@ -268,20 +275,18 @@ contrasts with `text_color` is worth keeping.
 
 ---
 
-### Background fetching
+### Fetching
 
-Feeds are fetched on a background thread so the panel never stalls on a slow
-server. Under `global.background_service`:
+Feeds are fetched in the plugin's `update()`, which the LEDMatrix core calls on
+its own schedule (`global.update_interval`), never while the strip is drawn.
+Each feed is requested once per update, one after another.
 
 | Option | Default | What it does |
 |--------|---------|--------------|
-| `enabled` | `true` | Fetch in the background rather than inline |
-| `request_timeout` | `30` | Seconds before a feed request gives up |
-| `max_retries` | `3` | Retries per failed feed |
-| `priority` | `2` | Queue priority against other plugins' fetches |
+| `global.background_service.request_timeout` | `30` | Seconds before a feed request gives up |
 
-A feed that times out is skipped for that cycle rather than blocking the
-others, so one dead source does not empty the ticker.
+A feed that fails or times out is skipped for that update rather than
+blocking the others, so one dead source does not empty the ticker.
 
 ---
 
@@ -317,7 +322,7 @@ elements; an Atom-only feed fetches fine and yields nothing. `Other` and
 `BIG10` point at third-party sources that can change or disappear.
 
 **I can't read the headlines.**
-Lower `global.font_size` — the default of 12 is large for a 128-wide panel.
+Lower `global.font_size` — the default of 16 is large for a 128-wide panel.
 See [Font size](#font-size).
 
 **The end of the strip never appears.**

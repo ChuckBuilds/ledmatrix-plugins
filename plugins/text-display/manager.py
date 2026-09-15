@@ -98,18 +98,10 @@ class TextDisplayPlugin(BasePlugin):
         self.scroll_enabled = config.get('scroll', True)
         # Signal to DisplayController that this plugin needs high-FPS treatment when scrolling
         self.enable_scrolling = self.scroll_enabled
-        # Frame-based scrolling: pixels per frame
-        self.scroll_speed = float(config.get('scroll_speed', 1))  # pixels per frame (like stock/leaderboard)
-        self.scroll_delay = float(config.get('scroll_delay', 0.01))  # seconds per frame (default 0.01 = 100 FPS)
-        self.target_fps = float(config.get('target_fps', 120))  # target FPS for smooth scrolling
-        
-        # Warn if scroll_speed seems too high (might be from old config when it was pixels/second)
-        if self.scroll_speed > 5:
-            self.logger.warning(
-                f"scroll_speed is {self.scroll_speed} pixels/frame - this is very high and will cause large jumps. "
-                f"Recommended range: 0.5-2 pixels/frame for smooth scrolling. "
-                f"If you had an old config with pixels/second, divide by ~100 (e.g., 30 px/s -> 0.3 px/frame)"
-            )
+        # Pixels per step and seconds per step; the shared resolver turns the
+        # pair into pixels per second (see _configure_scroll).
+        self.scroll_speed = float(config.get('scroll_speed', 1))
+        self.scroll_delay = float(config.get('scroll_delay', 0.01))
         self.scroll_loop = config.get('scroll_loop', True)  # Default to looping for backward compatibility
         # config_schema types scroll_gap_width as "number", so the web UI can persist
         # it as a float (e.g. 32.0); Image.new() requires int dimensions.
@@ -152,57 +144,7 @@ class TextDisplayPlugin(BasePlugin):
         display_width = self.display_manager.matrix.width if hasattr(self.display_manager, 'matrix') else 128
         display_height = self.display_manager.matrix.height if hasattr(self.display_manager, 'matrix') else 32
         self.scroll_helper = ScrollHelper(display_width, display_height, logger=self.logger)
-        
-        # Configure ScrollHelper with plugin settings
-        # Use frame-based scrolling for smoother visual movement on LED matrix
-        # This ignores time deltas and moves fixed pixels per step, throttled by scroll_delay
-        
-        # Check if method exists for backward compatibility
-        if hasattr(self.scroll_helper, 'set_frame_based_scrolling'):
-            self.scroll_helper.set_frame_based_scrolling(True)
-            # In frame-based mode, scroll_speed is pixels per frame
-            # Log the value before setting to help debug config issues
-            self.logger.info(f"Config scroll_speed: {self.scroll_speed} pixels/frame, scroll_delay: {self.scroll_delay}s")
-            self.scroll_helper.set_scroll_speed(self.scroll_speed)
-            # Log the actual value after clamping (in case it was adjusted)
-            if self.scroll_helper.scroll_speed != self.scroll_speed:
-                self.logger.warning(
-                    f"scroll_speed was clamped from {self.scroll_speed} to {self.scroll_helper.scroll_speed} pixels/frame "
-                    f"(max 5 px/frame for smooth scrolling)"
-                )
-        else:
-            # Fallback for older ScrollHelper: convert to pixels/second
-            pixels_per_second = self.scroll_speed / self.scroll_delay if self.scroll_delay > 0 else self.scroll_speed * 100
-            self.scroll_helper.set_scroll_speed(pixels_per_second)
-            
-        self.scroll_helper.set_scroll_delay(self.scroll_delay)
-        
-        # Set target FPS from config (clamped; older cores lack the setter)
-        self._apply_target_fps()
-        # Sub-pixel scrolling disabled - using high frame rate integer scrolling for smoothness
-        # This matches the behavior of stock/leaderboard tickers
-        
-        # Calculate pixels per second for logging (even though we use frame-based mode)
-        pixels_per_second = self.scroll_speed / self.scroll_delay if self.scroll_delay > 0 else self.scroll_speed * 100
-        self.logger.info(f"Scroll settings: {self.scroll_speed} px/frame, {self.scroll_delay}s delay = {pixels_per_second:.1f} px/s, target FPS: {self.target_fps}")
-
-        # The shared resolver takes precedence over the block above, which is
-        # kept as the fallback for cores that predate it. Running both costs a
-        # few microseconds once at construction and avoids re-indenting logic
-        # that other config shapes still depend on.
-        if _scroll_config is not None:
-            self._scroll_settings = _scroll_config.configure(
-                self.scroll_helper,
-                plugin_config=self.config,
-                global_config=self.global_config,
-                display_manager=self.display_manager,
-                plugin_logger=self.logger,
-            )
-            self.logger.info(
-                "Scroll pacing came from the shared resolver; any scroll speed "
-                "logged above this line by the legacy path was superseded")
-        else:
-            self._scroll_settings = None
+        self._configure_scroll()
         self.scroll_helper.set_dynamic_duration_settings(
             enabled=True,
             # Honor the documented display_duration setting as the on-screen floor.
@@ -350,23 +292,48 @@ class TextDisplayPlugin(BasePlugin):
                 self.logger.info(f"Loaded TTF font: {font_path}")
                 return font
             elif font_path.lower().endswith('.bdf'):
-                # BDF fonts need freetype
+                # Loaded through PIL's FreeType binding, like the TTF branch,
+                # so every draw/measure call gets a real ImageFont. This used
+                # to return a bare freetype.Face, which PIL cannot draw with
+                # ("'Face' object has no attribute 'getbbox'"), so a .bdf
+                # never rendered. A .bdf also exists at exactly one pixel
+                # size and FreeType refuses any other, so retry at the size
+                # the file declares -- the same loader clock-simple,
+                # countdown and calendar use.
                 try:
-                    import freetype
-                    face = freetype.Face(font_path)
-                    face.set_pixel_sizes(0, self.font_size)
-                    self.logger.info(f"Loaded BDF font: {font_path}")
-                    return face
-                except ImportError:
-                    self.logger.warning("freetype not available for BDF font, using default")
-                    return ImageFont.load_default()
+                    font = ImageFont.truetype(font_path, self.font_size)
+                except OSError:
+                    native = self._bdf_pixel_size(font_path)
+                    if native is None or native == self.font_size:
+                        raise
+                    font = ImageFont.truetype(font_path, native)
+                    self.logger.info(
+                        f"Loaded BDF font: {font_path} at its native size {native} "
+                        f"(font_size {self.font_size} does not apply to a bitmap face)")
+                    return font
+                self.logger.info(f"Loaded BDF font: {font_path}")
+                return font
             else:
                 self.logger.warning(f"Unsupported font type: {font_path}")
                 return ImageFont.load_default()
         except Exception as e:
             self.logger.error(f"Failed to load font {font_path}: {e}")
             return ImageFont.load_default()
-    
+
+    @staticmethod
+    def _bdf_pixel_size(path: str):
+        """The pixel size a .bdf font declares, or None if it does not."""
+        try:
+            with open(path, "r", encoding="latin-1") as handle:
+                for line in handle:
+                    if line.startswith("PIXEL_SIZE"):
+                        return int(line.split()[1])
+                    if line.startswith("CHARS"):
+                        break  # past the header; no point reading the glyphs
+        except (OSError, ValueError, IndexError):
+            return None
+        return None
+
     def _calculate_text_dimensions(self):
         """Calculate text width for scrolling."""
         if not self.text or not self.font:
@@ -454,6 +421,31 @@ class TextDisplayPlugin(BasePlugin):
         settings = getattr(self, "_scroll_settings", None)
         return getattr(settings, "frame_hold", 1) if settings else 1
 
+    def _configure_scroll(self) -> None:
+        """Resolve scroll pacing through the core's shared resolver.
+
+        The resolver reads the root scroll_speed / scroll_delay pair (pixels
+        per step, seconds per step), snaps the result to a speed the panel can
+        draw in whole pixels, and applies it to the helper, reporting the frame
+        hold display() passes to set_scrolling_state. Nothing is written to the
+        helper's speed or FPS afterwards: set_scroll_speed() clears the
+        resolver's fixed per-frame step, which is what left a live speed edit
+        pacing differently from the same config after a restart.
+        """
+        if _scroll_config is None:
+            # Unreachable on the 3.4.0 floor; the import stays guarded only
+            # because the module gate does not yet list scroll_config as
+            # released. The helper keeps its own default pacing.
+            self._scroll_settings = None
+            return
+        self._scroll_settings = _scroll_config.configure(
+            self.scroll_helper,
+            plugin_config=self.config,
+            global_config=self.global_config,
+            display_manager=self.display_manager,
+            plugin_logger=self.logger,
+        )
+
     def update(self) -> None:
         """Update scroll position if scrolling is enabled using ScrollHelper."""
         if not self.scroll_enabled or self.text_width <= self.display_manager.matrix.width:
@@ -488,6 +480,9 @@ class TextDisplayPlugin(BasePlugin):
             force_clear: If True, clear display before rendering
         """
         if not self.text:
+            # Nothing to draw: drop any scroll state and frame hold a previous
+            # frame (before the text was cleared) left set.
+            self.display_manager.set_scrolling_state(False)
             return
 
         try:
@@ -536,15 +531,14 @@ class TextDisplayPlugin(BasePlugin):
                                 if not was_complete:
                                     self.logger.info("Scroll completed in one-shot mode - stopping")
                     
-                    # Signal scrolling state to display manager
-                    if hasattr(self.display_manager, 'set_scrolling_state'):
-                        # Only signal scrolling if not complete (or if looping and will reset)
-                        if not self.scroll_helper.is_scroll_complete() or (self.scroll_loop and self.scroll_helper.is_scroll_complete()):
-                            self.display_manager.set_scrolling_state(
-            True, frame_hold=self._scroll_frame_hold())
-                        else:
-                            # One-shot mode and complete - stop scrolling
-                            self.display_manager.set_scrolling_state(False)
+                    # Signal scrolling state to display manager. Only signal
+                    # scrolling if not complete (or if looping and will reset).
+                    if not self.scroll_helper.is_scroll_complete() or (self.scroll_loop and self.scroll_helper.is_scroll_complete()):
+                        self.display_manager.set_scrolling_state(
+                            True, frame_hold=self._scroll_frame_hold())
+                    else:
+                        # One-shot mode and complete - stop scrolling
+                        self.display_manager.set_scrolling_state(False)
                     
                     # Get visible portion from ScrollHelper
                     visible_image = self.scroll_helper.get_visible_portion()
@@ -580,6 +574,7 @@ class TextDisplayPlugin(BasePlugin):
                         self.display_manager.update_display()
                 else:
                     # Fallback: static text if cache creation failed
+                    self.display_manager.set_scrolling_state(False)
                     img = Image.new('RGB', (matrix_width, matrix_height), self.bg_color)
                     draw = ImageDraw.Draw(img)
                     draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
@@ -592,7 +587,10 @@ class TextDisplayPlugin(BasePlugin):
                     self.display_manager.image = img
                     self.display_manager.update_display()
             else:
-                # Static text (centered)
+                # Static text (centered). Not scrolling: release the scroll
+                # state and its frame hold so the text is presented every
+                # refresh and deferred work can run.
+                self.display_manager.set_scrolling_state(False)
                 img = Image.new('RGB', (matrix_width, matrix_height), self.bg_color)
                 draw = ImageDraw.Draw(img)
                 draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
@@ -607,7 +605,13 @@ class TextDisplayPlugin(BasePlugin):
             
         except Exception as e:
             self.logger.error(f"Error displaying text: {e}")
-    
+            # The scroll path sets the scroll state and frame hold before it
+            # draws; don't leave them set when drawing raised.
+            try:
+                self.display_manager.set_scrolling_state(False)
+            except Exception as release_error:
+                self.logger.debug(f"Could not release scroll state: {release_error}")
+
     def _log_frame_rate(self):
         """Log frame rate statistics for scrolling text."""
         if not self.scroll_enabled:
@@ -637,7 +641,7 @@ class TextDisplayPlugin(BasePlugin):
             
             self.logger.info(
                 f"Text display FPS - Avg: {avg_fps:.1f}, Current: {instant_fps:.1f}, "
-                f"Frame time: {frame_time*1000:.2f}ms, Target: {self.target_fps:.0f} FPS"
+                f"Frame time: {frame_time*1000:.2f}ms"
             )
             self.last_fps_log_time = current_time
             self.frame_count = 0
@@ -695,19 +699,6 @@ class TextDisplayPlugin(BasePlugin):
         
         return True
     
-    def _apply_target_fps(self) -> None:
-        """Clamp the configured FPS to the helper's effective 30-200 range and
-        push it, with a direct-attribute fallback for ScrollHelper builds that
-        predate set_target_fps. Storing the clamped value keeps get_info and
-        logs consistent with what the helper actually runs at.
-        """
-        self.target_fps = max(30.0, min(200.0, float(self.target_fps)))
-        if hasattr(self.scroll_helper, 'set_target_fps'):
-            self.scroll_helper.set_target_fps(self.target_fps)
-        else:
-            self.scroll_helper.target_fps = self.target_fps
-            self.scroll_helper.frame_time_target = 1.0 / self.scroll_helper.target_fps
-
     def on_config_change(self, new_config: Dict[str, Any]) -> None:
         """Handle configuration changes at runtime."""
         super().on_config_change(new_config)
@@ -720,37 +711,16 @@ class TextDisplayPlugin(BasePlugin):
         # Update scroll settings
         old_scroll_enabled = self.scroll_enabled
         self.scroll_enabled = new_config.get('scroll', self.scroll_enabled)
-        new_scroll_speed = new_config.get('scroll_speed', self.scroll_speed)
-        new_scroll_delay = new_config.get('scroll_delay', self.scroll_delay)
-        new_target_fps = new_config.get('target_fps', self.target_fps)
+        self.scroll_speed = float(new_config.get('scroll_speed', self.scroll_speed))
+        self.scroll_delay = float(new_config.get('scroll_delay', self.scroll_delay))
         self.scroll_loop = new_config.get('scroll_loop', self.scroll_loop)
         self.scroll_gap_width = int(new_config.get('scroll_gap_width', self.scroll_gap_width))
-        
-        # Update ScrollHelper settings if scroll speed, delay, or target_fps changed
-        scroll_settings_changed = False
-        if new_scroll_speed != self.scroll_speed:
-            self.scroll_speed = float(new_scroll_speed)
-            scroll_settings_changed = True
-        if new_scroll_delay != self.scroll_delay:
-            self.scroll_delay = float(new_scroll_delay)
-            scroll_settings_changed = True
-        if new_target_fps != self.target_fps:
-            self.target_fps = float(new_target_fps)
-            scroll_settings_changed = True
-        
-        if scroll_settings_changed and self.scroll_helper:
-            # Check if frame-based scrolling is supported
-            if hasattr(self.scroll_helper, 'set_frame_based_scrolling'):
-                # Frame-based mode: speed is pixels per frame
-                self.scroll_helper.set_scroll_speed(self.scroll_speed)
-            else:
-                # Fallback: calculate pixels per second
-                pixels_per_second = self.scroll_speed / self.scroll_delay if self.scroll_delay > 0 else self.scroll_speed * 100
-                self.scroll_helper.set_scroll_speed(pixels_per_second)
-                
-            self.scroll_helper.set_scroll_delay(self.scroll_delay)
-            self._apply_target_fps()
-            self.logger.info(f"Scroll settings updated: speed={self.scroll_speed}, delay={self.scroll_delay}s, target FPS={self.target_fps}")
+
+        # Re-run the shared resolver on every save, exactly as at load. It
+        # reads self.config, which super() has just replaced, and resets the
+        # frame hold display() passes, so speed and hold cannot disagree.
+        if self.scroll_helper:
+            self._configure_scroll()
 
         # Re-apply display_duration as the dynamic-duration floor so runtime edits
         # take effect immediately (fall back to the current value so a partial
@@ -817,16 +787,17 @@ class TextDisplayPlugin(BasePlugin):
     def get_info(self) -> Dict[str, Any]:
         """Return plugin info for web UI."""
         info = super().get_info()
-        # Calculate pixels per second for display
-        pixels_per_second = self.scroll_speed / self.scroll_delay if self.scroll_delay > 0 else self.scroll_speed * 100
+        # The speed actually applied: speed/delay as resolved and snapped to
+        # whole pixels per frame by the shared resolver.
+        settings = getattr(self, '_scroll_settings', None)
+        pixels_per_second = getattr(settings, 'pixels_per_second', 0.0) or 0.0
         info.update({
             'text': self.text[:50] if len(self.text) > 50 else self.text,
             'text_width': self.text_width,
             'scroll_enabled': self.scroll_enabled,
-            'scroll_speed': self.scroll_speed,  # pixels per frame
-            'scroll_delay': self.scroll_delay,  # seconds per frame
-            'target_fps': self.target_fps,
-            'pixels_per_second': round(pixels_per_second, 1),  # calculated from frame-based settings
+            'scroll_speed': self.scroll_speed,  # pixels per step
+            'scroll_delay': self.scroll_delay,  # seconds per step
+            'pixels_per_second': round(pixels_per_second, 1),
             'scroll_loop': self.scroll_loop,
             'font_mode': self.font_mode,
             'font_path': self.font_path,

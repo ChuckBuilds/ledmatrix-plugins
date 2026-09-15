@@ -71,19 +71,17 @@
         },
         "scroll_pixels_per_second": {
           "x-advanced": true,
+          "x-display": "hidden",
           "type": "number",
-          "default": 50.0,
-          "minimum": 5.0,
-          "maximum": 100.0,
-          "description": "Scroll speed in pixels per second (used for dynamic duration calculation). Set to match your actual scroll rate: scroll_speed / scroll_delay"
+          "description": "Deprecated: ignored. The scroll speed comes from scroll_speed and scroll_delay. Kept so existing configs that still carry it stay valid.",
+          "title": "Scroll Pixels Per Second (deprecated)"
         },
         "target_fps": {
           "x-advanced": true,
-          "type": "integer",
-          "default": 120,
-          "minimum": 30,
-          "maximum": 200,
-          "description": "Target frames per second for smooth scrolling. Higher values = smoother animation (120 recommended)"
+          "x-display": "hidden",
+          "type": "number",
+          "description": "Deprecated: ignored. Frame pacing follows the panel refresh rate. Kept so existing configs that still carry it stay valid.",
+          "title": "Target FPS (deprecated)"
         },
         "loop": {
           "x-advanced": true,
