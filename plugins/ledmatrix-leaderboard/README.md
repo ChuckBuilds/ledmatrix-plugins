@@ -166,13 +166,6 @@ The full key list is in the [`enabled_sports`](#enabled_sports) table below.
 | `global.display.scroll_delay` | `0.01` | Seconds per scroll step (0.001–0.1). |
 | `global.scroll_mode` | `"one_shot"` | Scrolling mode — one of `one_shot`, `continuous`. |
 | `global.loop` | `false` | Continuously loop the leaderboard. |
-
-Removed in 1.5.0 because nothing read them: `global.scroll_speed`,
-`global.scroll_delay`, `global.scroll_pixels_per_second`, `global.target_fps`,
-`global.scroll_target_fps`, `global.scroll_speed_scale`,
-`global.scroll_direction`, `global.enable_scroll_metrics`, and the top-level
-`display_duration`. A config that still has them loads with a schema warning
-until it is next saved from the web UI.
 | `global.appearance.pixel_perfect_text` | `true` | Render text with hard pixel edges. Disable only if you prefer the older anti-aliased (softer, blurrier) look. |
 | `global.appearance.crisp_logos` | `true` | Give logos hard edges instead of a ring of half-lit pixels. |
 | `global.appearance.text_outline` | `true` | Draw a black outline around text so it stays readable over logos. |
