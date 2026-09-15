@@ -1048,6 +1048,9 @@ class StockNewsTickerPlugin(BasePlugin):
     # -------------------------------------------------------------------------
 
     def _display_no_news(self) -> None:
+        # A static frame: release the scroll state and its frame hold, so this
+        # message is presented every refresh and deferred work can run.
+        self.display_manager.set_scrolling_state(False)
         img = Image.new('RGB', (self.display_width, self.display_height), (0, 0, 0))
         draw = self._pixel_draw(img)
         text = "No Stock News"
@@ -1089,6 +1092,7 @@ class StockNewsTickerPlugin(BasePlugin):
         return font
 
     def _display_error(self, message: str) -> None:
+        self.display_manager.set_scrolling_state(False)  # static frame
         img = Image.new('RGB', (self.display_width, self.display_height), (0, 0, 0))
         draw = self._pixel_draw(img)
         draw.text((4, self.display_height // 2 - 4), message, fill=(255, 0, 0))

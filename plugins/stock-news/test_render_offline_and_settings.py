@@ -66,9 +66,10 @@ class FakeDisplay:
         self.height = height
         self.matrix = types.SimpleNamespace(width=width, height=height) if matrix else None
         self.image = Image.new("RGB", (width, height))
+        self.calls = []
 
     def set_scrolling_state(self, is_scrolling, frame_hold=1):
-        pass
+        self.calls.append((is_scrolling, frame_hold))
 
     def process_deferred_updates(self):
         pass
@@ -173,9 +174,18 @@ def test_settings_reach_the_helpers():
     check(retries == 5, f"a saved max_retries change applies (got {retries})")
 
 
+def test_static_frames_release_scroll_state():
+    print("[no stories]")
+    display = FakeDisplay()
+    plugin = make(display=display)
+    plugin.display()
+    check(display.calls[-1:] == [(False, 1)],
+          f"the no-news message releases the scroll state (calls {display.calls})")
+
+
 if __name__ == "__main__":
     for test in (test_loads_without_matrix, test_logos_not_downloaded_while_drawing,
-                 test_settings_reach_the_helpers):
+                 test_settings_reach_the_helpers, test_static_frames_release_scroll_state):
         try:
             test()
         except Exception as exc:  # a crash is a failure, not a skip
