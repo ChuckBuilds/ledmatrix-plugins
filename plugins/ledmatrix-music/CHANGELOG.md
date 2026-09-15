@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.4.3] - 2026-09-15
+
+### Fixed
+- **No network on the render thread.** `display()` still downloaded album art
+  inline (5 s timeout) whenever nothing had been prefetched, and
+  `activate_music_display()` called YTM `connect_client(timeout=10)`, which can
+  block for 15 s. Art is now downloaded only by the polling thread, the YTM
+  event thread and `update()` (retried 30 s after a failure); `display()` draws
+  the placeholder until it arrives. YTM is connected by the polling thread,
+  which already reconnects with backoff while the display is active.
+- **Downloads no longer hold `track_info_lock`,** which `display()` takes every
+  frame, so a slow cover no longer stalls the panel through the lock.
+- **Prefetched art and its URL are read and written together under a lock,**
+  so a frame cannot pair one track's cover with another track's URL.
+
+### Removed
+- Unused `get_current_display_info()`, and the unenforced
+  `max_ledmatrix_version` manifest field.
+
 ## [1.2.0] - 2026-07-29
 
 ### Changed

@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-music",
   "name": "Music Player - Now Playing",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "description": "Real-time now playing display for Spotify and YouTube Music with album art, scrolling text, and progress bars",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -33,7 +33,6 @@
     ">=2.0.0"
   ],
   "min_ledmatrix_version": "2.0.0",
-  "max_ledmatrix_version": "3.0.0",
   "web_ui_actions": [
     {
       "id": "authenticate-spotify",
@@ -66,6 +65,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.4.3",
+      "released": "2026-09-15",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "No network on the render thread. display() still had two blocking paths: an inline album-art download (5s timeout) whenever nothing was prefetched, and activate_music_display() calling the YTM client's connect_client(timeout=10), which can block for 15s. Album art is now downloaded only by the polling thread, the YTM event thread and update(), with a 30s retry after a failure, and display() draws the placeholder until it arrives; YTM connects from the polling thread, which already reconnects with backoff while the display is active. The download also no longer runs while holding track_info_lock, which display() waits on every frame. The prefetched bytes and their URL are now written and read together under a lock, so a frame cannot pair one track's cover with another track's URL. Removed the unused get_current_display_info() and the unenforced max_ledmatrix_version manifest field."
+    },
     {
       "version": "1.4.2",
       "released": "2026-09-07",
