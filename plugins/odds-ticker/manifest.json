@@ -1,7 +1,7 @@
 {
   "id": "odds-ticker",
   "name": "Odds Ticker",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "description": "Displays scrolling odds and betting lines for upcoming games across multiple sports leagues including NFL, NBA, MLB, NCAA Football, and more",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -20,6 +20,12 @@
   "branch": "main",
   "plugin_path": "plugins/odds-ticker",
   "versions": [
+    {
+      "version": "1.7.1",
+      "released": "2026-09-15",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Scroll frames stay paced by the panel for the whole slot. With display_options.loop off, display() released the scrolling state once the scroll reached its end, while the controller kept the parked end frame on screen until the slot's minimum duration. Not scrolling, core's update_display() skips an identical frame without waiting for vsync, so the controller's 8ms loop ran unpaced and the frame hold was dropped: the frame stats read 113-124 fps (median 8.1ms) on a 100 Hz panel where news and stocks read 100.0 fps. display() now passes set_scrolling_state(True, frame_hold=...) from core's resolver on every frame the strip is on screen, parked or not, as news and stocks do. No config or visual change; looping tickers were already paced."
+    },
     {
       "version": "1.7.0",
       "released": "2026-09-15",
