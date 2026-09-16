@@ -5,6 +5,12 @@ Standalone script, per this repo's convention:
     0 pass, 2 skip (prerequisites absent), 1 fail.
 
     python plugins/blackjack/test_blackjack_engine.py
+
+Seeded ``random.Random`` appears here and is flagged B311 by static analysis.
+It is deliberate and not a security question: a fixed seed is what makes these
+reproducible. The shoe a *player* is dealt from uses ``random.SystemRandom``
+(see ``blackjack_engine.Shoe``), and an engine test asserts that seeding the
+``random`` module anywhere in the process cannot change it.
 """
 
 from __future__ import annotations
@@ -73,7 +79,7 @@ def test_totals():
 
 
 def test_shoe():
-    shoe = Shoe(decks=2, rng=random.Random(1))
+    shoe = Shoe(decks=2, rng=random.Random(1))  # nosec B311
     check("shoe holds decks x 52", shoe.remaining == 104, str(shoe.remaining))
     drawn = [shoe.draw() for _ in range(104)]
     counts = Counter((card.rank, card.suit) for card in drawn)
@@ -83,7 +89,8 @@ def test_shoe():
     check("drawing past empty reshuffles rather than raising",
           shoe.draw() is not None and shoe.remaining == 103)
 
-    shoe = Shoe(decks=6, rng=random.Random(2), penetration=0.75)
+    shoe = Shoe(decks=6, penetration=0.75,
+                rng=random.Random(2))  # nosec B311
     check("full shoe is not due a shuffle", not shoe.needs_shuffle)
     for _ in range(int(312 * 0.75) + 1):
         shoe.draw()
@@ -195,7 +202,7 @@ def test_hand_script():
     """A long run of real hands, checked for the invariants that keep the
     renderer honest: the script must describe a hand that could have happened."""
     rules = Rules()
-    shoe = Shoe(6, random.Random(99))
+    shoe = Shoe(6, random.Random(99))  # nosec B311
     outcomes = Counter()
     for index in range(4000):
         script = play_hand(shoe, rules)
@@ -300,10 +307,10 @@ def test_flourishes():
 
     # Every label has to fit the banner's second line on a 64px panel at the
     # compact face, which is 58 usable pixels.
-    shoe = Shoe(6, random.Random(4))
+    shoe = Shoe(6, random.Random(4))  # nosec B311
     seen = set()
     for _ in range(20000):
-        script = play_hand(shoe, rules := Rules())
+        script = play_hand(shoe, Rules())
         if script.flourish:
             seen.add(script.flourish)
     over = [label for label in seen if len(label) > 8]
@@ -315,7 +322,7 @@ def test_flourishes():
 
 def test_determinism():
     def deal(seed):
-        shoe = Shoe(6, random.Random(seed))
+        shoe = Shoe(6, random.Random(seed))  # nosec B311
         return [str(card) for _ in range(5)
                 for card in play_hand(shoe, Rules()).player_cards]
 

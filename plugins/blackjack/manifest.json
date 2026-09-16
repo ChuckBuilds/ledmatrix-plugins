@@ -1,7 +1,7 @@
 {
   "id": "blackjack",
   "name": "Blackjack",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "author": "ChuckBuilds",
   "description": "Deals one hand of Las Vegas blackjack per rotation. Cards slide in and flip face up a few seconds apart, the player follows basic strategy, the dealer plays the house rules, and the hand ends on a BLACKJACK! / BUST! / PUSH banner. Every hand comes off a real shuffled shoe, so no two rotations are the same.",
   "entry_point": "manager.py",
@@ -34,6 +34,12 @@
   "update_interval": 3600,
   "default_duration": 22,
   "versions": [
+    {
+      "version": "1.2.1",
+      "released": "2026-09-16",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Static-analysis findings from the merge. Three were real: the Vegas width hook was reached through a getattr/callable dance that an analyser could not narrow, and is now a plain call with the AttributeError caught for cores that predate the hook; a walrus in an engine test bound a name nothing read; and a test imported a symbol it never used. The other ten were seeded random.Random calls flagged as weak crypto -- deliberate, since a fixed seed is what makes tests, goldens and preview renders reproducible, while the shoe a player is dealt from uses SystemRandom. Those are annotated with a B311-scoped nosec and a note in each module. No behaviour change."
+    },
     {
       "version": "1.2.0",
       "released": "2026-09-16",
