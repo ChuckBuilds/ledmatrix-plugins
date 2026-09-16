@@ -161,6 +161,17 @@ class GeochronPlugin(BasePlugin):
     # BasePlugin hooks
     # ------------------------------------------------------------------
 
+    def get_update_interval(self):
+        """Seconds between update() calls: the configured update_interval.
+
+        The core prefers a plugin's manifest update_interval (45) over its
+        config unless the plugin answers here, so the setting was read and
+        never used. The core clamps the answer to at least 5 seconds; the
+        schema's minimum is 15. Attribute read only: the core calls this on
+        every scheduling tick.
+        """
+        return self.update_interval
+
     def update(self):
         """Recompute the terminator and re-render every panel size in use.
 

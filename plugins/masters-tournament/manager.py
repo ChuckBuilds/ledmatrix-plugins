@@ -409,6 +409,17 @@ class MastersTournamentPlugin(BasePlugin):
             )
         self._phase_checked_at = time.time()
 
+    def get_update_interval(self):
+        """Seconds between update() calls: the configured update_interval.
+
+        The core prefers the manifest's update_interval (30) over the plugin's
+        config unless the plugin answers here, so an interval below 30 did
+        nothing. The core clamps the answer to at least 5 seconds; the schema's
+        minimum is 10. Attribute read only: the core calls this on every
+        scheduling tick.
+        """
+        return self._update_interval
+
     def update(self):
         """Fetch and update all Masters Tournament data."""
         now = time.time()
