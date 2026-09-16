@@ -223,6 +223,22 @@ outside this monorepo, so review their source before installing.
 | Tidbyt Baseball Scoreboard | [@trsadler](https://github.com/trsadler) | [MLB-Scoreboard-LEDMatrix](https://github.com/trsadler/MLB-Scoreboard-LEDMatrix) — split team-color MLB live scoreboard |
 | Sleeper Fantasy | [@ant456](https://github.com/ant456) | [ledmatrix-sleeper-fantasy](https://github.com/ant456/ledmatrix-sleeper-fantasy) — fantasy football matchups and scores from Sleeper |
 
+These rows carry no preview, and that is a limit worth stating rather than a
+gap waiting to be filled. Every thumbnail above is regenerated from the plugin's
+own source and re-checked against it in CI; a plugin that lives in someone
+else's repository cannot be re-rendered here, so any image we committed would
+drift silently the moment its author changed anything.
+
+Rendering them once to find out was instructive: of the six, one produced a
+screenshot that represents the plugin, one drew an error state, one a
+mid-scroll fragment, and three drew nothing at all — because they need a stop
+id, a league id, a Plex server or an uploaded GIF that only their owner has. A
+blank or broken frame under someone's name is worse than no frame.
+
+**Authors: set `screenshot` in your manifest** to a raw image URL in your own
+repository and it will appear here. The image stays yours, refreshes when you
+refresh it, and needs nothing from this repo.
+
 Want to see your plugin here? Check out [3rd Party Plugin Development](#3rd-party-plugin-development) below or submit a plugin via [Discord](https://discord.gg/RdrC37rEag).
 
 ---

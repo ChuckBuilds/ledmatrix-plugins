@@ -16,11 +16,26 @@ Doing this by hand across forty-odd rows drifts: a row gets a thumbnail whose
 image was never committed, or an image lands and the table is never updated.
 The tables are keyed off the ``./plugins/<id>/`` link already in each row, so
 there is no second list to keep in step.
+
+The same run also checks the *catalogue* itself, because the Preview column was
+never the only thing that drifted. Three faults have all happened and none was
+caught by anything:
+
+* a plugin shipped with a manifest, a hero image and a store listing, and no row
+  in the table a visitor actually browses -- so the only way to find it was the
+  store;
+* one category rendered as two tables, from two ``### Productivity (1)``
+  headings with one row each;
+* a heading's count disagreeing with the rows beneath it.
+
+All three are invisible to someone reading the page and obvious to a script, so
+``--check`` fails on them.
 """
 
 from __future__ import annotations
 
 import argparse
+import json
 import re
 import sys
 from pathlib import Path
@@ -28,6 +43,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 README = REPO_ROOT / "README.md"
 ASSETS_ROOT = REPO_ROOT / "docs" / "assets"
+REGISTRY = REPO_ROOT / "plugins.json"
 
 HEADER_RE = re.compile(r"^\|\s*Plugin\s*\|\s*Description\s*\|(\s*Preview\s*\|)?\s*$")
 SEPARATOR_RE = re.compile(r"^\|[\s:-]+\|[\s:-]+\|([\s:-]+\|)?\s*$")
@@ -103,6 +119,87 @@ def rewrite(text: str) -> str:
     return "\n".join(out)
 
 
+CATEGORY_RE = re.compile(r"^### ([A-Za-z0-9 &/+-]+) \((\d+)\)\s*$")
+
+
+def catalogue_faults(text: str) -> list[str]:
+    """Everything wrong with the catalogue that reading it would not reveal.
+
+    Deliberately not checked: the Description column. Those are short blurbs
+    written for the table and the manifest carries store-length copy, so all
+    forty-four differ on purpose -- asserting they match would be asserting a
+    fact that was never true.
+    """
+    faults: list[str] = []
+
+    on_disk = {path.parent.name for path in REPO_ROOT.glob("plugins/*/manifest.json")}
+
+    # Rows grouped under the heading they sit beneath, so a heading's count can
+    # be checked against what it actually contains.
+    sections: list[tuple[str, int, list[str]]] = []
+    current: tuple[str, int, list[str]] | None = None
+    for line in text.splitlines():
+        heading = CATEGORY_RE.match(line)
+        if heading:
+            if current:
+                sections.append(current)
+            current = (heading.group(1).strip(), int(heading.group(2)), [])
+            continue
+        if line.startswith("## "):          # left the catalogue entirely
+            if current:
+                sections.append(current)
+            current = None
+            continue
+        if current is not None:
+            found = PLUGIN_LINK_RE.search(line)
+            if found and line.lstrip().startswith("|"):
+                current[2].append(found.group(1))
+    if current:
+        sections.append(current)
+
+    listed = [pid for _name, _count, ids in sections for pid in ids]
+
+    for pid in sorted(on_disk - set(listed)):
+        faults.append(f"plugins/{pid}/ has a manifest but no row in the catalogue")
+    for pid in sorted(set(listed) - on_disk):
+        faults.append(f"the catalogue lists {pid}, which is not a plugin directory")
+
+    duplicates = {name for name, _c, _i in sections
+                  if sum(1 for other, _c2, _i2 in sections if other == name) > 1}
+    for name in sorted(duplicates):
+        faults.append(f'category "{name}" has more than one heading, so it renders '
+                      f"as separate tables")
+
+    for name, count, ids in sections:
+        if count != len(ids):
+            faults.append(f'category "{name}" says ({count}) but has {len(ids)} rows')
+
+    # The third-party table is the other half of the catalogue and drifts the
+    # same way: Sleeper Fantasy sat in the registry and not in the table, and
+    # nothing noticed. Matched on the repo URL because those rows carry a
+    # display name rather than a plugin id.
+    try:
+        registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        registry = {"plugins": []}
+    external = [entry for entry in registry.get("plugins", [])
+                if not entry.get("plugin_path")]
+    for entry in external:
+        repo = (entry.get("repo") or "").rstrip("/")
+        if repo and repo not in text:
+            faults.append(f"{entry['id']} is in the registry as a third-party "
+                          f"plugin but its repo is not linked in the README")
+
+    seen: dict[str, int] = {}
+    for pid in listed:
+        seen[pid] = seen.get(pid, 0) + 1
+    for pid, times in sorted(seen.items()):
+        if times > 1:
+            faults.append(f"{pid} appears in the catalogue {times} times")
+
+    return faults
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--check", action="store_true",
@@ -112,19 +209,27 @@ def main() -> int:
     original = README.read_text(encoding="utf-8")
     updated = rewrite(original)
 
-    if original == updated:
+    faults = catalogue_faults(updated)
+    for fault in faults:
+        print(f"  catalogue: {fault}")
+
+    if original != updated:
+        if args.check:
+            print("README plugin previews are out of date.")
+            print("Run: python scripts/update_readme_previews.py")
+            return 1
+        README.write_text(updated, encoding="utf-8")
+        # Counted from the rendered table rather than one asset directory: two
+        # plugins keep their hero beside the plugin instead of under
+        # docs/assets, and counting only the latter reported 42 of 44 as though
+        # two were missing an image they had.
+        with_preview = updated.count('<img src="./plugins/') + \
+            updated.count('<img src="./docs/assets/')
+        print(f"Updated README.md ({with_preview} plugins have a preview image).")
+    else:
         print("README plugin tables are up to date.")
-        return 0
 
-    if args.check:
-        print("README plugin previews are out of date.")
-        print("Run: python scripts/update_readme_previews.py")
-        return 1
-
-    README.write_text(updated, encoding="utf-8")
-    with_preview = updated.count('<img src="./docs/assets/')
-    print(f"Updated README.md ({with_preview} plugins have a preview image).")
-    return 0
+    return 1 if faults else 0
 
 
 if __name__ == "__main__":
