@@ -1900,8 +1900,13 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
         once the first strip was built nothing could change it, and the score on
         the marquee stayed frozen until the process restarted.
 
-        _ensure_manager_updated() is itself interval-guarded, so this costs two
-        getattrs and a comparison on the frames where nothing is due.
+        The refresh runs off the render thread -- see _dispatch_switch_refresh().
+        This is called on every scroll frame, and a due manager.update() is a
+        network round trip: run inline, it froze the marquee for the length of
+        the ESPN request. The refreshed games land a few frames later, and the
+        fingerprint check that follows this call picks them up on the next frame
+        after they do. Dispatches for a manager are rate-limited, so the frames
+        where nothing is due cost a dict lookup and a clock read.
 
         Deliberately NOT gated on mode_type == "live". A recent/upcoming strip
         never rebuilds from the fingerprint (_live_scroll_needs_rebuild returns
@@ -1914,11 +1919,13 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
         """
         for manager in self._live_scroll_managers(league) or []:
             try:
-                self._ensure_manager_updated(manager)
-            except (AttributeError, KeyError, TypeError, ValueError, OSError) as exc:
-                # Narrow on purpose: _ensure_manager_updated() already swallows
-                # whatever manager.update() raises, so anything arriving here is
-                # a lookup or a transport error, not a fetch failure.
+                self._dispatch_switch_refresh(manager)
+            except (AttributeError, KeyError, TypeError, ValueError, OSError,
+                    RuntimeError) as exc:
+                # Narrow on purpose: the update itself runs on another thread,
+                # and _ensure_manager_updated() swallows whatever it raises, so
+                # anything arriving here is a lookup error or a thread that
+                # could not be started, not a fetch failure.
                 self.logger.debug("Live scroll refresh skipped: %s", exc)
 
     @classmethod
@@ -2323,6 +2330,54 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
                         getattr(self, 'ncaaw_upcoming', None)):
             self._current_display_league = 'ncaaw'
 
+    #: Floor between two draw-time refresh dispatches for one manager. The
+    #: manager's own update() still decides whether anything is fetched; this
+    #: only stops display() starting a thread on every frame just to be told
+    #: the interval has not elapsed.
+    _SWITCH_REFRESH_MIN_GAP_SECONDS = 5.0
+
+    def _dispatch_switch_refresh(self, manager) -> None:
+        """Run _ensure_manager_updated(manager) on a daemon thread.
+
+        Called from display(), so it must not block: when an update is due,
+        manager.update() fetches rankings and the schedule over the network,
+        and doing that inline stalled the frame for the length of the round
+        trip. The refreshed games land in the manager a few frames later --
+        still within the manager's own interval, which is the freshness the
+        switch path was missing.
+
+        At most one refresh per manager runs at a time, and dispatches for the
+        same manager are at least _SWITCH_REFRESH_MIN_GAP_SECONDS apart. Only
+        the render thread touches the two bookkeeping dicts, so they need no
+        lock; manager.update() stamps last_update before it fetches, so a
+        concurrent background plugin.update() for the same manager returns
+        early rather than fetching twice.
+        """
+        threads = getattr(self, "_switch_refresh_threads", None)
+        if threads is None:
+            threads = self._switch_refresh_threads = {}
+        stamps = getattr(self, "_switch_refresh_at", None)
+        if stamps is None:
+            stamps = self._switch_refresh_at = {}
+
+        key = id(manager)
+        running = threads.get(key)
+        if running is not None and running.is_alive():
+            return
+        now = time.monotonic()
+        last = stamps.get(key)
+        if last is not None and now - last < self._SWITCH_REFRESH_MIN_GAP_SECONDS:
+            return
+        stamps[key] = now
+        thread = threading.Thread(
+            target=self._ensure_manager_updated,
+            args=(manager,),
+            daemon=True,
+            name="SwitchRefresh-%s" % type(manager).__name__,
+        )
+        threads[key] = thread
+        thread.start()
+
     def _try_manager_display(
         self, 
         manager, 
@@ -2358,9 +2413,11 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
         # which are used for progress tracking and duration calculations
         self._set_display_context_from_manager(manager, mode_type)
         
-        # Ensure manager is updated before displaying
-        # This fetches fresh data if needed based on update intervals
-        self._ensure_manager_updated(manager)
+        # Refresh the manager if its data is due. Dispatched off the render
+        # thread: a due update() is a network round trip, and run inline here
+        # it froze the panel for the length of the request (see
+        # _dispatch_switch_refresh). Fresh data lands a few frames later.
+        self._dispatch_switch_refresh(manager)
         
         # Attempt to display content from this manager
         # Manager returns True if it has content to show, False if no content

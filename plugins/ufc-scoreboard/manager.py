@@ -13,6 +13,7 @@ Based on original work by Alex Resnick (legoguy1000) - PR #137
 
 import copy
 import logging
+import threading
 import time
 from typing import Dict, Any, Set, Optional, Tuple, List
 
@@ -681,6 +682,54 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         return success
 
+    #: Floor between two draw-time refresh dispatches for one manager. The
+    #: manager's own update() still decides whether anything is fetched; this
+    #: only stops display() starting a thread on every frame just to be told
+    #: the interval has not elapsed.
+    _SWITCH_REFRESH_MIN_GAP_SECONDS = 5.0
+
+    def _dispatch_switch_refresh(self, manager) -> None:
+        """Run _ensure_manager_updated(manager) on a daemon thread.
+
+        Called from display(), so it must not block: when an update is due,
+        manager.update() fetches rankings and the schedule over the network,
+        and doing that inline stalled the frame for the length of the round
+        trip. The refreshed games land in the manager a few frames later --
+        still within the manager's own interval, which is the freshness the
+        switch path was missing.
+
+        At most one refresh per manager runs at a time, and dispatches for the
+        same manager are at least _SWITCH_REFRESH_MIN_GAP_SECONDS apart. Only
+        the render thread touches the two bookkeeping dicts, so they need no
+        lock; manager.update() stamps last_update before it fetches, so a
+        concurrent background plugin.update() for the same manager returns
+        early rather than fetching twice.
+        """
+        threads = getattr(self, "_switch_refresh_threads", None)
+        if threads is None:
+            threads = self._switch_refresh_threads = {}
+        stamps = getattr(self, "_switch_refresh_at", None)
+        if stamps is None:
+            stamps = self._switch_refresh_at = {}
+
+        key = id(manager)
+        running = threads.get(key)
+        if running is not None and running.is_alive():
+            return
+        now = time.monotonic()
+        last = stamps.get(key)
+        if last is not None and now - last < self._SWITCH_REFRESH_MIN_GAP_SECONDS:
+            return
+        stamps[key] = now
+        thread = threading.Thread(
+            target=self._ensure_manager_updated,
+            args=(manager,),
+            daemon=True,
+            name="SwitchRefresh-%s" % type(manager).__name__,
+        )
+        threads[key] = thread
+        thread.start()
+
     def _try_manager_display(
         self,
         manager,
@@ -695,7 +744,11 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
         self._current_display_mode_type = mode_type
         self._current_display_league = "ufc"
 
-        self._ensure_manager_updated(manager)
+        # Refresh the manager if its data is due. Dispatched off the render
+        # thread: a due update() is a network round trip, and run inline here
+        # it froze the panel for the length of the request (see
+        # _dispatch_switch_refresh). Fresh data lands a few frames later.
+        self._dispatch_switch_refresh(manager)
         result = manager.display(force_clear)
 
         actual_mode = f"ufc_{mode_type}" if mode_type else display_mode
@@ -776,7 +829,7 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         manager = self._get_current_manager()
         if manager:
-            self._ensure_manager_updated(manager)
+            self._dispatch_switch_refresh(manager)
             result = manager.display(force_clear)
             return bool(result)
 

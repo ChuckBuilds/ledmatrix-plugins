@@ -753,8 +753,13 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
         once the first strip was built nothing could change it, and the score on
         the marquee stayed frozen until the process restarted.
 
-        _ensure_manager_updated() is itself interval-guarded, so this costs two
-        getattrs and a comparison on the frames where nothing is due.
+        The refresh runs off the render thread -- see _dispatch_switch_refresh().
+        This is called on every scroll frame, and a due manager.update() is a
+        network round trip: run inline, it froze the marquee for the length of
+        the ESPN request. The refreshed games land a few frames later, and the
+        fingerprint check that follows this call picks them up on the next frame
+        after they do. Dispatches for a manager are rate-limited, so the frames
+        where nothing is due cost a dict lookup and a clock read.
 
         Deliberately NOT gated on mode_type == "live". A recent/upcoming strip
         never rebuilds from the fingerprint (_live_scroll_needs_rebuild returns
@@ -767,11 +772,13 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
         """
         for manager in self._live_scroll_managers(league) or []:
             try:
-                self._ensure_manager_updated(manager)
-            except (AttributeError, KeyError, TypeError, ValueError, OSError) as exc:
-                # Narrow on purpose: _ensure_manager_updated() already swallows
-                # whatever manager.update() raises, so anything arriving here is
-                # a lookup or a transport error, not a fetch failure.
+                self._dispatch_switch_refresh(manager)
+            except (AttributeError, KeyError, TypeError, ValueError, OSError,
+                    RuntimeError) as exc:
+                # Narrow on purpose: the update itself runs on another thread,
+                # and _ensure_manager_updated() swallows whatever it raises, so
+                # anything arriving here is a lookup error or a thread that
+                # could not be started, not a fetch failure.
                 self.logger.debug("Live scroll refresh skipped: %s", exc)
 
     @classmethod
