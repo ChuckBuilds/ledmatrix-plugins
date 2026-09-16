@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.30.1] - 2026-09-16
+
+### Fixed
+- **Scores and schedules load again after ESPN stopped accepting date
+  ranges.** Since 2026-09-15 ESPN answers `dates=YYYYMMDD-YYYYMMDD` scoreboard
+  queries with `400 Bad Request` for every sport. Today's games, the
+  lookback/lookahead window and the season schedule are all ranges, so the
+  NHL and NCAA hockey boards logged `400 Client Error` and showed nothing. A rejected
+  range is now fetched by `fetch_espn_scoreboard` (`hockey_espn_dates.py`, a
+  copy of LEDMatrix core's `src/common/espn_dates.py`) as whole months plus the
+  days at either end, which cover the window exactly: a season is 8 to 12
+  requests. A month that comes back at ESPN's 500-event cap is re-fetched day by
+  day, and after one rejection ranges go straight to chunks for 6 hours.
+- **`limit=1000` silently truncated results.** Above 500 ESPN returns a short
+  list with no error (college football: 25 of 68 games for one Saturday).
+  Scoreboard requests now send at most 500.
+- **Older cores.** A core whose background service cannot fetch ranges (before
+  ChuckBuilds/LEDMatrix#591 added `handles_espn_date_ranges`) would send the
+  season range to ESPN as-is, so the plugin fetches the season itself during
+  `update()` instead. `SportsCore._get_weeks_data` is carried here for the same
+  reason.
+
 ## [1.30.0] - 2026-09-15
 
 ### Added

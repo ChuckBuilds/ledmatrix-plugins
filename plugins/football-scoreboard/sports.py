@@ -44,6 +44,7 @@ except ModuleNotFoundError as exc:
         raise
     from base_odds_manager import BaseOddsManager
 from data_sources import ESPNDataSource
+from football_espn_dates import ESPN_MAX_LIMIT, fetch_espn_scoreboard
 from football_timezone import resolve_timezone
 # Imported at module load time on purpose (see the monorepo module-naming
 # rules): a deferred bare-name import could bind another plugin's
@@ -1698,14 +1699,14 @@ class SportsCore(SportsCoreSharedMixin, ABC):
                 f"Fetching games for {self.sport}/{self.league} over date range "
                 f"{formatted_date_yesterday}-{formatted_date}"
             )
-            response = self.session.get(
+            data = fetch_espn_scoreboard(
+                self.session,
                 url,
-                params={"dates": f"{formatted_date_yesterday}-{formatted_date}", "limit": 1000},
+                params={"dates": f"{formatted_date_yesterday}-{formatted_date}", "limit": ESPN_MAX_LIMIT},
                 headers=self.headers,
                 timeout=10,
+                logger=self.logger,
             )
-            response.raise_for_status()
-            data = response.json()
             events = data.get("events", [])
 
             self.logger.info(
@@ -1731,6 +1732,83 @@ class SportsCore(SportsCoreSharedMixin, ABC):
             )
             return None
 
+    def _get_weeks_data(self) -> Optional[Dict]:
+        """Games in the lookback/lookahead window, shown while the season loads.
+
+        Overrides the core mixin's copy, which asks ESPN for this window as a
+        date range. ESPN has answered ranges with 400 since 2026-09-15 and cores
+        from before that fix have no fallback, so without this override the
+        window fails whenever the season schedule is not cached yet.
+        """
+        date_str = ""
+        try:
+            now = datetime.now(pytz.utc)
+            start_date = now - timedelta(days=self.schedule_lookback_days)
+            end_date = now + timedelta(days=self.schedule_lookahead_days)
+            date_str = f"{start_date.strftime('%Y%m%d')}-{end_date.strftime('%Y%m%d')}"
+            url = f"https://site.api.espn.com/apis/site/v2/sports/{self.sport}/{self.league}/scoreboard"
+            data = fetch_espn_scoreboard(
+                self.session,
+                url,
+                params={"dates": date_str, "limit": ESPN_MAX_LIMIT},
+                headers=self.headers,
+                timeout=10,
+                logger=self.logger,
+            )
+            immediate_events = data.get("events", [])
+
+            if immediate_events:
+                self.logger.info(f"Fetched {len(immediate_events)} events {date_str}")
+                return {"events": immediate_events}
+
+        except requests.exceptions.RequestException as e:
+            self.logger.warning(
+                f"Error fetching this weeks games for {self.sport} - {self.league} - {date_str}: {e}"
+            )
+        return None
+
+    def _background_fetches_espn_ranges(self) -> bool:
+        """Can the core's background service fetch an ESPN date range?
+
+        Cores from before the 2026-09-15 fix send a season range to ESPN as-is,
+        which now answers 400 for every sport. On those cores the managers fetch
+        the season themselves with _fetch_season_directly instead.
+        """
+        service = getattr(self, "background_service", None)
+        return bool(getattr(service, "handles_espn_date_ranges", False))
+
+    def _fetch_season_directly(
+        self,
+        url: str,
+        datestring: str,
+        cache_key: str,
+        label: str,
+        ttl: Optional[int] = None,
+    ) -> Optional[Dict]:
+        """Fetch a season schedule on this thread, in chunks ESPN accepts, and cache it.
+
+        ``label`` names the schedule in log lines, e.g. ``"2026 season"``.
+        """
+        try:
+            data = fetch_espn_scoreboard(
+                self.session,
+                url,
+                params={"dates": datestring, "limit": ESPN_MAX_LIMIT},
+                headers=self.headers,
+                timeout=30,
+                logger=self.logger,
+            )
+        except Exception as e:
+            self.logger.error(f"Failed to fetch {label} schedule: {e}")
+            return None
+        if ttl is None:
+            self.cache_manager.set(cache_key, data)
+        else:
+            self.cache_manager.set(cache_key, data, ttl=ttl)
+        self.logger.info(
+            f"Fetched {label} schedule: {len(data.get('events', []))} events"
+        )
+        return data
 
     def _is_favorite_game(self, game: Dict) -> bool:
         """Does either side of this game belong to a favourite team?"""

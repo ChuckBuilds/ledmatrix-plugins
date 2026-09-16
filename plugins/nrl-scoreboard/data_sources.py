@@ -10,6 +10,7 @@ from typing import Dict, List
 import requests
 import logging
 from datetime import datetime
+from nrl_espn_dates import ESPN_MAX_LIMIT, fetch_espn_scoreboard
 
 class DataSource(ABC):
     """Abstract base class for data sources."""
@@ -64,10 +65,14 @@ class ESPNDataSource(DataSource):
             now = datetime.now()
             formatted_date = now.strftime("%Y%m%d")
             url = f"{self.base_url}/{sport}/{league}/scoreboard"
-            response = self.session.get(url, params={"dates": formatted_date, "limit": 1000}, headers=self.get_headers(), timeout=15)
-            response.raise_for_status()
-
-            data = response.json()
+            data = fetch_espn_scoreboard(
+                self.session,
+                url,
+                params={"dates": formatted_date, "limit": ESPN_MAX_LIMIT},
+                headers=self.get_headers(),
+                timeout=15,
+                logger=self.logger,
+            )
             events = data.get('events', [])
 
             # Filter for live games
@@ -89,13 +94,17 @@ class ESPNDataSource(DataSource):
 
             params = {
                 'dates': f"{start_date.strftime('%Y%m%d')}-{end_date.strftime('%Y%m%d')}",
-                "limit": 1000
+                "limit": ESPN_MAX_LIMIT
             }
 
-            response = self.session.get(url, headers=self.get_headers(), params=params, timeout=15)
-            response.raise_for_status()
-
-            data = response.json()
+            data = fetch_espn_scoreboard(
+                self.session,
+                url,
+                headers=self.get_headers(),
+                params=params,
+                timeout=15,
+                logger=self.logger,
+            )
             events = data.get('events', [])
 
             self.logger.debug(f"Fetched {len(events)} scheduled games for {sport}/{league}")

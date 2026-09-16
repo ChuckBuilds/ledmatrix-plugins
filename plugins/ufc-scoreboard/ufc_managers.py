@@ -91,22 +91,13 @@ class BaseUFCManager(MMA):
                     # Clear invalid cache
                     self.cache_manager.clear_cache(cache_key)
 
-        # Synchronous fallback when background service is not available
-        if not self.background_enabled:
-            try:
-                response = self.session.get(
-                    ESPN_UFC_SCOREBOARD_URL,
-                    params={"dates": datestring, "limit": 1000},
-                    headers=self.headers,
-                    timeout=30,
-                )
-                response.raise_for_status()
-                data = response.json()
-                self.cache_manager.set(cache_key, data)
-                return data
-            except Exception as e:
-                self.logger.error(f"Sync fetch failed: {e}")
-                return None
+        # Synchronous fallback when the background service is off, or is a
+        # core that would send this range to ESPN as-is (rejected with 400
+        # since 2026-09-15).
+        if not self.background_enabled or not self._background_fetches_espn_ranges():
+            return self._fetch_season_directly(
+                ESPN_UFC_SCOREBOARD_URL, datestring, cache_key, f"{season_year} season"
+            )
 
         # Start background fetch
         self.logger.info(

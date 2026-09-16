@@ -122,6 +122,8 @@ MODULE_FIRST_VERSION = {
     # tagged, set each None entry here to that tag -- the test's
     # tag-verification section insists on it once the tag is in its list.
     "src.common.sports_helpers": None,  # core #583
+    "src.core_config_keys": None,  # core #589
+    "src.pi5_matrix_support": None,  # core #586
 }
 
 #: Releases whose ``src/__init__.py`` ``__version__`` lags their tag. The

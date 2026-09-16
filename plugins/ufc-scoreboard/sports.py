@@ -23,6 +23,7 @@ except ImportError:
     DynamicTeamResolver = None
 from base_odds_manager import BaseOddsManager
 from data_sources import ESPNDataSource
+from ufc_espn_dates import ESPN_MAX_LIMIT, fetch_espn_scoreboard
 from ufc_timezone import resolve_timezone
 
 # Import main logo downloader (same as football plugin).
@@ -1270,14 +1271,14 @@ class SportsCore(ABC):
             # Fetch todays games only
             url = f"https://site.api.espn.com/apis/site/v2/sports/{self.sport}/{self.league}/scoreboard"
             self.logger.debug(f"Fetching today's games for {self.sport}/{self.league} on date {formatted_date}")
-            response = self.session.get(
+            data = fetch_espn_scoreboard(
+                self.session,
                 url,
-                params={"dates": f"{formatted_date_yesterday}-{formatted_date}", "limit": 1000},
+                params={"dates": f"{formatted_date_yesterday}-{formatted_date}", "limit": ESPN_MAX_LIMIT},
                 headers=self.headers,
                 timeout=10,
+                logger=self.logger,
             )
-            response.raise_for_status()
-            data = response.json()
             events = data.get("events", [])
 
             self.logger.info(
@@ -1304,27 +1305,28 @@ class SportsCore(ABC):
             return None
 
     def _get_weeks_data(self) -> Optional[Dict]:
-        """
-        Get partial data for immediate display while background fetch is in progress.
-        This fetches current/recent games only for quick response.
-        """
-        try:
-            # Fetch current week and next few days for immediate display
-            now = datetime.now(pytz.utc)
-            immediate_events = []
+        """Games in the lookback/lookahead window, shown while the season loads.
 
+        The window is a date range, which ESPN has answered with 400 since
+        2026-09-15; fetch_espn_scoreboard re-asks it in months and days. The
+        other scoreboards carry this same body as an override of the core
+        mixin's copy.
+        """
+        date_str = ""
+        try:
+            now = datetime.now(pytz.utc)
             start_date = now - timedelta(days=self.schedule_lookback_days)
             end_date = now + timedelta(days=self.schedule_lookahead_days)
             date_str = f"{start_date.strftime('%Y%m%d')}-{end_date.strftime('%Y%m%d')}"
             url = f"https://site.api.espn.com/apis/site/v2/sports/{self.sport}/{self.league}/scoreboard"
-            response = self.session.get(
+            data = fetch_espn_scoreboard(
+                self.session,
                 url,
-                params={"dates": date_str, "limit": 1000},
+                params={"dates": date_str, "limit": ESPN_MAX_LIMIT},
                 headers=self.headers,
                 timeout=10,
+                logger=self.logger,
             )
-            response.raise_for_status()
-            data = response.json()
             immediate_events = data.get("events", [])
 
             if immediate_events:
@@ -1336,6 +1338,49 @@ class SportsCore(ABC):
                 f"Error fetching this weeks games for {self.sport} - {self.league} - {date_str}: {e}"
             )
         return None
+
+    def _background_fetches_espn_ranges(self) -> bool:
+        """Can the core's background service fetch an ESPN date range?
+
+        Cores from before the 2026-09-15 fix send a season range to ESPN as-is,
+        which now answers 400 for every sport. On those cores the managers fetch
+        the season themselves with _fetch_season_directly instead.
+        """
+        service = getattr(self, "background_service", None)
+        return bool(getattr(service, "handles_espn_date_ranges", False))
+
+    def _fetch_season_directly(
+        self,
+        url: str,
+        datestring: str,
+        cache_key: str,
+        label: str,
+        ttl: Optional[int] = None,
+    ) -> Optional[Dict]:
+        """Fetch a season schedule on this thread, in chunks ESPN accepts, and cache it.
+
+        ``label`` names the schedule in log lines, e.g. ``"2026 season"``.
+        """
+        try:
+            data = fetch_espn_scoreboard(
+                self.session,
+                url,
+                params={"dates": datestring, "limit": ESPN_MAX_LIMIT},
+                headers=self.headers,
+                timeout=30,
+                logger=self.logger,
+            )
+        except Exception as e:
+            self.logger.error(f"Failed to fetch {label} schedule: {e}")
+            return None
+        if ttl is None:
+            self.cache_manager.set(cache_key, data)
+        else:
+            self.cache_manager.set(cache_key, data, ttl=ttl)
+        self.logger.info(
+            f"Fetched {label} schedule: {len(data.get('events', []))} events"
+        )
+        return data
 
     def _custom_scorebug_layout(self, game: dict, draw_overlay: ImageDraw.ImageDraw):
         pass

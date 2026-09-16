@@ -100,7 +100,11 @@ class BaseNCAAFBManager(Football):  # Renamed class
         priority = background_config.get("priority", 2)
 
         # Start background fetch if service is available
-        if self.background_service and self.background_enabled:
+        if (
+            self.background_service
+            and self.background_enabled
+            and self._background_fetches_espn_ranges()
+        ):
             self.logger.info(
                 f"Starting background fetch for {season_year} season schedule..."
             )
@@ -142,28 +146,14 @@ class BaseNCAAFBManager(Football):  # Renamed class
             if partial_data:
                 return partial_data
         else:
-            # Fallback to synchronous fetch if background service not available
-            self.logger.warning(
-                "Background service not available, using synchronous fetch"
+            # No background service, or a core that would send this range to
+            # ESPN as-is (rejected with 400 since 2026-09-15): fetch it here.
+            return self._fetch_season_directly(
+                ESPN_NCAAFB_SCOREBOARD_URL,
+                datestring,
+                cache_key,
+                f"{season_year} season",
             )
-            try:
-                response = self.session.get(
-                    ESPN_NCAAFB_SCOREBOARD_URL,
-                    params={"dates": datestring, "limit": 1000},
-                    headers=self.headers,
-                    timeout=30,
-                )
-                response.raise_for_status()
-                data = response.json()
-
-                # Cache the data
-                self.cache_manager.set(cache_key, data)
-                self.logger.info(f"Synchronously fetched {season_year} season schedule")
-                return data
-
-            except Exception as e:
-                self.logger.error(f"Failed to fetch {season_year} season schedule: {e}")
-                return None
 
     def _fetch_data(self) -> Optional[Dict]:
         """Fetch data using shared data mechanism or direct fetch for live."""

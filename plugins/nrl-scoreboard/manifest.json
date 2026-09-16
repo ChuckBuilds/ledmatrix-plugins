@@ -1,7 +1,7 @@
 {
   "id": "nrl-scoreboard",
   "name": "NRL Scoreboard",
-  "version": "1.26.2",
+  "version": "1.26.3",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NRL (National Rugby League) games with real-time scores and game status.",
   "category": "sports",
@@ -18,6 +18,12 @@
     "nrl_upcoming"
   ],
   "versions": [
+    {
+      "version": "1.26.3",
+      "released": "2026-09-16",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Scores and schedules load again. Since 2026-09-15 ESPN answers scoreboard date-range queries (dates=YYYYMMDD-YYYYMMDD) with 400 Bad Request for every sport, so the NRL live, recent and upcoming boards logged '400 Client Error' and showed nothing: today's games, the lookback/lookahead window and the season schedule are all ranges. A rejected range is now fetched as whole months plus the days at either end (a season is 8 to 12 requests); a month that comes back at ESPN's 500-event cap is re-fetched day by day; and after one rejection, ranges go straight to chunks for 6 hours. Scoreboard requests send limit=500 instead of 1000, which ESPN silently truncates (college football returned 25 of 68 games for one Saturday). On a LEDMatrix core whose background service cannot fetch ranges (older than ChuckBuilds/LEDMatrix#591) the plugin fetches the season schedule itself during update() instead of submitting it there."
+    },
     {
       "version": "1.26.2",
       "released": "2026-09-14",
