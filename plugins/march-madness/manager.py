@@ -111,9 +111,11 @@ class MarchMadnessPlugin(BasePlugin):
         self._cached_dynamic_duration: Optional[float] = None
         self._duration_cache_time: float = 0
 
-        # Display dimensions
-        self.display_width: int = self.display_manager.matrix.width
-        self.display_height: int = self.display_manager.matrix.height
+        # Display dimensions. display_manager.width/height, not matrix.width:
+        # matrix is None when core's hardware init failed, and the properties
+        # fall back to the canvas size.
+        self.display_width: int = self.display_manager.width
+        self.display_height: int = self.display_manager.height
 
         # HTTP session with retry
         self.session = requests.Session()
@@ -813,17 +815,19 @@ class MarchMadnessPlugin(BasePlugin):
             # Tell core the panel is scrolling and for how many refreshes to
             # hold each frame; configure() only reports the hold. Without it a
             # snapped sub-refresh speed still presented a new frame every
-            # refresh. Released once a non-looping scroll has stopped.
-            if scrolling:
-                self.display_manager.set_scrolling_state(
-                    True, frame_hold=self._scroll_frame_hold())
-            else:
-                self._release_scrolling_state()
+            # refresh. Kept on every frame the strip is on screen, including a
+            # parked end frame with loop off (as odds-ticker, news and stocks
+            # do): releasing it there let core's update_display() skip the
+            # identical frame without waiting for vsync, so the controller's
+            # 8ms loop ran unpaced for the rest of the slot and dropped the
+            # frame hold. is_cycle_complete() and the no-strip paths release it.
+            self.display_manager.set_scrolling_state(
+                True, frame_hold=self._scroll_frame_hold())
 
             self.dynamic_duration = self.scroll_helper.get_dynamic_duration()
 
-            matrix_w = self.display_manager.matrix.width
-            matrix_h = self.display_manager.matrix.height
+            matrix_w = self.display_manager.width
+            matrix_h = self.display_manager.height
             if not hasattr(self.display_manager, "image") or self.display_manager.image is None:
                 self.display_manager.image = Image.new("RGB", (matrix_w, matrix_h), COLOR_BLACK)
             self.display_manager.image.paste(visible, (0, 0))
@@ -845,8 +849,8 @@ class MarchMadnessPlugin(BasePlugin):
         self.display_manager.set_scrolling_state(False)
 
     def _display_fallback(self) -> None:
-        w = self.display_manager.matrix.width
-        h = self.display_manager.matrix.height
+        w = self.display_manager.width
+        h = self.display_manager.height
         img = Image.new("RGB", (w, h), COLOR_BLACK)
         draw = ImageDraw.Draw(img)
         draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
