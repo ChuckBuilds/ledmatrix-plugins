@@ -3172,8 +3172,21 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             logger.error(f"Error displaying fallback message: {e}", exc_info=True)
 
     def get_display_duration(self) -> float:
-        """Get display duration from config."""
-        return self.get_dynamic_duration()
+        """Seconds this ticker stays on screen.
+
+        With dynamic_duration on, the duration computed from the strip width.
+        With it off, display_options.display_duration, as the schema and README
+        document: core uses this value as the whole slot when dynamic duration
+        is disabled, and it used to return the dynamic duration either way, so
+        display_duration was read and never applied.
+        """
+        if self.supports_dynamic_duration():
+            return self.get_dynamic_duration()
+        try:
+            duration = float(self.display_duration)
+        except (TypeError, ValueError):
+            duration = 30.0
+        return duration if duration > 0 else 30.0
 
     def get_info(self) -> Dict[str, Any]:
         """Return plugin info for web UI."""
