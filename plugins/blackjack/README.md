@@ -45,6 +45,19 @@ rasterised TTF, so a glyph is the same crisp shape at every scale — no
 anti-aliased grey fringe, and no dependence on which Pillow layout engine the
 host happens to have.
 
+Nothing on the panel is anti-aliased, and that is enforced rather than
+intended: there is no TTF face, no `draw.text`, and no curve primitive in the
+renderer at all. On an emissive panel a half-lit edge pixel is not a soft edge,
+it is a dim lamp — it reads as a stuck LED, and under a mono rasteriser it can
+close the counter of an 8. A settled 128×32 frame holds 22 distinct colours,
+every one of them a colour something meant to draw; the tests assert the count,
+assert that a glyph's pixels are exactly the ink or exactly the ground, and
+grep the source for the primitives that would break it.
+
+The one smooth thing in the pipeline is the radial falloff behind the felt, and
+it never reaches the panel: it is a *threshold* source for the ordered dither,
+so its output is three tones and nothing between them.
+
 There are two faces, and the split is deliberate. Labels and the result banner
 are **words**, read by shape and forgiving of a cramped face, so they use a
 compact 3×5 set. Hand totals and card indices are **single characters with no

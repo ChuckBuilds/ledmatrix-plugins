@@ -15,6 +15,7 @@ Standalone script, per this repo's convention:
 from __future__ import annotations
 
 import os
+import pathlib
 import random
 import sys
 import time
@@ -219,6 +220,120 @@ def test_small_cards_drop_the_rank_rather_than_fake_it():
             problems.append(f"{card_w}x{card_h} drew nothing at all")
     check("the rank is dropped, not faked, below the face's size", not problems,
           "; ".join(problems))
+
+
+def test_nothing_is_anti_aliased():
+    """Every lit pixel is a colour something meant to draw, never a blend.
+
+    On an emissive panel an anti-aliased edge is not a soft edge, it is a dim
+    lamp: a half-lit pixel beside a glyph reads as a stuck LED rather than as
+    smoothing, and under the mono rasteriser it can close the counter of an 8.
+    The plugin therefore draws no TTF text and no curve primitives at all --
+    type is blitted rectangles -- and this is the assertion that keeps it that
+    way, because the failure is silent and only visible on hardware.
+    """
+    problems = []
+
+    # 1. Type. Every pixel is exactly the ink or exactly the ground.
+    for scale in (1, 2, 3, 4):
+        for text, drawer in (("BLACKJACK 21", br.draw_text),
+                             ("0123456789?-", br.draw_numerals)):
+            image = Image.new("RGB", (br.text_width(text, scale) + 8,
+                                      br.numeral_height(scale) + 8), (0, 0, 0))
+            drawer(ImageDraw.Draw(image), 4, 2, text, (255, 64, 64), scale)
+            stray = {px for px in image.getdata()} - {(0, 0, 0), (255, 64, 64)}
+            if stray:
+                problems.append(f"text@{scale} blended {sorted(stray)[:3]}")
+
+    # 2. Integer scaling. A glyph at scale N is the scale-1 glyph with every
+    #    run N times as long -- not a resampled copy of it.
+    for scale in (2, 3, 4):
+        image = Image.new("RGB", (40 * scale, 16 * scale), (0, 0, 0))
+        br.draw_text(ImageDraw.Draw(image), 0, 0, "8", (255, 255, 255), scale)
+        box = image.getbbox()
+        if box and ((box[2] - box[0]) % scale or (box[3] - box[1]) % scale):
+            problems.append(f"glyph@{scale} is {box[2]-box[0]}x{box[3]-box[1]}, "
+                            f"not a multiple of the scale")
+
+    # 3. Cards. The face is a closed palette: ground, three edge tones, ink and
+    #    the stepped pip ink. Nothing in between.
+    theme = Theme()
+    for card_w, card_h in ((10, 14), (20, 28), (38, 54), (46, 66)):
+        for rank in ("A", "7", "10", "K"):
+            for suit in "SHDC":
+                image = Image.new("RGB", (card_w + 4, card_h + 4), (0, 0, 0))
+                br.draw_card(ImageDraw.Draw(image), 2, 2, card_w, card_h,
+                             br.Card(rank, suit), True, theme, 1.0)
+                shades = {px for px in image.getdata()}
+                # Six is what the art actually uses; seven leaves one colour of
+                # room without leaving room for a fringe.
+                if len(shades) > 7:
+                    problems.append(f"{rank}{suit}@{card_w}x{card_h}: "
+                                    f"{len(shades)} colours")
+
+    # 4. The felt. A radial falloff resized with BILINEAR feeds the dither, so
+    #    the source is smooth on purpose -- but it is only ever a *threshold*,
+    #    and what lands on the panel must be the three tones and nothing else.
+    deep, mid = br._felt_tones(theme)
+    for width, height in ((128, 32), (256, 128), (96, 48)):
+        felt = br._felt_image(width, height, deep, mid)
+        shades = {px for px in felt.getdata()}
+        if shades - {(0, 0, 0), deep, mid}:
+            problems.append(f"felt {width}x{height}: {sorted(shades - {(0,0,0), deep, mid})[:3]}")
+
+    # 5. The banner's knockout type is drawn through masks that pass under a
+    #    MaxFilter to make its keyline and shadow. A max over a binary mask is
+    #    binary; a max over a soft one spreads the softness, so this is the one
+    #    place a blur could enter without any call named "blur".
+    for text, scale in (("DEALER BUST", 2), ("BLACKJACK!", 1), ("PUSH", 3)):
+        for index, mask in enumerate(br._type_masks(text, scale)):
+            values = set(mask.getdata())
+            if values - {0, 255}:
+                problems.append(f"knockout mask {index} for {text!r} is not binary")
+
+    check("nothing on the panel is an anti-aliased blend", not problems,
+          "; ".join(problems[:5]))
+
+    # A whole settled frame, as the panel gets it. The card and type checks
+    # above can only see what they draw in isolation; this is the number that
+    # would explode the moment anything on the table started smoothing.
+    script, timeline, _ = sample_hand()
+    layout = compute_layout(128, 32, script.dealer_card_count,
+                            script.player_card_count)
+    when = next(start for start, _, event in timeline
+                if event.kind == "reveal") + 1.6
+    frame = render(128, 32, layout, state_at(script, timeline, when), Theme())
+    palette = len({px for px in frame.getdata()})
+    check("a settled frame holds a small deliberate palette", palette <= 40,
+          f"{palette} distinct colours")
+    print(f"        settled 128x32 frame: {palette} distinct colours")
+
+
+def test_the_render_module_draws_no_type_it_cannot_control():
+    """No TTF, no curve primitives, no non-nearest resampling.
+
+    A guard on the *source*, because the pixel checks above can only catch what
+    the current code paths happen to draw: the first `draw.text` someone adds
+    would anti-alias on a path no existing test renders.
+    """
+    source = pathlib.Path(br.__file__).read_text()
+    banned = {
+        "ImageFont": "a TTF face anti-aliases; type here is blitted rectangles",
+        "draw.text(": "PIL text rendering is anti-aliased",
+        ".ellipse(": "a filled ellipse has no hard pixel grid at this size",
+        ".arc(": "same",
+        ".rounded_rectangle(": "same",
+        "Image.LANCZOS": "resampling invents intermediate values",
+        "Image.BICUBIC": "resampling invents intermediate values",
+    }
+    found = [f"{token} ({why})" for token, why in banned.items() if token in source]
+    check("the renderer uses no anti-aliasing primitive", not found,
+          "; ".join(found))
+
+    # BILINEAR is allowed in exactly one place and only as a threshold source.
+    bilinear = source.count("Image.BILINEAR")
+    check("BILINEAR appears only where its output is thresholded",
+          bilinear <= 1, f"{bilinear} uses")
 
 
 def test_text_measure_matches_render():
@@ -791,6 +906,8 @@ def main():
                  test_every_card_states_its_rank,
                  test_court_sprites_are_told_apart_by_silhouette,
                  test_small_cards_drop_the_rank_rather_than_fake_it,
+                 test_nothing_is_anti_aliased,
+                 test_the_render_module_draws_no_type_it_cannot_control,
                  test_text_measure_matches_render,
                  test_layout_invariants, test_renders_every_beat_on_every_size,
                  test_opening_frame_is_not_empty, test_banner_leaves_the_table_visible,
