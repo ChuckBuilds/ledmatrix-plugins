@@ -312,15 +312,25 @@ insurance, and a surrender ends a hand with nothing to watch.
 
 ## In the Vegas marquee
 
-Declared **STATIC**: the marquee pauses, the hand plays out, and the scroll
-resumes. A plugin that declares no Vegas mode is not skipped — the marquee
-captures one frame of its `display()` and scrolls that past instead, which is
-right for a clock and, for a twenty-second hand, is a single frozen still of
-whatever moment the capture caught.
+The marquee is a continuous scroll and a hand is a twenty-second animation, so
+the animation cannot be the ticker item. The **outcome** can be: the hand is
+simulated to completion before the first card is dealt, so the finished table
+and its result are known at any instant — even while the panel is still
+mid-deal.
 
-SCROLL and FIXED_SEGMENT are unavailable rather than unwanted: both want the
-content handed over as an image to be moved, and a hand is not an image. STATIC
-is the only mode offered, so the web UI cannot present one that freezes it.
+So the ticker gets a still of the hand as it ended: the final cards, with the
+result **beside** them.
+
+Where the panel is too narrow to split, the result goes *over* the cards
+instead, using the hand's own final-frame treatment — which already composes
+both into one panel. The threshold is a measurement, not a size: the ticker's
+width budget is at most one panel and anything wider is cropped to its start,
+so a two-panel arrangement would show the cards and lose the result, which is
+the half that matters.
+
+`vegas_mode: static` pauses the marquee and plays the whole hand out instead,
+for anyone who would rather watch than skim. SCROLL is not offered — it is for
+plugins with a list of interchangeable items, and a hand is one thing.
 
 ## How long a rotation lasts
 

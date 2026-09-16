@@ -57,6 +57,7 @@ from blackjack_render import (
     TABLE_STYLES,
     compute_layout,
     render,
+    render_summary,
 )
 
 #: Fraction of a deal beat spent on the slide, before the card flips face up.
@@ -489,31 +490,67 @@ class BlackjackPlugin(BasePlugin):
 
     # -- Vegas marquee ----------------------------------------------------
 
+    def get_vegas_content(self):
+        """The finished hand as one still, for the ticker.
+
+        A hand is a twenty-second animation and a ticker item slides past in
+        two, so the animation cannot be the content -- but the outcome can.
+        The script is simulated to completion before the first card is dealt,
+        so the finished table and its result are known at any instant, even
+        mid-deal on the panel.
+        """
+        try:
+            if self._script is None:
+                self._start_hand()
+            width = self.display_manager.width
+            getter = getattr(self, "get_vegas_render_width", None)
+            if callable(getter):
+                # The ticker asks for a narrower render on a wide panel so the
+                # item is tight rather than cropped afterwards.
+                width = max(16, int(getter() or width))
+            return render_summary(width, self.display_manager.height,
+                                  self._script, self.theme)
+        except Exception as exc:  # noqa: BLE001 - the ticker falls back on None
+            self.logger.error("Vegas content failed: %s", exc, exc_info=True)
+            return None
+
+    def get_vegas_content_type(self) -> str:
+        """One item: a hand is a unit, not a list of things to scroll."""
+        return "single"
+
     def get_vegas_display_mode(self):
-        """STATIC, always -- the marquee pauses and the hand plays.
+        """A fixed block that scrolls by, or STATIC to watch the hand play.
 
-        A plugin with no Vegas opinion is not skipped: the marquee captures one
-        frame of its ``display()`` and scrolls that past. For a clock that is
-        exactly right, and for this it is a twenty-second hand reduced to a
-        single frozen still -- a dealt card halfway through its slide, or an
-        empty table, depending on which frame the capture happened to catch.
+        FIXED_SEGMENT by default: ``get_vegas_content`` hands the ticker a
+        summary of the finished hand, and that scrolls by with everything else
+        rather than stopping the marquee for twenty seconds.
 
-        SCROLL and FIXED_SEGMENT are unavailable for the same reason rather
-        than by preference: both want the content handed over as an image to be
-        moved, and a hand is not an image. STATIC is the mode that exists for
-        content which has to be watched rather than passed, so it is the only
-        one offered -- a ``vegas_mode`` override would only let someone pick
-        the frozen frame.
+        STATIC is offered as an override for anyone who would rather the
+        marquee paused and the hand actually played. Both are real choices, so
+        ``vegas_mode`` is honoured; SCROLL is not offered, because it is for
+        plugins with a list of interchangeable items and a hand is one thing.
         """
         if VegasDisplayMode is None:
             return None
-        return VegasDisplayMode.STATIC
+        requested = str(self.config.get("vegas_mode", "fixed") or "fixed").lower()
+        if requested:
+            try:
+                mode = VegasDisplayMode(requested)
+            except ValueError:
+                self.logger.warning("Invalid vegas_mode %r, using fixed", requested)
+            else:
+                if mode in self.get_supported_vegas_modes():
+                    return mode
+                self.logger.warning(
+                    "vegas_mode %r is not supported by this plugin, using fixed",
+                    requested)
+        return VegasDisplayMode.FIXED_SEGMENT
 
     def get_supported_vegas_modes(self):
-        """Only STATIC, so the web UI does not offer a mode that freezes it."""
+        """The two that work. SCROLL is for multi-item plugins; a hand is one."""
         if VegasDisplayMode is None:
             return []
-        return [VegasDisplayMode.STATIC]
+        return [VegasDisplayMode.FIXED_SEGMENT, VegasDisplayMode.STATIC]
 
     # -- lifecycle / web UI ----------------------------------------------
 

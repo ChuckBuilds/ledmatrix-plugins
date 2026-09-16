@@ -26,6 +26,7 @@
     "render_fps",
     "random_seed",
     "display_duration",
+    "vegas_mode",
     "dynamic_duration"
   ],
   "properties": {
@@ -269,6 +270,18 @@
       "title": "Deck Colours",
       "description": "Four gives every suit its own colour — red hearts, amber diamonds, green clubs, indigo spades — which is what card rooms hand out, because two same-coloured suits are told apart by shape alone and shape is the slower channel at a glance. Classic is the two-colour deck a physical pack ships with: red hearts and diamonds, light spades and clubs.",
       "x-widget": "select"
+    },
+    "vegas_mode": {
+      "type": "string",
+      "enum": [
+        "fixed",
+        "static"
+      ],
+      "default": "fixed",
+      "title": "Vegas Marquee Mode",
+      "description": "How this behaves inside the continuous Vegas marquee. Fixed hands the ticker a summary of the finished hand -- the final cards with the result beside them -- which scrolls by with everything else. Static pauses the marquee instead and plays the whole hand out, which is worth it if you would rather watch than skim.",
+      "x-widget": "select",
+      "x-advanced": true
     }
   }
 }

@@ -3006,6 +3006,79 @@ def _draw_banner(image: Image.Image, layout: Layout, state: ViewState,
     return _flash(image, since, progress, tone, state.banner_tone)
 
 
+def render_summary(width: int, height: int, script, theme: Theme) -> Image.Image:
+    """A finished hand as one still: the finished table, then the result.
+
+    This is what the Vegas ticker shows. A hand is a twenty-second animation
+    and a ticker item is a picture that slides past in two, so the animation
+    cannot be the content -- but the *outcome* can, and the script is simulated
+    to completion before the first card is dealt, so the finished hand is
+    known at any moment.
+
+    Laid out as the result *beside* the cards where there is width for it, and
+    over them where there is not. The ticker's width budget is at most one
+    panel and anything wider is cropped to its start, so a two-panel
+    arrangement would show the cards and lose the result -- which is the half
+    that matters. On a 512x64 strip both fit side by side comfortably; on a
+    128x32 the result takes the final frame's own banner treatment instead,
+    which already says everything in the space available.
+    """
+    final = ViewState(
+        dealer_cards=list(script.dealer_cards),
+        player_cards=list(script.player_cards),
+        dealer_final=script.dealer_card_count,
+        player_final=script.player_card_count,
+        hole_down=False, hole_flip=1.0,
+        dealer_total=script.dealer_total, player_total=script.player_total,
+        clock=0.0,
+    )
+
+    outcome = script.outcome_text
+    tone = theme.tone_color(script.outcome_tone)
+    # The result column has to hold the widest line it will draw, plus a rule
+    # and a pixel of air either side.
+    scale = fit_scale(outcome, max(8, width // 2 - 6), max_scale=2)
+    panel_w = max(text_width(outcome, scale),
+                  numeral_width(f"{script.player_total}-{script.dealer_total}", 1)) + 6
+
+    # Side by side only where the table keeps a workable width. Below that the
+    # cards would be squeezed to buy room for a word.
+    if width - panel_w >= 72:
+        table_w = width - panel_w
+        image = Image.new("RGB", (width, height), (0, 0, 0))
+        layout = compute_layout(table_w, height, script.dealer_card_count,
+                                script.player_card_count)
+        image.paste(render(table_w, height, layout, final, theme), (0, 0))
+        draw = ImageDraw.Draw(image)
+        rule_x = table_w + 1
+        draw.line([(rule_x, 2), (rule_x, height - 3)], fill=scale_color(tone, 0.45))
+        centre = table_w + panel_w // 2
+        block_h = text_height(scale) + (numeral_height(1) + 2 if height >= 24 else 0)
+        top = max(0, (height - block_h) // 2)
+        draw_text_centered(draw, centre, top, outcome, tone, scale)
+        if height >= 24:
+            draw_numerals(
+                draw,
+                centre - numeral_width(f"{script.player_total}-{script.dealer_total}", 1) // 2,
+                top + text_height(scale) + 2,
+                f"{script.player_total}-{script.dealer_total}",
+                scale_color(tone, 0.6), 1)
+        return image
+
+    # Too narrow to split: the hand's own final frame already composes the
+    # cards and the verdict into one panel, so use it rather than inventing a
+    # second cramped arrangement that says the same thing worse.
+    final.banner_text = outcome
+    final.banner_subtext = f"{script.player_total}-{script.dealer_total}"
+    final.banner_flourish = script.flourish
+    final.banner_tone = script.outcome_tone
+    final.banner_progress = 1.0
+    final.banner_elapsed = _FLOURISH_SECONDS + _SUB_DELAY + _TALLY_SPAN + 0.2
+    layout = compute_layout(width, height, script.dealer_card_count,
+                            script.player_card_count)
+    return render(width, height, layout, final, theme)
+
+
 def render(width: int, height: int, layout: Layout, state: ViewState,
            theme: Theme) -> Image.Image:
     """One frame, start to finish.

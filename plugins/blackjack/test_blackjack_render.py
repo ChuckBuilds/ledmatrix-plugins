@@ -774,6 +774,52 @@ def test_court_sprites_are_told_apart_by_silhouette():
 # ---------------------------------------------------------------------------
 
 
+def test_vegas_summary_shows_the_finished_hand():
+    """The ticker item. A hand is a twenty-second animation and a ticker item
+    slides past in two, so what the marquee gets is the finished hand as a
+    still -- which is only possible because the script is simulated to
+    completion before the first card is dealt."""
+    from blackjack_render import render_summary
+
+    problems = []
+    shoe = Shoe(6, random.Random(4))
+    scripts = []
+    wanted = {"BLACKJACK!", "DEALER BUST", "BUST!", "DEALER WINS", "PUSH"}
+    for _ in range(60000):
+        script = play_hand(shoe, Rules())
+        if script.outcome_text in wanted:
+            wanted.discard(script.outcome_text)
+            scripts.append(script)
+        if not wanted:
+            break
+    check("found every outcome to summarise", not wanted, str(wanted))
+
+    for width, height in SIZES:
+        for script in scripts:
+            try:
+                image = render_summary(width, height, script, Theme())
+            except Exception as exc:  # noqa: BLE001 - the point of the test
+                problems.append(f"{width}x{height} {script.outcome_text}: {exc!r}")
+                continue
+            if image.size != (width, height):
+                problems.append(f"{width}x{height} -> {image.size}")
+            elif lit_pixels(image) == 0:
+                problems.append(f"{width}x{height} {script.outcome_text}: blank")
+    check("a summary renders at every panel shape", not problems,
+          "; ".join(problems[:4]))
+
+    # Where it splits, the result really is beside the cards rather than
+    # nowhere: the right-hand column has to carry lit pixels of its own.
+    script = scripts[0]
+    for width, height in ((256, 64), (512, 64)):
+        image = render_summary(width, height, script, Theme())
+        right = image.crop((int(width * 0.78), 0, width, height))
+        if lit_pixels(right) == 0:
+            problems.append(f"{width}x{height}: nothing in the result column")
+    check("the result column is drawn on a wide panel", not problems,
+          "; ".join(problems))
+
+
 def test_plugin_drives_a_hand():
     try:
         from src.plugin_system.testing.mocks import (
@@ -912,7 +958,9 @@ def main():
                  test_layout_invariants, test_renders_every_beat_on_every_size,
                  test_opening_frame_is_not_empty, test_banner_leaves_the_table_visible,
                  test_action_tag_prefers_empty_space, test_flip_never_blanks_the_card,
-                 test_card_art_scales, test_plugin_drives_a_hand,
+                 test_card_art_scales,
+                 test_vegas_summary_shows_the_finished_hand,
+                 test_plugin_drives_a_hand,
                  test_plugin_renders_every_size):
         print(test.__name__)
         test()
