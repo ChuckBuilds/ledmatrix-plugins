@@ -38,8 +38,37 @@ from pathlib import Path
 
 #: Manifest fields copied verbatim into the registry entry. The Plugin Store
 #: renders these, so the registry must never disagree with the manifest.
-SYNCED_FIELDS = ("name", "description", "author", "category", "tags", "icon",
-                 "last_updated")
+#: `last_updated` is synced too, but derived -- see `release_date`.
+SYNCED_FIELDS = ("name", "description", "author", "category", "tags", "icon")
+
+_ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def release_date(manifest: dict) -> str | None:
+    """The date the registry should show as the plugin's `last_updated`.
+
+    The newer of the manifest's top-level `last_updated` and its newest
+    release's `versions[0].released`. Release PRs add a `versions[0]` entry
+    with today's date and routinely forget the top-level field, so copying
+    `last_updated` alone published a date older than the release itself.
+    Only `YYYY-MM-DD` values are compared; if neither is one, the top-level
+    value is used as it stands (None when absent).
+    """
+    candidates = [manifest.get("last_updated")]
+    versions = manifest.get("versions")
+    if isinstance(versions, list) and versions and isinstance(versions[0], dict):
+        candidates.append(versions[0].get("released"))
+    dates = [c for c in candidates if isinstance(c, str) and _ISO_DATE.match(c)]
+    return max(dates) if dates else manifest.get("last_updated")
+
+
+def synced_metadata(manifest: dict) -> dict:
+    """Registry fields a normal run writes from this manifest, and their values."""
+    fields = {f: manifest[f] for f in SYNCED_FIELDS if f in manifest}
+    date = release_date(manifest)
+    if date:
+        fields["last_updated"] = date
+    return fields
 
 
 def parse_version(version_str: str) -> tuple:
@@ -176,9 +205,9 @@ def update_registry(registry_path: str = "plugins.json",
                 f"commit plugins.json."))
             if not dry_run:
                 plugin["latest_version"] = manifest_version
-                # Prefer the manifest's last_updated if present (matches the
-                # plugin's actual release date); fall back to today.
-                plugin["last_updated"] = manifest.get("last_updated") or datetime.now().strftime("%Y-%m-%d")
+                # Prefer the manifest's own release date (see release_date);
+                # fall back to today.
+                plugin["last_updated"] = release_date(manifest) or datetime.now().strftime("%Y-%m-%d")
             updates_made = True
         elif parse_version(manifest_version) < parse_version(registry_version):
             print(f"  {plugin_id}: manifest ({manifest_version}) < registry ({registry_version}), skipping")
@@ -196,16 +225,17 @@ def update_registry(registry_path: str = "plugins.json",
         # should never disagree with it on the fields the Plugin Store
         # actually renders to users.
         synced_fields = []
-        for field in SYNCED_FIELDS:
-            if field in manifest and plugin.get(field) != manifest[field]:
+        for field, value in synced_metadata(manifest).items():
+            if plugin.get(field) != value:
                 if not dry_run:
-                    plugin[field] = manifest[field]
+                    plugin[field] = value
                 synced_fields.append(field)
                 updates_made = True
         if synced_fields:
             print(f"    synced fields: {', '.join(synced_fields)}")
             drift.append(("metadata",
-                f"{plugin_id}: plugins.json {', '.join(synced_fields)} differ from "
+                f"{plugin_id}: plugins.json {', '.join(synced_fields)} "
+                f"{'differs' if len(synced_fields) == 1 else 'differ'} from "
                 f"the manifest. Run python update_registry.py and commit "
                 f"plugins.json."))
 

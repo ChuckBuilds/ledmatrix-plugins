@@ -117,7 +117,7 @@ case("registry ahead of its manifest fails",
      "is ahead of manifest version '1.0.0'")
 case("a synced metadata field that differs fails",
      [{**entry("a", "plugins/a"), "description": "old"}], ["a"], 1,
-     "description differ",
+     "description differs",
      manifests={"a": {"id": "a", "version": "1.0.0", "description": "new"}})
 case("a metadata field the manifest does not carry is not drift",
      [{**entry("a", "plugins/a"), "description": "registry only"}], ["a"], 0)
@@ -152,6 +152,49 @@ code, out = run_check(root, "--check")
 check(f"--check after a normal run fails only on the entry it could not fix (exit {code})",
       code == 1 and "b: plugins.json latest_version '3.0.0' is ahead" in out
       and "FAIL a:" not in out)
+shutil.rmtree(root, ignore_errors=True)
+
+print("\nlast_updated is the newer of last_updated and versions[0].released")
+# 27+ manifests had a top-level last_updated older than their newest release,
+# and the registry copied the stale date.
+
+
+def with_dates(last_updated=None, released=None):
+    manifest = {"id": "a", "version": "1.0.0",
+                "versions": [{"version": "1.0.0", **({"released": released} if released else {})}]}
+    if last_updated:
+        manifest["last_updated"] = last_updated
+    return manifest
+
+
+for label, manifest, want in [
+    ("released newer than last_updated wins",
+     with_dates("2026-09-02", "2026-09-15"), "2026-09-15"),
+    ("last_updated newer than released wins",
+     with_dates("2026-09-15", "2026-09-02"), "2026-09-15"),
+    ("released alone is used", with_dates(None, "2026-09-15"), "2026-09-15"),
+    ("last_updated alone is used", with_dates("2026-09-15", None), "2026-09-15"),
+    ("a non-ISO last_updated is ignored when a release date exists",
+     with_dates("Sept 20", "2026-09-15"), "2026-09-15"),
+    ("a non-ISO last_updated alone is copied as before",
+     with_dates("Sept 20", None), "Sept 20"),
+    ("no date at all is no date", with_dates(), None),
+]:
+    got = reg.release_date(manifest)
+    check(f"{label} ({got})", got == want)
+
+case("--check fails on a registry date older than the newest release",
+     [{**entry("a", "plugins/a"), "last_updated": "2026-09-02"}], ["a"], 1,
+     "last_updated differs", manifests={"a": with_dates("2026-09-02", "2026-09-15")})
+case("--check passes when the registry shows the release date",
+     [{**entry("a", "plugins/a"), "last_updated": "2026-09-15"}], ["a"], 0,
+     manifests={"a": with_dates("2026-09-02", "2026-09-15")})
+root = make_tree([{**entry("a", "plugins/a"), "latest_version": "0.9.0"}], ["a"],
+                 {"a": with_dates("2026-09-02", "2026-09-15")})
+run_check(root)
+written = json.loads((root / "plugins.json").read_text())["plugins"][0]
+check("a version bump writes the release date, not the stale last_updated",
+      written["last_updated"] == "2026-09-15" and written["latest_version"] == "1.0.0")
 shutil.rmtree(root, ignore_errors=True)
 
 print("\nthe real tree")

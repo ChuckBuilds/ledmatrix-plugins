@@ -226,7 +226,10 @@ registry:
   the entry's `last_updated`. It never downgrades: a registry version *ahead* of
   its manifest is warned about and left alone.
 - It also force-syncs `name`, `description`, `author`, `category`, `tags`,
-  `icon` and `last_updated` from manifest to registry when they differ.
+  `icon` and `last_updated` from manifest to registry when they differ. The
+  registry's `last_updated` is the newer of the manifest's top-level
+  `last_updated` and `versions[0].released`, so a release that forgot to bump
+  the top-level date still publishes its release date.
 - Third-party entries (empty `plugin_path`) are left completely untouched.
 - On any change it bumps the top-level `last_updated` and rewrites the file.
 - It checks coverage, matching by `plugin_path` (registry ids and manifest ids
