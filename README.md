@@ -147,17 +147,18 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 | [MQTT Notifications](./plugins/mqtt-notifications/) | HomeAssistant notifications via MQTT | <a href="./plugins/mqtt-notifications/"><img src="./docs/assets/mqtt-notifications/hero.png" width="240" alt="mqtt-notifications on an LED panel"></a> |
 | [On Air Light](./plugins/on-air/) | Broadcast ON AIR tally light, triggered remotely via MQTT / Home Assistant | <a href="./plugins/on-air/"><img src="./docs/assets/on-air/hero.png" width="240" alt="on-air on an LED panel"></a> |
 
-### Productivity (1)
+### Productivity (2)
 
 | Plugin | Description | Preview |
 |--------|-------------|---------|
 | [Pomodoro Timer](./plugins/pomodoro-timer/) | Focus/break timer with MQTT control and Home Assistant discovery | <a href="./plugins/pomodoro-timer/"><img src="./plugins/pomodoro-timer/assets/hero.png" width="240" alt="pomodoro-timer on an LED panel"></a> |
+| [Incoming Packages](./plugins/incoming-packages/) | Rotating carrier cards for packages arriving today, via Home Assistant | <a href="./plugins/incoming-packages/"><img src="./docs/assets/incoming-packages/hero.png" width="240" alt="incoming-packages on an LED panel"></a> |
 
-### Productivity (1)
+### Games (1)
 
 | Plugin | Description | Preview |
 |--------|-------------|---------|
-| [Incoming Packages](./plugins/incoming-packages/) | Rotating carrier cards for packages arriving today, via Home Assistant | <a href="./plugins/incoming-packages/"><img src="./docs/assets/incoming-packages/hero.png" width="240" alt="incoming-packages on an LED panel"></a> |
+| [Blackjack](./plugins/blackjack/) | A hand of Las Vegas blackjack per rotation, dealt off a shuffled shoe and played by basic strategy | <a href="./plugins/blackjack/"><img src="./plugins/blackjack/assets/hero.png" width="240" alt="blackjack on an LED panel"></a> |
 
 ### Custom (3)
 
@@ -220,6 +221,23 @@ outside this monorepo, so review their source before installing.
 | Plex Marquee | [@ant456](https://github.com/ant456) | [ledmatrix-plex-marquee](https://github.com/ant456/ledmatrix-plex-marquee) — cinema marquee art via Fanart.tv |
 | Dresden Departures | [@ryug0](https://github.com/ryug0) | [ledmatrix-dresden-departures](https://github.com/ryug0/ledmatrix-dresden-departures) — Dresden VVO departure board |
 | Tidbyt Baseball Scoreboard | [@trsadler](https://github.com/trsadler) | [MLB-Scoreboard-LEDMatrix](https://github.com/trsadler/MLB-Scoreboard-LEDMatrix) — split team-color MLB live scoreboard |
+| Sleeper Fantasy | [@ant456](https://github.com/ant456) | [ledmatrix-sleeper-fantasy](https://github.com/ant456/ledmatrix-sleeper-fantasy) — fantasy football matchups and scores from Sleeper |
+
+These rows carry no preview, and that is a limit worth stating rather than a
+gap waiting to be filled. Every thumbnail above is regenerated from the plugin's
+own source and re-checked against it in CI; a plugin that lives in someone
+else's repository cannot be re-rendered here, so any image we committed would
+drift silently the moment its author changed anything.
+
+Rendering them once to find out was instructive: of the six, one produced a
+screenshot that represents the plugin, one drew an error state, one a
+mid-scroll fragment, and three drew nothing at all — because they need a stop
+id, a league id, a Plex server or an uploaded GIF that only their owner has. A
+blank or broken frame under someone's name is worse than no frame.
+
+**Authors: set `screenshot` in your manifest** to a raw image URL in your own
+repository and it will appear here. The image stays yours, refreshes when you
+refresh it, and needs nothing from this repo.
 
 Want to see your plugin here? Check out [3rd Party Plugin Development](#3rd-party-plugin-development) below or submit a plugin via [Discord](https://discord.gg/RdrC37rEag).
 
