@@ -13,6 +13,8 @@ Every hand comes off a real shuffled multi-deck shoe seeded from system
 entropy, so no two rotations are the same and nothing in the process can make
 the sequence predictable.
 
+**[Install](#install) · [Settings](#settings) · [The rules it plays](#the-rules-it-plays)** — or read on for how it is drawn.
+
 ![A hand playing in real time](assets/preview.gif)
 
 *A full hand at 128x32, in real time. Every frame is the plugin's own renderer
@@ -353,7 +355,7 @@ Web UI label on the left, `config.json` key on the right.
 | Render Frame Rate | `render_fps` | `40` | Frames drawn per second; lower it if the display loop is struggling |
 | Random Seed | `random_seed` | `0` | `0` means real randomness. Any other value repeats the same hands every restart — for tests and screenshots only |
 | Display Duration | `display_duration` | `22` | Fallback slot length, used only with dynamic duration off |
-| Dynamic Duration | `dynamic_duration` | on, 75s cap | Let the hand decide how long the rotation lasts |
+| Dynamic Duration | `dynamic_duration` | `{ "enabled": true, "max_duration_seconds": 75 }` | Let the hand decide how long the rotation lasts. `enabled` holds the screen until the hand finishes; `max_duration_seconds` is the upper bound on one hand |
 
 ## Install
 
