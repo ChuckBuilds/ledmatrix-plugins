@@ -72,8 +72,10 @@ class NFLDraftPlugin(BasePlugin):
         super().__init__(plugin_id, config, display_manager, cache_manager, plugin_manager)
 
         # Display dimensions
-        self.display_width = display_manager.matrix.width
-        self.display_height = display_manager.matrix.height
+        # display_manager.width/height, not matrix.width: matrix is None when
+        # core's hardware init failed; the properties fall back to the canvas.
+        self.display_width = display_manager.width
+        self.display_height = display_manager.height
 
         # Initialize helpers
         self.scroll_helper = ScrollHelper(self.display_width, self.display_height, self.logger)
@@ -90,6 +92,9 @@ class NFLDraftPlugin(BasePlugin):
         self.current_round = 1
         self.last_update_time: Optional[float] = None
         self.last_live_check_time: Optional[float] = None
+        # Draft live or in its date window: get_update_interval() asks core for
+        # live_refresh_interval. Set by update().
+        self._live_polling = False
         self._state_lock = threading.Lock()
 
         # Font loading - separate sizes for player name vs details
@@ -1147,11 +1152,32 @@ class NFLDraftPlugin(BasePlugin):
         settings = getattr(self, "_scroll_settings", None)
         return getattr(settings, "frame_hold", 1) if settings else 1
 
+    def get_update_interval(self) -> Optional[float]:
+        """Seconds between update() calls, as core 3.4.0's scheduler asks.
+
+        While the draft is live or its date window is open, the configured
+        live_refresh_interval. Core prefers the manifest's update_interval
+        (300) over any config value, so without this hook a live refresh
+        interval under 300s (the schema allows 60) never happened: update()
+        was simply not called that often. Otherwise None, keeping the
+        manifest's 300s tick; update() self-throttles to the much longer
+        projection_refresh_interval and that tick is what notices the draft
+        window opening. Attribute reads only: core calls this every tick.
+        """
+        if not getattr(self, "_live_polling", False):
+            return None
+        try:
+            return float(self.live_refresh_interval)
+        except (TypeError, ValueError):
+            return None
+
     def update(self) -> None:
         """
         Fetch/update draft data from ESPN API.
 
-        Called based on update_interval in manifest.
+        Called on the core's schedule: live_refresh_interval while the draft is
+        live or in its date window (get_update_interval), else the manifest's
+        update_interval.
         Implements dual-mode logic:
         - During live draft: refresh every 10 minutes, show current round only
         - Off-season: daily refresh, show projected picks for configured rounds
@@ -1175,9 +1201,10 @@ class NFLDraftPlugin(BasePlugin):
         # returns quickly — the framework calls update() every 5 minutes but the
         # 24-hour projection_refresh_interval keeps us from hitting the API.
         in_draft_window = self._is_draft_date()
+        self._live_polling = bool(self.is_draft_live or in_draft_window)
         refresh_interval = (
             self.live_refresh_interval
-            if (self.is_draft_live or in_draft_window)
+            if self._live_polling
             else self.projection_refresh_interval
         )
 
@@ -1216,6 +1243,8 @@ class NFLDraftPlugin(BasePlugin):
                 self.is_draft_live = new_live
                 self.current_round = new_round
                 self.draft_picks = new_picks
+            # The fetch may have just seen the draft go live (or end).
+            self._live_polling = bool(new_live or in_draft_window)
 
             # Build scroll image after the lock so _create_draft_scroll_image
             # reads a fully consistent state snapshot.
