@@ -14,12 +14,20 @@ Regression tests for the leaderboard's render path and settings plumbing.
 4. A web-UI save applies without a restart (there was no on_config_change), and
    re-runs the scroll resolver.
 5. enabled_sports.ncaam_hockey.show_ranking does something.
+6. global.dynamic_duration.* takes effect. The deprecated flat keys
+   (global.min_duration, max_duration, duration_buffer, max_display_time)
+   carried schema defaults, core merges schema defaults into every config, and
+   the flat keys always overrode the nested ones: a nested min 20 / max 120 ran
+   as 45 / 600. A flat key now applies only while its nested key is at default.
+7. The code-default enabled leagues (a league block missing from the config)
+   match the schema's: they enabled ncaam_hockey and not nba, mlb or nhl.
 
 Exit codes follow scripts/run_plugin_tests.py: 0 pass, 1 fail, 2 skip.
 
     LEDMATRIX_CORE=/path/to/LEDMatrix python plugins/ledmatrix-leaderboard/test_display_and_live_config.py
 """
 
+import json
 import os
 import sys
 import types
@@ -170,9 +178,88 @@ def test_hockey_show_ranking():
         check(text == expected, f"show_ranking={show} draws {expected!r} (got {text!r})")
 
 
+def _as_core_loads_it(config):
+    """The config merged with the schema's defaults, as core's plugin loader does."""
+    from src.plugin_system.schema_manager import SchemaManager
+    with open(os.path.join(HERE, "config_schema.json"), encoding="utf-8") as f:
+        schema = json.load(f)
+    manager = SchemaManager()
+    return manager.merge_with_defaults(config, manager.extract_defaults_from_schema(schema))
+
+
+def _durations(plugin):
+    return (plugin.min_duration, plugin.max_duration, plugin.duration_buffer,
+            plugin.dynamic_duration_cap)
+
+
+@_fail_loudly
+def test_nested_dynamic_duration_wins():
+    print("[global.dynamic_duration vs the deprecated flat keys]")
+    data_fetcher.DataFetcher.fetch_standings = lambda self, cfg: []
+    nested = {"min_duration_seconds": 20, "max_duration_seconds": 120,
+              "buffer_ratio": 0.3, "controller_cap_seconds": 900}
+
+    fresh = _as_core_loads_it({"enabled": True, "enabled_sports": ONLY_NBA,
+                               "global": {"dynamic_duration": dict(nested)}})
+    check(not any(k in fresh["global"] for k in
+                  ("min_duration", "max_duration", "duration_buffer", "max_display_time")),
+          "the schema no longer supplies the deprecated flat keys "
+          f"(global keys {sorted(fresh['global'])})")
+    plugin = make(fresh, FakeDisplay())
+    check(_durations(plugin) == (20, 120, 0.3, 900),
+          f"nested settings apply on a fresh install (got {_durations(plugin)})")
+
+    # Saved from the web UI before the fix: the flat keys' old defaults are
+    # stored alongside the user's nested settings.
+    saved = {"enabled": True, "enabled_sports": ONLY_NBA,
+             "global": {"dynamic_duration": dict(nested), "min_duration": 45,
+                        "max_duration": 600, "duration_buffer": 0.1,
+                        "max_display_time": 600}}
+    plugin = make(_as_core_loads_it(saved), FakeDisplay())
+    check(_durations(plugin) == (20, 120, 0.3, 900),
+          f"nested settings beat stored flat defaults (got {_durations(plugin)})")
+
+    legacy = {"enabled": True, "enabled_sports": ONLY_NBA,
+              "global": {"min_duration": 90, "max_duration": 240,
+                         "duration_buffer": 0.2, "max_display_time": 300}}
+    plugin = make(_as_core_loads_it(legacy), FakeDisplay())
+    check(_durations(plugin) == (90, 240, 0.2, 300),
+          f"a legacy-only config keeps its flat values (got {_durations(plugin)})")
+
+    plugin.on_config_change(_as_core_loads_it(
+        {"enabled": True, "enabled_sports": ONLY_NBA,
+         "global": dict(legacy["global"], dynamic_duration={"min_duration_seconds": 15})}))
+    check(_durations(plugin)[:2] == (15, 240),
+          f"a nested key set on save wins; untouched ones keep the flat value "
+          f"(got {_durations(plugin)})")
+    check(plugin.scroll_helper.min_duration == 15,
+          f"the scroll helper gets the nested minimum (got {plugin.scroll_helper.min_duration})")
+
+
+@_fail_loudly
+def test_code_default_leagues_match_schema():
+    print("[code-default enabled leagues]")
+    from league_config import LeagueConfig
+    with open(os.path.join(HERE, "config_schema.json"), encoding="utf-8") as f:
+        leagues = json.load(f)["properties"]["enabled_sports"]["properties"]
+    configs = LeagueConfig({}).league_configs
+    check(set(configs) == set(leagues),
+          f"the code and the schema know the same leagues ({sorted(configs)} vs {sorted(leagues)})")
+    for league, spec in leagues.items():
+        if league not in configs:
+            continue
+        for key, prop in spec["properties"].items():
+            if "default" not in prop:
+                continue
+            got = configs[league].get(key)
+            check(got == prop["default"],
+                  f"{league}.{key} defaults to the schema's {prop['default']!r} (got {got!r})")
+
+
 if __name__ == "__main__":
     for test in (test_display_does_not_fetch, test_update_interval_and_live_save,
-                 test_hockey_show_ranking):
+                 test_hockey_show_ranking, test_nested_dynamic_duration_wins,
+                 test_code_default_leagues_match_schema):
         try:
             test()
         except _ChecksFailed:

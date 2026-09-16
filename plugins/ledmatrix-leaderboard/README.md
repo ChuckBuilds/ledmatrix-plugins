@@ -158,10 +158,6 @@ The full key list is in the [`enabled_sports`](#enabled_sports) table below.
 | `global.dynamic_duration.max_duration_seconds` | `600` | Maximum display duration when dynamic duration is enabled (30–1200). |
 | `global.dynamic_duration.buffer_ratio` | `0.1` | Extra buffer applied to the calculated duration (percentage expressed as 0-1). |
 | `global.dynamic_duration.controller_cap_seconds` | `600` | Failsafe cap for the display controller when dynamic duration is enabled (60–1800). |
-| `global.min_duration` | `45` | [Deprecated] Use dynamic_duration.min_duration_seconds instead (10–300). |
-| `global.max_duration` | `600` | [Deprecated] Use dynamic_duration.max_duration_seconds instead (30–1200). |
-| `global.duration_buffer` | `0.1` | [Deprecated] Use dynamic_duration.buffer_ratio instead (0.01–1.0). |
-| `global.max_display_time` | `600` | [Deprecated] Use dynamic_duration.controller_cap_seconds instead (60–1800). |
 | `global.display.scroll_speed` | `1.0` | Pixels moved per scroll step (0.5–5.0). Speed is `scroll_speed / scroll_delay` px/s — see [Scroll speed](#scroll-speed). |
 | `global.display.scroll_delay` | `0.01` | Seconds per scroll step (0.001–0.1). |
 | `global.scroll_mode` | `"one_shot"` | Scrolling mode — one of `one_shot`, `continuous`. |
@@ -171,6 +167,14 @@ The full key list is in the [`enabled_sports`](#enabled_sports) table below.
 | `global.appearance.text_outline` | `true` | Draw a black outline around text so it stays readable over logos. |
 | `global.appearance.logo_scale` | `1.0` | Logo height as a fraction of the panel height. 1.0 fits the panel exactly; above 1.0 crops the top and bottom of every logo (0.5–1.5). |
 | `global.appearance.font_size` | `0` | Font size in pixels. 0 picks a size that suits the panel height. Values are snapped to the font's pixel grid (multiples of 8 for Press Start 2P) to keep text sharp (0–32). |
+
+The older flat keys `global.min_duration`, `global.max_duration`,
+`global.duration_buffer` and `global.max_display_time` are deprecated and
+hidden from the settings form. A saved config that still carries one keeps
+validating, and its value applies only while the matching
+`global.dynamic_duration.*` setting is at its default: set the nested key and
+it wins. (Before 1.5.1 the flat keys always won, so the nested settings did
+nothing.)
 
 ### `enabled_sports`
 
