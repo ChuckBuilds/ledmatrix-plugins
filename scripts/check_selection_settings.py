@@ -6,8 +6,9 @@
 
 ## Why this exists
 
-The five favourite-selection settings are shared code copied into nine plugins,
-and each plugin declares them once per league -- soccer alone has twelve blocks.
+The favourite-selection settings in ``REQUIRED`` are shared code copied into
+nine plugins, and each plugin declares them once per league -- soccer alone has
+twelve blocks.
 A block that misses one is not a crash and not a log line: the control is simply
 absent from the web UI for that league, or present with no default, and the user
 has no way to tell which. One such gap shipped exactly that way -- soccer's
@@ -188,9 +189,15 @@ def main():
     if not problems:
         blocks = sum(len(_blocks(json.loads((PLUGINS / i / "config_schema.json").read_text())))
                      for i in ids)   # noqa: E501 - count only
-        print("OK: %d plugin(s), %d selection block(s); every setting each "
-              "plugin's code reads is declared, with matching ranges."
-              % (len(ids), blocks))
+        # Say exactly what was checked: the favourite-selection keys in
+        # REQUIRED that the plugin's sports.py mentions -- not every setting
+        # its code reads.
+        print("OK: %d plugin(s), %d selection block(s); of the %d "
+              "favourite-selection settings (%s), each one a plugin's sports.py "
+              "reads is declared in every block (array settings excepted in "
+              "row-editor blocks), with a default and matching type, range and "
+              "allowed values."
+              % (len(ids), blocks, len(REQUIRED), ", ".join(REQUIRED)))
         return 0
     for problem in problems:
         print("  - %s" % problem)
