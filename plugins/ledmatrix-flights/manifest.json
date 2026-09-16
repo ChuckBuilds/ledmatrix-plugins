@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-flights",
   "name": "Flight Tracker",
-  "version": "1.14.0",
+  "version": "1.14.1",
   "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky/adsb.fi/adsb.lol data, map backgrounds, area mode, flight tracking, anchor airport, flight records, and optional airport weather (METAR/TAF/PIREP/SIGMET via the free NOAA Aviation Weather Center API)",
   "author": "ChuckBuilds",
   "category": "custom",
@@ -37,6 +37,12 @@
   ],
   "min_ledmatrix_version": "2.0.0",
   "versions": [
+    {
+      "version": "1.14.1",
+      "released": "2026-09-16",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Paid FlightAware calls now follow the \"Enable paid FlightAware API calls\" switch (flightaware.enabled). With enrichment_provider set to flightaware and a key saved, tracked-flight route lookups went to the paid AeroAPI even with that switch off; they now use the free adsb.lol lookup unless it is on. An API key saved under the old flat name flightaware_api_key (the README's config_secrets.json example) works again when flightaware.api_key is blank: the plugin used to overwrite it with the section's empty default at start-up, so FlightAware was silently off. The old flat flight_plan_enabled flag is deliberately not honoured, because it has been overridden since the FlightAware section arrived and honouring it now would restart billing on boards whose settings page shows FlightAware off; paid calls need flightaware.enabled. The other flat FlightAware keys are not read either, and a legacy value that differs from its default logs a warning naming it. live_update_interval defaults to 5 instead of 2: the core runs a plugin's update at most every 5 seconds, so 2 never happened. update_interval and live_update_interval descriptions say values below 5 act as 5. README secrets and legacy-key sections corrected."
+    },
     {
       "version": "1.14.0",
       "released": "2026-09-15",
@@ -294,5 +300,5 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-07"
+  "last_updated": "2026-09-16"
 }
