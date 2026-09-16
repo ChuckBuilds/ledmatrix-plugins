@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.7.2] - 2026-09-16
+
+### Fixed
+- **The deprecated `radar_zoom` is honoured, as documented.** It was consulted
+  only when `radar_range_miles` was missing, but the core merges that key's
+  default of 75 into every config, so a config saved with `radar_zoom: 8`
+  (12 miles) showed 75 miles. `radar_zoom` now sets the range while
+  `radar_range_miles` is still 75 and the zoom is not its own default of 6
+  (4=200, 5=100, 7=25, 8=12 miles). Setting any other range overrides it.
+
 ## [2.7.1] - 2026-09-15
 
 ### Fixed

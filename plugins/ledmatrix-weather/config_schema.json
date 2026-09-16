@@ -160,7 +160,7 @@
       "default": 75,
       "minimum": 10,
       "maximum": 500,
-      "description": "Distance from your location to the edge of the radar view, in miles. Replaces the old Radar Zoom Level setting.",
+      "description": "Distance from your location to the edge of the radar view, in miles. Replaces the old Radar Zoom Level setting: while this is left at 75, a zoom level saved by an older version (other than 6) still sets the range. Choose any other value to use it instead.",
       "title": "Radar Range (miles)"
     },
     "radar_show_nowcast": {
@@ -176,7 +176,7 @@
       "default": 6,
       "minimum": 4,
       "maximum": 8,
-      "description": "Deprecated — use Radar Range (miles) instead. Still honored when radar_range_miles is not set.",
+      "description": "Deprecated — use Radar Range (miles) instead. Still honored while radar_range_miles is at its default of 75: a value other than 6 then sets the range (4=200, 5=100, 7=25, 8=12 miles).",
       "title": "Radar Zoom Level (deprecated)"
     },
     "radar_tile_server": {

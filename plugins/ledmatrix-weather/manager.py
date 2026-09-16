@@ -545,18 +545,29 @@ class WeatherPlugin(BasePlugin):
         except (ValueError, TypeError):
             return default
 
+    # radar_zoom's schema default. The core merges it into every config, so
+    # only another value says the user chose a zoom.
+    _RADAR_ZOOM_SCHEMA_DEFAULT = 6
+
     def _parse_radar_config(self, config: dict) -> dict:
         """Normalize all radar settings (with back-compat for radar_zoom)."""
         range_miles = config.get('radar_range_miles')
-        if range_miles is None:
-            # Back-compat: an explicit (deprecated) radar_zoom still maps to its
-            # old range. With neither key set, default to a slightly wider view.
-            zoom = config.get('radar_zoom')
-            if zoom is not None:
-                range_miles = self._RADAR_ZOOM_TO_RANGE.get(
-                    self._coerce(zoom, int, 6), self._DEFAULT_RANGE_MILES)
-            else:
-                range_miles = self._DEFAULT_RANGE_MILES
+        zoom = config.get('radar_zoom')
+        # Back-compat: a deprecated radar_zoom still maps to its old range while
+        # radar_range_miles has not been changed from its default. Checking only
+        # for a missing radar_range_miles never fired: the core merges the
+        # schema defaults (radar_range_miles 75, radar_zoom 6) into every
+        # config, so the zoom counts only when it is not 6 and the range is
+        # still 75. With neither set, default to a slightly wider view.
+        if zoom is not None and (
+                range_miles is None
+                or (self._coerce(range_miles, float, None) == self._DEFAULT_RANGE_MILES
+                    and self._coerce(zoom, int, self._RADAR_ZOOM_SCHEMA_DEFAULT)
+                    != self._RADAR_ZOOM_SCHEMA_DEFAULT)):
+            range_miles = self._RADAR_ZOOM_TO_RANGE.get(
+                self._coerce(zoom, int, 6), self._DEFAULT_RANGE_MILES)
+        elif range_miles is None:
+            range_miles = self._DEFAULT_RANGE_MILES
         return {
             'range_miles': self._coerce(
                 range_miles, float, float(self._DEFAULT_RANGE_MILES)),
