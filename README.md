@@ -1,6 +1,6 @@
 # LEDMatrix Official Plugins
 
-[![Plugins](https://img.shields.io/badge/plugins-39-blue)](./plugins.json)
+[![Plugins](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2FChuckBuilds%2Fledmatrix-plugins%2Fmain%2Fplugins.json&query=%24.plugins.length&label=plugins&color=blue)](./plugins.json)
 [![License](https://img.shields.io/badge/license-GPL--3.0-green)](LICENSE)
 [![Discord](https://img.shields.io/badge/Discord-community-5865F2?logo=discord&logoColor=white)](https://discord.gg/RdrC37rEag)
 [![GitHub Stars](https://img.shields.io/github/stars/ChuckBuilds/ledmatrix-plugins?style=flat&color=yellow)](https://github.com/ChuckBuilds/ledmatrix-plugins)
@@ -79,7 +79,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 
 ## Available Plugins
 
-### Sports (17)
+### Sports (18)
 
 | Plugin | Description | Preview |
 |--------|-------------|---------|
@@ -93,6 +93,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 | [AFL Scoreboard](./plugins/afl-scoreboard/) | Australian Football League live, recent & upcoming games | <a href="./plugins/afl-scoreboard/"><img src="./docs/assets/afl-scoreboard/hero.png" width="240" alt="afl-scoreboard on an LED panel"></a> |
 | [NRL Scoreboard](./plugins/nrl-scoreboard/) | National Rugby League live, recent & upcoming games | <a href="./plugins/nrl-scoreboard/"><img src="./docs/assets/nrl-scoreboard/hero.png" width="240" alt="nrl-scoreboard on an LED panel"></a> |
 | [F1 Scoreboard](./plugins/f1-scoreboard/) | Formula 1 race results, schedules, and standings | <a href="./plugins/f1-scoreboard/"><img src="./docs/assets/f1-scoreboard/hero.png" width="240" alt="f1-scoreboard on an LED panel"></a> |
+| [F1 Live](https://github.com/BigC07/ledmatrix-f1-live) | Formula 1 live timing from F1's own feed: live race, qualifying and practice boards, flags, fastest lap, winner and podium &mdash; *third-party, by [BigC07](https://github.com/BigC07)* | <a href="https://github.com/BigC07/ledmatrix-f1-live"><img src="./docs/assets/f1-live/hero.png" width="240" alt="f1-live on an LED panel"></a> |
 | [UFC Scoreboard](./plugins/ufc-scoreboard/) | UFC/MMA live fights, fighter headshots, records, odds & results &mdash; *by [LegoGuy1000](https://github.com/legoguy1000)* | <a href="./plugins/ufc-scoreboard/"><img src="./docs/assets/ufc-scoreboard/hero.png" width="240" alt="ufc-scoreboard on an LED panel"></a> |
 | [Odds Ticker](./plugins/odds-ticker/) | Betting odds & lines across NFL, NBA, MLB, NHL, NCAA | <a href="./plugins/odds-ticker/"><img src="./docs/assets/odds-ticker/hero.png" width="240" alt="odds-ticker on an LED panel"></a> |
 | [Masters Tournament](./plugins/masters-tournament/) | Live Masters golf leaderboard, hole tracking, player cards | <a href="./plugins/masters-tournament/"><img src="./docs/assets/masters-tournament/hero.png" width="240" alt="masters-tournament on an LED panel"></a> |
@@ -221,23 +222,9 @@ outside this monorepo, so review their source before installing.
 | Plex Marquee | [@ant456](https://github.com/ant456) | [ledmatrix-plex-marquee](https://github.com/ant456/ledmatrix-plex-marquee) — cinema marquee art via Fanart.tv |
 | Dresden Departures | [@ryug0](https://github.com/ryug0) | [ledmatrix-dresden-departures](https://github.com/ryug0/ledmatrix-dresden-departures) — Dresden VVO departure board |
 | Tidbyt Baseball Scoreboard | [@trsadler](https://github.com/trsadler) | [MLB-Scoreboard-LEDMatrix](https://github.com/trsadler/MLB-Scoreboard-LEDMatrix) — split team-color MLB live scoreboard |
+| F1 Live | [@BigC07](https://github.com/BigC07) | [ledmatrix-f1-live](https://github.com/BigC07/ledmatrix-f1-live) — F1 Scoreboard fork with live timing, flags and the podium from F1's live feed |
 | Sleeper Fantasy | [@ant456](https://github.com/ant456) | [ledmatrix-sleeper-fantasy](https://github.com/ant456/ledmatrix-sleeper-fantasy) — fantasy football matchups and scores from Sleeper |
 
-These rows carry no preview, and that is a limit worth stating rather than a
-gap waiting to be filled. Every thumbnail above is regenerated from the plugin's
-own source and re-checked against it in CI; a plugin that lives in someone
-else's repository cannot be re-rendered here, so any image we committed would
-drift silently the moment its author changed anything.
-
-Rendering them once to find out was instructive: of the six, one produced a
-screenshot that represents the plugin, one drew an error state, one a
-mid-scroll fragment, and three drew nothing at all — because they need a stop
-id, a league id, a Plex server or an uploaded GIF that only their owner has. A
-blank or broken frame under someone's name is worse than no frame.
-
-**Authors: set `screenshot` in your manifest** to a raw image URL in your own
-repository and it will appear here. The image stays yours, refreshes when you
-refresh it, and needs nothing from this repo.
 
 Want to see your plugin here? Check out [3rd Party Plugin Development](#3rd-party-plugin-development) below or submit a plugin via [Discord](https://discord.gg/RdrC37rEag).
 
