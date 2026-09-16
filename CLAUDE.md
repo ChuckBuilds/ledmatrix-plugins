@@ -214,7 +214,7 @@ topic 08 first.
 ```bash
 python update_registry.py                 # sync plugins.json from manifests
 python update_registry.py --dry-run
-python update_registry.py --check         # fails if plugins/ and plugins.json disagree
+python update_registry.py --check         # fails on any version/metadata drift or missing entry
 python scripts/check_version_bump.py --all
 python scripts/check_module_collisions.py
 python scripts/check_team_pickers.py      # --apply regenerates ESPN enums

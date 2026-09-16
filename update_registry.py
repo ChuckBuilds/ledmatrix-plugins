@@ -6,9 +6,16 @@ In the monorepo model, each plugin's manifest.json is the source of truth
 for version information. This script reads each plugin's manifest and
 updates the registry accordingly.
 
-It only ever updates entries that already exist, so it also checks the two
-ways the registry and plugins/ can silently disagree:
+`--check` fails on every way the registry and plugins/ can disagree:
 
+- a monorepo entry whose `latest_version` differs from its manifest's
+  `version`, in either direction. Behind: the store never offers the update.
+  Ahead: the store offers a version that was never shipped, and a normal run
+  will not fix it (it never downgrades).
+- a monorepo entry whose store-visible metadata (name, description, author,
+  category, tags, icon, last_updated) differs from what a normal run would
+  write. The pre-commit hook folds that into the commit; a PR without it
+  would publish stale metadata until the post-merge sync.
 - a plugins/<dir> with a manifest but no registry entry whose plugin_path
   points at it. The plugin is never published to the store, and nothing
   else notices. (Adding a monorepo plugin still means adding its entry by
@@ -29,14 +36,24 @@ import argparse
 from datetime import datetime
 from pathlib import Path
 
+#: Manifest fields copied verbatim into the registry entry. The Plugin Store
+#: renders these, so the registry must never disagree with the manifest.
+SYNCED_FIELDS = ("name", "description", "author", "category", "tags", "icon",
+                 "last_updated")
+
 
 def parse_version(version_str: str) -> tuple:
-    """Parse a version string into a comparable tuple."""
+    """Parse a version string into a comparable tuple.
+
+    Padded to three parts, so "1.2" and "1.2.0" compare equal -- the store's
+    own comparator treats them as the same version.
+    """
     version_str = (version_str or "0.0.0").lstrip("v")
     try:
-        return tuple(int(p) for p in version_str.split("."))
+        parts = tuple(int(p) for p in version_str.split("."))
     except (ValueError, AttributeError):
         return (0, 0, 0)
+    return parts + (0,) * (3 - len(parts))
 
 
 def parse_json_with_trailing_commas(text: str) -> dict:
@@ -94,11 +111,17 @@ def find_consistency_problems(registry: dict, plugins_dir: Path) -> list[str]:
     return problems
 
 
-def update_registry(registry_path: str = "plugins.json", dry_run: bool = False) -> bool:
+def update_registry(registry_path: str = "plugins.json",
+                    dry_run: bool = False) -> list[tuple[str, str]]:
     """
     Update plugins.json with version info from local plugin manifests.
 
-    Returns True if updates were made.
+    Returns one ``(kind, message)`` per disagreement found between a monorepo
+    entry and its manifest: kind ``"behind"`` or ``"ahead"`` for a version
+    mismatch, ``"metadata"`` for a synced field that differs. Empty means the
+    registry already matches.
+    A normal run writes every fix it can; a registry version *ahead* of its
+    manifest is reported but never written, because that would be a downgrade.
     """
     registry_file = Path(registry_path)
     plugins_dir = registry_file.parent / "plugins"
@@ -118,6 +141,7 @@ def update_registry(registry_path: str = "plugins.json", dry_run: bool = False) 
     print(f"Registry has {len(registry.get('plugins', []))} entries\n")
 
     updates_made = False
+    drift: list[tuple[str, str]] = []
 
     for plugin in registry["plugins"]:
         plugin_id = plugin["id"]
@@ -145,6 +169,11 @@ def update_registry(registry_path: str = "plugins.json", dry_run: bool = False) 
 
         if parse_version(manifest_version) > parse_version(registry_version):
             print(f"  {plugin_id}: {registry_version} -> {manifest_version}")
+            drift.append(("behind",
+                f"{plugin_id}: plugins.json latest_version {registry_version!r} is "
+                f"behind manifest version {manifest_version!r}, so the store "
+                f"never offers the update. Run python update_registry.py and "
+                f"commit plugins.json."))
             if not dry_run:
                 plugin["latest_version"] = manifest_version
                 # Prefer the manifest's last_updated if present (matches the
@@ -153,6 +182,12 @@ def update_registry(registry_path: str = "plugins.json", dry_run: bool = False) 
             updates_made = True
         elif parse_version(manifest_version) < parse_version(registry_version):
             print(f"  {plugin_id}: manifest ({manifest_version}) < registry ({registry_version}), skipping")
+            drift.append(("ahead",
+                f"{plugin_id}: plugins.json latest_version {registry_version!r} is "
+                f"ahead of manifest version {manifest_version!r}, so the store "
+                f"offers a version that was never shipped. update_registry.py "
+                f"never downgrades: bump the manifest past it, or correct the "
+                f"registry entry."))
         else:
             print(f"  {plugin_id}: up to date ({registry_version})")
 
@@ -161,7 +196,7 @@ def update_registry(registry_path: str = "plugins.json", dry_run: bool = False) 
         # should never disagree with it on the fields the Plugin Store
         # actually renders to users.
         synced_fields = []
-        for field in ("name", "description", "author", "category", "tags", "icon", "last_updated"):
+        for field in SYNCED_FIELDS:
             if field in manifest and plugin.get(field) != manifest[field]:
                 if not dry_run:
                     plugin[field] = manifest[field]
@@ -169,6 +204,10 @@ def update_registry(registry_path: str = "plugins.json", dry_run: bool = False) 
                 updates_made = True
         if synced_fields:
             print(f"    synced fields: {', '.join(synced_fields)}")
+            drift.append(("metadata",
+                f"{plugin_id}: plugins.json {', '.join(synced_fields)} differ from "
+                f"the manifest. Run python update_registry.py and commit "
+                f"plugins.json."))
 
     if updates_made and not dry_run:
         registry["last_updated"] = datetime.now().strftime("%Y-%m-%d")
@@ -181,7 +220,7 @@ def update_registry(registry_path: str = "plugins.json", dry_run: bool = False) 
     else:
         print("\nAll plugins are up to date.")
 
-    return updates_made
+    return drift
 
 
 def check_consistency(registry_path: str = "plugins.json") -> list[str]:
@@ -209,13 +248,15 @@ def main(argv=None) -> int:
     parser.add_argument(
         "--check",
         action="store_true",
-        help="Dry run that exits 1 when a plugin directory has no registry "
-             "entry or a registry plugin_path has no plugin (for CI)",
+        help="Dry run that exits 1 when plugins.json disagrees with the "
+             "manifests (a version in either direction, or synced metadata), a "
+             "plugin directory has no registry entry, or a registry "
+             "plugin_path has no plugin (for CI)",
     )
     args = parser.parse_args(argv)
 
     try:
-        update_registry(args.registry, args.dry_run or args.check)
+        drift = update_registry(args.registry, args.dry_run or args.check)
         problems = check_consistency(args.registry)
     except FileNotFoundError:
         print(f"Error: Could not find {args.registry}")
@@ -224,9 +265,20 @@ def main(argv=None) -> int:
         print(f"Error: {args.registry} is not valid JSON")
         return 1
 
+    # A normal run has just written every drift fix except "registry ahead",
+    # which would be a downgrade. --check is about the file as committed, so
+    # it reports all of it.
+    problems = [message for kind, message in drift
+                if args.check or kind == "ahead"] + problems
+
     if not problems:
-        print("\nPASS every plugins/ directory has a registry entry, and every "
-              "registry plugin_path exists")
+        if args.check:
+            print("\nPASS plugins.json matches every manifest (versions and "
+                  "synced metadata), every plugins/ directory has a registry "
+                  "entry, and every registry plugin_path exists")
+        else:
+            print("\nPASS every plugins/ directory has a registry entry, and "
+                  "every registry plugin_path exists")
         return 0
     label = "FAIL" if args.check else "WARNING"
     print()
