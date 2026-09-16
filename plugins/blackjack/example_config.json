@@ -1,0 +1,19 @@
+{
+  "_comment": "Add this to your config/config.json to enable the Blackjack plugin",
+  "blackjack": {
+    "enabled": true,
+    "decks": 6,
+    "dealer_hits_soft_17": false,
+    "allow_double": true,
+    "card_style": "outline",
+    "table_style": "felt",
+    "show_labels": true,
+    "show_totals": true,
+    "card_interval": 2.0,
+    "result_seconds": 4.0,
+    "dynamic_duration": {
+      "enabled": true,
+      "max_duration_seconds": 75
+    }
+  }
+}

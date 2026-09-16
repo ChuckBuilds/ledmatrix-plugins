@@ -1,0 +1,50 @@
+{
+  "id": "blackjack",
+  "name": "Blackjack",
+  "version": "1.0.0",
+  "author": "ChuckBuilds",
+  "description": "Deals one hand of Las Vegas blackjack per rotation. Cards slide in and flip face up a few seconds apart, the player follows basic strategy, the dealer plays the house rules, and the hand ends on a BLACKJACK! / BUST! / PUSH banner. Every hand comes off a real shuffled shoe, so no two rotations are the same.",
+  "entry_point": "manager.py",
+  "class_name": "BlackjackPlugin",
+  "category": "fun",
+  "tags": [
+    "blackjack",
+    "cards",
+    "casino",
+    "vegas",
+    "game",
+    "animation",
+    "ambient"
+  ],
+  "icon": "fa-diamond",
+  "license": "GPL-3.0",
+  "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/blackjack",
+  "display_modes": [
+    "blackjack"
+  ],
+  "compatible_versions": [
+    ">=2.0.0"
+  ],
+  "display": {
+    "design_size": {
+      "width": 128,
+      "height": 32
+    }
+  },
+  "update_interval": 3600,
+  "default_duration": 22,
+  "versions": [
+    {
+      "version": "1.0.0",
+      "released": "2026-09-15",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Initial release. One hand of blackjack per rotation off a persistent multi-deck shoe, played by Vegas basic strategy against a dealer who stands on soft 17 by default. Four-colour deck (red hearts, gold diamonds, green clubs, indigo spades) on a lit felt table -- an ordered dither against a radial falloff, so the weave is densest under the cards and thins to black at the edges -- with a crimson-and-gold card back. Each seat reads as one line: name, hand, total. Rare hands announce themselves on the result banner (777, 21 IN 3, CHARLIE, DEALER n, BOTH 21, and a session win streak) before the score counts up. The deal, the hole-card reveal, a bust and a natural each get a beat of their own, and a hand ends with a tinted flash, a rattle and a spark burst on a win -- all of it a pure function of elapsed time, with no animation state anywhere. Card faces are a centred 5x7 rank at every size a real panel produces, with a pip-count sprite tier held back for cards larger than any of them, because counting pips across a room is slower than reading a numeral. The table lays itself out from the panel shape rather than a size whitelist, stacked normally and dealer-left/player-right on strips wider than 5:1. Dynamic duration is on by default, so the rotation lasts exactly as long as the hand does."
+    }
+  ],
+  "config_schema": "config_schema.json",
+  "last_updated": "2026-09-15",
+  "stars": 0,
+  "downloads": 0,
+  "verified": true,
+  "screenshot": "https://raw.githubusercontent.com/ChuckBuilds/ledmatrix-plugins/main/plugins/blackjack/assets/hero.png"
+}

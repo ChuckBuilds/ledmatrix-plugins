@@ -1,0 +1,21 @@
+{
+  "_comment": "Deterministic settings the plugin safety harness renders blackjack with. random_seed pins the shoe so the same cards are dealt on every run; without it the plugin uses system entropy and no two renders match, which is the point of the plugin and the enemy of a golden image. The harness renders one frame per mode, which lands during the opening pause -- so what it proves is that the table chrome, the seat markers and the layout survive every panel shape, and the per-beat coverage lives in test_blackjack_render.py instead.",
+  "config": {
+    "random_seed": 1337,
+    "decks": 6,
+    "dealer_hits_soft_17": false,
+    "allow_double": true,
+    "card_style": "outline",
+    "show_labels": true,
+    "show_totals": true,
+    "intro_seconds": 0.8,
+    "card_interval": 2.0,
+    "action_seconds": 1.2,
+    "reveal_seconds": 1.8,
+    "result_seconds": 4.0,
+    "deal_animation": 0.45,
+    "flip_seconds": 0.55,
+    "render_fps": 40
+  },
+  "mock_data": {}
+}
