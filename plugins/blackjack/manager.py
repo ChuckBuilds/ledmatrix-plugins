@@ -26,6 +26,14 @@ from PIL import ImageDraw
 
 from src.plugin_system.base_plugin import BasePlugin
 
+try:
+    from src.plugin_system.base_plugin import VegasDisplayMode
+except ImportError:
+    # Cores before the Vegas hooks ship BasePlugin without the enum and never
+    # call the methods below; returning None from them is the documented
+    # "this plugin has no opinion" answer.
+    VegasDisplayMode = None
+
 from blackjack_engine import (
     ACTION,
     DEAL,
@@ -478,6 +486,34 @@ class BlackjackPlugin(BasePlugin):
         super().reset_cycle_state()
         self._start_hand()
         self._last_render = 0.0
+
+    # -- Vegas marquee ----------------------------------------------------
+
+    def get_vegas_display_mode(self):
+        """STATIC, always -- the marquee pauses and the hand plays.
+
+        A plugin with no Vegas opinion is not skipped: the marquee captures one
+        frame of its ``display()`` and scrolls that past. For a clock that is
+        exactly right, and for this it is a twenty-second hand reduced to a
+        single frozen still -- a dealt card halfway through its slide, or an
+        empty table, depending on which frame the capture happened to catch.
+
+        SCROLL and FIXED_SEGMENT are unavailable for the same reason rather
+        than by preference: both want the content handed over as an image to be
+        moved, and a hand is not an image. STATIC is the mode that exists for
+        content which has to be watched rather than passed, so it is the only
+        one offered -- a ``vegas_mode`` override would only let someone pick
+        the frozen frame.
+        """
+        if VegasDisplayMode is None:
+            return None
+        return VegasDisplayMode.STATIC
+
+    def get_supported_vegas_modes(self):
+        """Only STATIC, so the web UI does not offer a mode that freezes it."""
+        if VegasDisplayMode is None:
+            return []
+        return [VegasDisplayMode.STATIC]
 
     # -- lifecycle / web UI ----------------------------------------------
 

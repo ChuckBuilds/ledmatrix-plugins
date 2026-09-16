@@ -310,6 +310,18 @@ does not offer the split, so the play stays correct; it just never branches.
 Insurance and surrender are likewise absent — basic strategy never takes
 insurance, and a surrender ends a hand with nothing to watch.
 
+## In the Vegas marquee
+
+Declared **STATIC**: the marquee pauses, the hand plays out, and the scroll
+resumes. A plugin that declares no Vegas mode is not skipped — the marquee
+captures one frame of its `display()` and scrolls that past instead, which is
+right for a clock and, for a twenty-second hand, is a single frozen still of
+whatever moment the capture caught.
+
+SCROLL and FIXED_SEGMENT are unavailable rather than unwanted: both want the
+content handed over as an image to be moved, and a hand is not an image. STATIC
+is the only mode offered, so the web UI cannot present one that freezes it.
+
 ## How long a rotation lasts
 
 As long as the hand does. The whole hand is simulated before the first pixel is
