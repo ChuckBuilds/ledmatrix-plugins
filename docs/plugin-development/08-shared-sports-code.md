@@ -12,9 +12,11 @@ family of shared-shape modules:
 | `base_odds_manager.py` | 9 | ufc's is a genuine MMA fork (athlete odds) |
 | `game_renderer.py` | 8 | |
 | `dynamic_team_resolver.py` | 8 | true forks — different constructor signatures |
-| `logo_downloader.py` | 6 | five other plugins already import `src.logo_downloader` |
+| `logo_downloader.py` | 2 | football and lacrosse, as the fallback behind a guarded `src.logo_downloader` import (f1-scoreboard's same-named file is an unrelated `F1LogoLoader`) |
+| `<sport>_espn_dates.py` | 9 | every scoreboard; a copy of core's `src/common/espn_dates.py` under a three-line header. **Identical by rule:** `scripts/test_espn_dates_copies.py` fails if any copy differs from the others or from core's, and on a fetch that sends ESPN `dates` without it. Fix it in core, then copy to all nine |
+| `<sport>_favorite_check.py` | 7 | afl, baseball, basketball, football, hockey, lacrosse, nrl. Byte-identical today, but **no check keeps them so** — edit all seven together |
 
-None of these copies are identical. **Any fix to a shared-shape file must be
+Apart from the two sport-prefixed helpers, none of these copies are identical. **Any fix to a shared-shape file must be
 applied to every lineage member in the same PR** — the cautionary example is
 commit `8d33894` (the UTC start-time fix), which required touching **75 files**
 because one logical change had to be replicated across ten plugins.
@@ -49,8 +51,8 @@ The long-term home for this code is the core repo, so a fix lands once and
 every scoreboard benefits. Convergence happens module by module, gated on what
 the core actually ships:
 
-- **Already converged:** `logo_downloader` (afl, nrl, ufc, basketball, soccer
-  import `src.logo_downloader`); `odds-ticker` uses `src.*` for everything and
+- **Already converged:** `logo_downloader` (every scoreboard imports
+  `src.logo_downloader`; football and lacrosse keep a bundled fallback); `odds-ticker` uses `src.*` for everything and
   ships no local copies — it is the model citizen.
 - **Converging now:** `base_odds_manager`. The eight non-UFC scoreboards import
   it guardedly, preferring the core's version:

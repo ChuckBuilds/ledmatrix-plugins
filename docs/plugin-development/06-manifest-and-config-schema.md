@@ -46,17 +46,16 @@ usually a minimum-core-version key and a description:
 
 ```json
 "versions": [
-  { "version": "1.0.3", "released": "2026-05-15", "ledmatrix_min": "2.0.0", "notes": "..." }
+  { "version": "1.0.3", "released": "2026-05-15", "ledmatrix_min_version": "2.0.0", "notes": "..." }
 ]
 ```
 
-> **Known inconsistency — pick one key going forward.** The minimum-core-version
-> field appears under two spellings inside `versions[]`: `ledmatrix_min` and
-> `ledmatrix_min_version`. Many manifests mix both. Likewise the description field
-> varies (`notes`, `note`, `changes`, `changelog`). When you add a changelog
-> entry, prefer **`ledmatrix_min_version`** and **`notes`** for consistency — but
-> check what your plugin already uses and match it until a repo-wide normalization
-> lands.
+> **Use `ledmatrix_min_version`, not `ledmatrix_min`.** Older `versions[]`
+> entries use both spellings, and the core still reads either, but CI
+> (`scripts/check_manifest_version_fields.py`) fails a changed plugin whose
+> `versions[0]` uses the deprecated `ledmatrix_min`. Leave older entries as they
+> are. The description field also varies (`notes`, `note`, `changes`,
+> `changelog`); prefer **`notes`** in new entries.
 >
 > **⚠️ And the floor is not only a `versions[]` field.** A top-level
 > `min_ledmatrix_version` overrides that array entirely. The core resolves the
@@ -72,7 +71,8 @@ usually a minimum-core-version key and a description:
 > read past. Four plugins declare the top-level form today (`ledmatrix-flights`,
 > `ledmatrix-leaderboard`, `ledmatrix-music`, `ledmatrix-stocks`), and for those
 > **editing `versions[0]` changes nothing the core reads.** Check for a top-level
-> key before raising a floor, and raise the one that actually wins.
+> key before raising a floor, and raise the one that actually wins. CI fails a
+> changed plugin whose floors in these places disagree, so raise them together.
 >
 > Only `versions[0]` is ever consulted, so a floor declared on an older entry is
 > dead. If a release needs a newer core, that requirement is cumulative: every
@@ -83,7 +83,7 @@ usually a minimum-core-version key and a description:
 ## `config_schema.json`
 
 **JSON Schema Draft-07** (`"$schema": "http://json-schema.org/draft-07/schema#"` —
-all 39 plugins use it). The web UI generates the config form from this file, so
+declare it, as nearly every plugin does). The web UI generates the config form from this file, so
 it's the source of truth for available options.
 
 ### Conventions

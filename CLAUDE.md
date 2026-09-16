@@ -7,7 +7,8 @@ This repo is the **official plugin registry + plugin source** for
 the display core. The core lives in a separate repo (`ChuckBuilds/LEDMatrix`);
 this repo ships:
 
-- `plugins/<plugin-id>/` — 43 self-contained Python plugins the core loads
+- `plugins/<plugin-id>/` — self-contained Python plugins the core loads, one
+  per directory
 - `plugins.json` — registry the in-app Plugin Store consumes (**auto-generated;
   never hand-edit**)
 - tooling/CI that keeps versions, collisions, and render safety honest
@@ -230,6 +231,8 @@ Details → `docs/plugin-development/07-testing-ci-and-registry.md`.
 ## Out of scope here
 
 - Changing LEDMatrix **core** APIs, web UI templates, or `BasePlugin` — that’s
-  the other repo. If a plugin needs a newer core API, bump `ledmatrix_min` /
-  `compatible_versions` in the manifest and document it; don’t pretend core
+  the other repo. If a plugin needs a newer core API, raise
+  `versions[0].ledmatrix_min_version` (or the top-level `min_ledmatrix_version`,
+  if the manifest has one — it wins) and `compatible_versions`, and document it;
+  don’t pretend core
   files live in this tree.
