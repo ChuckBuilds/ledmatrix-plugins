@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-09-15",
+  "last_updated": "2026-09-16",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -1192,6 +1192,32 @@
       "verified": false,
       "screenshot": "",
       "latest_version": "1.0.0"
+    },
+    {
+      "id": "blackjack",
+      "name": "Blackjack",
+      "description": "Deals one hand of Las Vegas blackjack per rotation. Cards slide in and flip face up a few seconds apart, the player follows basic strategy, the dealer plays the house rules, and the hand ends on a BLACKJACK! / BUST! / PUSH banner. Every hand comes off a real shuffled shoe, so no two rotations are the same.",
+      "author": "ChuckBuilds",
+      "category": "fun",
+      "tags": [
+        "blackjack",
+        "cards",
+        "casino",
+        "vegas",
+        "game",
+        "animation",
+        "ambient"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "branch": "main",
+      "plugin_path": "plugins/blackjack",
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2026-09-16",
+      "verified": true,
+      "screenshot": "https://raw.githubusercontent.com/ChuckBuilds/ledmatrix-plugins/main/plugins/blackjack/assets/hero.png",
+      "latest_version": "1.2.0",
+      "icon": "fa-diamond"
     }
   ]
 }

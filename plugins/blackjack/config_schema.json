@@ -1,0 +1,287 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Blackjack Plugin Configuration",
+  "description": "One hand of Las Vegas blackjack per rotation, dealt off a shuffled shoe and played by basic strategy.",
+  "type": "object",
+  "x-propertyOrder": [
+    "enabled",
+    "decks",
+    "dealer_hits_soft_17",
+    "allow_double",
+    "card_style",
+    "deck_colors",
+    "table_style",
+    "show_labels",
+    "show_totals",
+    "dealer_color",
+    "player_color",
+    "felt_color",
+    "card_interval",
+    "result_seconds",
+    "action_seconds",
+    "reveal_seconds",
+    "intro_seconds",
+    "deal_animation",
+    "flip_seconds",
+    "render_fps",
+    "random_seed",
+    "display_duration",
+    "vegas_mode",
+    "dynamic_duration"
+  ],
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": false,
+      "title": "Enabled",
+      "description": "Show a hand of blackjack in the display rotation."
+    },
+    "decks": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 8,
+      "default": 6,
+      "title": "Decks in the Shoe",
+      "description": "How many decks are shuffled together. Six is the Las Vegas Strip standard. The shoe carries over between hands and is reshuffled when the cut card comes out, so the run of cards behaves like a real table."
+    },
+    "dealer_hits_soft_17": {
+      "type": "boolean",
+      "default": false,
+      "title": "Dealer Hits Soft 17",
+      "description": "Off is Strip rules (the dealer stands on all 17s). On is downtown rules, where the dealer draws to a soft 17 such as Ace-6. The player's strategy adjusts to match."
+    },
+    "allow_double": {
+      "type": "boolean",
+      "default": true,
+      "title": "Allow Doubling Down",
+      "description": "Let the player double on the first two cards. Turning this off keeps the hand to hit and stand only."
+    },
+    "card_style": {
+      "type": "string",
+      "enum": [
+        "outline",
+        "solid"
+      ],
+      "default": "outline",
+      "title": "Card Style",
+      "description": "Outline draws dark cards with a lit edge and a lit rank, which suits an LED panel and keeps the table mostly black. Solid paints classic ivory card faces, which is brighter and more literal.",
+      "x-widget": "select"
+    },
+    "table_style": {
+      "type": "string",
+      "enum": [
+        "felt",
+        "void"
+      ],
+      "default": "felt",
+      "title": "Table Background",
+      "description": "Felt lays a dark dithered green field under the hand, with a rail round the table and a bevelled rule between the seats, so the panel reads as a game screen rather than as cards floating in the dark. Void is bare black -- the most negative space a table can have, and the lowest power draw.",
+      "x-widget": "select"
+    },
+    "show_labels": {
+      "type": "boolean",
+      "default": true,
+      "title": "Show DEALER / YOU Labels",
+      "description": "Name each seat. The name sits beside the hand where there is width for it, above the hand where there is not. On panels too narrow for either the seat is marked with a coloured bar instead, whatever this is set to."
+    },
+    "show_totals": {
+      "type": "boolean",
+      "default": true,
+      "title": "Show Hand Totals",
+      "description": "Show each hand's running total beside the cards. The dealer's shows a question mark until the hole card turns over."
+    },
+    "dealer_color": {
+      "type": "array",
+      "title": "Dealer Accent Colour",
+      "description": "RGB colour of the dealer's label, total and seat bar.",
+      "default": [
+        255,
+        140,
+        50
+      ],
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255
+      },
+      "x-widget": "color"
+    },
+    "player_color": {
+      "type": "array",
+      "title": "Player Accent Colour",
+      "description": "RGB colour of your label, total, seat bar and the HIT / STAND / DOUBLE tag.",
+      "default": [
+        60,
+        200,
+        255
+      ],
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255
+      },
+      "x-widget": "color"
+    },
+    "felt_color": {
+      "type": "array",
+      "title": "Felt Colour",
+      "description": "RGB colour the whole table is built from: the dithered felt field, the rail round its edge and the rule between the two seats are all steps down from this one colour. Only the rule uses it at anything like full strength -- the felt itself is a tenth of it, because a table that competes with the cards is worse than no table.",
+      "default": [
+        0,
+        110,
+        62
+      ],
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255
+      },
+      "x-widget": "color"
+    },
+    "card_interval": {
+      "type": "number",
+      "minimum": 0.3,
+      "maximum": 10,
+      "default": 2.0,
+      "title": "Seconds Between Cards",
+      "description": "How long each card sits on the felt before the next one is dealt. This is the main pacing control: raising it makes the hand play slower and the rotation longer."
+    },
+    "result_seconds": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 20,
+      "default": 4.0,
+      "title": "Result Banner Seconds",
+      "description": "How long the BLACKJACK! / BUST! / PUSH banner is held before the rotation moves on."
+    },
+    "action_seconds": {
+      "type": "number",
+      "minimum": 0.3,
+      "maximum": 10,
+      "default": 1.2,
+      "title": "Player Call Seconds",
+      "description": "How long the HIT / STAND / DOUBLE tag is shown before the card that follows it.",
+      "x-advanced": true
+    },
+    "reveal_seconds": {
+      "type": "number",
+      "minimum": 0.5,
+      "maximum": 10,
+      "default": 1.8,
+      "title": "Hole Card Reveal Seconds",
+      "description": "The beat where the dealer turns the hole card over, including the flip itself.",
+      "x-advanced": true
+    },
+    "intro_seconds": {
+      "type": "number",
+      "minimum": 0.1,
+      "maximum": 10,
+      "default": 0.8,
+      "title": "Opening Pause Seconds",
+      "description": "An empty table for a moment before the first card is dealt.",
+      "x-advanced": true
+    },
+    "deal_animation": {
+      "type": "number",
+      "minimum": 0.1,
+      "maximum": 3,
+      "default": 0.45,
+      "title": "Deal Animation Seconds",
+      "description": "How long a card takes to slide into its slot and flip face up. Capped at the seconds-between-cards value.",
+      "x-advanced": true
+    },
+    "flip_seconds": {
+      "type": "number",
+      "minimum": 0.1,
+      "maximum": 3,
+      "default": 0.55,
+      "title": "Hole Card Flip Seconds",
+      "description": "How long the hole card takes to turn over. Capped at the reveal beat.",
+      "x-advanced": true
+    },
+    "render_fps": {
+      "type": "number",
+      "minimum": 5,
+      "maximum": 120,
+      "default": 40,
+      "title": "Render Frame Rate",
+      "description": "Frames drawn per second. The core offers 125; 40 is smooth on a Pi and leaves it room to do other work. Lower this if the display loop is struggling.",
+      "x-advanced": true
+    },
+    "random_seed": {
+      "type": "integer",
+      "minimum": 0,
+      "default": 0,
+      "title": "Random Seed",
+      "description": "Leave at 0 for real randomness, which is what you want: the shoe is shuffled from system entropy and no two hands repeat. Any other value deals the same sequence of hands every restart, which is only useful for testing or screenshots.",
+      "x-advanced": true
+    },
+    "display_duration": {
+      "type": "number",
+      "minimum": 5,
+      "maximum": 300,
+      "default": 22,
+      "title": "Display Duration",
+      "description": "Fallback slot length in seconds, used only when dynamic duration is turned off. With dynamic duration on (the default) the rotation lasts exactly as long as the hand takes.",
+      "x-advanced": true
+    },
+    "dynamic_duration": {
+      "type": "object",
+      "title": "Dynamic Duration",
+      "description": "Let the hand decide how long the rotation lasts. Strongly recommended: a hand runs anywhere from a natural in four cards to a six-card dealer bust, and a fixed slot either cuts the result banner off or holds a finished table on screen.",
+      "x-propertyOrder": [
+        "enabled",
+        "max_duration_seconds"
+      ],
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "title": "Enabled",
+          "description": "Hold the screen until the hand finishes, then move on."
+        },
+        "max_duration_seconds": {
+          "type": "number",
+          "minimum": 10,
+          "maximum": 300,
+          "default": 75,
+          "title": "Maximum Seconds",
+          "description": "Upper bound on a single hand, in case a very slow pace and a long draw combine into a rotation nobody wants to sit through."
+        }
+      },
+      "default": {
+        "enabled": true,
+        "max_duration_seconds": 75
+      }
+    },
+    "deck_colors": {
+      "type": "string",
+      "enum": [
+        "classic",
+        "four"
+      ],
+      "default": "four",
+      "title": "Deck Colours",
+      "description": "Four gives every suit its own colour — red hearts, amber diamonds, green clubs, indigo spades — which is what card rooms hand out, because two same-coloured suits are told apart by shape alone and shape is the slower channel at a glance. Classic is the two-colour deck a physical pack ships with: red hearts and diamonds, light spades and clubs.",
+      "x-widget": "select"
+    },
+    "vegas_mode": {
+      "type": "string",
+      "enum": [
+        "fixed",
+        "static"
+      ],
+      "default": "fixed",
+      "title": "Vegas Marquee Mode",
+      "description": "How this behaves inside the continuous Vegas marquee. Fixed hands the ticker a summary of the finished hand -- the final cards with the result beside them -- which scrolls by with everything else. Static pauses the marquee instead and plays the whole hand out, which is worth it if you would rather watch than skim.",
+      "x-widget": "select",
+      "x-advanced": true
+    }
+  }
+}

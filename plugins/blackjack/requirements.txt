@@ -1,0 +1,2 @@
+# No third-party dependencies. Pillow ships with the LEDMatrix core, and the
+# card art, the 3x5 type and the shuffled shoe are all drawn/dealt in-process.
