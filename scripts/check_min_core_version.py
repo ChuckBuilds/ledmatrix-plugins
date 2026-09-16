@@ -121,6 +121,7 @@ MODULE_FIRST_VERSION = {
     # on core main, in no tagged release yet. When the next release is
     # tagged, set each None entry here to that tag -- the test's
     # tag-verification section insists on it once the tag is in its list.
+    "src.common.espn_dates": None,  # core #591
     "src.common.sports_helpers": None,  # core #583
     "src.core_config_keys": None,  # core #589
     "src.pi5_matrix_support": None,  # core #586
