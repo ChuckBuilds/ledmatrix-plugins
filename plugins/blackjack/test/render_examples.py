@@ -9,6 +9,12 @@ directory with a Python that has Pillow:
     python test/render_examples.py [--out ../assets]
 
 The hands are dealt from fixed seeds so re-running reproduces the same images.
+
+Seeded ``random.Random`` appears here and is flagged B311 by static analysis.
+It is deliberate and not a security question: a fixed seed is what makes these
+reproducible. The shoe a *player* is dealt from uses ``random.SystemRandom``
+(see ``blackjack_engine.Shoe``), and an engine test asserts that seeding the
+``random`` module anywhere in the process cannot change it.
 """
 
 from __future__ import annotations
@@ -146,7 +152,7 @@ def frame(script, timeline, elapsed, width, height, theme=None):
 def deal_until(seed, predicate, rules=None, limit=4000):
     """First hand from ``seed`` that satisfies ``predicate``, and its timeline."""
     rules = rules or Rules()
-    shoe = Shoe(rules.decks, random.Random(seed))
+    shoe = Shoe(rules.decks, random.Random(seed))  # nosec B311
     for _ in range(limit):
         script = play_hand(shoe, rules)
         if predicate(script):

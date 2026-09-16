@@ -11,6 +11,12 @@ plays, in real time, so the pacing can be judged rather than imagined.
 
 Frames come from the plugin's own renderer at the true panel size and are
 scaled with nearest-neighbour, so nothing here is a mock-up.
+
+Seeded ``random.Random`` appears here and is flagged B311 by static analysis.
+It is deliberate and not a security question: a fixed seed is what makes these
+reproducible. The shoe a *player* is dealt from uses ``random.SystemRandom``
+(see ``blackjack_engine.Shoe``), and an engine test asserts that seeding the
+``random`` module anywhere in the process cannot change it.
 """
 
 from __future__ import annotations
@@ -36,7 +42,7 @@ def parse_size(token: str):
 
 
 def find_hand(seed: int, predicate, limit: int = 4000):
-    shoe = Shoe(6, random.Random(seed))
+    shoe = Shoe(6, random.Random(seed))  # nosec B311
     for _ in range(limit):
         script = play_hand(shoe, Rules())
         if predicate(script):

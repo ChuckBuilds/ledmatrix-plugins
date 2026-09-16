@@ -10,6 +10,12 @@ Standalone script, per this repo's convention:
     0 pass, 2 skip (prerequisites absent), 1 fail.
 
     python plugins/blackjack/test_blackjack_render.py
+
+Seeded ``random.Random`` appears here and is flagged B311 by static analysis.
+It is deliberate and not a security question: a fixed seed is what makes these
+reproducible. The shoe a *player* is dealt from uses ``random.SystemRandom``
+(see ``blackjack_engine.Shoe``), and an engine test asserts that seeding the
+``random`` module anywhere in the process cannot change it.
 """
 
 from __future__ import annotations
@@ -29,7 +35,7 @@ except ImportError as exc:  # pragma: no cover
     raise SystemExit(2)
 
 import blackjack_render as br
-from blackjack_engine import ACTION, DEAL, OUTCOME, REVEAL, Rules, Shoe, play_hand
+from blackjack_engine import ACTION, DEAL, REVEAL, Rules, Shoe, play_hand
 from blackjack_render import Theme, ViewState, compute_layout, render
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "test"))
@@ -60,7 +66,7 @@ def lit_pixels(image):
 
 def sample_hand(seed=11, predicate=None):
     predicate = predicate or (lambda s: s.player_card_count >= 3 and s.dealer_card_count >= 3)
-    shoe = Shoe(6, random.Random(seed))
+    shoe = Shoe(6, random.Random(seed))  # nosec B311
     for _ in range(4000):
         script = play_hand(shoe, Rules())
         if predicate(script):
@@ -782,7 +788,7 @@ def test_vegas_summary_shows_the_finished_hand():
     from blackjack_render import render_summary
 
     problems = []
-    shoe = Shoe(6, random.Random(4))
+    shoe = Shoe(6, random.Random(4))  # nosec B311
     scripts = []
     wanted = {"BLACKJACK!", "DEALER BUST", "BUST!", "DEALER WINS", "PUSH"}
     for _ in range(60000):

@@ -14,6 +14,12 @@ display controller exactly how long this rotation needs
 (``get_cycle_duration``), every frame is a pure function of elapsed time with
 no animation state to drift, and the card slots can be laid out from the final
 card count so nothing slides sideways when a fifth card arrives.
+
+Seeded ``random.Random`` appears here and is flagged B311 by static analysis.
+It is deliberate and not a security question: a fixed seed is what makes these
+reproducible. The shoe a *player* is dealt from uses ``random.SystemRandom``
+(see ``blackjack_engine.Shoe``), and an engine test asserts that seeding the
+``random`` module anywhere in the process cannot change it.
 """
 
 from __future__ import annotations
@@ -127,7 +133,10 @@ class BlackjackPlugin(BasePlugin):
         # Seeded only for tests and goldens. Unseeded means SystemRandom, whose
         # sequence nothing in the process can influence -- so two panels booted
         # together still deal different hands.
-        self._rng: Optional[random.Random] = random.Random(seed) if seed else None
+        if seed:
+            self._rng = random.Random(seed)  # nosec B311
+        else:
+            self._rng = None
         if self._shoe is None or self._shoe.decks != self.rules.decks or seed:
             self._shoe = Shoe(self.rules.decks, self._rng, self.rules.penetration)
 
@@ -503,11 +512,17 @@ class BlackjackPlugin(BasePlugin):
             if self._script is None:
                 self._start_hand()
             width = self.display_manager.width
-            getter = getattr(self, "get_vegas_render_width", None)
-            if callable(getter):
-                # The ticker asks for a narrower render on a wide panel so the
-                # item is tight rather than cropped afterwards.
-                width = max(16, int(getter() or width))
+            # The ticker asks for a narrower render on a wide panel so the item
+            # is tight rather than cropped afterwards. Older cores have no such
+            # hook, hence the catch rather than a hasattr dance -- which also
+            # kept a static analyser from seeing that the bound method it was
+            # about to call could not be None.
+            try:
+                requested = self.get_vegas_render_width()
+            except AttributeError:
+                requested = None
+            if requested:
+                width = max(16, int(requested))
             return render_summary(width, self.display_manager.height,
                                   self._script, self.theme)
         except Exception as exc:  # noqa: BLE001 - the ticker falls back on None
