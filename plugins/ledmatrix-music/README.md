@@ -99,13 +99,13 @@ under [Color Customization](#color-customization).
 
 | Key | Default | Notes |
 |---|---|---|
-| `customization.title_text.font` | `"PressStart2P-Regular.ttf"` | Select the font to use — one of `PressStart2P-Regular.ttf`, `4x6-font.ttf`, `5by7.regular.ttf`, `5x7.bdf`, `4x6.bdf`, `cozette.bdf`. Advanced. |
+| `customization.title_text.font` | `"PressStart2P-Regular.ttf"` | Select the font to use — one of `PressStart2P-Regular.ttf`, `4x6-font.ttf`, `5by7.regular.ttf`, `5x7.bdf`, `4x6.bdf`. Advanced. |
 | `customization.title_text.font_size` | `8` | Font size in pixels (4–16). Advanced. |
 | `customization.title_text.y_percent` | — | Vertical position override as fraction of display height (0.0=top, 1.0=bottom). Leave empty for automatic positioning based on font size (0.0–1.0). Advanced. |
-| `customization.artist_text.font` | `"5x7.bdf"` | Select the font to use (default matches the display manager 5x7 font) — one of `PressStart2P-Regular.ttf`, `4x6-font.ttf`, `5by7.regular.ttf`, `5x7.bdf`, `4x6.bdf`, `cozette.bdf`. Advanced. |
+| `customization.artist_text.font` | `"5x7.bdf"` | Select the font to use (default matches the display manager 5x7 font) — one of `PressStart2P-Regular.ttf`, `4x6-font.ttf`, `5by7.regular.ttf`, `5x7.bdf`, `4x6.bdf`. Advanced. |
 | `customization.artist_text.font_size` | `7` | Font size in pixels (4–16). Advanced. |
 | `customization.artist_text.y_percent` | — | Vertical position override as fraction of display height (0.0=top, 1.0=bottom). Leave empty for automatic positioning based on font size (0.0–1.0). Advanced. |
-| `customization.album_text.font` | `"5x7.bdf"` | Select the font to use (default matches the display manager 5x7 font) — one of `PressStart2P-Regular.ttf`, `4x6-font.ttf`, `5by7.regular.ttf`, `5x7.bdf`, `4x6.bdf`, `cozette.bdf`. Advanced. |
+| `customization.album_text.font` | `"5x7.bdf"` | Select the font to use (default matches the display manager 5x7 font) — one of `PressStart2P-Regular.ttf`, `4x6-font.ttf`, `5by7.regular.ttf`, `5x7.bdf`, `4x6.bdf`. Advanced. |
 | `customization.album_text.font_size` | `7` | Font size in pixels (4–16). Advanced. |
 | `customization.album_text.y_percent` | — | Vertical position override as fraction of display height (0.0=top, 1.0=bottom). Leave empty for automatic positioning based on font size (0.0–1.0). Advanced. |
 
