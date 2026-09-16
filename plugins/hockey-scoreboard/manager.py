@@ -183,12 +183,6 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
         # Fingerprint of the slate the Vegas cards were last built from.
         self._vegas_signature: Optional[tuple] = None
         
-        # Enable high-FPS mode for scroll display (allows 100+ FPS scrolling)
-        # This signals to the display controller to use high-FPS loop (8ms = 125 FPS)
-        self.enable_scrolling = self._scroll_manager is not None
-        if self.enable_scrolling:
-            self.logger.info("High-FPS scrolling enabled for hockey scoreboard")
-
         # League registry: maps league IDs to their configuration and managers
         # This structure makes it easy to add more leagues in the future
         # Format: {league_id: {'enabled': bool, 'priority': int, 'live_priority': bool, 'managers': {...}}}
@@ -251,6 +245,14 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
         
         # Display mode settings parsing (for future scroll mode support in config schema)
         self._display_mode_settings = self._parse_display_mode_settings()
+
+        # Ask the display controller for its high-FPS loop only when a mode
+        # actually scrolls. Evaluated here, after the scroll manager, the league
+        # registry and the display-mode settings all exist, since
+        # _has_any_scroll_mode() reads all three.
+        self.enable_scrolling = self._has_any_scroll_mode()
+        if self.enable_scrolling:
+            self.logger.info("High-FPS scrolling enabled for hockey scoreboard")
 
         self.logger.info(
             f"Hockey scoreboard plugin initialized - {self.display_width}x{self.display_height}"
@@ -2444,6 +2446,23 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
                         live_modes.append("ncaa_womens_live")
         
         return live_modes
+
+    def _has_any_scroll_mode(self) -> bool:
+        """Return True if any enabled league uses scroll display for any mode.
+
+        Named and shaped to match afl/nrl/soccer/football, which gate
+        enable_scrolling this way. The old test -- whether the scroll manager
+        could be built at all -- stays true when every mode is 'switch', and the
+        display controller reads enable_scrolling to choose its 125 FPS loop, so
+        a static scorebug was re-rendered every 8ms (football #487).
+        """
+        if not getattr(self, "_scroll_manager", None):
+            return False
+        for mode_type in ("live", "recent", "upcoming"):
+            for league in self._get_enabled_leagues_for_mode(mode_type):
+                if self._should_use_scroll_mode(league, mode_type):
+                    return True
+        return False
 
     def _should_use_scroll_mode(self, league: str, mode_type: str) -> bool:
         """

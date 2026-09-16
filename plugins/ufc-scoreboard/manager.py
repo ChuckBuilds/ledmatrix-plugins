@@ -144,8 +144,9 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
         # Fingerprint of the fights the Vegas cards were last built from.
         self._vegas_signature: Optional[tuple] = None
 
-        # Enable high-FPS mode for scroll display
-        self.enable_scrolling = self._scroll_manager is not None
+        # Ask for the high-FPS loop only when display() actually scrolls, which
+        # in this plugin it never does -- see _has_any_scroll_mode().
+        self.enable_scrolling = self._has_any_scroll_mode()
         if self.enable_scrolling:
             self.logger.info("High-FPS scrolling enabled for UFC scoreboard")
 
@@ -460,6 +461,20 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
         """Check if scroll mode should be used for this game type."""
         if self.ufc_enabled and self._get_display_mode("ufc", mode_type) == "scroll":
             return True
+        return False
+
+    def _has_any_scroll_mode(self) -> bool:
+        """Whether display() scrolls for any mode -- never, in this plugin.
+
+        The sibling scoreboards gate enable_scrolling on this (football #487):
+        the display controller reads that flag to choose its 125 FPS loop. This
+        plugin has no display-path scroll renderer -- a stored *_display_mode of
+        "scroll" still draws the switch card (KNOWN_MISSING_SCROLL in
+        scripts/test_scroll_mode_is_reachable.py) -- so the old test, whether
+        the scroll manager could be built, only re-rendered a static fight card
+        every 8ms. Vegas mode scrolls the fight cards through its own loop and
+        does not read the flag.
+        """
         return False
 
     def _get_available_modes(self) -> list:

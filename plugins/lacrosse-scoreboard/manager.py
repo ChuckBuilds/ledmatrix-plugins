@@ -260,6 +260,14 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
         self._live_scroll_rebuild_cost = {}
         self._scroll_active = {}  # Tracks which scroll modes are active
 
+        # Ask the display controller for its high-FPS loop only when a mode
+        # actually scrolls. Evaluated here, after the scroll manager, the league
+        # registry and the display-mode settings all exist, since
+        # _has_any_scroll_mode() reads all three.
+        self.enable_scrolling = self._has_any_scroll_mode()
+        if self.enable_scrolling:
+            self.logger.info("High-FPS scrolling enabled for lacrosse scoreboard")
+
         self.logger.info(
             f"Lacrosse scoreboard plugin initialized - {self.display_width}x{self.display_height}"
         )
@@ -2313,6 +2321,23 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
                         live_modes.append("lax_ncaa_womens_live")
         
         return live_modes
+
+    def _has_any_scroll_mode(self) -> bool:
+        """Return True if any enabled league uses scroll display for any mode.
+
+        Named and shaped to match afl/nrl/soccer/football, which gate
+        enable_scrolling this way. The old test -- whether the scroll manager
+        could be built at all -- stays true when every mode is 'switch', and the
+        display controller reads enable_scrolling to choose its 125 FPS loop, so
+        a static scorebug was re-rendered every 8ms (football #487).
+        """
+        if not getattr(self, "_scroll_manager", None):
+            return False
+        for mode_type in ("live", "recent", "upcoming"):
+            for league in self._get_enabled_leagues_for_mode(mode_type):
+                if self._should_use_scroll_mode(league, mode_type):
+                    return True
+        return False
 
     def _should_use_scroll_mode(self, league: str, mode_type: str) -> bool:
         """
