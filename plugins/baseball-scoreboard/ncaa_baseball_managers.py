@@ -130,7 +130,11 @@ class BaseNCAABaseballManager(Baseball):
         priority = background_config.get("priority", 2)
 
         # Start background fetch if service is available
-        if self.background_service and self.background_enabled:
+        if (
+            self.background_service
+            and self.background_enabled
+            and self._background_fetches_espn_ranges()
+        ):
             # Skip if a fetch is already in progress for this season
             if season_year in self.background_fetch_requests:
                 self.logger.debug(
@@ -180,28 +184,15 @@ class BaseNCAABaseballManager(Baseball):
             if partial_data:
                 return partial_data
         else:
-            # Fallback to synchronous fetch if background service not available
-            self.logger.warning(
-                "Background service not available, using synchronous fetch"
+            # No background service, or a core that would send this range to
+            # ESPN as-is (rejected with 400 since 2026-09-15): fetch it here.
+            return self._fetch_season_directly(
+                ESPN_NCAA_BASEBALL_SCOREBOARD_URL,
+                datestring,
+                cache_key,
+                f"{season_year} season",
+                ttl=14400,
             )
-            try:
-                response = self.session.get(
-                    ESPN_NCAA_BASEBALL_SCOREBOARD_URL,
-                    params={"dates": datestring, "limit": 1000},
-                    headers=self.headers,
-                    timeout=30,
-                )
-                response.raise_for_status()
-                data = response.json()
-
-                # Cache the data with 4-hour TTL so it refreshes periodically
-                self.cache_manager.set(cache_key, data, ttl=14400)
-                self.logger.info(f"Synchronously fetched {season_year} season schedule")
-                return data
-
-            except Exception as e:
-                self.logger.error(f"Failed to fetch {season_year} season schedule: {e}")
-                return None
 
     def _fetch_data(self) -> Optional[Dict]:
         """Fetch cached season data. Subclasses may override."""

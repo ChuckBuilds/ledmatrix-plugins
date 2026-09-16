@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-09-15",
+  "last_updated": "2026-09-16",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -76,7 +76,7 @@
       "last_updated": "2026-09-14",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.45.2"
+      "latest_version": "1.45.3"
     },
     {
       "id": "basketball-scoreboard",
@@ -101,7 +101,7 @@
       "last_updated": "2026-09-14",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.33.1"
+      "latest_version": "1.33.2"
     },
     {
       "id": "calendar",
@@ -240,7 +240,7 @@
       "last_updated": "2026-09-14",
       "verified": true,
       "screenshot": "",
-      "latest_version": "3.10.2"
+      "latest_version": "3.10.3"
     },
     {
       "id": "geochron",
@@ -335,7 +335,7 @@
       "last_updated": "2026-09-14",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.30.0",
+      "latest_version": "1.30.1",
       "icon": "fas fa-hockey-puck"
     },
     {
@@ -359,7 +359,7 @@
       "last_updated": "2026-09-14",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.29.1",
+      "latest_version": "1.29.2",
       "icon": "fas fa-baseball-ball"
     },
     {
@@ -760,7 +760,7 @@
       "last_updated": "2026-09-14",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.29.3"
+      "latest_version": "2.29.4"
     },
     {
       "id": "static-image",
@@ -905,7 +905,7 @@
       "last_updated": "2026-09-15",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.13.0",
+      "latest_version": "1.13.1",
       "icon": "fas fa-fist-raised"
     },
     {
@@ -1048,7 +1048,7 @@
       "downloads": 0,
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.27.1",
+      "latest_version": "1.27.2",
       "last_updated": "2026-09-14"
     },
     {
@@ -1095,7 +1095,7 @@
       "last_updated": "2026-09-14",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.26.2"
+      "latest_version": "1.26.3"
     },
     {
       "id": "jellyfin-now-playing",

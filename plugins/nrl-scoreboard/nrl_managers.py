@@ -120,7 +120,11 @@ class BaseNrlManager(SportsCore):
                     self.cache_manager.delete(cache_key)
 
         # Start background fetch if service is available
-        if self.background_service and self.background_enabled:
+        if (
+            self.background_service
+            and self.background_enabled
+            and self._background_fetches_espn_ranges()
+        ):
             self.logger.info("Starting background fetch for NRL schedule...")
 
             def fetch_callback(result):
@@ -161,27 +165,11 @@ class BaseNrlManager(SportsCore):
             if partial_data:
                 return partial_data
         else:
-            # Fallback to synchronous fetch if background service not available
-            self.logger.warning(
-                "Background service not available, using synchronous fetch"
+            # No background service, or a core that would send this range to
+            # ESPN as-is (rejected with 400 since 2026-09-15): fetch it here.
+            return self._fetch_season_directly(
+                url, date_str, cache_key, "NRL"
             )
-            try:
-                response = self.session.get(
-                    url,
-                    params={"dates": date_str, "limit": 1000},
-                    headers=self.headers,
-                    timeout=30,
-                )
-                response.raise_for_status()
-                data = response.json()
-
-                self.cache_manager.set(cache_key, data)
-                self.logger.info("Synchronously fetched NRL schedule")
-                return data
-
-            except Exception as e:
-                self.logger.error(f"Failed to fetch NRL schedule: {e}")
-                return None
 
     def _fetch_data(self) -> Optional[Dict]:
         """Fetch data using shared data mechanism or direct fetch for live."""

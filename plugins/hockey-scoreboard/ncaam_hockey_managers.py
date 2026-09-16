@@ -69,6 +69,17 @@ class BaseNCAAMHockeyManager(Hockey): # Renamed class
         
         self.logger.info(f"Fetching full {season_year} season schedule from ESPN API...")
 
+        # A core from before the ESPN date-range fix would send this range to
+        # ESPN as-is and get a 400 (every sport, since 2026-09-15), and a
+        # missing service has nothing to submit to: fetch it here instead.
+        if not self._background_fetches_espn_ranges():
+            return self._fetch_season_directly(
+                ESPN_NCAAMH_SCOREBOARD_URL,
+                datestring,
+                cache_key,
+                f"{season_year} season",
+            )
+
         # Start background fetch
         self.logger.info(f"Starting background fetch for {season_year} season schedule...")
         

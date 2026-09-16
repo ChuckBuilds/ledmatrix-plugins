@@ -13,6 +13,7 @@ from datetime import datetime, timezone
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+from ufc_espn_dates import ESPN_MAX_LIMIT, fetch_espn_scoreboard
 
 
 class DataSource(ABC):
@@ -65,15 +66,14 @@ class ESPNDataSource(DataSource):
             now = datetime.now(timezone.utc)
             formatted_date = now.strftime("%Y%m%d")
             url = f"{self.base_url}/{sport}/{league}/scoreboard"
-            response = self.session.get(
+            data = fetch_espn_scoreboard(
+                self.session,
                 url,
-                params={"dates": formatted_date, "limit": 1000},
+                params={"dates": formatted_date, "limit": ESPN_MAX_LIMIT},
                 headers=self.get_headers(),
-                timeout=15
+                timeout=15,
+                logger=self.logger,
             )
-            response.raise_for_status()
-
-            data = response.json()
             events = data.get('events', [])
 
             # Filter for live games (skip events with empty competitions list)
@@ -99,15 +99,17 @@ class ESPNDataSource(DataSource):
 
             params = {
                 'dates': f"{start_date.strftime('%Y%m%d')}-{end_date.strftime('%Y%m%d')}",
-                "limit": 1000
+                "limit": ESPN_MAX_LIMIT
             }
 
-            response = self.session.get(
-                url, headers=self.get_headers(), params=params, timeout=15
+            data = fetch_espn_scoreboard(
+                self.session,
+                url,
+                headers=self.get_headers(),
+                params=params,
+                timeout=15,
+                logger=self.logger,
             )
-            response.raise_for_status()
-
-            data = response.json()
             events = data.get('events', [])
 
             self.logger.debug(f"Fetched {len(events)} scheduled games for {sport}/{league}")
