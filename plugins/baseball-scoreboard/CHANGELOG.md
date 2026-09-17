@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.46.1] - 2026-09-17
+
+### Changed
+- **The bundled ESPN date helper fetches its chunks concurrently.** Since ESPN
+  began rejecting `dates=YYYYMMDD-YYYYMMDD`, a season is fetched as one request
+  per month, and a month over the 500-event cap becomes one per day -- about
+  130 requests for a cold college-baseball season, previously issued one at a
+  time. That outran the startup update budget core shares across all plugins,
+  so scoreboards logged `update() timed out` on first run and were deferred
+  with nothing on the panel. Measured on a Pi 4 against live ESPN, two capped
+  months (63 requests, 3101 events): 11.2s before, 1.6s after. Same requests,
+  same events, and merged events keep their existing order.
+  Synced from LEDMatrix core ChuckBuilds/LEDMatrix#596.
+
 ## [1.46.0] - 2026-09-16
 
 ### Added

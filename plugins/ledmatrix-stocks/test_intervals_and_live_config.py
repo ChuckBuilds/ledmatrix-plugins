@@ -170,9 +170,47 @@ def test_error_display_fits():
         check(box[0] > 0 and box[2] < 128,
               f"the message fits the 128px panel (ink spans x={box[0]}..{box[2]})")
 
+@_fail_loudly
+def test_empty_data_warns_once_not_once_per_frame():
+    print("[empty-data warning is throttled]")
+    display = FakeDisplay(128, 32)
+    plugin = StockTickerPlugin("ledmatrix-stocks", CONFIG, display, RecordingCache(),
+                               types.SimpleNamespace())
+
+    warnings = []
+    infos = []
+    plugin.logger = types.SimpleNamespace(
+        warning=lambda msg, *a: warnings.append(msg % a if a else msg),
+        info=lambda msg, *a: infos.append(msg % a if a else msg),
+        error=lambda msg, *a, **k: None,
+        debug=lambda msg, *a, **k: None,
+    )
+
+    # The display loop calls display() at the scroll frame rate while the
+    # first fetch is still in flight.
+    plugin.stock_data = {}
+    for _ in range(200):
+        plugin.display()
+    check(len(warnings) == 1,
+          f"200 empty frames warn once, not once each (got {len(warnings)})")
+
+    # Data lands: the gap is announced closed, and a later gap warns again.
+    plugin.stock_data = {"AAPL": {"symbol": "AAPL", "price": 1.0, "change": 0.1,
+                                  "change_percent": 1.0, "price_history": [],
+                                  "is_crypto": False}}
+    plugin.display()
+    check(len(infos) == 1, f"recovery is logged once (got {len(infos)})")
+
+    plugin.stock_data = {}
+    for _ in range(50):
+        plugin.display()
+    check(len(warnings) == 2,
+          f"a second gap warns again, once (got {len(warnings)} total)")
+
 
 if __name__ == "__main__":
-    for test in (test_intervals, test_live_config, test_error_display_fits):
+    for test in (test_intervals, test_live_config, test_error_display_fits,
+                 test_empty_data_warns_once_not_once_per_frame):
         try:
             test()
         except _ChecksFailed:

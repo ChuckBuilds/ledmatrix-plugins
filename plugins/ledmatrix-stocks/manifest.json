@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-stocks",
   "name": "Stock & Crypto Ticker",
-  "version": "2.11.0",
+  "version": "2.11.1",
   "description": "Displays stock tickers with prices, changes, and optional charts for stocks and cryptocurrencies. Supports scroll and switch display modes.",
   "author": "LEDMatrix Team",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/ledmatrix-stocks",
@@ -38,6 +38,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "2.11.1",
+      "released": "2026-09-17",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "The stock ticker no longer floods the log while it waits for its first data. display() runs at the scroll frame rate, and an empty data set logged 'No stock data available' on every frame -- 592 to 1010 identical lines in the second before the first fetch landed, burying real errors in the journal. It was never a fetch failure: the data arrived and the ticker scrolled normally. The warning is now one line per gap, with an info line when the data comes back."
+    },
     {
       "version": "2.11.0",
       "released": "2026-09-15",

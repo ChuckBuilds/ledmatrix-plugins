@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "3.10.4",
+  "version": "3.10.5",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "3.10.5",
+      "released": "2026-09-17",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Scoreboards fill in faster on a cold start. Since ESPN began rejecting date-range queries, a season is fetched as one request per month, and a month over ESPN's 500-event cap becomes one request per day -- about 130 requests for a cold college-baseball season, previously issued one at a time. That was slower than the startup update budget LEDMatrix core shares across every plugin, so scoreboards logged 'update() timed out' on first run and were deferred with nothing on the panel. Chunks now go out six at a time. Measured on a Raspberry Pi 4 against live ESPN, two capped months (63 requests, 3101 events): 11.2s before, 1.6s after -- the same requests and the same events, with merged events still in the same order. Synced from LEDMatrix core ChuckBuilds/LEDMatrix#596."
+    },
     {
       "version": "3.10.4",
       "released": "2026-09-16",
@@ -538,7 +544,7 @@
       "released": "2026-07-10",
       "version": "2.8.0",
       "ledmatrix_min_version": "2.0.0",
-      "notes": "Adaptive layout (beta, opt-in): set layout_mode: \"adaptive\" to scale fonts/logos/regions to any panel size. Default stays \"classic\" — rendering is unchanged unless you opt in; switch back to classic in config to revert without reinstalling. Adaptive mode also applies customization.layout x/y offsets in scroll mode (classic scroll never did). User-configured fonts win over adaptive sizing."
+      "notes": "Adaptive layout (beta, opt-in): set layout_mode: \"adaptive\" to scale fonts/logos/regions to any panel size. Default stays \"classic\" \u2014 rendering is unchanged unless you opt in; switch back to classic in config to revert without reinstalling. Adaptive mode also applies customization.layout x/y offsets in scroll mode (classic scroll never did). User-configured fonts win over adaptive sizing."
     },
     {
       "released": "2026-07-08",

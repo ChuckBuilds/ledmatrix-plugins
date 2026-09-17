@@ -1,7 +1,7 @@
 {
   "id": "hockey-scoreboard",
   "name": "Hockey Scoreboard",
-  "version": "1.31.0",
+  "version": "1.31.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, and NCAA Women's hockey with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/hockey-scoreboard",
@@ -54,6 +54,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.31.1",
+      "released": "2026-09-17",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Scoreboards fill in faster on a cold start. Since ESPN began rejecting date-range queries, a season is fetched as one request per month, and a month over ESPN's 500-event cap becomes one request per day -- about 130 requests for a cold college-baseball season, previously issued one at a time. That was slower than the startup update budget LEDMatrix core shares across every plugin, so scoreboards logged 'update() timed out' on first run and were deferred with nothing on the panel. Chunks now go out six at a time. Measured on a Raspberry Pi 4 against live ESPN, two capped months (63 requests, 3101 events): 11.2s before, 1.6s after -- the same requests and the same events, with merged events still in the same order. Synced from LEDMatrix core ChuckBuilds/LEDMatrix#596."
+    },
     {
       "version": "1.31.0",
       "released": "2026-09-16",
