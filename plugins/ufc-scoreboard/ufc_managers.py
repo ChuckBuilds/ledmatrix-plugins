@@ -59,6 +59,20 @@ class BaseUFCManager(MMA):
             f"Upcoming: {self.upcoming_enabled}, Live: {self.live_enabled}"
         )
 
+    def update(self):
+        """Refresh the fights, then fetch any headshot they need that is not on disk.
+
+        The download lives here, on the update path, because display() must not
+        touch the network (see MMA._load_and_resize_headshot). Runs after every
+        update() call -- the managers' own interval guard decides whether the
+        fights were refetched; this only looks at what they now hold.
+        """
+        super().update()
+        try:
+            self._fetch_missing_headshots()
+        except Exception as e:  # pylint: disable=broad-except
+            self.logger.debug(f"Headshot prefetch skipped: {e}")
+
     def _fetch_ufc_api_data(self, use_cache: bool = True) -> Optional[Dict]:
         """
         Fetches the full season schedule for UFC using background threading.

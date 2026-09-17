@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "3.10.3",
+  "version": "3.10.4",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "3.10.4",
+      "released": "2026-09-16",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Requires LEDMatrix core 3.4.0. get_update_interval(), which this plugin has implemented since #479, is only consulted from core 3.4.0 (ChuckBuilds/LEDMatrix#555); on 3.3.x live polling silently stayed at the manifest's 60s. Scroll mode no longer freezes while a fetch runs. The per-frame live refresh ran manager.update() on the render thread, so when a fetch was due the marquee stalled for the whole ESPN request. It is handed to a worker thread (one per manager at a time, at least 5s apart; the manager's own interval still decides whether anything is fetched). Switch mode refreshes its managers off the render thread. The draw-time refresh in _try_manager_display() ran inline, freezing the panel for each due fetch; it now uses the same worker dispatch as afl/nrl/soccer. scroll_settings.scroll_delay is documented as ignored. It never affected scrolling (frames are paced to the panel refresh and scroll_speed sets the speed) but was described as a smoothness knob. The key stays declared so saved configs keep loading."
+    },
     {
       "version": "3.10.3",
       "released": "2026-09-16",
@@ -779,7 +785,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-14",
+  "last_updated": "2026-09-16",
   "stars": 0,
   "downloads": 0,
   "verified": true,
@@ -787,7 +793,7 @@
   "config_schema": "config_schema.json",
   "entry_point": "manager.py",
   "compatible_versions": [
-    ">=3.3.0"
+    ">=3.4.0"
   ],
   "display": {
     "design_size": {

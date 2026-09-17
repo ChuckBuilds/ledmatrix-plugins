@@ -89,7 +89,7 @@
                 "scroll"
               ],
               "default": "switch",
-              "description": "Display mode for live fights: 'switch' rotates fights one at a time, 'scroll' scrolls all fights horizontally"
+              "description": "Live fights. Kept so saved configs still load; ignored. This plugin draws one fight at a time whichever value is set: it has no scrolling display mode. Fight cards scroll only in Vegas mode."
             },
             "recent_display_mode": {
               "type": "string",
@@ -98,7 +98,7 @@
                 "scroll"
               ],
               "default": "switch",
-              "description": "Display mode for recent fights"
+              "description": "Recent fights. Kept so saved configs still load; ignored. This plugin draws one fight at a time whichever value is set: it has no scrolling display mode. Fight cards scroll only in Vegas mode."
             },
             "upcoming_display_mode": {
               "type": "string",
@@ -107,14 +107,14 @@
                 "scroll"
               ],
               "default": "switch",
-              "description": "Display mode for upcoming fights"
+              "description": "Upcoming fights. Kept so saved configs still load; ignored. This plugin draws one fight at a time whichever value is set: it has no scrolling display mode. Fight cards scroll only in Vegas mode."
             }
           }
         },
         "scroll_settings": {
           "type": "object",
           "title": "Scroll Settings",
-          "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
+          "description": "Settings for the scrolling fight cards in Vegas mode (this plugin's own display modes do not scroll)",
           "properties": {
             "scroll_speed": {
               "x-advanced": true,
@@ -130,7 +130,7 @@
               "default": 0.01,
               "minimum": 0.001,
               "maximum": 0.1,
-              "description": "Delay between scroll frames in seconds (default: 0.01 = 100 FPS). Lower values = smoother scrolling."
+              "description": "Kept so saved configs still load; ignored. Scrolling is paced to the panel's refresh rate, and scroll_speed sets how fast it moves."
             },
             "gap_between_games": {
               "type": "integer",

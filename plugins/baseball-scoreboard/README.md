@@ -366,7 +366,7 @@ three league blocks, and all are **Advanced**.
 | Option | Default | What it does |
 |--------|---------|--------------|
 | `<league>.scroll_settings.scroll_speed` | `50.0` | Pixels per second. Higher scrolls faster. |
-| `<league>.scroll_settings.scroll_delay` | `0.01` | Delay between frames; `0.01` is 100 FPS. Lower is smoother. |
+| `<league>.scroll_settings.scroll_delay` | `0.01` | Ignored; kept so saved configs still load. Scrolling is paced to the panel refresh; `scroll_speed` sets the speed. |
 | `<league>.scroll_settings.gap_between_games` | `48` | Pixels between game cards. |
 | `<league>.scroll_settings.show_league_separators` | `true` | Draw a league icon between leagues in a mixed ticker. |
 | `<league>.scroll_settings.dynamic_duration` | `true` | Size the mode's duration from how long the scroll actually takes, so a long slate is not cut off mid-scroll. |

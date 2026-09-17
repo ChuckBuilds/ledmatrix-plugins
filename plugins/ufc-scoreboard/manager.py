@@ -6,13 +6,15 @@ the proven sports manager architecture from LEDMatrix.
 
 Display Modes:
 - Switch Mode: Display one fight at a time with timed transitions
-- Scroll Mode: High-FPS horizontal scrolling of all fights with UFC separators
+- There is no scroll display mode: *_display_mode: "scroll" is accepted for saved
+  configs and ignored. Fight cards scroll only in Vegas mode.
 
 Based on original work by Alex Resnick (legoguy1000) - PR #137
 """
 
 import copy
 import logging
+import threading
 import time
 from typing import Dict, Any, Set, Optional, Tuple, List
 
@@ -144,8 +146,9 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
         # Fingerprint of the fights the Vegas cards were last built from.
         self._vegas_signature: Optional[tuple] = None
 
-        # Enable high-FPS mode for scroll display
-        self.enable_scrolling = self._scroll_manager is not None
+        # Ask for the high-FPS loop only when display() actually scrolls, which
+        # in this plugin it never does -- see _has_any_scroll_mode().
+        self.enable_scrolling = self._has_any_scroll_mode()
         if self.enable_scrolling:
             self.logger.info("High-FPS scrolling enabled for UFC scoreboard")
 
@@ -186,6 +189,102 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
         self._current_game_tracking: Dict[str, Dict[str, Any]] = {}
         self._game_transition_log_interval: float = 1.0
         self._mode_start_time: Dict[str, float] = {}
+
+    def on_config_change(self, new_config: Dict[str, Any]) -> None:
+        """Apply config edits live, without restarting the display.
+
+        Without this override the base BasePlugin only swapped self.config, so
+        every setting derived at construction -- league enables, durations, live
+        priority, display modes, and the per-league managers, which read their
+        own translated copy of the config -- kept its startup value until the
+        display service restarted, while the web UI reported the save as done.
+        Ported from baseball/football (#166).
+
+        Re-derives the scalar settings, rebuilds the managers (old ones cleaned
+        up first), league registry, scroll manager and rotation modes, and
+        resets per-game progress tracking, since manager keys may have changed.
+        """
+        self.config = new_config or {}
+
+        # Preserve the current state when a partial save omits "enabled",
+        # rather than silently re-enabling a disabled plugin.
+        self.enabled = self.config.get("enabled", getattr(self, "enabled", True))
+        self.is_enabled = self.config.get("enabled", getattr(self, "is_enabled", True))
+        self.ufc_enabled = self.config.get("ufc", {}).get("enabled", True)
+        self.display_duration = float(self.config.get("display_duration", 30))
+        self.game_display_duration = float(self.config.get("game_display_duration", 15))
+        self.ufc_live_priority = self.config.get("ufc", {}).get("live_priority", True)
+        self._display_mode_settings = self._parse_display_mode_settings()
+
+        # Tear down the existing managers before rebuilding, so a league that
+        # was just disabled does not keep drawing from its old managers.
+        self._cleanup_managers()
+        self._initialize_managers()
+        self._initialize_league_registry()
+
+        # Rebuild the scroll display manager so it sees the new config.
+        self._scroll_manager = None
+        if SCROLL_AVAILABLE and ScrollDisplayManager:
+            try:
+                self._scroll_manager = ScrollDisplayManager(
+                    self.display_manager, self.config, self.logger,
+                    global_config=getattr(self, 'global_config', {}) or {}
+                )
+            except Exception as e:
+                self.logger.warning(f"Could not rebuild scroll display manager: {e}")
+                self._scroll_manager = None
+        # Re-evaluated after the rebuild: a save can turn scrolling on or off.
+        self.enable_scrolling = self._has_any_scroll_mode()
+        self._scroll_active = {}
+        self._scroll_prepared = {}
+        # The rendered Vegas cards belong to the old scroll manager; drop the
+        # fingerprint or they would never be rebuilt.
+        self._vegas_signature = None
+
+        # Rebuild rotation modes and reset cycling state.
+        self.modes = self._get_available_modes()
+        self.current_mode_index = 0
+        self.last_mode_switch = 0
+
+        # Reset dynamic-duration and display tracking (manager keys may change).
+        self._dynamic_cycle_seen_modes = set()
+        self._dynamic_mode_to_manager_key = {}
+        self._dynamic_manager_progress = {}
+        self._dynamic_managers_completed = set()
+        self._dynamic_cycle_complete = False
+        self._single_game_manager_start_times = {}
+        self._game_id_start_times = {}
+        self._display_mode_to_managers = {}
+        self._current_display_league = None
+        self._current_display_mode_type = None
+        self._last_display_mode = None
+        self._current_active_display_mode = None
+        self._current_game_tracking = {}
+        self._mode_start_time = {}
+
+        self.logger.info(
+            "UFC config updated live - ufc:%s, modes=%s",
+            self.ufc_enabled, self.modes,
+        )
+
+        # Favorites may have changed, so let the diagnostic report on them again.
+        checker = getattr(self, "_favorite_check", None)
+        if checker is not None:
+            checker.reset()
+
+    def _cleanup_managers(self) -> None:
+        """Clean up the current league managers and clear their attributes."""
+        for attr in (
+            "ufc_live", "ufc_recent", "ufc_upcoming",
+        ):
+            manager = getattr(self, attr, None)
+            if manager is not None and hasattr(manager, "cleanup"):
+                try:
+                    manager.cleanup()
+                except Exception as e:
+                    self.logger.debug(f"Error cleaning up manager {attr}: {e}")
+            if hasattr(self, attr):
+                setattr(self, attr, None)
 
     def _initialize_managers(self):
         """Initialize UFC manager instances."""
@@ -462,6 +561,20 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
             return True
         return False
 
+    def _has_any_scroll_mode(self) -> bool:
+        """Whether display() scrolls for any mode -- never, in this plugin.
+
+        The sibling scoreboards gate enable_scrolling on this (football #487):
+        the display controller reads that flag to choose its 125 FPS loop. This
+        plugin has no display-path scroll renderer -- a stored *_display_mode of
+        "scroll" still draws the switch card (KNOWN_MISSING_SCROLL in
+        scripts/test_scroll_mode_is_reachable.py) -- so the old test, whether
+        the scroll manager could be built, only re-rendered a static fight card
+        every 8ms. Vegas mode scrolls the fight cards through its own loop and
+        does not read the flag.
+        """
+        return False
+
     def _get_available_modes(self) -> list:
         """Get list of available display modes based on config."""
         modes = []
@@ -666,6 +779,54 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         return success
 
+    #: Floor between two draw-time refresh dispatches for one manager. The
+    #: manager's own update() still decides whether anything is fetched; this
+    #: only stops display() starting a thread on every frame just to be told
+    #: the interval has not elapsed.
+    _SWITCH_REFRESH_MIN_GAP_SECONDS = 5.0
+
+    def _dispatch_switch_refresh(self, manager) -> None:
+        """Run _ensure_manager_updated(manager) on a daemon thread.
+
+        Called from display(), so it must not block: when an update is due,
+        manager.update() fetches rankings and the schedule over the network,
+        and doing that inline stalled the frame for the length of the round
+        trip. The refreshed games land in the manager a few frames later --
+        still within the manager's own interval, which is the freshness the
+        switch path was missing.
+
+        At most one refresh per manager runs at a time, and dispatches for the
+        same manager are at least _SWITCH_REFRESH_MIN_GAP_SECONDS apart. Only
+        the render thread touches the two bookkeeping dicts, so they need no
+        lock; manager.update() stamps last_update before it fetches, so a
+        concurrent background plugin.update() for the same manager returns
+        early rather than fetching twice.
+        """
+        threads = getattr(self, "_switch_refresh_threads", None)
+        if threads is None:
+            threads = self._switch_refresh_threads = {}
+        stamps = getattr(self, "_switch_refresh_at", None)
+        if stamps is None:
+            stamps = self._switch_refresh_at = {}
+
+        key = id(manager)
+        running = threads.get(key)
+        if running is not None and running.is_alive():
+            return
+        now = time.monotonic()
+        last = stamps.get(key)
+        if last is not None and now - last < self._SWITCH_REFRESH_MIN_GAP_SECONDS:
+            return
+        stamps[key] = now
+        thread = threading.Thread(
+            target=self._ensure_manager_updated,
+            args=(manager,),
+            daemon=True,
+            name="SwitchRefresh-%s" % type(manager).__name__,
+        )
+        threads[key] = thread
+        thread.start()
+
     def _try_manager_display(
         self,
         manager,
@@ -680,7 +841,11 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
         self._current_display_mode_type = mode_type
         self._current_display_league = "ufc"
 
-        self._ensure_manager_updated(manager)
+        # Refresh the manager if its data is due. Dispatched off the render
+        # thread: a due update() is a network round trip, and run inline here
+        # it froze the panel for the length of the request (see
+        # _dispatch_switch_refresh). Fresh data lands a few frames later.
+        self._dispatch_switch_refresh(manager)
         result = manager.display(force_clear)
 
         actual_mode = f"ufc_{mode_type}" if mode_type else display_mode
@@ -761,7 +926,7 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         manager = self._get_current_manager()
         if manager:
-            self._ensure_manager_updated(manager)
+            self._dispatch_switch_refresh(manager)
             result = manager.display(force_clear)
             return bool(result)
 
@@ -781,9 +946,9 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         The manifest pins update_interval to 60s, which is the only number the
         core scheduler used, so ufc.live_update_interval (30s by default) could
-        never fire more often than once a minute. The core now consults this
-        hook on every tick (core #555); the eight sibling scoreboards gained it
-        in #479 and this plugin was left out.
+        never fire more often than once a minute. The core consults this hook on
+        every tick from 3.4.0 (core #555). football-scoreboard carried it first;
+        the other seven team scoreboards gained it later (audit M2, 2026-09-16).
 
         Returning None when nothing is live keeps the idle cadence exactly where
         the manifest puts it. Cheap by construction -- attribute reads on a

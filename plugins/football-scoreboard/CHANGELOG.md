@@ -1,5 +1,27 @@
 # Changelog
 
+## [3.10.4] - 2026-09-16
+
+### Changed
+- **Requires LEDMatrix core 3.4.0.** `get_update_interval()`, which this plugin
+  has implemented since #479, is only consulted from core 3.4.0
+  (ChuckBuilds/LEDMatrix#555); on 3.3.x live polling silently stayed at the
+  manifest's 60s.
+- **`scroll_settings.scroll_delay` is documented as ignored.** It never affected
+  scrolling (frames are paced to the panel refresh and `scroll_speed` sets the
+  speed) but was described as a smoothness knob. The key stays declared so saved
+  configs keep loading.
+
+### Fixed
+- **Scroll mode no longer freezes while a fetch runs.** The per-frame live
+  refresh ran `manager.update()` on the render thread, so when a fetch was due
+  the marquee stalled for the whole ESPN request. It is handed to a worker
+  thread (one per manager at a time, at least 5s apart; the manager's own
+  interval still decides whether anything is fetched).
+- **Switch mode refreshes its managers off the render thread.** The draw-time
+  refresh in `_try_manager_display()` ran inline, freezing the panel for each
+  due fetch; it now uses the same worker dispatch as afl/nrl/soccer.
+
 ## [3.10.3] - 2026-09-16
 
 ### Fixed

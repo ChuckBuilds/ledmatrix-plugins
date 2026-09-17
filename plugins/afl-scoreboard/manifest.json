@@ -1,7 +1,7 @@
 {
   "id": "afl-scoreboard",
   "name": "AFL Scoreboard",
-  "version": "1.27.2",
+  "version": "1.28.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming AFL (Australian Football League) games with real-time scores and game status.",
   "category": "sports",
@@ -18,6 +18,12 @@
     "afl_upcoming"
   ],
   "versions": [
+    {
+      "version": "1.28.0",
+      "released": "2026-09-16",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Requires LEDMatrix core 3.4.0, the first release that consults get_update_interval() (ChuckBuilds/LEDMatrix#555). Live games poll at the live interval. The plugin implements get_update_interval(): while a game is in progress the core calls update() every live_update_interval seconds instead of at the static interval (the manifest's 60s, or update_interval_seconds where the manifest declares none). With nothing live it returns no opinion, so the idle cadence is unchanged. The Vegas cards and modes not on screen no longer lag behind the score. Scroll mode no longer freezes while a fetch runs. The per-frame live refresh ran manager.update() on the render thread, so when a fetch was due the marquee stalled for the whole ESPN request. It is handed to a worker thread (one per manager at a time, at least 5s apart; the manager's own interval still decides whether anything is fetched). scroll_settings.scroll_delay is documented as ignored. It never affected scrolling (frames are paced to the panel refresh and scroll_speed sets the speed) but was described as a smoothness knob. The key stays declared so saved configs keep loading."
+    },
     {
       "version": "1.27.2",
       "released": "2026-09-16",
@@ -411,7 +417,7 @@
       "ledmatrix_min": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-14",
+  "last_updated": "2026-09-16",
   "stars": 0,
   "downloads": 0,
   "verified": true,
@@ -420,6 +426,6 @@
   "class_name": "AflScoreboardPlugin",
   "config_schema": "config_schema.json",
   "compatible_versions": [
-    ">=3.3.0"
+    ">=3.4.0"
   ]
 }

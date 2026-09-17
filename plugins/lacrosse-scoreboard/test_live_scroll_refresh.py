@@ -296,6 +296,8 @@ class _RefreshStub(_Stub):
     """Records which managers got an _ensure_manager_updated() call."""
 
     _refresh_live_scroll_managers = Plugin._refresh_live_scroll_managers
+    _dispatch_switch_refresh = Plugin._dispatch_switch_refresh
+    _SWITCH_REFRESH_MIN_GAP_SECONDS = Plugin._SWITCH_REFRESH_MIN_GAP_SECONDS
 
     def __init__(self, *a, **kw):
         super().__init__(*a, **kw)
@@ -304,28 +306,59 @@ class _RefreshStub(_Stub):
     def _ensure_manager_updated(self, manager):
         self.refreshed.append(manager)
 
+    def _settle(self):
+        """Wait for the dispatched refreshes -- they run on daemon threads."""
+        for thread in list(getattr(self, "_switch_refresh_threads", {}).values()):
+            thread.join(timeout=5)
+
 
 r = _RefreshStub([game()])
 r._refresh_live_scroll_managers()
+r._settle()
 check("refreshes the enabled league's live manager", len(r.refreshed) == 1,
       f"{len(r.refreshed)} manager(s)")
 
 r = _RefreshStub([game()], second_league_games=[game()])
 r._refresh_live_scroll_managers()
+r._settle()
 check("does not refresh a disabled league", len(r.refreshed) == 1,
       f"{len(r.refreshed)} manager(s)")
 
 
 class _AngryRefresh(_RefreshStub):
-    def _ensure_manager_updated(self, manager):
-        raise OSError("network on fire")
+    def _dispatch_switch_refresh(self, manager):
+        raise OSError("registry on fire")
 
 
 try:
     _AngryRefresh([game()])._refresh_live_scroll_managers()
-    check("a manager that raises does not take down the frame", True)
+    check("a refresh that raises does not take down the frame", True)
 except Exception as exc:
-    check("a manager that raises does not take down the frame", False, str(exc))
+    check("a refresh that raises does not take down the frame", False, str(exc))
+
+
+# The scroll refresh runs on every frame. A due update is a network round trip,
+# and run inline it froze the marquee for the whole ESPN request.
+import time as _time
+
+
+class _SlowRefresh(_RefreshStub):
+    def _ensure_manager_updated(self, manager):
+        _time.sleep(0.5)
+        self.refreshed.append(manager)
+
+
+r = _SlowRefresh([game()])
+_started = _time.monotonic()
+r._refresh_live_scroll_managers()
+_elapsed = _time.monotonic() - _started
+check("returns before a slow update finishes", _elapsed < 0.2, f"{_elapsed:.3f}s")
+check("the update is still running in the background", not r.refreshed)
+r._SWITCH_REFRESH_MIN_GAP_SECONDS = 0
+r._refresh_live_scroll_managers()
+r._settle()
+check("a manager already refreshing is not started twice", len(r.refreshed) == 1,
+      f"{len(r.refreshed)}")
 
 # The ordering is the whole fix, and it is invisible at runtime: put the refresh
 # after the rebuild decision and every test above still passes while the panel
@@ -381,6 +414,17 @@ for _node in ast.walk(_tree):
 
 check("every rebuild decision has a refresh immediately before it",
       _sites > 0 and not _bad, f"{_sites} site(s)" + (f"; {_bad}" if _bad else ""))
+
+# And the refresh must hand the update to a thread, never run it inline -- the
+# behavioural check above passes for an inline call that happens to be fast.
+_inline = []
+for _node in ast.walk(_tree):
+    if isinstance(_node, ast.FunctionDef) and _node.name == "_refresh_live_scroll_managers":
+        _inline = [c.func.attr for c in ast.walk(_node)
+                   if isinstance(c, ast.Call) and isinstance(c.func, ast.Attribute)
+                   and c.func.attr in ("_ensure_manager_updated", "update")]
+check("the live scroll refresh never updates a manager inline", not _inline,
+      f"inline calls: {_inline}" if _inline else "")
 
 
 print("\n" + "=" * 62)
