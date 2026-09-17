@@ -189,6 +189,102 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
         self._game_transition_log_interval: float = 1.0
         self._mode_start_time: Dict[str, float] = {}
 
+    def on_config_change(self, new_config: Dict[str, Any]) -> None:
+        """Apply config edits live, without restarting the display.
+
+        Without this override the base BasePlugin only swapped self.config, so
+        every setting derived at construction -- league enables, durations, live
+        priority, display modes, and the per-league managers, which read their
+        own translated copy of the config -- kept its startup value until the
+        display service restarted, while the web UI reported the save as done.
+        Ported from baseball/football (#166).
+
+        Re-derives the scalar settings, rebuilds the managers (old ones cleaned
+        up first), league registry, scroll manager and rotation modes, and
+        resets per-game progress tracking, since manager keys may have changed.
+        """
+        self.config = new_config or {}
+
+        # Preserve the current state when a partial save omits "enabled",
+        # rather than silently re-enabling a disabled plugin.
+        self.enabled = self.config.get("enabled", getattr(self, "enabled", True))
+        self.is_enabled = self.config.get("enabled", getattr(self, "is_enabled", True))
+        self.ufc_enabled = self.config.get("ufc", {}).get("enabled", True)
+        self.display_duration = float(self.config.get("display_duration", 30))
+        self.game_display_duration = float(self.config.get("game_display_duration", 15))
+        self.ufc_live_priority = self.config.get("ufc", {}).get("live_priority", True)
+        self._display_mode_settings = self._parse_display_mode_settings()
+
+        # Tear down the existing managers before rebuilding, so a league that
+        # was just disabled does not keep drawing from its old managers.
+        self._cleanup_managers()
+        self._initialize_managers()
+        self._initialize_league_registry()
+
+        # Rebuild the scroll display manager so it sees the new config.
+        self._scroll_manager = None
+        if SCROLL_AVAILABLE and ScrollDisplayManager:
+            try:
+                self._scroll_manager = ScrollDisplayManager(
+                    self.display_manager, self.config, self.logger,
+                    global_config=getattr(self, 'global_config', {}) or {}
+                )
+            except Exception as e:
+                self.logger.warning(f"Could not rebuild scroll display manager: {e}")
+                self._scroll_manager = None
+        # Re-evaluated after the rebuild: a save can turn scrolling on or off.
+        self.enable_scrolling = self._has_any_scroll_mode()
+        self._scroll_active = {}
+        self._scroll_prepared = {}
+        # The rendered Vegas cards belong to the old scroll manager; drop the
+        # fingerprint or they would never be rebuilt.
+        self._vegas_signature = None
+
+        # Rebuild rotation modes and reset cycling state.
+        self.modes = self._get_available_modes()
+        self.current_mode_index = 0
+        self.last_mode_switch = 0
+
+        # Reset dynamic-duration and display tracking (manager keys may change).
+        self._dynamic_cycle_seen_modes = set()
+        self._dynamic_mode_to_manager_key = {}
+        self._dynamic_manager_progress = {}
+        self._dynamic_managers_completed = set()
+        self._dynamic_cycle_complete = False
+        self._single_game_manager_start_times = {}
+        self._game_id_start_times = {}
+        self._display_mode_to_managers = {}
+        self._current_display_league = None
+        self._current_display_mode_type = None
+        self._last_display_mode = None
+        self._current_active_display_mode = None
+        self._current_game_tracking = {}
+        self._mode_start_time = {}
+
+        self.logger.info(
+            "UFC config updated live - ufc:%s, modes=%s",
+            self.ufc_enabled, self.modes,
+        )
+
+        # Favorites may have changed, so let the diagnostic report on them again.
+        checker = getattr(self, "_favorite_check", None)
+        if checker is not None:
+            checker.reset()
+
+    def _cleanup_managers(self) -> None:
+        """Clean up the current league managers and clear their attributes."""
+        for attr in (
+            "ufc_live", "ufc_recent", "ufc_upcoming",
+        ):
+            manager = getattr(self, attr, None)
+            if manager is not None and hasattr(manager, "cleanup"):
+                try:
+                    manager.cleanup()
+                except Exception as e:
+                    self.logger.debug(f"Error cleaning up manager {attr}: {e}")
+            if hasattr(self, attr):
+                setattr(self, attr, None)
+
     def _initialize_managers(self):
         """Initialize UFC manager instances."""
         self._managers_initialized = False
