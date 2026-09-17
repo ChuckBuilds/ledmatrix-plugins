@@ -77,7 +77,7 @@ Several images on a rotation:
 {
   "static-image": {
     "enabled": true,
-    "image_config": { "mode": "multiple", "rotation_mode": "sequential" },
+    "image_config": { "rotation_mode": "sequential" },
     "image_rotation_interval": 15,
     "images": [
       { "id": "logo",   "path": "assets/plugins/static-image/logo.png",   "display_order": 1 },
@@ -104,8 +104,12 @@ writes the file and the entry for you. Each entry takes:
 | `schedule` | object | `null` | Optional time window — see [Per-Image Schedules](#per-image-schedules) |
 
 PNG, JPEG and GIF all load; PNG is the sensible choice for anything with sharp
-edges or transparency. A still frame is taken from an animated GIF — this
-plugin does not animate.
+edges or transparency. Animated GIFs play: every frame is decoded and scaled
+when the image loads, each is held for its own frame delay (a missing or zero
+delay plays at 100 ms, and delays over one second are shortened to one second),
+and the plugin asks the display for its high frame rate while a GIF is
+configured. A GIF restarts from its first frame each time the rotation reloads
+it.
 
 ---
 
@@ -160,7 +164,7 @@ panel — noticeably brighter in a dark room and a real increase in power draw.
 
 | Option | Type | Default | What it does |
 |--------|------|---------|--------------|
-| `image_config.mode` | string | `single` | `single` shows one image; `multiple` rotates |
+| `image_config.mode` | string | `single` | Not used. Kept so saved configs stay valid; rotation depends only on how many images are available |
 | `image_config.rotation_mode` | string | `sequential` | How the next image is chosen |
 | `rotation_settings.sequential_loop` | boolean | `true` | Return to the first image after the last |
 | `rotation_settings.random_seed` | integer / null | `null` | Fixes the random order; `null` uses the clock |
@@ -199,8 +203,9 @@ There are two different "how often" settings and they are not alternatives:
 | `image_rotation_interval` | `15` | Always. Seconds each image is shown before the next |
 | `rotation_settings.time_intervals.interval_seconds` | `3600` | **Only** in `time_based` mode, and only with `time_intervals.enabled` on |
 
-`image_rotation_interval` is the one most people want. It falls back to
-`display_duration` if unset, so leaving both alone gives a 10-second dwell.
+`image_rotation_interval` is the one most people want. Left alone it is 15
+seconds, the schema default; it falls back to `display_duration` only in a
+hand-written config that leaves it out entirely.
 
 ---
 
@@ -273,7 +278,9 @@ the panel. Turn it on, or resize the source.
 `preserve_aspect_ratio` is off. Turn it on to letterbox instead of stretch.
 
 **It never rotates.**
-Check `image_config.mode` is `multiple` — `single` never advances. If
+Check more than one image is available right now: with a single image, or
+with per-image schedules that leave only one in its window, there is nothing
+to rotate to. (`image_config.mode` does not matter; it is not read.) If
 `rotation_mode` is `time_based`, also check
 `rotation_settings.time_intervals.enabled` is `true`. If it is `date_based`,
 it advances once per day, not within a session.
