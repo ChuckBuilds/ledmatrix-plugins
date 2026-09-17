@@ -187,7 +187,9 @@ panel: 100, 50, 33.3, 66.7 px/s and so on) and logs the result as
 Two features stop a long strip from being cut off mid-headline.
 
 **`global.dynamic_duration`** sizes the turn to the content instead of using a
-fixed `display_duration`. It accepts `true`/`false` or an object:
+fixed `display_duration`. It is an object (the settings schema rejects a bare
+`true`/`false`, though the plugin still reads one from an old hand-edited
+config):
 
 | Key | Default | What it does |
 |-----|---------|--------------|
@@ -220,6 +222,8 @@ plugin works out how long a pass takes and asks for that much time.
 readable at once.
 
 ![Three 128x32 panels at font_size 12, 8 and 6](../../docs/assets/news/font-size.png)
+
+*The 6 panel is for comparison only: the setting accepts 8 to 20.*
 
 At 16 on a 128-wide panel only about eight characters are on screen at a time,
 which reads more like a stream of letters than a headline. Dropping to 8 roughly
@@ -297,8 +301,8 @@ blocking the others, so one dead source does not empty the ticker.
 Width matters more here than for any other plugin in this repo, because the
 ticker's usefulness is how much of a headline you can take in at a glance:
 
-- **64×32** shows a few characters at a time even at `font_size: 6`. Legible,
-  but you read it letter by letter.
+- **64×32** shows a few characters at a time even at the smallest setting,
+  `font_size: 8`. Legible, but you read it letter by letter.
 - **128×32** is workable at `font_size: 8`.
 - **256×32** is where a ticker starts to feel like one — a readable fragment of
   a real headline sits on the panel at once.
