@@ -87,17 +87,19 @@ Four toggles control what the card carries besides the fighters themselves.
 
 ## Fighter headshots
 
-Headshots are downloaded from ESPN on first display and cached under the
-plugin's logo directory (`assets/sports/ufc_logos/`, named by ESPN fighter id).
-This needs write access to the LEDMatrix assets directory and an internet
-connection.
+Headshots are downloaded from ESPN during the plugin's data update (never while
+a card is being drawn) and cached under the plugin's logo directory
+(`assets/sports/ufc_logos/`, named by ESPN fighter id). This needs write access
+to the LEDMatrix assets directory and an internet connection.
 
-> **A headshot that cannot be fetched blanks the whole card.** The loader
-> returns nothing when the file is missing and the download fails, and the card
-> then draws the text `Image Error` instead of the fight. There is no per-fighter
-> placeholder fallback, unlike the team scoreboards, which generate one from the
-> abbreviation. If you see `Image Error`, check network access and that the
-> assets directory is writable.
+**A fighter without a headshot is drawn without one.** ESPN simply has no image
+for some fighters (roughly one in ten on a current card returns 404). The card
+still shows the names, records, result or clock, with the missing side left
+blank. A failed download is retried after 15 minutes, then 30, doubling up to
+every 6 hours, and logs one warning per attempt, e.g.
+`No headshot for <name> (ESPN has no headshot (404)); drawing the fight without it`.
+If every headshot is missing, check network access and that the assets directory
+is writable.
 
 The images in this document use grey stand-ins in place of real headshots, since
 none ship with the plugin.
@@ -322,9 +324,11 @@ re-render with `python scripts/render_docs_assets.py --plugin ufc-scoreboard
 
 ## Troubleshooting
 
-**Cards show `Image Error`.** A fighter headshot could not be loaded or
-downloaded. Check internet access and that the LEDMatrix assets directory is
-writable — see [Fighter headshots](#fighter-headshots).
+**A card has no headshot on one or both sides.** ESPN has no image for that
+fighter, or the download failed; the log says which, and it is retried with a
+backoff. If no fighter has a headshot, check internet access and that the
+LEDMatrix assets directory is writable — see
+[Fighter headshots](#fighter-headshots).
 
 **Nothing appears.** Check that both `enabled` and `ufc.enabled` are on, and
 that at least one of `show_live` / `show_recent` / `show_upcoming` is on.
