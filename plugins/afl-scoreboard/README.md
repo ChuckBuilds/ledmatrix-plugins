@@ -437,7 +437,7 @@ Scroll-mode-only settings:
 | Option | Default | What it does |
 |--------|---------|--------------|
 | `scroll_settings.scroll_speed` | `1.0` | **Advanced.** Pixels per step |
-| `scroll_settings.scroll_delay` | `0.01` | **Advanced.** Seconds between steps. Lower is faster and costs more CPU |
+| `scroll_settings.scroll_delay` | `0.01` | **Advanced.** Ignored; kept so saved configs still load. Scrolling is paced to the panel refresh; `scroll_speed` sets the speed. |
 | `scroll_settings.gap_between_games` | `24` | **Advanced.** Blank pixels between cards |
 | `scroll_settings.game_card_width` | `128` | **Advanced.** Width of one card |
 | `scroll_settings.show_league_separators` | `true` | **Advanced.** Divider between leagues (single-league here, so rarely visible) |

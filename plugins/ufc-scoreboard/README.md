@@ -67,10 +67,14 @@ Three modes, registered in `manifest.json`.
 | `ufc_recent` | Finished fights | `Final`, with the method and round below |
 | `ufc_upcoming` | Scheduled fights | Weight class, then the date and time |
 
-Each mode renders as **switch** (one fight at a time, timed) or **scroll** (all
-fights scroll horizontally at high FPS), set with
-`ufc.display_modes.<mode>_display_mode`. The mode toggles use the `show_`
+Each mode shows one fight at a time, timed. The mode toggles use the `show_`
 prefix — `show_live`, `show_recent`, `show_upcoming`.
+
+> **There is no scroll display mode.** The schema still lists
+> `ufc.display_modes.<mode>_display_mode` with `switch` and `scroll` so saved
+> configs keep loading, but the plugin draws one fight at a time whichever value
+> is set. Fight cards scroll only in Vegas mode, using the
+> [scroll settings](#scroll-settings).
 
 ## Display options
 
@@ -188,9 +192,9 @@ Defaults are the schema defaults, which is what the web UI writes.
 | `ufc.display_modes.show_live` | boolean | `true` |
 | `ufc.display_modes.show_recent` | boolean | `true` |
 | `ufc.display_modes.show_upcoming` | boolean | `true` |
-| `ufc.display_modes.live_display_mode` | `switch` \| `scroll` | `switch` |
-| `ufc.display_modes.recent_display_mode` | `switch` \| `scroll` | `switch` |
-| `ufc.display_modes.upcoming_display_mode` | `switch` \| `scroll` | `switch` |
+| `ufc.display_modes.live_display_mode` | `switch` \| `scroll` | `switch` (ignored; kept so saved configs still load) |
+| `ufc.display_modes.recent_display_mode` | `switch` \| `scroll` | `switch` (ignored; kept so saved configs still load) |
+| `ufc.display_modes.upcoming_display_mode` | `switch` \| `scroll` | `switch` (ignored; kept so saved configs still load) |
 
 ### Filtering
 
@@ -240,10 +244,13 @@ scoreboards. Mode length comes from dynamic duration or the per-fight durations.
 
 ### Scroll settings
 
+These apply to the fight cards in Vegas mode; the plugin's own display modes do
+not scroll.
+
 | Key | Type | Default | What it does |
 |---|---|---|---|
 | `ufc.scroll_settings.scroll_speed` | 1.0–200.0 px/s | `50.0` | **Advanced.** Every value is pixels per second; higher scrolls faster. **Changed in 1.13.0:** this setting used to be ignored and the Vegas fight cards scrolled at 100 px/s; set `100` for that speed. |
-| `ufc.scroll_settings.scroll_delay` | 0.001–0.1 s | `0.01` | **Advanced.** Frame delay; `0.01` is 100 FPS. |
+| `ufc.scroll_settings.scroll_delay` | 0.001–0.1 s | `0.01` | **Advanced.** Ignored; kept so saved configs still load. Scrolling is paced to the panel refresh; `scroll_speed` sets the speed. |
 | `ufc.scroll_settings.gap_between_games` | 8–128 px | `48` | Gap between fight cards. |
 | `ufc.scroll_settings.show_league_separators` | boolean | `true` | Draw the UFC icon between leagues. |
 | `ufc.scroll_settings.dynamic_duration` | boolean | `true` | Size the scroll duration from the content width. |

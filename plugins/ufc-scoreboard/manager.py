@@ -6,7 +6,8 @@ the proven sports manager architecture from LEDMatrix.
 
 Display Modes:
 - Switch Mode: Display one fight at a time with timed transitions
-- Scroll Mode: High-FPS horizontal scrolling of all fights with UFC separators
+- There is no scroll display mode: *_display_mode: "scroll" is accepted for saved
+  configs and ignored. Fight cards scroll only in Vegas mode.
 
 Based on original work by Alex Resnick (legoguy1000) - PR #137
 """
