@@ -247,8 +247,9 @@ class GameRenderer(SportsGameRendererMixin):
         for game in games:
             for team_key in ['home_abbr', 'away_abbr']:
                 abbr = game.get(team_key, '')
-                if abbr and self._logo_cache_key(abbr) not in self._logo_cache:
-                    logo_path = game.get(f'{team_key.replace("abbr", "logo_path")}')
+                logo_path = game.get(f'{team_key.replace("abbr", "logo_path")}')
+                scoped = f"{self._logo_scope(logo_path)}:{abbr}"
+                if abbr and self._logo_cache_key(scoped) not in self._logo_cache:
                     if logo_path:
                         logo = self._load_and_resize_logo(
                             game.get(team_key.replace('abbr', 'id'), ''),
@@ -257,7 +258,7 @@ class GameRenderer(SportsGameRendererMixin):
                             game.get(f'{team_key.replace("abbr", "logo_url")}')
                         )
                         if logo:
-                            self._remember_logo(self._logo_cache_key(abbr), logo)
+                            self._remember_logo(self._logo_cache_key(scoped), logo)
 
         self.logger.debug(f"Preloaded {len(self._logo_cache)} team logos")
 
@@ -281,6 +282,30 @@ class GameRenderer(SportsGameRendererMixin):
         while len(cache) > self._LOGO_CACHE_MAX:
             cache.pop(next(iter(cache)))
     
+    def _logo_scope(self, logo_path) -> str:
+        """The directory a logo came from -- what makes an abbreviation unique.
+
+        National-team flags and club crests share abbreviations: ESP is Spain
+        and Espanyol, POR is Portugal and Portland Timbers, COL is Colombia and
+        the Colorado Rapids. soccer_managers.py keeps the World Cup flags in a
+        separate national/ directory for exactly that reason, but one
+        _logo_cache is shared by every renderer this plugin builds (manager.py
+        creates a single ScrollDisplayManager and a strip carries every enabled
+        league), and _logo_cache_key scoped by slot size only. So "ESP" resolved
+        to one key and whichever league rendered first won: Spain's flag drawn
+        as Espanyol's crest, or the reverse.
+
+        Scoped on the directory rather than the league string, as
+        football-scoreboard does (#472): it is exactly what decides which file
+        gets opened, and two sides sharing an abbreviation *within* one
+        directory load the same file anyway, so the cache does not fragment
+        per league.
+        """
+        try:
+            return Path(logo_path).parent.name
+        except (TypeError, ValueError):
+            return ""
+
     def _load_and_resize_logo(
         self, 
         team_id: str, 
@@ -294,7 +319,8 @@ class GameRenderer(SportsGameRendererMixin):
         # so the lookup never matched and each card re-decoded and re-resized
         # the source PNG. Some shipped logos are 4096x4096, which is most of a
         # second per logo on a Pi.
-        cache_key = self._logo_cache_key(team_abbrev)
+        cache_key = self._logo_cache_key(
+            f"{self._logo_scope(logo_path)}:{team_abbrev}")
         if cache_key in self._logo_cache:
             # Re-insert to mark it most recently used. Works on the plain
             # dict the scroll display shares as well as on an OrderedDict.
@@ -317,7 +343,7 @@ class GameRenderer(SportsGameRendererMixin):
                     logo = logo.crop(bbox)
                 logo.thumbnail((self._logo_slot_width(), self.display_height), Image.Resampling.LANCZOS)
 
-                self._remember_logo(self._logo_cache_key(team_abbrev), logo)
+                self._remember_logo(cache_key, logo)
                 return logo
             else:
                 self.logger.debug(f"Logo not found at {logo_path}")
