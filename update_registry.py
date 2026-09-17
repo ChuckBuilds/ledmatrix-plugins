@@ -6,6 +6,14 @@ In the monorepo model, each plugin's manifest.json is the source of truth
 for version information. This script reads each plugin's manifest and
 updates the registry accordingly.
 
+Third-party entries (empty plugin_path) live in their authors' repos, so a
+local run cannot see their manifests. With --external it fetches each one's
+manifest.json from GitHub and raises latest_version to match. Without that,
+the store's update badge compares an installed plugin against whatever
+version the entry was reviewed at, and a third-party release never reaches
+anyone who already has the plugin. The update-registry workflow runs it
+daily; local runs and the pre-commit hook stay offline.
+
 `--check` fails on every way the registry and plugins/ can disagree:
 
 - a monorepo entry whose `latest_version` differs from its manifest's
@@ -27,14 +35,19 @@ Usage:
     python update_registry.py              # Update plugins.json (warns on the above)
     python update_registry.py --dry-run    # Show what would change
     python update_registry.py --check      # CI: dry run, exit 1 on the above
+    python update_registry.py --external   # Also sync third-party versions from GitHub
 """
 
 import json
 import re
 import sys
 import argparse
+import urllib.error
+import urllib.request
 from datetime import datetime
 from pathlib import Path
+from typing import Callable, Optional
+from urllib.parse import urlparse
 
 #: Manifest fields copied verbatim into the registry entry. The Plugin Store
 #: renders these, so the registry must never disagree with the manifest.
@@ -47,17 +60,21 @@ _ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 def release_date(manifest: dict) -> str | None:
     """The date the registry should show as the plugin's `last_updated`.
 
-    The newer of the manifest's top-level `last_updated` and its newest
-    release's `versions[0].released`. Release PRs add a `versions[0]` entry
-    with today's date and routinely forget the top-level field, so copying
-    `last_updated` alone published a date older than the release itself.
-    Only `YYYY-MM-DD` values are compared; if neither is one, the top-level
-    value is used as it stands (None when absent).
+    The newer of the manifest's top-level `last_updated` and the release date
+    of its current version (the `versions[]` entry whose `version` matches,
+    else `versions[0]`). Release PRs add a `versions[0]` entry with today's
+    date and routinely forget the top-level field, so copying `last_updated`
+    alone published a date older than the release itself. Only `YYYY-MM-DD`
+    values are compared; if neither is one, the top-level value is used as it
+    stands (None when absent). Used for monorepo manifests and for the
+    third-party manifests --external fetches.
     """
     candidates = [manifest.get("last_updated")]
-    versions = manifest.get("versions")
-    if isinstance(versions, list) and versions and isinstance(versions[0], dict):
-        candidates.append(versions[0].get("released"))
+    versions = [v for v in (manifest.get("versions") or []) if isinstance(v, dict)]
+    current = next((v for v in versions if v.get("version") == manifest.get("version")),
+                   versions[0] if versions else None)
+    if current is not None:
+        candidates.append(current.get("released"))
     dates = [c for c in candidates if isinstance(c, str) and _ISO_DATE.match(c)]
     return max(dates) if dates else manifest.get("last_updated")
 
@@ -140,10 +157,70 @@ def find_consistency_problems(registry: dict, plugins_dir: Path) -> list[str]:
     return problems
 
 
-def update_registry(registry_path: str = "plugins.json",
-                    dry_run: bool = False) -> list[tuple[str, str]]:
+def raw_manifest_url(repo: str, branch: str) -> str | None:
+    """raw.githubusercontent.com URL of a GitHub repo's root manifest.json."""
+    parsed = urlparse((repo or "").strip())
+    if parsed.scheme != "https" or parsed.hostname not in ("github.com", "www.github.com"):
+        return None
+    parts = [p for p in parsed.path.split("/") if p]
+    if len(parts) != 2:
+        return None
+    owner, name = parts[0], parts[1].removesuffix(".git")
+    return f"https://raw.githubusercontent.com/{owner}/{name}/{branch or 'main'}/manifest.json"
+
+
+def fetch_url(url: str, timeout: float = 15) -> str:
+    request = urllib.request.Request(url, headers={"User-Agent": "ledmatrix-plugins-registry"})
+    with urllib.request.urlopen(request, timeout=timeout) as response:  # nosec B310 - only https raw.githubusercontent.com URLs from raw_manifest_url
+        return response.read().decode("utf-8-sig")
+
+
+def sync_external_entry(plugin: dict, dry_run: bool,
+                        fetch: Callable[[str], str] = fetch_url) -> Optional[bool]:
+    """Raise a third-party entry's latest_version from its repo's manifest.
+
+    Only the version and its date move. Name, description and the rest stay
+    as they were when the entry was reviewed: the author's repo can publish a
+    new release, but it cannot rewrite what the store says about it. A
+    manifest whose id is not the entry's is ignored, so a repo cannot publish
+    versions for some other entry.
+
+    Returns True if the entry changed, False if it is current, None if the
+    manifest could not be read (a dead or private repo must not fail the run).
     """
-    Update plugins.json with version info from local plugin manifests.
+    plugin_id = plugin.get("id", "?")
+    url = raw_manifest_url(plugin.get("repo", ""), plugin.get("branch", ""))
+    if not url:
+        print(f"  {plugin_id}: skipped (external repo is not a github.com repo root)")
+        return None
+    try:
+        manifest = parse_json_with_trailing_commas(fetch(url))
+    except (urllib.error.URLError, OSError, ValueError) as e:
+        print(f"  {plugin_id}: WARNING - could not read {url}: {e}")
+        return None
+    if not isinstance(manifest, dict) or manifest.get("id") != plugin.get("id"):
+        found = manifest.get("id") if isinstance(manifest, dict) else None
+        print(f"  {plugin_id}: WARNING - {url} has id {found!r}, not {plugin_id!r}; skipped")
+        return None
+
+    remote = str(manifest.get("version") or "")
+    current = plugin.get("latest_version", "")
+    if not remote or parse_version(remote) <= parse_version(current):
+        print(f"  {plugin_id}: up to date ({current}, external)")
+        return False
+    print(f"  {plugin_id}: {current} -> {remote} (external)")
+    if not dry_run:
+        plugin["latest_version"] = remote
+        plugin["last_updated"] = release_date(manifest) or datetime.now().strftime("%Y-%m-%d")
+    return True
+
+
+def update_registry(registry_path: str = "plugins.json", dry_run: bool = False,
+                    external: bool = False,
+                    fetch: Callable[[str], str] = fetch_url) -> list[tuple[str, str]]:
+    """
+    Update plugins.json with version info from local plugin manifests, and
+    with external=True from third-party repos' manifests too.
 
     Returns one ``(kind, message)`` per disagreement found between a monorepo
     entry and its manifest: kind ``"behind"`` or ``"ahead"`` for a version
@@ -151,6 +228,7 @@ def update_registry(registry_path: str = "plugins.json",
     registry already matches.
     A normal run writes every fix it can; a registry version *ahead* of its
     manifest is reported but never written, because that would be a downgrade.
+    Third-party version raises (--external) are written but are not drift.
     """
     registry_file = Path(registry_path)
     plugins_dir = registry_file.parent / "plugins"
@@ -176,9 +254,12 @@ def update_registry(registry_path: str = "plugins.json",
         plugin_id = plugin["id"]
         plugin_path = plugin.get("plugin_path", "")
 
-        # Only process monorepo plugins (those with plugin_path set)
+        # Third-party plugins (no plugin_path) have no local manifest
         if not plugin_path:
-            print(f"  {plugin_id}: skipped (external repo)")
+            if not external:
+                print(f"  {plugin_id}: skipped (external repo; --external syncs it)")
+            elif sync_external_entry(plugin, dry_run, fetch):
+                updates_made = True
             continue
 
         # Extract directory name from plugin_path (e.g., "plugins/football-scoreboard" -> "football-scoreboard")
@@ -283,10 +364,16 @@ def main(argv=None) -> int:
              "plugin directory has no registry entry, or a registry "
              "plugin_path has no plugin (for CI)",
     )
+    parser.add_argument(
+        "--external",
+        action="store_true",
+        help="Also raise third-party entries' latest_version from the "
+             "manifest.json in their GitHub repos (needs network)",
+    )
     args = parser.parse_args(argv)
 
     try:
-        drift = update_registry(args.registry, args.dry_run or args.check)
+        drift = update_registry(args.registry, args.dry_run or args.check, args.external)
         problems = check_consistency(args.registry)
     except FileNotFoundError:
         print(f"Error: Could not find {args.registry}")

@@ -2,12 +2,20 @@ name: Update Plugin Registry
 
 on:
   workflow_dispatch:  # Allow manual triggering from GitHub UI
+  schedule:
+    # Third-party plugins release from their own repos, which push nothing
+    # here, so their versions are picked up on a timer.
+    - cron: '17 6 * * *'
   push:
     branches:
       - main
     paths:
       - 'plugins/*/manifest.json'
       - 'update_registry.py'
+
+concurrency:
+  group: update-registry
+  cancel-in-progress: false
 
 jobs:
   update-registry:
@@ -27,7 +35,9 @@ jobs:
           python-version: '3.11'
 
       - name: Update plugin registry
-        run: python update_registry.py
+        # --external also raises third-party entries' latest_version from the
+        # manifest.json in their repos. An unreadable repo only warns.
+        run: python update_registry.py --external
 
       - name: Check for changes
         id: check_changes
@@ -45,6 +55,8 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git add plugins.json
           git commit -m "Auto-update plugin registry with latest versions"
+          # main may have moved while this ran (a merge, or the push-triggered run)
+          git pull --rebase origin main
           git push
 
       - name: No changes

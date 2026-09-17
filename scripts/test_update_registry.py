@@ -21,6 +21,7 @@ import json
 import shutil
 import sys
 import tempfile
+import urllib.error
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
@@ -196,6 +197,78 @@ written = json.loads((root / "plugins.json").read_text())["plugins"][0]
 check("a version bump writes the release date, not the stale last_updated",
       written["last_updated"] == "2026-09-15" and written["latest_version"] == "1.0.0")
 shutil.rmtree(root, ignore_errors=True)
+
+print("\nthird-party versions (--external, fetch faked)")
+EXT_REPO = "https://github.com/someone/ledmatrix-ext"
+EXT_URL = "https://raw.githubusercontent.com/someone/ledmatrix-ext/main/manifest.json"
+
+
+def ext_entry(**over):
+    e = {"id": "ext", "plugin_path": "", "repo": EXT_REPO, "branch": "main",
+         "latest_version": "1.0.0", "last_updated": "2026-01-01",
+         "description": "as reviewed"}
+    e.update(over)
+    return e
+
+
+def run_external(entries, manifest=None, error=None, dry_run=False, external=True):
+    """Run update_registry on a registry of `entries`; returns (entries after, fetched urls)."""
+    root = make_tree(entries, [])
+    urls = []
+
+    def fetch(url):
+        urls.append(url)
+        if error:
+            raise error
+        return manifest if isinstance(manifest, str) else json.dumps(manifest)
+
+    try:
+        with contextlib.redirect_stdout(io.StringIO()):
+            reg.update_registry(str(root / "plugins.json"), dry_run, external, fetch)
+        return json.loads((root / "plugins.json").read_text())["plugins"], urls
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
+newer = {"id": "ext", "version": "1.2.0", "description": "rewritten by the repo",
+         "versions": [{"version": "1.2.0", "released": "2026-09-01"},
+                      {"version": "1.0.0", "released": "2026-01-01"}]}
+after, urls = run_external([ext_entry()], newer)
+check("fetches the repo root manifest on the entry's branch", urls == [EXT_URL])
+check("a newer manifest raises latest_version", after[0]["latest_version"] == "1.2.0")
+check("last_updated is the release date of that version", after[0]["last_updated"] == "2026-09-01")
+check("the reviewed description is not overwritten", after[0]["description"] == "as reviewed")
+
+after, _ = run_external([ext_entry()], "{\"id\": \"ext\", \"version\": \"1.1.0\", \"last_updated\": \"2026-08-01\",}")
+check("trailing commas parse; last_updated falls back to the manifest's",
+      (after[0]["latest_version"], after[0]["last_updated"]) == ("1.1.0", "2026-08-01"))
+
+after, _ = run_external([ext_entry(latest_version="2.0.0")], newer)
+check("an older manifest never downgrades", after[0]["latest_version"] == "2.0.0")
+
+after, _ = run_external([ext_entry()], dict(newer, id="someone-else"))
+check("a manifest with another id is ignored", after[0]["latest_version"] == "1.0.0")
+
+after, _ = run_external([ext_entry()], error=urllib.error.URLError("404"))
+check("an unreadable repo is skipped, not fatal", after[0]["latest_version"] == "1.0.0")
+
+after, _ = run_external([ext_entry()], "<html>not json</html>")
+check("a manifest that is not JSON is skipped", after[0]["latest_version"] == "1.0.0")
+
+after, urls = run_external([ext_entry(repo="https://gitlab.com/someone/ext")], newer)
+check("a non-GitHub repo is not fetched", urls == [] and after[0]["latest_version"] == "1.0.0")
+
+after, urls = run_external([ext_entry()], newer, external=False)
+check("without --external nothing is fetched", urls == [] and after[0]["latest_version"] == "1.0.0")
+
+after, _ = run_external([ext_entry()], newer, dry_run=True)
+check("--dry-run fetches but does not write", after[0]["latest_version"] == "1.0.0")
+
+check("repo URLs with .git and a trailing slash resolve",
+      reg.raw_manifest_url(EXT_REPO + ".git/", "dev")
+      == "https://raw.githubusercontent.com/someone/ledmatrix-ext/dev/manifest.json")
+check("a repo subpath does not resolve",
+      reg.raw_manifest_url(EXT_REPO + "/tree/main/x", "main") is None)
 
 print("\nthe real tree")
 registry = json.loads((REPO / "plugins.json").read_text(encoding="utf-8"))

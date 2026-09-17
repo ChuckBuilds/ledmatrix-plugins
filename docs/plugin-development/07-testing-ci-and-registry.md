@@ -230,7 +230,15 @@ registry:
   registry's `last_updated` is the newer of the manifest's top-level
   `last_updated` and `versions[0].released`, so a release that forgot to bump
   the top-level date still publishes its release date.
-- Third-party entries (empty `plugin_path`) are left completely untouched.
+- Third-party entries (empty `plugin_path`) are skipped by a local run. With
+  `--external` it fetches `manifest.json` from the root of each one's GitHub
+  repo (on the entry's `branch`) and raises `latest_version`, and sets
+  `last_updated` to that version's release date (the newer of its `released`
+  date and the manifest's `last_updated`). Only those two fields move:
+  the name, description and tags stay as reviewed. It never downgrades, ignores
+  a manifest whose `id` is not the entry's, and only warns on a repo it cannot
+  read. The **Update Plugin Registry** workflow runs it daily and on every
+  push, so a third-party release reaches the store's update badge within a day.
 - On any change it bumps the top-level `last_updated` and rewrites the file.
 - It checks coverage, matching by `plugin_path` (registry ids and manifest ids
   differ for weather, stocks, music and leaderboard): a `plugins/<dir>` with a
@@ -244,6 +252,7 @@ registry:
 
 ```bash
 python update_registry.py            # sync plugins.json from manifests
+python update_registry.py --external # also sync third-party versions (network)
 python update_registry.py --dry-run  # preview without writing
 python update_registry.py --check    # dry run; exit 1 on drift or a coverage problem (CI)
 ```
