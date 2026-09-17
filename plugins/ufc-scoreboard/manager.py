@@ -849,9 +849,9 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         The manifest pins update_interval to 60s, which is the only number the
         core scheduler used, so ufc.live_update_interval (30s by default) could
-        never fire more often than once a minute. The core now consults this
-        hook on every tick (core #555); the eight sibling scoreboards gained it
-        in #479 and this plugin was left out.
+        never fire more often than once a minute. The core consults this hook on
+        every tick from 3.4.0 (core #555). football-scoreboard carried it first;
+        the other seven team scoreboards gained it later (audit M2, 2026-09-16).
 
         Returning None when nothing is live keeps the idle cadence exactly where
         the manifest puts it. Cheap by construction -- attribute reads on a

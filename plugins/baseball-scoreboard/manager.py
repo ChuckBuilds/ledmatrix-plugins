@@ -2553,6 +2553,43 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
                 return True
         return False
 
+    def get_update_interval(self):
+        """Poll at the live interval while a game is in progress, else no opinion.
+
+        Without this hook the core scheduler calls update() at the static
+        interval -- the manifest's 60s, or update_interval_seconds from the
+        config where the manifest declares none (3600 by default in the
+        afl/nrl/soccer schemas). During a live game that is far slower than
+        live_update_interval, so everything that reads update-cycle data lags:
+        the Vegas cards, and any mode that is not on screen to refresh itself.
+        Core 3.4.0 consults this hook on every tick (ChuckBuilds/LEDMatrix#555);
+        football-scoreboard has carried it since then.
+
+        Returning None when nothing is live keeps the idle cadence exactly where
+        it was: this must not become a way to poll ESPN every 30 seconds all
+        off-season.
+
+        Cheap by construction -- the scheduler calls it on every tick, so it
+        reads attributes of managers already held (the same live managers the
+        scroll refresh walks) and never calls has_live_content(), which walks
+        the games and applies favourite-team filtering.
+        """
+        if not getattr(self, "is_enabled", True):
+            return None
+
+        fastest = None
+        for manager in self._live_scroll_managers(None) or []:
+            # live_games rather than has_live_content(): a game in progress that
+            # the favourites filter hides still needs fresh data, because the
+            # filter can stop hiding it the moment a favourite's game ends.
+            if not getattr(manager, "live_games", None):
+                continue
+            interval = getattr(manager, "update_interval", None)
+            if interval is None:
+                continue
+            fastest = interval if fastest is None else min(fastest, interval)
+        return fastest
+
     def has_live_content(self) -> bool:
         if not self.is_enabled:
             self.logger.debug("[LIVE_PRIORITY_DEBUG] has_live_content: plugin not enabled, returning False")
