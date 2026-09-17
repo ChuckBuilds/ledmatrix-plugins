@@ -43,15 +43,15 @@ So every scoreboard checked here must also:
     the rebuild, in any method that rebuilds one of those (a config reload).
 
 When a LEDMatrix core checkout is available (`LEDMATRIX_CORE`), each plugin is
-also constructed twice in a subprocess -- schema defaults, then every
+also constructed twice in a fresh process -- schema defaults, then every
 `*_display_mode` set to scroll with every league enabled -- and the flag must be
 False, then True (False for a plugin in KNOWN_MISSING_SCROLL, whose display()
 cannot scroll at all).
 """
 import ast
 import json
+import multiprocessing
 import os
-import subprocess  # nosec B404
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -213,68 +213,88 @@ def find_core():
     return None
 
 
-_PROBE = r"""
-import importlib, json, logging, os, sys
-logging.disable(logging.CRITICAL)
-core, pdir, pid, mode = sys.argv[1:5]
-sys.path.insert(0, core)
-sys.path.insert(0, pdir)
-os.chdir(core)
-os.environ.setdefault("EMULATOR", "true")
-from src.plugin_system.testing import MockDisplayManager, MockCacheManager, MockPluginManager
-with open(os.path.join(pdir, "manifest.json"), encoding="utf-8") as fh:
-    manifest = json.load(fh)
-with open(os.path.join(pdir, "config_schema.json"), encoding="utf-8") as fh:
-    schema = json.load(fh)
-
-def defaults(node):
+def _schema_defaults(node):
     out = {}
     for key, prop in (node.get("properties") or {}).items():
         if prop.get("type") == "object" and "properties" in prop:
-            out[key] = defaults(prop)
+            out[key] = _schema_defaults(prop)
         elif "default" in prop:
             out[key] = prop["default"]
     return out
 
-def scroll_everything(node):
+
+def _scroll_everything(node):
     for key, value in list(node.items()):
         if isinstance(value, dict):
-            scroll_everything(value)
+            _scroll_everything(value)
         elif key.endswith("_display_mode"):
             node[key] = "scroll"
         elif key == "enabled" and isinstance(value, bool):
             node[key] = True
 
-cfg = defaults(schema)
-cfg["enabled"] = True
-if mode == "scroll":
-    scroll_everything(cfg)
-module = importlib.import_module(manifest.get("entry_point", "manager.py")[:-3])
-plugin = getattr(module, manifest["class_name"])(
-    pid, cfg, MockDisplayManager(), MockCacheManager(), MockPluginManager())
-print("RESULT " + json.dumps({"enable_scrolling": getattr(plugin, "enable_scrolling", None)}))
-"""
+
+def _probe_child(conn, core, pdir, pid, mode):
+    """Runs in a freshly spawned interpreter: build the plugin, report enable_scrolling."""
+    import contextlib
+    import importlib
+    import logging
+
+    logging.disable(logging.CRITICAL)
+    try:
+        with open(os.devnull, "w", encoding="utf-8") as quiet, \
+                contextlib.redirect_stdout(quiet), contextlib.redirect_stderr(quiet):
+            sys.path.insert(0, core)
+            sys.path.insert(0, pdir)
+            os.chdir(core)
+            os.environ.setdefault("EMULATOR", "true")
+            from src.plugin_system.testing import (
+                MockCacheManager, MockDisplayManager, MockPluginManager)
+            with open(os.path.join(pdir, "manifest.json"), encoding="utf-8") as fh:
+                manifest = json.load(fh)
+            with open(os.path.join(pdir, "config_schema.json"), encoding="utf-8") as fh:
+                schema = json.load(fh)
+            cfg = _schema_defaults(schema)
+            cfg["enabled"] = True
+            if mode == "scroll":
+                _scroll_everything(cfg)
+            module = importlib.import_module(manifest.get("entry_point", "manager.py")[:-3])
+            plugin = getattr(module, manifest["class_name"])(
+                pid, cfg, MockDisplayManager(), MockCacheManager(), MockPluginManager())
+        conn.send(("ok", getattr(plugin, "enable_scrolling", None)))
+    except Exception as exc:  # any construction failure is reported, not raised
+        conn.send(("error", f"{type(exc).__name__}: {exc}"))
+    finally:
+        conn.close()
 
 
 def probe_high_fps(core, plugin, mode):
-    """Construct the plugin in a subprocess; return (enable_scrolling, error)."""
+    """Construct the plugin in a fresh process; return (enable_scrolling, error).
+
+    A spawned interpreter per probe keeps one plugin's bare-name modules from
+    leaking into the next, as the loader's own isolation would.
+    """
     pdir = os.path.join(PLUGINS, plugin)
-    # The command is this interpreter running the constant _PROBE; the other
-    # arguments are the core checkout path and a plugin directory/id this
-    # script enumerated from plugins/, passed as argv (no shell).
+    ctx = multiprocessing.get_context("spawn")
+    parent, child = ctx.Pipe(duplex=False)
+    proc = ctx.Process(target=_probe_child, args=(child, core, pdir, plugin, mode))
+    proc.start()
+    child.close()
     try:
-        # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
-        proc = subprocess.run(  # nosec B603
-            [sys.executable, "-c", _PROBE, core, pdir, plugin, mode],  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-tainted-env-args
-            capture_output=True, text=True, timeout=180, check=False,
-            env={**os.environ, "PYTHONIOENCODING": "utf-8"})
-    except subprocess.TimeoutExpired:
-        return None, "timed out constructing the plugin"
-    for line in proc.stdout.splitlines():
-        if line.startswith("RESULT "):
-            return json.loads(line[len("RESULT "):]).get("enable_scrolling"), None
-    tail = (proc.stderr or proc.stdout).strip().splitlines()[-1:] or ["no output"]
-    return None, f"construction failed: {tail[0]}"
+        if not parent.poll(180):
+            return None, "timed out constructing the plugin"
+        try:
+            status, value = parent.recv()
+        except EOFError:
+            return None, f"construction failed: process exited with code {proc.exitcode}"
+        if status == "ok":
+            return value, None
+        return None, f"construction failed: {value}"
+    finally:
+        parent.close()
+        proc.join(5)
+        if proc.is_alive():
+            proc.terminate()
+            proc.join()
 
 
 def main():
