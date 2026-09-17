@@ -587,7 +587,14 @@ class LeaderboardPlugin(BasePlugin):
             except (TypeError, ValueError):
                 self.logger.debug("Unrecognized dynamic_duration value: %s", dynamic_value)
 
-        # Legacy top-level overrides for existing configs
+        # Deprecated top-level keys (global.min_duration, ...), superseded by
+        # global.dynamic_duration.*. Each applies only while its nested setting
+        # is still at the default, so a nested value the user changed always
+        # wins. They used to apply unconditionally and carried schema defaults,
+        # which core merges into every config, so the documented nested
+        # settings did nothing. The defaults are gone now, but configs saved
+        # from the web UI before that still store them (45/600/0.1/600), so
+        # "the legacy key is present" cannot tell a real legacy setting apart.
         legacy_overrides = {
             'min_duration': ('min_duration_seconds', self._safe_int, {'min_value': 10}),
             'max_duration': ('max_duration_seconds', self._safe_int, {'min_value': 30}),
@@ -597,8 +604,9 @@ class LeaderboardPlugin(BasePlugin):
 
         for legacy_key, (target_key, converter, kwargs) in legacy_overrides.items():
             legacy_value = self.global_config.get(legacy_key)
-            if legacy_value is not None:
-                settings[target_key] = converter(legacy_value, settings[target_key], **kwargs)
+            if legacy_value is None or settings[target_key] != defaults[target_key]:
+                continue
+            settings[target_key] = converter(legacy_value, settings[target_key], **kwargs)
 
         if settings['max_duration_seconds'] < settings['min_duration_seconds']:
             settings['max_duration_seconds'] = settings['min_duration_seconds']

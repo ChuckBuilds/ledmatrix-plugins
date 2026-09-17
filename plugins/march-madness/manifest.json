@@ -1,7 +1,7 @@
 {
   "id": "march-madness",
   "name": "March Madness",
-  "version": "2.1.0",
+  "version": "2.1.1",
   "description": "NCAA March Madness tournament bracket tracker with round branding, seeded matchups, live scores, and upset highlighting",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -20,6 +20,12 @@
     ">=3.4.0"
   ],
   "versions": [
+    {
+      "version": "2.1.1",
+      "released": "2026-09-16",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Scroll frames stay paced by the panel for the whole slot. With display_options.loop off, display() released the scroll state and frame hold once the strip finished, while it kept drawing the parked end frame. Core then skipped each identical frame without waiting for vsync, so the controller's loop ran unpaced (about 124 fps on a 100 Hz panel) for the rest of the slot and the frame hold was dropped. The state is now kept on every frame the strip is on screen, as odds-ticker 1.7.1 does, and still released when the cycle completes or nothing is drawn. The plugin also loads when LEDMatrix's hardware init failed: it read display_manager.matrix.width, and matrix is None then; it now reads display_manager.width and height. The scroll_speed and scroll_delay descriptions no longer say per frame: scroll_speed is pixels per scroll_delay step, so the speed is scroll_speed / scroll_delay pixels per second. Requires LEDMatrix core 3.4.0, as before."
+    },
     {
       "version": "2.1.0",
       "released": "2026-09-15",
@@ -99,7 +105,7 @@
   ],
   "stars": 0,
   "downloads": 0,
-  "last_updated": "2026-09-15",
+  "last_updated": "2026-09-16",
   "verified": true,
   "screenshot": "",
   "display_modes": [

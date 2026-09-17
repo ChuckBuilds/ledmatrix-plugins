@@ -1,7 +1,7 @@
 {
   "id": "text-display",
   "name": "Text Display",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "author": "ChuckBuilds",
   "description": "Display custom scrolling or static text with configurable fonts, colors, and scroll speed. Perfect for announcements, messages, or custom displays.",
   "category": "display",
@@ -24,6 +24,12 @@
     }
   },
   "versions": [
+    {
+      "version": "1.3.1",
+      "released": "2026-09-16",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Scroll frames stay paced by the panel for the whole slot. With scroll_loop off, display() released the scroll state and frame hold once the one-shot scroll finished, while it kept drawing the parked end frame. Core then skipped each identical frame without waiting for vsync, so the controller's loop ran unpaced (125 fps on a 100 Hz panel) for the rest of the slot and the frame hold was dropped. The state is now kept on every frame scrolling text is on screen, as odds-ticker 1.7.1 does; static text, empty text and a frame that fails to draw still release it. The plugin also loads when LEDMatrix's hardware init failed: it read display_manager.matrix.width, and matrix is None then (the hasattr guard did not catch that); it now reads display_manager.width and height. Requires LEDMatrix core 3.4.0, as before."
+    },
     {
       "released": "2026-09-15",
       "version": "1.3.0",
@@ -103,7 +109,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-15",
+  "last_updated": "2026-09-16",
   "stars": 0,
   "downloads": 0,
   "verified": true,

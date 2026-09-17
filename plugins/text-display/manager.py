@@ -141,8 +141,11 @@ class TextDisplayPlugin(BasePlugin):
         self._calculate_text_dimensions()
         
         # Initialize ScrollHelper for scrolling functionality
-        display_width = self.display_manager.matrix.width if hasattr(self.display_manager, 'matrix') else 128
-        display_height = self.display_manager.matrix.height if hasattr(self.display_manager, 'matrix') else 32
+        # display_manager.width/height, not matrix.width: matrix is None when
+        # core's hardware init failed (the hasattr guard that was here did not
+        # catch that), and the properties fall back to the canvas size.
+        display_width = self.display_manager.width
+        display_height = self.display_manager.height
         self.scroll_helper = ScrollHelper(display_width, display_height, logger=self.logger)
         self._configure_scroll()
         self.scroll_helper.set_dynamic_duration_settings(
@@ -224,7 +227,7 @@ class TextDisplayPlugin(BasePlugin):
         (Vegas segments, double-sided logical screens, harness sizes)."""
         if self.font_mode != 'auto' or self._auto_fit_dims is None:
             return
-        dims = (self.display_manager.matrix.width, self.display_manager.matrix.height)
+        dims = (self.display_manager.width, self.display_manager.height)
         if dims == self._auto_fit_dims:
             return
         self.font = self._resolve_font()
@@ -364,8 +367,8 @@ class TextDisplayPlugin(BasePlugin):
             return
         
         try:
-            matrix_width = self.display_manager.matrix.width
-            matrix_height = self.display_manager.matrix.height
+            matrix_width = self.display_manager.width
+            matrix_height = self.display_manager.height
             
             # Total width: initial padding + text + final padding (so text scrolls completely off) + gap
             # Structure: [display_width padding] [text] [display_width padding] [gap]
@@ -448,7 +451,7 @@ class TextDisplayPlugin(BasePlugin):
 
     def update(self) -> None:
         """Update scroll position if scrolling is enabled using ScrollHelper."""
-        if not self.scroll_enabled or self.text_width <= self.display_manager.matrix.width:
+        if not self.scroll_enabled or self.text_width <= self.display_manager.width:
             # Reset scroll position if scrolling is disabled or text fits
             if self.scroll_helper:
                 self.scroll_helper.reset_scroll()
@@ -487,8 +490,8 @@ class TextDisplayPlugin(BasePlugin):
 
         try:
             self._ensure_auto_font_current()
-            matrix_width = self.display_manager.matrix.width
-            matrix_height = self.display_manager.matrix.height
+            matrix_width = self.display_manager.width
+            matrix_height = self.display_manager.height
             
             if self.scroll_enabled and self.text_width > matrix_width:
                 # Scrolling text - use ScrollHelper
@@ -531,14 +534,15 @@ class TextDisplayPlugin(BasePlugin):
                                 if not was_complete:
                                     self.logger.info("Scroll completed in one-shot mode - stopping")
                     
-                    # Signal scrolling state to display manager. Only signal
-                    # scrolling if not complete (or if looping and will reset).
-                    if not self.scroll_helper.is_scroll_complete() or (self.scroll_loop and self.scroll_helper.is_scroll_complete()):
-                        self.display_manager.set_scrolling_state(
-                            True, frame_hold=self._scroll_frame_hold())
-                    else:
-                        # One-shot mode and complete - stop scrolling
-                        self.display_manager.set_scrolling_state(False)
+                    # Signal scrolling state, with the resolver's frame hold,
+                    # on every frame the strip is on screen -- including the
+                    # parked end frame of a finished one-shot scroll, as
+                    # odds-ticker, news and stocks do. Releasing it there let
+                    # core's update_display() skip the identical frame without
+                    # waiting for vsync, so the controller's 8ms loop ran
+                    # unpaced for the rest of the slot and dropped the hold.
+                    self.display_manager.set_scrolling_state(
+                        True, frame_hold=self._scroll_frame_hold())
                     
                     # Get visible portion from ScrollHelper
                     visible_image = self.scroll_helper.get_visible_portion()

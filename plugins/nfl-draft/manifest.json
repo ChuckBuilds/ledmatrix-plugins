@@ -1,7 +1,7 @@
 {
   "id": "nfl-draft",
   "name": "NFL Draft",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "author": "ChuckBuilds",
   "description": "Displays projected NFL draft picks from ESPN with live draft tracking support during the annual NFL Draft event. Includes simulate_live mode to replay a completed draft using real ESPN core API data. Shows team logos, player names, positions, and pick numbers in a scrolling display.",
   "entry_point": "manager.py",
@@ -24,6 +24,12 @@
   ],
   "icon": "fas fa-football-ball",
   "versions": [
+    {
+      "version": "2.2.0",
+      "released": "2026-09-16",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "live_refresh_interval is honoured. Core runs update() on the manifest's update_interval (300 seconds) unless the plugin asks otherwise, so a live refresh interval under 300 (the setting allows 60) never happened on draft day. The plugin now implements get_update_interval(), the LEDMatrix core 3.4.0 hook: while the draft is live or in its date window, core calls update() every live_refresh_interval; otherwise it keeps the 300-second tick, and projection_refresh_interval still spaces out the fetches. The plugin also loads when LEDMatrix's hardware init failed: it read display_manager.matrix.width, and matrix is None then; it now reads display_manager.width and height. Requires LEDMatrix core 3.4.0, as before."
+    },
     {
       "version": "2.1.0",
       "released": "2026-09-15",
@@ -160,5 +166,5 @@
     "nfl_logos": "assets/sports/nfl_logos/"
   },
   "license": "GPL-3.0",
-  "last_updated": "2026-09-15"
+  "last_updated": "2026-09-16"
 }

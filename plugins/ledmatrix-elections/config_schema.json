@@ -282,7 +282,7 @@
       "x-advanced": true,
       "type": "number",
       "title": "Scroll Speed",
-      "description": "Ticker scroll speed (pixels per frame in frame-based mode).",
+      "description": "Pixels moved per scroll step. With scroll_delay it sets the speed: scroll_speed / scroll_delay pixels per second (33.3 by default), snapped to the nearest speed the panel can move in whole pixels.",
       "minimum": 0.1,
       "maximum": 5.0,
       "default": 1.0
