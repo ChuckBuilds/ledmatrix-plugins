@@ -214,6 +214,7 @@ topic 08 first.
 ```bash
 python update_registry.py                 # sync plugins.json from manifests
 python update_registry.py --dry-run
+python update_registry.py --external      # + third-party versions from their repos (CI runs daily)
 python update_registry.py --check         # fails if plugins/ and plugins.json disagree
 python scripts/check_version_bump.py --all
 python scripts/check_module_collisions.py

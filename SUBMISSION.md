@@ -90,8 +90,12 @@ For monorepo submissions (Option A), CI runs automatically on your PR:
 3. The pre-commit hook will automatically update `plugins.json`
 
 ### 3rd-Party Plugins (Option B)
-1. Push updates to your repository
-2. Open a PR or issue to update the version in `plugins.json`
+1. Bump `version` in your repository's root `manifest.json` (keep `id` the same)
+2. Push to the branch your registry entry names (usually `main`)
+
+A daily job reads that manifest and raises `latest_version` in `plugins.json`,
+which is what shows users an update. Changes to the store's name, description
+or tags still need a PR or issue here.
 
 ## Questions?
 
