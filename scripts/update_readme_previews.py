@@ -134,6 +134,18 @@ def catalogue_faults(text: str) -> list[str]:
 
     on_disk = {path.parent.name for path in REPO_ROOT.glob("plugins/*/manifest.json")}
 
+    try:
+        registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        registry = {"plugins": []}
+    external = [entry for entry in registry.get("plugins", [])
+                if not entry.get("plugin_path")]
+    external_repos = {(entry.get("repo") or "").rstrip("/") for entry in external} - {""}
+    # A third-party plugin can also sit in its category's table (F1 Live is
+    # under Sports). It has no plugins/ directory, so it counts toward the
+    # heading but not toward the directory checks below.
+    external_rows: dict[int, int] = {}
+
     # Rows grouped under the heading they sit beneath, so a heading's count can
     # be checked against what it actually contains.
     sections: list[tuple[str, int, list[str]]] = []
@@ -150,10 +162,13 @@ def catalogue_faults(text: str) -> list[str]:
                 sections.append(current)
             current = None
             continue
-        if current is not None:
+        if current is not None and line.lstrip().startswith("|"):
             found = PLUGIN_LINK_RE.search(line)
-            if found and line.lstrip().startswith("|"):
+            if found:
                 current[2].append(found.group(1))
+            elif any(f"]({repo})" in line or f"]({repo}/)" in line
+                     for repo in external_repos):
+                external_rows[id(current)] = external_rows.get(id(current), 0) + 1
     if current:
         sections.append(current)
 
@@ -170,20 +185,16 @@ def catalogue_faults(text: str) -> list[str]:
         faults.append(f'category "{name}" has more than one heading, so it renders '
                       f"as separate tables")
 
-    for name, count, ids in sections:
-        if count != len(ids):
-            faults.append(f'category "{name}" says ({count}) but has {len(ids)} rows')
+    for section in sections:
+        name, count, ids = section
+        rows = len(ids) + external_rows.get(id(section), 0)
+        if count != rows:
+            faults.append(f'category "{name}" says ({count}) but has {rows} rows')
 
     # The third-party table is the other half of the catalogue and drifts the
     # same way: Sleeper Fantasy sat in the registry and not in the table, and
     # nothing noticed. Matched on the repo URL because those rows carry a
     # display name rather than a plugin id.
-    try:
-        registry = json.loads(REGISTRY.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        registry = {"plugins": []}
-    external = [entry for entry in registry.get("plugins", [])
-                if not entry.get("plugin_path")]
     for entry in external:
         repo = (entry.get("repo") or "").rstrip("/")
         if repo and repo not in text:
