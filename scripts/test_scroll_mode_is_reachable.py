@@ -51,7 +51,7 @@ cannot scroll at all).
 import ast
 import json
 import os
-import subprocess
+import subprocess  # nosec B404
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -259,9 +259,13 @@ print("RESULT " + json.dumps({"enable_scrolling": getattr(plugin, "enable_scroll
 def probe_high_fps(core, plugin, mode):
     """Construct the plugin in a subprocess; return (enable_scrolling, error)."""
     pdir = os.path.join(PLUGINS, plugin)
+    # The command is this interpreter running the constant _PROBE; the other
+    # arguments are the core checkout path and a plugin directory/id this
+    # script enumerated from plugins/, passed as argv (no shell).
     try:
-        proc = subprocess.run(
-            [sys.executable, "-c", _PROBE, core, pdir, plugin, mode],
+        # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
+        proc = subprocess.run(  # nosec B603
+            [sys.executable, "-c", _PROBE, core, pdir, plugin, mode],  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-tainted-env-args
             capture_output=True, text=True, timeout=180, check=False,
             env={**os.environ, "PYTHONIOENCODING": "utf-8"})
     except subprocess.TimeoutExpired:
