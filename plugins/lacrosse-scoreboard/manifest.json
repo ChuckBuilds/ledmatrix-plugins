@@ -1,7 +1,7 @@
 {
   "id": "lacrosse-scoreboard",
   "name": "Lacrosse Scoreboard",
-  "version": "1.29.2",
+  "version": "1.30.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NCAA men's and women's lacrosse games with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/lacrosse-scoreboard",
@@ -17,7 +17,7 @@
   ],
   "icon": "fas fa-baseball-ball",
   "compatible_versions": [
-    ">=3.3.0"
+    ">=3.4.0"
   ],
   "requires": {
     "python": ">=3.9",
@@ -50,6 +50,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.30.0",
+      "released": "2026-09-16",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Requires LEDMatrix core 3.4.0, the first release that consults get_update_interval() (ChuckBuilds/LEDMatrix#555). Live games poll at the live interval. The plugin implements get_update_interval(): while a game is in progress the core calls update() every live_update_interval seconds instead of at the static interval (the manifest's 60s, or update_interval_seconds where the manifest declares none). With nothing live it returns no opinion, so the idle cadence is unchanged. The Vegas cards and modes not on screen no longer lag behind the score. Settings saved in the web UI apply without a restart. on_config_change rebuilds the league managers, registry, scroll manager and rotation from the new config, so league enables, durations, live priority, display modes and favorites take effect immediately. A save that omits enabled keeps the current state. Scroll mode scrolls again. The plugin never asked the core for its high-FPS loop, so *_display_mode: scroll redrew once a second and the strip jumped a card-width at a time. It now sets enable_scrolling from _has_any_scroll_mode(). Scroll mode no longer freezes while a fetch runs. The per-frame live refresh ran manager.update() on the render thread, so when a fetch was due the marquee stalled for the whole ESPN request. It is handed to a worker thread (one per manager at a time, at least 5s apart; the manager's own interval still decides whether anything is fetched). Switch mode refreshes its managers off the render thread. The draw-time refresh in _try_manager_display() ran inline, freezing the panel for each due fetch; it now uses the same worker dispatch as afl/nrl/soccer. scroll_settings.scroll_delay is documented as ignored. It never affected scrolling (frames are paced to the panel refresh and scroll_speed sets the speed) but was described as a smoothness knob. The key stays declared so saved configs keep loading."
+    },
     {
       "version": "1.29.2",
       "released": "2026-09-16",
@@ -454,7 +460,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-14",
+  "last_updated": "2026-09-16",
   "stars": 0,
   "downloads": 0,
   "verified": true,

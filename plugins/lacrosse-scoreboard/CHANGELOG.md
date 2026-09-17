@@ -1,5 +1,43 @@
 # Changelog
 
+## [1.30.0] - 2026-09-16
+
+### Added
+- **Live games poll at the live interval.** The plugin implements
+  `get_update_interval()`: while a game is in progress the core calls `update()`
+  every `live_update_interval` seconds instead of at the static interval (the
+  manifest's 60s, or `update_interval_seconds` where the manifest declares
+  none). With nothing live it returns no opinion, so the idle cadence is
+  unchanged. The Vegas cards and modes not on screen no longer lag behind the
+  score.
+- **Settings saved in the web UI apply without a restart.** `on_config_change`
+  rebuilds the league managers, registry, scroll manager and rotation from the
+  new config, so league enables, durations, live priority, display modes and
+  favorites take effect immediately. A save that omits `enabled` keeps the
+  current state.
+
+### Changed
+- **Requires LEDMatrix core 3.4.0**, the first release that consults
+  `get_update_interval()` (ChuckBuilds/LEDMatrix#555).
+- **`scroll_settings.scroll_delay` is documented as ignored.** It never affected
+  scrolling (frames are paced to the panel refresh and `scroll_speed` sets the
+  speed) but was described as a smoothness knob. The key stays declared so saved
+  configs keep loading.
+
+### Fixed
+- **Scroll mode scrolls again.** The plugin never asked the core for its
+  high-FPS loop, so `*_display_mode: scroll` redrew once a second and the strip
+  jumped a card-width at a time. It now sets `enable_scrolling` from
+  `_has_any_scroll_mode()`.
+- **Scroll mode no longer freezes while a fetch runs.** The per-frame live
+  refresh ran `manager.update()` on the render thread, so when a fetch was due
+  the marquee stalled for the whole ESPN request. It is handed to a worker
+  thread (one per manager at a time, at least 5s apart; the manager's own
+  interval still decides whether anything is fetched).
+- **Switch mode refreshes its managers off the render thread.** The draw-time
+  refresh in `_try_manager_display()` ran inline, freezing the panel for each
+  due fetch; it now uses the same worker dispatch as afl/nrl/soccer.
+
 ## [1.29.2] - 2026-09-16
 
 ### Fixed

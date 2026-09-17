@@ -1,5 +1,32 @@
 # Changelog
 
+## [2.30.0] - 2026-09-16
+
+### Added
+- **Live games poll at the live interval.** The plugin implements
+  `get_update_interval()`: while a game is in progress the core calls `update()`
+  every `live_update_interval` seconds instead of at the static interval (the
+  manifest's 60s, or `update_interval_seconds` where the manifest declares
+  none). With nothing live it returns no opinion, so the idle cadence is
+  unchanged. The Vegas cards and modes not on screen no longer lag behind the
+  score.
+
+### Changed
+- **Requires LEDMatrix core 3.4.0**, the first release that consults
+  `get_update_interval()` (ChuckBuilds/LEDMatrix#555).
+
+### Fixed
+- **Flags and club crests that share an abbreviation no longer swap.** One logo
+  cache serves every league's cards, keyed by abbreviation and slot size, so in
+  a scroll or Vegas strip carrying the World Cup and a club league ESP, POR and
+  COL drew whichever logo loaded first (Spain as Espanyol's crest). The key now
+  includes the logo's directory, as football does since #472.
+- **Scroll mode no longer freezes while a fetch runs.** The per-frame live
+  refresh ran `manager.update()` on the render thread, so when a fetch was due
+  the marquee stalled for the whole ESPN request. It is handed to a worker
+  thread (one per manager at a time, at least 5s apart; the manager's own
+  interval still decides whether anything is fetched).
+
 ## [2.29.4] - 2026-09-16
 
 ### Fixed
