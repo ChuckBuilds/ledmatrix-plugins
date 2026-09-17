@@ -236,7 +236,7 @@ def _scroll_everything(node):
 def _probe_child(conn, core, pdir, pid, mode):
     """Runs in a freshly spawned interpreter: build the plugin, report enable_scrolling."""
     import contextlib
-    import importlib
+    import importlib.util
     import logging
 
     logging.disable(logging.CRITICAL)
@@ -257,7 +257,14 @@ def _probe_child(conn, core, pdir, pid, mode):
             cfg["enabled"] = True
             if mode == "scroll":
                 _scroll_everything(cfg)
-            module = importlib.import_module(manifest.get("entry_point", "manager.py")[:-3])
+            entry = manifest.get("entry_point", "manager.py")
+            if os.path.basename(entry) != entry or not entry.endswith(".py"):
+                raise ValueError(f"entry_point {entry!r} is not a .py file in the plugin directory")
+            name = entry[:-3]
+            spec = importlib.util.spec_from_file_location(name, os.path.join(pdir, entry))
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[name] = module      # the plugin's own imports expect it registered
+            spec.loader.exec_module(module)
             plugin = getattr(module, manifest["class_name"])(
                 pid, cfg, MockDisplayManager(), MockCacheManager(), MockPluginManager())
         conn.send(("ok", getattr(plugin, "enable_scrolling", None)))
