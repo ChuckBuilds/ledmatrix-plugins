@@ -46,7 +46,7 @@
     },
     "update_interval": {
       "type": "integer",
-      "description": "Interval in seconds between aircraft data updates",
+      "description": "Interval in seconds between aircraft data updates. LEDMatrix runs a plugin's update at most every 5 seconds, so values below 5 act as 5.",
       "minimum": 1,
       "maximum": 300,
       "default": 5
@@ -55,10 +55,10 @@
       "x-advanced": true,
       "type": "integer",
       "title": "Live Fetch Interval",
-      "description": "Faster fetch interval (seconds) used while a flight is locked on for the overhead view, so altitude/distance update smoothly. The ADS-B source is ~1Hz, so a low value is safe. Idle fetches use update_interval.",
+      "description": "Fetch interval (seconds) used while a flight is locked on for the overhead view, so altitude/distance update smoothly. Idle fetches use update_interval. LEDMatrix runs a plugin's update at most every 5 seconds, so values below 5 act as 5.",
       "minimum": 1,
       "maximum": 60,
-      "default": 2
+      "default": 5
     },
     "live_priority": {
       "x-advanced": true,
@@ -855,7 +855,7 @@
       "x-advanced": true,
       "type": "string",
       "title": "FlightAware API Key (deprecated)",
-      "description": "Deprecated — use the FlightAware section above instead. Kept only for backward compatibility with older configs.",
+      "description": "Deprecated — use the FlightAware section above instead. Still used as the API key when the FlightAware section's key is blank; paid calls also need that section's enabled switch.",
       "default": "",
       "x-secret": true
     },
@@ -863,7 +863,7 @@
       "x-advanced": true,
       "type": "boolean",
       "title": "Enable Flight Plans (deprecated - use FlightAware section)",
-      "description": "Deprecated: moved to FlightAware section.",
+      "description": "Deprecated and not read: paid FlightAware calls are switched on by the FlightAware section's enabled setting.",
       "default": false
     },
     "max_api_calls_per_hour": {

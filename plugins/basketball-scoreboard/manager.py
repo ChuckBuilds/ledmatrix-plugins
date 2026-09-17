@@ -194,11 +194,6 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
         # Seconds the last strip render took, per mode; feeds the duty-cycle cap.
         self._live_scroll_rebuild_cost = {}
         
-        # Enable high-FPS mode for scroll display (allows 100+ FPS scrolling)
-        self.enable_scrolling = self._scroll_manager is not None
-        if self.enable_scrolling:
-            self.logger.info("High-FPS scrolling enabled for basketball scoreboard")
-
         # League registry: maps league IDs to their configuration and managers
         # This structure makes it easy to add more leagues in the future
         # Format: {league_id: {'enabled': bool, 'priority': int, 'live_priority': bool, 'managers': {...}}}
@@ -269,6 +264,125 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
         # Track current display context for granular dynamic duration
         self._current_display_league: Optional[str] = None  # 'nba', 'wnba', 'ncaam', 'ncaaw'
         self._current_display_mode_type: Optional[str] = None  # 'live', 'recent', 'upcoming'
+
+        # Ask the display controller for its high-FPS loop only when a mode
+        # actually scrolls. Evaluated here, after the scroll manager, the league
+        # registry and the display-mode settings all exist, since
+        # _has_any_scroll_mode() reads all three.
+        self.enable_scrolling = self._has_any_scroll_mode()
+        if self.enable_scrolling:
+            self.logger.info("High-FPS scrolling enabled for basketball scoreboard")
+
+    def on_config_change(self, new_config: Dict[str, Any]) -> None:
+        """Apply config edits live, without restarting the display.
+
+        Without this override the base BasePlugin only swapped self.config, so
+        every setting derived at construction -- league enables, durations, live
+        priority, display modes, and the per-league managers, which read their
+        own translated copy of the config -- kept its startup value until the
+        display service restarted, while the web UI reported the save as done.
+        Ported from baseball/football (#166).
+
+        Re-derives the scalar settings, rebuilds the managers (old ones cleaned
+        up first), league registry, scroll manager and rotation modes, and
+        resets per-game progress tracking, since manager keys may have changed.
+        """
+        self.config = new_config or {}
+
+        # Preserve the current state when a partial save omits "enabled",
+        # rather than silently re-enabling a disabled plugin.
+        self.enabled = self.config.get("enabled", getattr(self, "enabled", True))
+        self.is_enabled = self.config.get("enabled", getattr(self, "is_enabled", True))
+        self.nba_enabled = self.config.get("nba", {}).get("enabled", False)
+        self.wnba_enabled = self.config.get("wnba", {}).get("enabled", False)
+        self.ncaam_enabled = self.config.get("ncaam", {}).get("enabled", False)
+        self.ncaaw_enabled = self.config.get("ncaaw", {}).get("enabled", False)
+        self.display_duration = float(self.config.get("display_duration", 30))
+        self.game_display_duration = float(self.config.get("game_display_duration", 15))
+        self.nba_live_priority = self.config.get("nba", {}).get("live_priority", False)
+        self.wnba_live_priority = self.config.get("wnba", {}).get("live_priority", False)
+        self.ncaam_live_priority = self.config.get("ncaam", {}).get("live_priority", False)
+        self.ncaaw_live_priority = self.config.get("ncaaw", {}).get("live_priority", False)
+        self._display_mode_settings = self._parse_display_mode_settings()
+
+        # Tear down the existing managers before rebuilding, so a league that
+        # was just disabled does not keep drawing from its old managers.
+        self._cleanup_managers()
+        self._initialize_managers()
+        self._initialize_league_registry()
+
+        # Rebuild the scroll display manager so it sees the new config.
+        self._scroll_manager = None
+        if SCROLL_AVAILABLE and ScrollDisplayManager:
+            try:
+                self._scroll_manager = ScrollDisplayManager(
+                    self.display_manager, self.config, self.logger,
+                    global_config=getattr(self, 'global_config', {}) or {}
+                )
+            except Exception as e:
+                self.logger.warning(f"Could not rebuild scroll display manager: {e}")
+                self._scroll_manager = None
+        # Re-evaluated after the rebuild: a save can turn scrolling on or off.
+        self.enable_scrolling = self._has_any_scroll_mode()
+        self._scroll_active = {}
+        self._scroll_prepared = {}
+        self._live_scroll_fingerprints = {}
+        self._live_scroll_rebuilt_at = {}
+        self._live_scroll_rebuild_cost = {}
+        # The rendered Vegas cards belong to the old scroll manager; drop the
+        # fingerprint or they would never be rebuilt.
+        self._vegas_signature = None
+
+        # Rebuild rotation modes and reset cycling state.
+        self.modes = self._get_available_modes()
+        self.current_mode_index = 0
+        self.last_mode_switch = 0
+
+        # Reset dynamic-duration and display tracking (manager keys may change).
+        self._dynamic_cycle_seen_modes = set()
+        self._dynamic_mode_to_manager_key = {}
+        self._dynamic_manager_progress = {}
+        self._dynamic_managers_completed = set()
+        self._dynamic_cycle_complete = False
+        self._single_game_manager_start_times = {}
+        self._game_id_start_times = {}
+        self._display_mode_to_managers = {}
+        self._current_display_league = None
+        self._current_display_mode_type = None
+        self._last_display_mode = None
+        self._last_display_mode_time = 0.0
+        self._current_active_display_mode = None
+        self._current_game_tracking = {}
+        self._mode_start_time = {}
+        self._sticky_manager_per_mode = {}
+        self._sticky_manager_start_time = {}
+
+        self.logger.info(
+            "Basketball config updated live - nba:%s wnba:%s ncaam:%s ncaaw:%s, modes=%s",
+            self.nba_enabled, self.wnba_enabled, self.ncaam_enabled, self.ncaaw_enabled, self.modes,
+        )
+
+        # Favorites may have changed, so let the diagnostic report on them again.
+        checker = getattr(self, "_favorite_check", None)
+        if checker is not None:
+            checker.reset()
+
+    def _cleanup_managers(self) -> None:
+        """Clean up the current league managers and clear their attributes."""
+        for attr in (
+            "nba_live", "nba_recent", "nba_upcoming",
+            "wnba_live", "wnba_recent", "wnba_upcoming",
+            "ncaam_live", "ncaam_recent", "ncaam_upcoming",
+            "ncaaw_live", "ncaaw_recent", "ncaaw_upcoming",
+        ):
+            manager = getattr(self, attr, None)
+            if manager is not None and hasattr(manager, "cleanup"):
+                try:
+                    manager.cleanup()
+                except Exception as e:
+                    self.logger.debug(f"Error cleaning up manager {attr}: {e}")
+            if hasattr(self, attr):
+                setattr(self, attr, None)
 
     def _initialize_managers(self):
         """Initialize all manager instances.
@@ -1504,6 +1618,43 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
                 return True
         return False
 
+    def get_update_interval(self):
+        """Poll at the live interval while a game is in progress, else no opinion.
+
+        Without this hook the core scheduler calls update() at the static
+        interval -- the manifest's 60s, or update_interval_seconds from the
+        config where the manifest declares none (3600 by default in the
+        afl/nrl/soccer schemas). During a live game that is far slower than
+        live_update_interval, so everything that reads update-cycle data lags:
+        the Vegas cards, and any mode that is not on screen to refresh itself.
+        Core 3.4.0 consults this hook on every tick (ChuckBuilds/LEDMatrix#555);
+        football-scoreboard has carried it since then.
+
+        Returning None when nothing is live keeps the idle cadence exactly where
+        it was: this must not become a way to poll ESPN every 30 seconds all
+        off-season.
+
+        Cheap by construction -- the scheduler calls it on every tick, so it
+        reads attributes of managers already held (the same live managers the
+        scroll refresh walks) and never calls has_live_content(), which walks
+        the games and applies favourite-team filtering.
+        """
+        if not getattr(self, "is_enabled", True):
+            return None
+
+        fastest = None
+        for manager in self._live_scroll_managers(None) or []:
+            # live_games rather than has_live_content(): a game in progress that
+            # the favourites filter hides still needs fresh data, because the
+            # filter can stop hiding it the moment a favourite's game ends.
+            if not getattr(manager, "live_games", None):
+                continue
+            interval = getattr(manager, "update_interval", None)
+            if interval is None:
+                continue
+            fastest = interval if fastest is None else min(fastest, interval)
+        return fastest
+
     def has_live_content(self) -> bool:
         if not self.is_enabled:
             return False
@@ -1778,6 +1929,23 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
         
         return live_modes
 
+    def _has_any_scroll_mode(self) -> bool:
+        """Return True if any enabled league uses scroll display for any mode.
+
+        Named and shaped to match afl/nrl/soccer/football, which gate
+        enable_scrolling this way. The old test -- whether the scroll manager
+        could be built at all -- stays true when every mode is 'switch', and the
+        display controller reads enable_scrolling to choose its 125 FPS loop, so
+        a static scorebug was re-rendered every 8ms (football #487).
+        """
+        if not getattr(self, "_scroll_manager", None):
+            return False
+        for mode_type in ("live", "recent", "upcoming"):
+            for league in self._get_enabled_leagues_for_mode(mode_type):
+                if self._should_use_scroll_mode(league, mode_type):
+                    return True
+        return False
+
     def _should_use_scroll_mode(self, league: str, mode_type: str) -> bool:
         """
         Check if a specific league should use scroll mode for this game type.
@@ -1880,8 +2048,13 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
         once the first strip was built nothing could change it, and the score on
         the marquee stayed frozen until the process restarted.
 
-        _ensure_manager_updated() is itself interval-guarded, so this costs two
-        getattrs and a comparison on the frames where nothing is due.
+        The refresh runs off the render thread -- see _dispatch_switch_refresh().
+        This is called on every scroll frame, and a due manager.update() is a
+        network round trip: run inline, it froze the marquee for the length of
+        the ESPN request. The refreshed games land a few frames later, and the
+        fingerprint check that follows this call picks them up on the next frame
+        after they do. Dispatches for a manager are rate-limited, so the frames
+        where nothing is due cost a dict lookup and a clock read.
 
         Deliberately NOT gated on mode_type == "live". A recent/upcoming strip
         never rebuilds from the fingerprint (_live_scroll_needs_rebuild returns
@@ -1894,11 +2067,13 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
         """
         for manager in self._live_scroll_managers(league) or []:
             try:
-                self._ensure_manager_updated(manager)
-            except (AttributeError, KeyError, TypeError, ValueError, OSError) as exc:
-                # Narrow on purpose: _ensure_manager_updated() already swallows
-                # whatever manager.update() raises, so anything arriving here is
-                # a lookup or a transport error, not a fetch failure.
+                self._dispatch_switch_refresh(manager)
+            except (AttributeError, KeyError, TypeError, ValueError, OSError,
+                    RuntimeError) as exc:
+                # Narrow on purpose: the update itself runs on another thread,
+                # and _ensure_manager_updated() swallows whatever it raises, so
+                # anything arriving here is a lookup error or a thread that
+                # could not be started, not a fetch failure.
                 self.logger.debug("Live scroll refresh skipped: %s", exc)
 
     @classmethod
@@ -2303,6 +2478,54 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
                         getattr(self, 'ncaaw_upcoming', None)):
             self._current_display_league = 'ncaaw'
 
+    #: Floor between two draw-time refresh dispatches for one manager. The
+    #: manager's own update() still decides whether anything is fetched; this
+    #: only stops display() starting a thread on every frame just to be told
+    #: the interval has not elapsed.
+    _SWITCH_REFRESH_MIN_GAP_SECONDS = 5.0
+
+    def _dispatch_switch_refresh(self, manager) -> None:
+        """Run _ensure_manager_updated(manager) on a daemon thread.
+
+        Called from display(), so it must not block: when an update is due,
+        manager.update() fetches rankings and the schedule over the network,
+        and doing that inline stalled the frame for the length of the round
+        trip. The refreshed games land in the manager a few frames later --
+        still within the manager's own interval, which is the freshness the
+        switch path was missing.
+
+        At most one refresh per manager runs at a time, and dispatches for the
+        same manager are at least _SWITCH_REFRESH_MIN_GAP_SECONDS apart. Only
+        the render thread touches the two bookkeeping dicts, so they need no
+        lock; manager.update() stamps last_update before it fetches, so a
+        concurrent background plugin.update() for the same manager returns
+        early rather than fetching twice.
+        """
+        threads = getattr(self, "_switch_refresh_threads", None)
+        if threads is None:
+            threads = self._switch_refresh_threads = {}
+        stamps = getattr(self, "_switch_refresh_at", None)
+        if stamps is None:
+            stamps = self._switch_refresh_at = {}
+
+        key = id(manager)
+        running = threads.get(key)
+        if running is not None and running.is_alive():
+            return
+        now = time.monotonic()
+        last = stamps.get(key)
+        if last is not None and now - last < self._SWITCH_REFRESH_MIN_GAP_SECONDS:
+            return
+        stamps[key] = now
+        thread = threading.Thread(
+            target=self._ensure_manager_updated,
+            args=(manager,),
+            daemon=True,
+            name="SwitchRefresh-%s" % type(manager).__name__,
+        )
+        threads[key] = thread
+        thread.start()
+
     def _try_manager_display(
         self, 
         manager, 
@@ -2338,9 +2561,11 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
         # which are used for progress tracking and duration calculations
         self._set_display_context_from_manager(manager, mode_type)
         
-        # Ensure manager is updated before displaying
-        # This fetches fresh data if needed based on update intervals
-        self._ensure_manager_updated(manager)
+        # Refresh the manager if its data is due. Dispatched off the render
+        # thread: a due update() is a network round trip, and run inline here
+        # it froze the panel for the length of the request (see
+        # _dispatch_switch_refresh). Fresh data lands a few frames later.
+        self._dispatch_switch_refresh(manager)
         
         # Attempt to display content from this manager
         # Manager returns True if it has content to show, False if no content

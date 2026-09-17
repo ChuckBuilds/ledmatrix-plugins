@@ -3,8 +3,8 @@
 
 The manifest pins update_interval to 60, the only number the core scheduler
 used, so ufc.live_update_interval (30s by default) could never fire more often
-than once a minute. Core now consults get_update_interval() per tick (#555);
-the eight sibling scoreboards implemented it in #479 and ufc was left out.
+than once a minute. Core consults get_update_interval() per tick from 3.4.0
+(#555); football-scoreboard implemented it first.
 
 The risk to guard against is the opposite of the bug: asking for a 30-second
 poll when nothing is live would hit ESPN all year.

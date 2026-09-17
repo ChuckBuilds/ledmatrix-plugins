@@ -23,6 +23,10 @@ Regressions under test (one check group each):
   show_odds_only stopped after the display limit.
 - A .bdf face never retried at its native size.
 - "No odds data" is 96px and ran off a 64px panel.
+- display_options.display_duration ("used when dynamic_duration is disabled")
+  was assigned and never used: get_display_duration() returned the dynamic
+  duration either way, and core uses it as the whole slot when dynamic
+  duration is off.
 
 Run: LEDMATRIX_CORE=/path/to/LEDMatrix python plugins/odds-ticker/test_config_save_and_fetch_paths.py
 Exit: 0 pass, 1 fail, 2 skip (no core checkout).
@@ -304,6 +308,24 @@ p._display_fallback_message()
 fits = bool(drawn) and all(x >= 0 and x + w <= 64 for _, x, w in drawn)
 check("the fallback message fits a 64px panel (drawn from x >= 0 to x + width <= 64)"
       + (f" [{drawn[0][0]!r} at x={drawn[0][1]}, {drawn[0][2]:.0f}px]" if drawn else ""), fits)
+
+print("display_duration")
+cfg = copy.deepcopy(CONFIG)
+cfg["display_options"].update({"dynamic_duration": False, "display_duration": 120})
+p = OddsTickerPlugin("odds-ticker", cfg, _DisplayManager(), _Cache(), None)
+p.dynamic_duration = 45  # what a built strip would have computed
+check("dynamic_duration off: the slot is display_duration (120)",
+      p.get_display_duration() == 120)
+new = copy.deepcopy(cfg)
+new["display_options"]["display_duration"] = 90
+p.on_config_change(new)
+check("a saved display_duration applies without a restart (90)",
+      p.get_display_duration() == 90)
+new["display_options"]["dynamic_duration"] = True
+p.on_config_change(new)
+p.dynamic_duration = 45
+check("dynamic_duration on: the strip's computed duration (45), as before",
+      p.get_display_duration() == 45)
 
 if failures:
     print(f"\n{len(failures)} failure(s)")

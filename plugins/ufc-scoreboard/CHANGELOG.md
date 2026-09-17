@@ -1,5 +1,40 @@
 # Changelog
 
+## [1.14.0] - 2026-09-16
+
+### Added
+- **Settings saved in the web UI apply without a restart.** `on_config_change`
+  rebuilds the league managers, registry, scroll manager and rotation from the
+  new config, so league enables, durations, live priority, display modes and
+  favorites take effect immediately. A save that omits `enabled` keeps the
+  current state.
+
+### Changed
+- **The `*_display_mode` "scroll" option is documented as ignored.** The schema
+  and README offered a scroll display mode that `display()` never had; fights
+  always rotate one at a time and scroll only in Vegas mode. The option stays
+  accepted so saved configs keep loading. `scroll_settings.scroll_delay` is
+  likewise documented as ignored.
+- **Corrected `get_update_interval()` docstring.** It claimed the sibling
+  scoreboards gained the hook in #479; only football had it.
+
+### Fixed
+- **A fighter with no ESPN headshot no longer blanks the card.** About one
+  fighter in ten has no ESPN headshot (a 404). The switch cards downloaded
+  missing headshots from `display()` and cached only successes, so every frame
+  re-requested the image, logged an ERROR with a traceback, and drew `Image
+  Error` instead of the fight. Headshots are now fetched during `update()`,
+  never while drawing; a failure is retried after 15 minutes, doubling to 6
+  hours, with one warning per attempt; and the card is drawn without the missing
+  headshot.
+- **No more 125 FPS loop for static fight cards.** `enable_scrolling` was true
+  whenever the scroll manager could be built, so every install re-rendered a
+  static card every 8ms. This plugin's display modes never scroll, so it no
+  longer asks for the high-FPS loop.
+- **Switch mode refreshes its managers off the render thread.** The draw-time
+  refresh in `_try_manager_display()` ran inline, freezing the panel for each
+  due fetch; it now uses the same worker dispatch as afl/nrl/soccer.
+
 ## [1.13.1] - 2026-09-16
 
 ### Fixed

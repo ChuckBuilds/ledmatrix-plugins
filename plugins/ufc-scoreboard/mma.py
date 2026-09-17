@@ -1,10 +1,12 @@
 """MMA Base Classes - Adapted from original work by Alex Resnick (legoguy1000) - PR #137"""
 
 import logging
+import os
+import threading
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Iterator, Optional, Tuple
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -21,6 +23,27 @@ from sports import (
     _DEFAULT_LOOKBACK_DAYS,
     _status_is_final,
 )
+
+#: Content types accepted as a headshot download.
+_HEADSHOT_CONTENT_TYPES = ("image/png", "image/jpeg", "image/jpg", "image/gif")
+
+#: Backoff for a headshot that could not be fetched: first retry after this
+#: long, doubling per consecutive failure up to HEADSHOT_RETRY_MAX_SECONDS.
+#: About 9% of fighters on a current card have no ESPN headshot at all (a 404),
+#: so a failure is the normal case for them, not a transient one -- but ESPN
+#: does add images later, so it is retried, just rarely.
+HEADSHOT_RETRY_INITIAL_SECONDS = 15 * 60
+HEADSHOT_RETRY_MAX_SECONDS = 6 * 60 * 60
+
+#: fighter_id -> (consecutive failures, monotonic time the next try is due).
+#: Module-level so the Live, Recent and Upcoming managers -- and the managers a
+#: config reload rebuilds -- share one record instead of each paying for the
+#: same missing image.
+_headshot_failures: Dict[str, Tuple[int, float]] = {}
+#: fighter ids whose download is running right now (update() can be entered
+#: from the core scheduler and a draw-time refresh thread at once).
+_headshot_inflight: set = set()
+_headshot_lock = threading.Lock()
 
 
 class MMA(SportsCore):
@@ -91,88 +114,156 @@ class MMA(SportsCore):
             )
 
     def _load_and_resize_headshot(
-        self, fighter_id: str, fighter_name: str, image_path: Path, image_url: str
+        self, fighter_id: str, fighter_name: str, image_path: Path, image_url: str = None
     ) -> Optional[Image.Image]:
-        """Load and resize a fighter headshot, with caching and automatic download if missing."""
-        self.logger.debug(f"Headshot path: {image_path}")
-        if fighter_id in self._logo_cache:
-            self.logger.debug(f"Using cached headshot for {fighter_name}")
-            return self._cached_logo(fighter_id)
+        """A fighter headshot from the in-memory cache or disk, or None.
 
+        Called from display(), so it never touches the network. It used to
+        download a missing image right here, and cache only successes: a
+        fighter ESPN has no headshot for (a 404, about 9% of a current card)
+        was re-requested on every frame, logged an ERROR with a traceback each
+        time, and the card drew "Image Error" instead of the fight. Missing
+        images are now fetched by update() -- see _fetch_missing_headshots() --
+        and a card with no headshot is drawn without it.
+
+        image_url is unused here and kept for callers' signatures.
+        """
+        if fighter_id in self._logo_cache:
+            return self._cached_logo(fighter_id)
+        if not fighter_id or image_path is None:
+            return None
+        image_path = Path(image_path)
         try:
             if not image_path.exists():
-                self.logger.info(
-                    f"Headshot not found for {fighter_name} at {image_path}. Attempting to download."
-                )
-
-                if not self.logo_dir.exists():
-                    self.logo_dir.mkdir(parents=True, exist_ok=True)
-
-                response = self.session.get(image_url, headers=self.headers, timeout=15)
-                response.raise_for_status()
-
-                content_type = response.headers.get("content-type", "").lower()
-                if not any(
-                    img_type in content_type
-                    for img_type in [
-                        "image/png",
-                        "image/jpeg",
-                        "image/jpg",
-                        "image/gif",
-                    ]
-                ):
-                    self.logger.warning(
-                        f"Downloaded content for {fighter_name} is not an image: {content_type}"
-                    )
-                    return None
-
-                with image_path.open(mode="wb") as f:
-                    f.write(response.content)
-
-            # Verify and convert the downloaded image to RGBA format
-            try:
-                with Image.open(image_path) as img:
-                    if img.mode != "RGBA":
-                        img = img.convert("RGBA")
-                    img.load()  # Force pixel data into memory before closing file
-                # File handle is now closed; safe to overwrite
-                img.save(image_path, "PNG")
-
-                self.logger.info(
-                    f"Successfully downloaded and converted headshot for {fighter_name} -> {image_path.name}"
-                )
-            except Exception as e:
-                self.logger.error(
-                    f"Downloaded file for {fighter_name} is not a valid image or conversion failed: {e}"
-                )
-                try:
-                    image_path.unlink()
-                except OSError:
-                    pass
                 return None
-
-            if not image_path.exists():
-                self.logger.error(
-                    f"Headshot file still doesn't exist at {image_path} after download attempt"
-                )
-                return None
-
             with Image.open(image_path) as logo:
                 if logo.mode != "RGBA":
                     logo = logo.convert("RGBA")
-
                 max_width = int(self.display_width * 1.5)
                 max_height = int(self.display_height * 1.5)
                 logo.thumbnail((max_width, max_height), LANCZOS)
                 logo.load()  # Ensure pixel data is loaded before closing file
-            self._cache_logo(fighter_id, logo)
-            return logo
-
-        except Exception as e:
-            self.logger.error(
-                f"Error loading headshot for {fighter_name}: {e}", exc_info=True
-            )
+        except (OSError, ValueError, SyntaxError) as e:
+            # A truncated or non-image file. Remove it so update() can fetch a
+            # good copy -- subject to the same backoff as a failed download --
+            # rather than failing to decode it on every frame.
+            try:
+                image_path.unlink()
+            except OSError:
+                pass
+            self._record_headshot_failure(
+                fighter_id, fighter_name, f"unreadable file {image_path.name}: {e}")
             return None
+        self._cache_logo(fighter_id, logo)
+        return logo
+
+    def _headshot_candidates(self) -> Iterator[Tuple[str, str, Any, Any]]:
+        """(fighter_id, name, image_path, image_url) for every fight this manager holds."""
+        fights = []
+        for attr in ("games_list", "live_games"):
+            fights.extend(getattr(self, attr, None) or [])
+        current = getattr(self, "current_game", None)
+        if current:
+            fights.append(current)
+        seen = set()
+        for fight in fights:
+            if not isinstance(fight, dict):
+                continue
+            for n in ("1", "2"):
+                fighter_id = fight.get(f"fighter{n}_id")
+                if not fighter_id or fighter_id in seen:
+                    continue
+                seen.add(fighter_id)
+                yield (fighter_id, fight.get(f"fighter{n}_name", fighter_id),
+                       fight.get(f"fighter{n}_image_path"),
+                       fight.get(f"fighter{n}_image_url"))
+
+    def _fetch_missing_headshots(self, now: Optional[float] = None) -> None:
+        """Download headshots the held fights need. Runs from update(), never display().
+
+        A fighter already decoded, already on disk, being fetched by another
+        thread, or inside its failure backoff is skipped, so on the calls where
+        nothing is missing this is a dict lookup and a stat per fighter.
+        """
+        now = time.monotonic() if now is None else now
+        for fighter_id, name, image_path, image_url in list(self._headshot_candidates()):
+            if fighter_id in self._logo_cache or image_path is None:
+                continue
+            image_path = Path(image_path)
+            if image_path.exists():
+                continue
+            with _headshot_lock:
+                failures = _headshot_failures.get(fighter_id)
+                if failures is not None and now < failures[1]:
+                    continue
+                if fighter_id in _headshot_inflight:
+                    continue
+                _headshot_inflight.add(fighter_id)
+            try:
+                if self._download_headshot(fighter_id, name, image_path, image_url, now=now):
+                    with _headshot_lock:
+                        _headshot_failures.pop(fighter_id, None)
+            finally:
+                with _headshot_lock:
+                    _headshot_inflight.discard(fighter_id)
+
+    def _download_headshot(
+        self, fighter_id: str, fighter_name: str, image_path: Path,
+        image_url: Optional[str], now: Optional[float] = None,
+    ) -> bool:
+        """Fetch one headshot to disk. True on success; a failure is recorded, not raised."""
+        if not image_url:
+            self._record_headshot_failure(fighter_id, fighter_name, "no image URL", now)
+            return False
+        tmp_path = image_path.with_name(f".{image_path.name}.{os.getpid()}.tmp")
+        try:
+            image_path.parent.mkdir(parents=True, exist_ok=True)
+            response = self.session.get(image_url, headers=self.headers, timeout=15)
+            if response.status_code == 404:
+                self._record_headshot_failure(
+                    fighter_id, fighter_name, "ESPN has no headshot (404)", now)
+                return False
+            response.raise_for_status()
+            content_type = response.headers.get("content-type", "").lower()
+            if not any(kind in content_type for kind in _HEADSHOT_CONTENT_TYPES):
+                self._record_headshot_failure(
+                    fighter_id, fighter_name, f"not an image ({content_type or 'no type'})", now)
+                return False
+            tmp_path.write_bytes(response.content)
+            # Verify and normalise before it becomes visible to display(), which
+            # would otherwise see a half-written file.
+            with Image.open(tmp_path) as img:
+                img = img.convert("RGBA") if img.mode != "RGBA" else img
+                img.load()
+            img.save(tmp_path, "PNG")
+            os.replace(tmp_path, image_path)
+        except Exception as e:  # pylint: disable=broad-except
+            # Network, HTTP, disk and decode errors all end the same way: no
+            # image this time, try again after the backoff.
+            self._record_headshot_failure(
+                fighter_id, fighter_name, f"{type(e).__name__}: {e}", now)
+            try:
+                tmp_path.unlink()
+            except OSError:
+                pass
+            return False
+        self.logger.info(f"Downloaded headshot for {fighter_name} -> {image_path.name}")
+        return True
+
+    def _record_headshot_failure(
+        self, fighter_id: str, fighter_name: str, reason: str, now: Optional[float] = None
+    ) -> None:
+        """Back off before the next attempt; one WARNING per attempt, never per frame."""
+        now = time.monotonic() if now is None else now
+        with _headshot_lock:
+            count = _headshot_failures.get(fighter_id, (0, 0.0))[0] + 1
+            delay = min(HEADSHOT_RETRY_INITIAL_SECONDS * (2 ** (count - 1)),
+                        HEADSHOT_RETRY_MAX_SECONDS)
+            _headshot_failures[fighter_id] = (count, now + delay)
+        self.logger.warning(
+            f"No headshot for {fighter_name} ({reason}); drawing the fight without "
+            f"it, next try in {delay // 60:.0f} min"
+        )
 
     def _extract_game_details(self, game_event: dict) -> Optional[Dict]:
         if not game_event:
@@ -369,36 +460,26 @@ class MMARecent(MMA, SportsRecent):
                 game["fighter2_image_url"],
             )
 
-            if not fighter1_image or not fighter2_image:
-                self.logger.error(
-                    f"Failed to load headshots for fight: {game.get('id')}"
-                )
-                error_img = main_img.convert("RGB")
-                draw_final = ImageDraw.Draw(error_img)
-                self._draw_text_with_outline(
-                    draw_final, "Image Error", (5, 5), self.fonts["status"]
-                )
-                self.display_manager.image.paste(error_img, (0, 0))
-                self.display_manager.update_display()
-                return
-
             center_y = self.display_height // 2
 
-            # Fighter 1 (right side) headshot position
-            home_x = (
-                self.display_width
-                - fighter1_image.width
-                + fighter1_image.width // 4
-                + 2
-                + self._get_layout_offset("fighter1_image", "x_offset")
-            )
-            home_y = center_y - (fighter1_image.height // 2) + self._get_layout_offset("fighter1_image", "y_offset")
-            main_img.paste(fighter1_image, (home_x, home_y), fighter1_image)
+            # Fighter 1 (right side) headshot position. A fighter with no
+            # headshot (ESPN has none for some) is drawn without one.
+            if fighter1_image:
+                home_x = (
+                    self.display_width
+                    - fighter1_image.width
+                    + fighter1_image.width // 4
+                    + 2
+                    + self._get_layout_offset("fighter1_image", "x_offset")
+                )
+                home_y = center_y - (fighter1_image.height // 2) + self._get_layout_offset("fighter1_image", "y_offset")
+                main_img.paste(fighter1_image, (home_x, home_y), fighter1_image)
 
             # Fighter 2 (left side) headshot position
-            away_x = -2 - fighter2_image.width // 4 + self._get_layout_offset("fighter2_image", "x_offset")
-            away_y = center_y - (fighter2_image.height // 2) + self._get_layout_offset("fighter2_image", "y_offset")
-            main_img.paste(fighter2_image, (away_x, away_y), fighter2_image)
+            if fighter2_image:
+                away_x = -2 - fighter2_image.width // 4 + self._get_layout_offset("fighter2_image", "x_offset")
+                away_y = center_y - (fighter2_image.height // 2) + self._get_layout_offset("fighter2_image", "y_offset")
+                main_img.paste(fighter2_image, (away_x, away_y), fighter2_image)
 
             # Result text (centered bottom)
             score_text = game.get("status_text", "Final")
@@ -655,31 +736,20 @@ class MMAUpcoming(MMA, SportsUpcoming):
                 game["fighter2_image_url"],
             )
 
-            if not fighter1_image or not fighter2_image:
-                self.logger.error(
-                    f"Failed to load headshots for fight: {game.get('id')}"
-                )
-                error_img = main_img.convert("RGB")
-                draw_final = ImageDraw.Draw(error_img)
-                self._draw_text_with_outline(
-                    draw_final, "Image Error", (5, 5), self.fonts["status"]
-                )
-                self.display_manager.image.paste(error_img, (0, 0))
-                self.display_manager.update_display()
-                return
-
             center_y = self.display_height // 2
 
-            # Fighter 1 (right side) headshot position
-            home_x = (
-                self.display_width
-                - fighter1_image.width
-                + fighter1_image.width // 4
-                + 2
-                + self._get_layout_offset("fighter1_image", "x_offset")
-            )
-            home_y = center_y - (fighter1_image.height // 2) + self._get_layout_offset("fighter1_image", "y_offset")
-            main_img.paste(fighter1_image, (home_x, home_y), fighter1_image)
+            # Fighter 1 (right side) headshot position. A fighter with no
+            # headshot (ESPN has none for some) is drawn without one.
+            if fighter1_image:
+                home_x = (
+                    self.display_width
+                    - fighter1_image.width
+                    + fighter1_image.width // 4
+                    + 2
+                    + self._get_layout_offset("fighter1_image", "x_offset")
+                )
+                home_y = center_y - (fighter1_image.height // 2) + self._get_layout_offset("fighter1_image", "y_offset")
+                main_img.paste(fighter1_image, (home_x, home_y), fighter1_image)
 
             # Fighter 2 short name (second row left, below fight class)
             fighter2_name_text = game.get("fighter2_name_short", "")
@@ -690,9 +760,10 @@ class MMAUpcoming(MMA, SportsUpcoming):
             )
 
             # Fighter 2 (left side) headshot position
-            away_x = -2 - fighter2_image.width // 4 + self._get_layout_offset("fighter2_image", "x_offset")
-            away_y = center_y - (fighter2_image.height // 2) + self._get_layout_offset("fighter2_image", "y_offset")
-            main_img.paste(fighter2_image, (away_x, away_y), fighter2_image)
+            if fighter2_image:
+                away_x = -2 - fighter2_image.width // 4 + self._get_layout_offset("fighter2_image", "x_offset")
+                away_y = center_y - (fighter2_image.height // 2) + self._get_layout_offset("fighter2_image", "y_offset")
+                main_img.paste(fighter2_image, (away_x, away_y), fighter2_image)
 
             # Fighter 1 short name (second row right, below fight class)
             fighter1_name_text = game.get("fighter1_name_short", "")
@@ -957,33 +1028,23 @@ class MMALive(MMA, SportsLive):
                 game.get("fighter2_image_url"),
             )
 
-            if not fighter1_image or not fighter2_image:
-                self.logger.error(
-                    f"Failed to load headshots for live fight: {game.get('id')}"
-                )
-                error_img = main_img.convert("RGB")
-                draw_final = ImageDraw.Draw(error_img)
-                self._draw_text_with_outline(
-                    draw_final, "Image Error", (5, 5), self.fonts["status"]
-                )
-                self.display_manager.image.paste(error_img, (0, 0))
-                self.display_manager.update_display()
-                return
-
             center_y = self.display_height // 2
 
-            # Fighter 1 (right side) headshot with layout offsets
-            home_x = (
-                self.display_width - fighter1_image.width + 10
-                + self._get_layout_offset("fighter1_image", "x_offset")
-            )
-            home_y = center_y - (fighter1_image.height // 2) + self._get_layout_offset("fighter1_image", "y_offset")
-            main_img.paste(fighter1_image, (home_x, home_y), fighter1_image)
+            # Fighter 1 (right side) headshot with layout offsets. A fighter
+            # with no headshot (ESPN has none for some) is drawn without one.
+            if fighter1_image:
+                home_x = (
+                    self.display_width - fighter1_image.width + 10
+                    + self._get_layout_offset("fighter1_image", "x_offset")
+                )
+                home_y = center_y - (fighter1_image.height // 2) + self._get_layout_offset("fighter1_image", "y_offset")
+                main_img.paste(fighter1_image, (home_x, home_y), fighter1_image)
 
             # Fighter 2 (left side) headshot with layout offsets
-            away_x = -10 + self._get_layout_offset("fighter2_image", "x_offset")
-            away_y = center_y - (fighter2_image.height // 2) + self._get_layout_offset("fighter2_image", "y_offset")
-            main_img.paste(fighter2_image, (away_x, away_y), fighter2_image)
+            if fighter2_image:
+                away_x = -10 + self._get_layout_offset("fighter2_image", "x_offset")
+                away_y = center_y - (fighter2_image.height // 2) + self._get_layout_offset("fighter2_image", "y_offset")
+                main_img.paste(fighter2_image, (away_x, away_y), fighter2_image)
 
             # Round and Clock (top center)
             period_clock_text = (

@@ -366,6 +366,26 @@ class YouTubeStatsPlugin(BasePlugin):
             self.logger.error(f"Error creating display image: {e}", exc_info=True)
             return None
     
+    def get_update_interval(self) -> Optional[float]:
+        """Seconds between update() calls: the configured update_interval.
+
+        The core prefers the manifest's update_interval (300) over the
+        plugin's config unless the plugin answers here, so an interval below
+        300 did nothing. The core clamps the answer to at least 5 seconds; the
+        schema's minimum is 60. Attribute read only: the core calls this on
+        every scheduling tick.
+        """
+        return self.update_interval_config
+
+    def on_config_change(self, new_config: Dict[str, Any]) -> None:
+        """Pick up a new update_interval without a restart.
+
+        get_update_interval(), update()'s throttle and the stats cache all read
+        it. Other settings still apply on the next restart, as before.
+        """
+        super().on_config_change(new_config)
+        self.update_interval_config = self.config.get('update_interval', 300)
+
     def update(self) -> None:
         """Fetch/update data for this plugin.
 

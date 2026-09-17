@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-leaderboard",
   "name": "Sports Leaderboard",
-  "version": "1.5.0",
+  "version": "1.5.1",
   "description": "Displays scrolling leaderboards and standings for multiple sports leagues including NFL, NBA, MLB, NCAA Football, NCAA Basketball, and more",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -31,6 +31,12 @@
   "requirements_file": "requirements.txt",
   "min_ledmatrix_version": "3.4.0",
   "versions": [
+    {
+      "version": "1.5.1",
+      "released": "2026-09-16",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "global.dynamic_duration.* settings take effect. The deprecated flat keys global.min_duration, max_duration, duration_buffer and max_display_time carried schema defaults, which core merges into every config, and they always overrode the nested settings: a nested minimum of 20 and maximum of 120 ran as 45 and 600. The flat keys lose their defaults and are hidden from the settings form (still declared, so saved configs keep validating), and each now applies only while its nested setting is at the default, so a nested value you set always wins. A config saved before this still stores the old flat defaults; they no longer override anything. With a league block missing from enabled_sports (a hand-edited config, or a hot reload without the block), the leagues enabled by default now match the settings form: NFL, NBA, MLB, NCAA Football and NHL. The code enabled NFL, NCAA Football and NCAA Men's Hockey instead. The scroll_speed description no longer says pixels per frame: it is pixels per scroll_delay step, so the speed is scroll_speed / scroll_delay pixels per second. Requires LEDMatrix core 3.4.0, as before."
+    },
     {
       "version": "1.5.0",
       "released": "2026-09-15",
@@ -127,7 +133,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-15",
+  "last_updated": "2026-09-16",
   "compatible_versions": [
     ">=3.4.0"
   ]

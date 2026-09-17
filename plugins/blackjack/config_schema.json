@@ -228,7 +228,7 @@
       "maximum": 300,
       "default": 22,
       "title": "Display Duration",
-      "description": "Fallback slot length in seconds, used only when dynamic duration is turned off. With dynamic duration on (the default) the rotation lasts exactly as long as the hand takes.",
+      "description": "Slot length in seconds, used only when dynamic duration is turned off; the table deals a fresh hand whenever one finishes inside the slot, and a hand longer than the slot is cut off. With dynamic duration on (the default) the rotation lasts exactly as long as the hand takes.",
       "x-advanced": true
     },
     "dynamic_duration": {
@@ -252,7 +252,7 @@
           "maximum": 300,
           "default": 75,
           "title": "Maximum Seconds",
-          "description": "Upper bound on a single hand, in case a very slow pace and a long draw combine into a rotation nobody wants to sit through."
+          "description": "Upper bound on a single hand, in case a very slow pace and a long draw combine into a rotation nobody wants to sit through. A hand that would run longer plays faster to fit, so it still ends on its result. The device-wide dynamic duration limit applies too, whichever is smaller."
         }
       },
       "default": {
@@ -279,7 +279,7 @@
       ],
       "default": "fixed",
       "title": "Vegas Marquee Mode",
-      "description": "How this behaves inside the continuous Vegas marquee. Fixed hands the ticker a summary of the finished hand -- the final cards with the result beside them -- which scrolls by with everything else. Static pauses the marquee instead and plays the whole hand out, which is worth it if you would rather watch than skim.",
+      "description": "How this behaves inside the continuous Vegas marquee. Fixed hands the ticker a summary of a finished hand -- the final cards with the result beside them -- which scrolls by with everything else, a new hand each time round. Static stops the marquee instead and shows a finished hand full-screen for the result banner seconds; the marquee draws a paused plugin once, so the hand cannot play out there.",
       "x-widget": "select",
       "x-advanced": true
     }

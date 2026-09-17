@@ -67,10 +67,14 @@ Three modes, registered in `manifest.json`.
 | `ufc_recent` | Finished fights | `Final`, with the method and round below |
 | `ufc_upcoming` | Scheduled fights | Weight class, then the date and time |
 
-Each mode renders as **switch** (one fight at a time, timed) or **scroll** (all
-fights scroll horizontally at high FPS), set with
-`ufc.display_modes.<mode>_display_mode`. The mode toggles use the `show_`
+Each mode shows one fight at a time, timed. The mode toggles use the `show_`
 prefix — `show_live`, `show_recent`, `show_upcoming`.
+
+> **There is no scroll display mode.** The schema still lists
+> `ufc.display_modes.<mode>_display_mode` with `switch` and `scroll` so saved
+> configs keep loading, but the plugin draws one fight at a time whichever value
+> is set. Fight cards scroll only in Vegas mode, using the
+> [scroll settings](#scroll-settings).
 
 ## Display options
 
@@ -87,17 +91,19 @@ Four toggles control what the card carries besides the fighters themselves.
 
 ## Fighter headshots
 
-Headshots are downloaded from ESPN on first display and cached under the
-plugin's logo directory (`assets/sports/ufc_logos/`, named by ESPN fighter id).
-This needs write access to the LEDMatrix assets directory and an internet
-connection.
+Headshots are downloaded from ESPN during the plugin's data update (never while
+a card is being drawn) and cached under the plugin's logo directory
+(`assets/sports/ufc_logos/`, named by ESPN fighter id). This needs write access
+to the LEDMatrix assets directory and an internet connection.
 
-> **A headshot that cannot be fetched blanks the whole card.** The loader
-> returns nothing when the file is missing and the download fails, and the card
-> then draws the text `Image Error` instead of the fight. There is no per-fighter
-> placeholder fallback, unlike the team scoreboards, which generate one from the
-> abbreviation. If you see `Image Error`, check network access and that the
-> assets directory is writable.
+**A fighter without a headshot is drawn without one.** ESPN simply has no image
+for some fighters (roughly one in ten on a current card returns 404). The card
+still shows the names, records, result or clock, with the missing side left
+blank. A failed download is retried after 15 minutes, then 30, doubling up to
+every 6 hours, and logs one warning per attempt, e.g.
+`No headshot for <name> (ESPN has no headshot (404)); drawing the fight without it`.
+If every headshot is missing, check network access and that the assets directory
+is writable.
 
 The images in this document use grey stand-ins in place of real headshots, since
 none ship with the plugin.
@@ -186,9 +192,9 @@ Defaults are the schema defaults, which is what the web UI writes.
 | `ufc.display_modes.show_live` | boolean | `true` |
 | `ufc.display_modes.show_recent` | boolean | `true` |
 | `ufc.display_modes.show_upcoming` | boolean | `true` |
-| `ufc.display_modes.live_display_mode` | `switch` \| `scroll` | `switch` |
-| `ufc.display_modes.recent_display_mode` | `switch` \| `scroll` | `switch` |
-| `ufc.display_modes.upcoming_display_mode` | `switch` \| `scroll` | `switch` |
+| `ufc.display_modes.live_display_mode` | `switch` \| `scroll` | `switch` (ignored; kept so saved configs still load) |
+| `ufc.display_modes.recent_display_mode` | `switch` \| `scroll` | `switch` (ignored; kept so saved configs still load) |
+| `ufc.display_modes.upcoming_display_mode` | `switch` \| `scroll` | `switch` (ignored; kept so saved configs still load) |
 
 ### Filtering
 
@@ -238,10 +244,13 @@ scoreboards. Mode length comes from dynamic duration or the per-fight durations.
 
 ### Scroll settings
 
+These apply to the fight cards in Vegas mode; the plugin's own display modes do
+not scroll.
+
 | Key | Type | Default | What it does |
 |---|---|---|---|
 | `ufc.scroll_settings.scroll_speed` | 1.0–200.0 px/s | `50.0` | **Advanced.** Every value is pixels per second; higher scrolls faster. **Changed in 1.13.0:** this setting used to be ignored and the Vegas fight cards scrolled at 100 px/s; set `100` for that speed. |
-| `ufc.scroll_settings.scroll_delay` | 0.001–0.1 s | `0.01` | **Advanced.** Frame delay; `0.01` is 100 FPS. |
+| `ufc.scroll_settings.scroll_delay` | 0.001–0.1 s | `0.01` | **Advanced.** Ignored; kept so saved configs still load. Scrolling is paced to the panel refresh; `scroll_speed` sets the speed. |
 | `ufc.scroll_settings.gap_between_games` | 8–128 px | `48` | Gap between fight cards. |
 | `ufc.scroll_settings.show_league_separators` | boolean | `true` | Draw the UFC icon between leagues. |
 | `ufc.scroll_settings.dynamic_duration` | boolean | `true` | Size the scroll duration from the content width. |
@@ -322,9 +331,11 @@ re-render with `python scripts/render_docs_assets.py --plugin ufc-scoreboard
 
 ## Troubleshooting
 
-**Cards show `Image Error`.** A fighter headshot could not be loaded or
-downloaded. Check internet access and that the LEDMatrix assets directory is
-writable — see [Fighter headshots](#fighter-headshots).
+**A card has no headshot on one or both sides.** ESPN has no image for that
+fighter, or the download failed; the log says which, and it is retried with a
+backoff. If no fighter has a headshot, check internet access and that the
+LEDMatrix assets directory is writable — see
+[Fighter headshots](#fighter-headshots).
 
 **Nothing appears.** Check that both `enabled` and `ufc.enabled` are on, and
 that at least one of `show_live` / `show_recent` / `show_upcoming` is on.

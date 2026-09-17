@@ -11,6 +11,8 @@ Regressions under test:
 2. ``_scroll_frame_hold()`` was computed and never passed to
    ``display_manager.set_scrolling_state``, so a snapped sub-refresh speed still
    presented a new frame every refresh, and the state was never released.
+   (The parked end frame of a one-shot scroll keeps the state; it is released
+   when the cycle completes. test_scroll_pacing.py covers why.)
 
 Methods run against an instance built with ``__new__`` (no network).
 
@@ -114,8 +116,13 @@ check("set_scrolling_state(True, frame_hold=2) while scrolling",
 p.display_manager.calls.clear()
 p.loop = False
 p.scroll_helper.is_scroll_complete = lambda: True
+p.dynamic_duration_enabled = True
 p.display()
-check("released once a non-looping scroll has stopped",
+check("the parked end frame of a one-shot scroll keeps the state and hold",
+      p.display_manager.calls[-1:] == [(True, 2)])
+p.display_manager.calls.clear()
+p.is_cycle_complete()
+check("released once the cycle completes",
       bool(p.display_manager.calls) and p.display_manager.calls[-1][0] is False)
 
 print("in-window placeholder still shows")

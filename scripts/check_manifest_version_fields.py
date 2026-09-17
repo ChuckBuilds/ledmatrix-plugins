@@ -23,12 +23,21 @@ backwards.
 
 Historical entries are left alone: nothing reads them, and rewriting shipped
 release records to satisfy a linter is worse than the inconsistency.
+
+## Floors declared twice
+
+The core reads the first non-empty of top-level `min_ledmatrix_version`,
+`requires.min_ledmatrix_version` and `versions[0]`, and ignores the rest. A
+manifest that declares the floor in more than one of those places fails here
+when the values disagree: raising `versions[0]` alone would otherwise change
+nothing the install gate enforces.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -54,6 +63,47 @@ def _declares_floor_elsewhere(manifest: dict) -> bool:
     requires = manifest.get("requires")
     return isinstance(requires, dict) and bool(
         requires.get("min_ledmatrix_version"))
+
+
+def _version_key(value) -> tuple | None:
+    """`X.Y.Z` as a comparable tuple, so "3.4" and "3.4.0" are the same floor."""
+    if not isinstance(value, str):
+        return None
+    match = re.match(r"^\s*v?(\d+)(?:\.(\d+))?(?:\.(\d+))?", value)
+    return tuple(int(g or 0) for g in match.groups()) if match else None
+
+
+def _floor_conflicts(plugin_id: str, manifest: dict, head: dict) -> list[str]:
+    """Floors declared in more than one place that disagree.
+
+    The core takes the *first* non-empty floor in precedence order and never
+    looks at the rest. So a manifest carrying a top-level
+    `min_ledmatrix_version` next to `versions[0].ledmatrix_min_version` works
+    only while the two agree: raise the `versions[0]` floor for a release that
+    needs a newer core, forget the top-level copy, and the install gate keeps
+    admitting the old core without a word. Equal values are harmless, so only
+    disagreement is reported.
+    """
+    requires = manifest.get("requires")
+    sources = [
+        ("top-level 'min_ledmatrix_version'", manifest.get("min_ledmatrix_version")),
+        ("'requires.min_ledmatrix_version'",
+         requires.get("min_ledmatrix_version") if isinstance(requires, dict) else None),
+        (f"versions[0].'{NEW}'" if head.get(NEW) else f"versions[0].'{OLD}'",
+         head.get(NEW) or head.get(OLD)),
+    ]
+    declared = [(where, value) for where, value in sources if value]
+    if len(declared) < 2:
+        return []
+    winner_where, winner_value = declared[0]
+    return [
+        f"{plugin_id}: {where} is {value!r} but {winner_where} is "
+        f"{winner_value!r}, and the core reads only {winner_where}. Make them "
+        f"equal, or delete the one you did not mean -- otherwise the floor "
+        f"you raise in one place is silently ignored."
+        for where, value in declared[1:]
+        if _version_key(value) != _version_key(winner_value)
+    ]
 
 
 def check_plugin(plugin_id: str) -> list[str]:
@@ -101,6 +151,8 @@ def check_plugin(plugin_id: str) -> list[str]:
             f"'{NEW}' so the install gate has a floor to enforce."
         )
 
+    problems.extend(_floor_conflicts(plugin_id, manifest, head))
+
     # compatible_versions is required by the core's manifest schema and is the
     # only field that can express an upper bound; a missing one means the gate
     # has nothing authoritative to evaluate.
@@ -141,14 +193,14 @@ def main() -> int:
         print(f"  - {problem}", file=sys.stderr)
 
     if args.all:
-        print(f"\n{len(problems)} plugin(s) still to migrate — audit only, "
-              f"not failing. They migrate at their next version bump.",
+        print(f"\n{len(problems)} problem(s) still to fix — audit only, "
+              f"not failing. They are fixed at each plugin's next version bump.",
               file=sys.stderr)
         return 0
 
     print(f"\n{len(problems)} problem(s). These plugins are being changed "
-          f"anyway, so the fix is a one-line rename in the entry you just "
-          f"added.", file=sys.stderr)
+          f"anyway, so the fix is a one-line edit in the manifest you just "
+          f"bumped.", file=sys.stderr)
     return 1
 
 

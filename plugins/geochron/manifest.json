@@ -1,7 +1,7 @@
 {
   "id": "geochron",
   "name": "Geochron World Clock",
-  "version": "1.0.7",
+  "version": "1.1.0",
   "author": "ChuckBuilds",
   "description": "High-fidelity world map clock showing the real-time day/night terminator with civil/nautical/astronomical twilight bands, the subsolar point, configurable city markers, and a digital UTC/local clock - a classic Geochron, reimagined for LED matrix panels of any size.",
   "entry_point": "manager.py",
@@ -21,9 +21,15 @@
     "geochron"
   ],
   "compatible_versions": [
-    ">=2.0.0"
+    ">=3.4.0"
   ],
   "versions": [
+    {
+      "version": "1.1.0",
+      "released": "2026-09-16",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "update_interval works. It was read and never used: the core scheduled update() at the manifest's 45 seconds whatever the setting said, because it prefers the manifest's value unless the plugin answers get_update_interval(). The plugin now returns the configured interval, so the sun position and map are recomputed at the cadence you set (15-300 s), and a web-UI change applies without a restart. Requires LEDMatrix core 3.4.0, the first with the get_update_interval() hook; the store now refuses the install on older cores (on those the setting would stay ignored)."
+    },
     {
       "version": "1.0.7",
       "released": "2026-09-15",
@@ -78,7 +84,7 @@
   "license": "GPL-3.0",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/geochron",
   "config_schema": "config_schema.json",
-  "last_updated": "2026-09-02",
+  "last_updated": "2026-09-16",
   "stars": 0,
   "downloads": 0,
   "verified": true,

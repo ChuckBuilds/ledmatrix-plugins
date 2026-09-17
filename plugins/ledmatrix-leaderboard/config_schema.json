@@ -117,35 +117,39 @@
         },
         "min_duration": {
           "x-advanced": true,
+          "x-display": "hidden",
           "type": "integer",
-          "default": 45,
           "minimum": 10,
           "maximum": 300,
-          "description": "[Deprecated] Use dynamic_duration.min_duration_seconds instead."
+          "title": "Min Duration (deprecated)",
+          "description": "Deprecated: use dynamic_duration.min_duration_seconds. Kept for backward compatibility with existing configs; applies only while dynamic_duration.min_duration_seconds is at its default."
         },
         "max_duration": {
           "x-advanced": true,
+          "x-display": "hidden",
           "type": "integer",
-          "default": 600,
           "minimum": 30,
           "maximum": 1200,
-          "description": "[Deprecated] Use dynamic_duration.max_duration_seconds instead."
+          "title": "Max Duration (deprecated)",
+          "description": "Deprecated: use dynamic_duration.max_duration_seconds. Kept for backward compatibility with existing configs; applies only while dynamic_duration.max_duration_seconds is at its default."
         },
         "duration_buffer": {
           "x-advanced": true,
+          "x-display": "hidden",
           "type": "number",
-          "default": 0.1,
           "minimum": 0.01,
           "maximum": 1.0,
-          "description": "[Deprecated] Use dynamic_duration.buffer_ratio instead."
+          "title": "Duration Buffer (deprecated)",
+          "description": "Deprecated: use dynamic_duration.buffer_ratio. Kept for backward compatibility with existing configs; applies only while dynamic_duration.buffer_ratio is at its default."
         },
         "max_display_time": {
           "x-advanced": true,
+          "x-display": "hidden",
           "type": "integer",
-          "default": 600,
           "minimum": 60,
           "maximum": 1800,
-          "description": "[Deprecated] Use dynamic_duration.controller_cap_seconds instead."
+          "title": "Max Display Time (deprecated)",
+          "description": "Deprecated: use dynamic_duration.controller_cap_seconds. Kept for backward compatibility with existing configs; applies only while dynamic_duration.controller_cap_seconds is at its default."
         },
         "scroll_pixels_per_second": {
           "x-advanced": true,
@@ -161,7 +165,7 @@
             "scroll_speed": {
               "x-advanced": true,
               "type": "number",
-              "description": "Scrolling speed in pixels per frame",
+              "description": "Pixels moved per scroll step. With scroll_delay it sets the speed: scroll_speed / scroll_delay pixels per second (100 by default), snapped to the nearest speed the panel can move in whole pixels",
               "minimum": 0.5,
               "maximum": 5.0,
               "default": 1.0

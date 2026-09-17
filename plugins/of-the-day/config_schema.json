@@ -31,14 +31,14 @@
       "default": 20,
       "minimum": 5,
       "x-advanced": true,
-      "description": "Seconds between rotating different display elements (title/definition/example)"
+      "description": "Seconds before switching to the next enabled category (in category_order)"
     },
     "subtitle_rotate_interval": {
       "type": "number",
       "default": 10,
       "minimum": 5,
       "x-advanced": true,
-      "description": "Seconds between rotating subtitle information"
+      "description": "Seconds between swapping the body text under the title: the entry's subtitle, then its description"
     },
     "auto_fit_text": {
       "type": "boolean",

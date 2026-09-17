@@ -279,7 +279,7 @@
           "default": 0.01,
           "minimum": 0.001,
           "maximum": 0.1,
-          "description": "Delay between scroll frames in seconds (lower = smoother)",
+          "description": "Kept so saved configs still load; ignored. Scrolling is paced to the panel's refresh rate, and scroll_speed sets how fast it moves.",
           "x-advanced": true
         },
         "gap_between_games": {

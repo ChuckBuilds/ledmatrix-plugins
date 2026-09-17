@@ -1,7 +1,7 @@
 {
   "id": "odds-ticker",
   "name": "Odds Ticker",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "description": "Displays scrolling odds and betting lines for upcoming games across multiple sports leagues including NFL, NBA, MLB, NCAA Football, and more",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -20,6 +20,12 @@
   "branch": "main",
   "plugin_path": "plugins/odds-ticker",
   "versions": [
+    {
+      "version": "1.7.2",
+      "released": "2026-09-16",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "display_options.display_duration now sets how long the ticker stays on screen when dynamic_duration is off, as the settings form and README say. get_display_duration() returned the strip's computed duration either way, so the setting was read and never applied (dynamic off with 120 still gave the computed duration). With dynamic_duration on, the default, nothing changes. The scroll_speed description no longer says pixels per frame: it is pixels per scroll_delay step, so the speed is scroll_speed / scroll_delay pixels per second. Requires LEDMatrix core 3.4.0, as before."
+    },
     {
       "version": "1.7.1",
       "released": "2026-09-15",
@@ -185,7 +191,7 @@
   ],
   "stars": 0,
   "downloads": 0,
-  "last_updated": "2026-09-15",
+  "last_updated": "2026-09-16",
   "verified": true,
   "screenshot": "",
   "display_modes": [

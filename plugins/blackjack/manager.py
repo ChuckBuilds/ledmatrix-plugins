@@ -25,6 +25,7 @@ reproducible. The shoe a *player* is dealt from uses ``random.SystemRandom``
 from __future__ import annotations
 
 import random
+import threading
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -81,6 +82,17 @@ _REVEAL_GLOW_SECONDS = 0.5
 #: far shorter than any rotation.
 _TURN_GAP_SECONDS = 2.5
 
+#: The core's cap when neither the plugin nor the device config sets one
+#: (``DEFAULT_DYNAMIC_DURATION_CAP`` in the display controller). Mirrored so
+#: the plugin fits a hand inside the same limit the controller enforces.
+_CORE_DEFAULT_CAP = 180.0
+
+#: How recently the Vegas coordinator must have asked for our marquee mode, on
+#: the thread that is now calling display(), for that call to be the start of a
+#: STATIC pause. The coordinator asks on every frame the plugin is next in line
+#: and calls display() straight after, so the real gap is microseconds.
+_STATIC_PAUSE_WINDOW = 0.5
+
 
 class BlackjackPlugin(BasePlugin):
     """Deals one hand of blackjack per rotation and plays it out on the panel."""
@@ -95,8 +107,27 @@ class BlackjackPlugin(BasePlugin):
 
         self._script: Optional[HandScript] = None
         self._timeline: List[Tuple[float, float, Event]] = []
+        #: Length of the hand in *hand time* -- the seconds its beats add up to.
         self._total_duration = 0.0
+        #: How fast hand time runs against the wall clock. 1.0 unless the hand
+        #: would outlast the dynamic-duration cap, in which case the whole hand
+        #: plays faster so it still ends on its banner inside the cap.
+        self._speed = 1.0
         self._hand_started = 0.0
+        #: display() calls without force_clear since the hand was dealt. Zero
+        #: means nobody has watched it yet, so a second "new turn" signal in
+        #: the same turn must not deal over it.
+        self._hand_frames = 0
+        #: The last hand handed to the Vegas ticker as a finished still. Its
+        #: result has been shown, so it is never played out on the panel
+        #: afterwards and never summarised twice.
+        self._vegas_summarised: Optional[HandScript] = None
+        #: (monotonic time, thread id) of the last get_vegas_display_mode()
+        #: answer of STATIC -- see _STATIC_PAUSE_WINDOW.
+        self._static_asked: Optional[Tuple[float, int]] = None
+        #: True while the panel holds the still a STATIC pause was given.
+        self._static_still = False
+        self._seed = None
         self._last_display = 0.0
         self._last_render = 0.0
         self._layout = None
@@ -137,7 +168,13 @@ class BlackjackPlugin(BasePlugin):
             self._rng = random.Random(seed)  # nosec B311
         else:
             self._rng = None
-        if self._shoe is None or self._shoe.decks != self.rules.decks or seed:
+        # A seed change -- including back to 0 -- needs a new shoe: the old one
+        # holds the old generator, so clearing the seed would otherwise keep
+        # dealing the seeded sequence until a restart.
+        seed_changed = self._shoe is not None and seed != self._seed
+        self._seed = seed
+        if (self._shoe is None or self._shoe.decks != self.rules.decks
+                or seed or seed_changed):
             self._shoe = Shoe(self.rules.decks, self._rng, self.rules.penetration)
 
         self.theme = self._build_theme(config)
@@ -163,6 +200,10 @@ class BlackjackPlugin(BasePlugin):
         # break the flip rather than a way to tune it.
         self._reveal_hold = min(
             0.35, max(0.0, (self.reveal_seconds - self.flip_seconds) * 0.4))
+
+        # The slot length when dynamic duration is off. With it on, the hand
+        # sets the length instead (see get_display_duration).
+        self.display_duration_seconds = self._positive(config, "display_duration", 22.0)
 
         render_fps = self._positive(config, "render_fps", 40.0)
         self._min_frame_interval = 1.0 / max(5.0, min(120.0, render_fps))
@@ -241,17 +282,42 @@ class BlackjackPlugin(BasePlugin):
         self._script = script
         self._timeline = timeline
         self._total_duration = cursor
+        # A hand longer than the cap would be cut off before its result, so
+        # play the whole of it faster instead -- every beat and animation
+        # scales together, because they all read the same clock.
+        cap = self._hand_cap()
+        self._speed = cursor / cap if cap is not None and cursor > cap else 1.0
         self._hand_started = time.monotonic()
+        self._hand_frames = 0
+        self._static_still = False
         self._layout_key = None      # card counts changed, so the slots move
         self._hands_played += 1
         self.logger.debug(
-            "Dealt hand %d: player %d, dealer %d -> %s (%.1fs)",
+            "Dealt hand %d: player %d, dealer %d -> %s (%.1fs at %.2fx)",
             self._hands_played, script.player_total, script.dealer_total,
-            script.outcome_text, self._total_duration,
+            script.outcome_text, self._total_duration, self._speed,
         )
 
     def _elapsed(self) -> float:
-        return max(0.0, time.monotonic() - self._hand_started)
+        """Hand time since the deal: wall seconds scaled by the hand's speed."""
+        return max(0.0, (time.monotonic() - self._hand_started) * self._speed)
+
+    def _hand_is_fresh(self, now: float) -> bool:
+        """True when the current hand was dealt for this turn and is unwatched.
+
+        The controller signals a new turn twice -- ``display(force_clear=True)``
+        and ``reset_cycle_state()`` -- and the 3.x controller sends the display
+        first. Whichever arrives second must keep the hand the first one dealt,
+        or that hand is thrown away unseen and the turn is timed from a hand
+        nobody sees. A hand counts as watched once a regular frame has drawn
+        it, or once the plugin has been idle longer than a rotation gap. A hand
+        the ticker has summarised is never fresh: its result has been shown.
+        """
+        if self._script is None or self._script is self._vegas_summarised:
+            return False
+        if self._hand_frames:
+            return False
+        return now - max(self._hand_started, self._last_display) <= _TURN_GAP_SECONDS
 
     # -- state assembly ---------------------------------------------------
 
@@ -398,22 +464,23 @@ class BlackjackPlugin(BasePlugin):
     def display(self, force_clear: bool = False, display_mode: Optional[str] = None):
         try:
             now = time.monotonic()
+            if force_clear and self._static_pause_requested(now):
+                return self._show_static_still()
+
             gap = now - self._last_display if self._last_display else None
-            self._last_display = now
 
             # A new hand when the rotation hands us the screen: either the
             # controller says so (force_clear on a mode switch) or we were away
-            # long enough that the last hand is stale. The 0.5s guard matters:
-            # the controller calls reset_cycle_state() and *then* displays with
-            # force_clear=True, and dealing twice for one turn would throw the
-            # first hand away unseen.
-            if self._script is None:
+            # long enough that the last hand is stale -- unless this turn has
+            # already dealt one nobody has seen yet (see _hand_is_fresh).
+            new_turn = force_clear or (gap is not None and gap > _TURN_GAP_SECONDS)
+            if self._script is None or (new_turn and not self._hand_is_fresh(now)):
                 self._start_hand()
                 self._last_render = 0.0
-            elif (force_clear or (gap is not None and gap > _TURN_GAP_SECONDS)) \
-                    and self._elapsed() > 0.5:
-                self._start_hand()
-                self._last_render = 0.0
+            self._last_display = now
+            self._static_still = False
+            if not force_clear:
+                self._hand_frames += 1
 
             elapsed = self._elapsed()
             if elapsed > self._total_duration and not self.supports_dynamic_duration():
@@ -461,6 +528,19 @@ class BlackjackPlugin(BasePlugin):
         return bool(config.get("enabled", True))
 
     def get_display_duration(self) -> float:
+        """The slot length the controller asks for.
+
+        With dynamic duration on it is the hand's own length, already fitted
+        inside the cap. The controller treats this number as a floor, so a
+        floor above the cap would stop the cap applying at all. With dynamic
+        duration off it is ``display_duration``, and the table deals again
+        whenever a hand finishes inside the slot. Straight after the still a
+        Vegas STATIC pause draws, it is the result-banner time.
+        """
+        if self._static_still:
+            return self.result_seconds
+        if not self.supports_dynamic_duration():
+            return self.display_duration_seconds
         return self._hand_duration()
 
     def get_cycle_duration(self, display_mode: Optional[str] = None) -> Optional[float]:
@@ -475,16 +555,47 @@ class BlackjackPlugin(BasePlugin):
             return 75.0
         return cap if cap > 0 else None
 
-    def _hand_duration(self) -> float:
-        """Seconds this hand needs, deal to banner.
+    def _hand_cap(self) -> Optional[float]:
+        """The longest the controller will hold a turn, or None if it will not cap.
 
-        Before the first hand is dealt the controller still asks, so fall back
-        to a typical hand: four cards, one call, the reveal and the result.
+        Mirrors the controller: with dynamic duration on, the smaller of this
+        plugin's ``max_duration_seconds`` and the device-wide
+        ``display.dynamic_duration.max_duration_seconds``, falling back to the
+        controller's own default when neither gives a usable number. With
+        dynamic duration off the slot is ``display_duration`` and hands simply
+        repeat inside it.
+        """
+        if not self.supports_dynamic_duration():
+            return None
+        candidates = [cap for cap in (self.get_dynamic_duration_cap(), self._global_cap())
+                      if cap is not None and cap > 0]
+        return min(candidates) if candidates else _CORE_DEFAULT_CAP
+
+    def _global_cap(self) -> Optional[float]:
+        """``display.dynamic_duration.max_duration_seconds``, read as the core does."""
+        display = self.global_config.get("display") or {}
+        section = display.get("dynamic_duration") if isinstance(display, dict) else None
+        value = section.get("max_duration_seconds") if isinstance(section, dict) else None
+        if value is None:
+            return _CORE_DEFAULT_CAP
+        try:
+            cap = float(value)
+        except (TypeError, ValueError):
+            return None
+        return cap if cap > 0 else None
+
+    def _hand_duration(self) -> float:
+        """Wall-clock seconds this hand needs, deal to banner, inside the cap.
+
+        Before the first hand is dealt the controller may still ask, so fall
+        back to a typical hand: four cards, one call, the reveal and the result.
         """
         if self._total_duration > 0:
-            return self._total_duration
-        return (self.intro_seconds + 5 * self.card_interval + self.action_seconds
-                + self.reveal_seconds + self.result_seconds)
+            return self._total_duration / self._speed
+        typical = (self.intro_seconds + 5 * self.card_interval + self.action_seconds
+                   + self.reveal_seconds + self.result_seconds)
+        cap = self._hand_cap()
+        return min(typical, cap) if cap is not None else typical
 
     def is_cycle_complete(self) -> bool:
         if self._script is None:
@@ -492,8 +603,16 @@ class BlackjackPlugin(BasePlugin):
         return self._elapsed() >= self._total_duration
 
     def reset_cycle_state(self) -> None:
-        """The controller is about to give us the screen: deal a fresh hand."""
+        """A new dynamic-duration turn: deal a hand, unless this turn already has.
+
+        The 3.x controller calls this *after* the turn's first
+        ``display(force_clear=True)``, which has already dealt and drawn a hand.
+        Dealing again here would throw that hand away unseen and leave the
+        controller timing the turn from one hand while showing another.
+        """
         super().reset_cycle_state()
+        if self._hand_is_fresh(time.monotonic()):
+            return
         self._start_hand()
         self._last_render = 0.0
 
@@ -507,9 +626,14 @@ class BlackjackPlugin(BasePlugin):
         The script is simulated to completion before the first card is dealt,
         so the finished table and its result are known at any instant, even
         mid-deal on the panel.
+
+        Each call deals the next hand once the current one has been handed
+        over. The ticker asks again each time the plugin comes round (its own
+        cache absorbs repeat asks within a pass), and without a new deal the
+        marquee would show the same result all session.
         """
         try:
-            if self._script is None:
+            if self._script is None or self._script is self._vegas_summarised:
                 self._start_hand()
             width = self.display_manager.width
             # The ticker asks for a narrower render on a wide panel so the item
@@ -523,8 +647,10 @@ class BlackjackPlugin(BasePlugin):
                 requested = None
             if requested:
                 width = max(16, int(requested))
-            return render_summary(width, self.display_manager.height,
-                                  self._script, self.theme)
+            image = render_summary(width, self.display_manager.height,
+                                   self._script, self.theme)
+            self._vegas_summarised = self._script
+            return image
         except Exception as exc:  # noqa: BLE001 - the ticker falls back on None
             self.logger.error("Vegas content failed: %s", exc, exc_info=True)
             return None
@@ -534,17 +660,29 @@ class BlackjackPlugin(BasePlugin):
         return "single"
 
     def get_vegas_display_mode(self):
-        """A fixed block that scrolls by, or STATIC to watch the hand play.
+        """A block that scrolls by, or STATIC to stop the marquee on a result.
 
         FIXED_SEGMENT by default: ``get_vegas_content`` hands the ticker a
         summary of the finished hand, and that scrolls by with everything else
         rather than stopping the marquee for twenty seconds.
 
         STATIC is offered as an override for anyone who would rather the
-        marquee paused and the hand actually played. Both are real choices, so
-        ``vegas_mode`` is honoured; SCROLL is not offered, because it is for
-        plugins with a list of interchangeable items and a hand is one thing.
+        marquee stopped on the hand. The coordinator draws a paused plugin
+        once -- one ``display(force_clear=True)``, then a sleep -- so a hand
+        cannot play out there. The pause shows a finished hand full-screen for
+        the result-banner time instead (``_show_static_still``). SCROLL is not
+        offered, because it is for plugins with a list of interchangeable
+        items and a hand is one thing.
         """
+        mode = self._resolve_vegas_mode()
+        if VegasDisplayMode is not None and mode == VegasDisplayMode.STATIC:
+            # The coordinator asks this on the frame before it pauses and draws
+            # us, on the same thread. display() uses it to tell the pause's one
+            # frame apart from the first frame of a rotation turn.
+            self._static_asked = (time.monotonic(), threading.get_ident())
+        return mode
+
+    def _resolve_vegas_mode(self):
         if VegasDisplayMode is None:
             return None
         requested = str(self.config.get("vegas_mode", "fixed") or "fixed").lower()
@@ -561,6 +699,36 @@ class BlackjackPlugin(BasePlugin):
                     requested)
         return VegasDisplayMode.FIXED_SEGMENT
 
+    def _static_pause_requested(self, now: float) -> bool:
+        asked = self._static_asked
+        if asked is None:
+            return False
+        asked_at, thread_id = asked
+        return (thread_id == threading.get_ident()
+                and 0.0 <= now - asked_at <= _STATIC_PAUSE_WINDOW)
+
+    def _show_static_still(self) -> bool:
+        """The one frame a Vegas STATIC pause gets: a new hand, already finished.
+
+        The coordinator never calls display() again during the pause, so the
+        opening frame of a hand -- an empty table -- would sit there for all of
+        it. A finished hand with its result says something on its own, and
+        ``get_display_duration`` then asks for the result-banner time rather
+        than a whole hand's worth of stillness.
+        """
+        self._static_asked = None
+        self._start_hand()
+        image = render_summary(self.display_manager.width, self.display_manager.height,
+                               self._script, self.theme)
+        self._vegas_summarised = self._script
+        self._static_still = True
+        self._last_display = time.monotonic()
+        self._last_render = 0.0
+        self.display_manager.image = image
+        self.display_manager.draw = ImageDraw.Draw(image)
+        self.display_manager.update_display()
+        return True
+
     def get_supported_vegas_modes(self):
         """The two that work. SCROLL is for multi-item plugins; a hand is one."""
         if VegasDisplayMode is None:
@@ -572,9 +740,11 @@ class BlackjackPlugin(BasePlugin):
     def on_config_change(self, new_config) -> None:
         super().on_config_change(new_config)
         self._apply_config(new_config or {})
-        # The hand in progress was timed with the old durations; start a fresh
-        # one so the timeline and the config agree.
+        # The hand in progress was timed with the old durations and cap; start
+        # a fresh one so the timeline and the config agree.
         self._script = None
+        self._total_duration = 0.0
+        self._speed = 1.0
 
     def validate_config(self) -> bool:
         if not super().validate_config():

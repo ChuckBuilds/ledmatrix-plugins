@@ -16,6 +16,10 @@ So these pin the two things that are easy to get wrong:
   plugins declare a top-level ``min_ledmatrix_version``, which the core checks
   *first*. Demanding the key inside ``versions[0]`` would fail manifests that
   are already correct.
+- **A floor declared twice must agree.** Because the core stops at the first
+  floor it finds, a raised ``versions[0]`` next to a stale top-level value is
+  silently ignored. Equal values (whatever the spelling, ``3.4`` vs ``3.4.0``)
+  are fine; a disagreement is reported.
 
 Exit codes follow the convention in `run_plugin_tests.py`: 0 pass, 1 fail.
 """
@@ -32,6 +36,7 @@ import check_manifest_version_fields as gate  # noqa: E402
 BASE = {"id": "p", "compatible_versions": [">=2.0.0"]}
 
 CLEAN, DEPRECATED, MISSING = "clean", "deprecated", "missing-floor"
+CONFLICT = "conflicting-floors"
 
 
 def classify(manifest):
@@ -54,6 +59,8 @@ def classify(manifest):
         return DEPRECATED
     if "declares no minimum" in problems[0]:
         return MISSING
+    if "silently ignored" in problems[0]:
+        return CONFLICT
     return f"unexpected: {problems[0]}"
 
 
@@ -98,6 +105,30 @@ CASES = [
       "versions": [{"version": "1.0.0"}]}, MISSING),
 
     ("no floor anywhere", entry(), MISSING),
+
+    # Declared twice. The core reads the first and never the rest.
+    ("top-level and versions[0] agree",
+     {**BASE, "min_ledmatrix_version": "3.4.0",
+      "versions": [{"version": "1.0.0", "ledmatrix_min_version": "3.4.0"}]}, CLEAN),
+    ("top-level and versions[0] agree in different spellings",
+     {**BASE, "min_ledmatrix_version": "3.4",
+      "versions": [{"version": "1.0.0", "ledmatrix_min_version": "v3.4.0"}]}, CLEAN),
+    ("versions[0] raised, stale top-level still wins",
+     {**BASE, "min_ledmatrix_version": "2.0.0",
+      "versions": [{"version": "1.0.0", "ledmatrix_min_version": "3.4.0"}]}, CONFLICT),
+    ("top-level above versions[0] also disagrees",
+     {**BASE, "min_ledmatrix_version": "3.4.0",
+      "versions": [{"version": "1.0.0", "ledmatrix_min_version": "2.0.0"}]}, CONFLICT),
+    ("requires{} disagrees with versions[0]",
+     {**BASE, "requires": {"min_ledmatrix_version": "2.0.0"},
+      "versions": [{"version": "1.0.0", "ledmatrix_min_version": "3.0.0"}]}, CONFLICT),
+    ("top-level disagrees with requires{}",
+     {**BASE, "min_ledmatrix_version": "3.0.0",
+      "requires": {"min_ledmatrix_version": "2.0.0"},
+      "versions": [{"version": "1.0.0"}]}, CONFLICT),
+    ("empty top-level does not conflict with versions[0]",
+     {**BASE, "min_ledmatrix_version": "",
+      "versions": [{"version": "1.0.0", "ledmatrix_min_version": "3.0.0"}]}, CLEAN),
 ]
 
 

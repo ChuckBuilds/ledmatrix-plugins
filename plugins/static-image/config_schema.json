@@ -146,7 +146,7 @@
           "type": "string",
           "enum": ["single", "multiple"],
           "default": "single",
-          "description": "Display mode: single image or multiple images with rotation"
+          "description": "Deprecated and not read: kept so saved configs stay valid. The plugin rotates whenever more than one image is available, whatever this says."
         },
         "rotation_mode": {
           "type": "string",

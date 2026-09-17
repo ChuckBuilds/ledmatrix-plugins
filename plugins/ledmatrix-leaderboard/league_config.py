@@ -36,17 +36,22 @@ class LeagueConfig:
         """
         Initialize league configurations with ESPN API endpoints.
         
-        Default values match the config schema:
-        - nfl: enabled=True (default)
-        - ncaa_fb: enabled=True (default)
-        - ncaam_hockey: enabled=True (default)
-        - All others: enabled=False (default)
+        Default values match config_schema.json (enabled_sports.<league>.enabled):
+        - nfl, nba, mlb, ncaa_fb, nhl: enabled=True
+        - ncaam_basketball, ncaaw_basketball, ncaam_hockey, ncaa_baseball: enabled=False
+
+        These apply when a league block is missing from the config, e.g. a
+        hand-edited config or a hot reload without enabled_sports. They used to
+        enable ncaam_hockey and not nba, mlb or nhl, the opposite of what the
+        settings form shows for a fresh install.
         """
         # Default enabled values per config schema
         DEFAULT_ENABLED = {
             'nfl': True,
+            'nba': True,
+            'mlb': True,
             'ncaa_fb': True,
-            'ncaam_hockey': True,
+            'nhl': True,
         }
         
         def get_enabled_default(league_key: str) -> bool:

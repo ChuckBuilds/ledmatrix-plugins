@@ -343,15 +343,20 @@ class MusicPlugin(BasePlugin):
         if STYLE_AVAILABLE:
             try:
                 resolver = self._get_element_style_resolver()
-                self.title_font = resolver.style(
-                    'title_text', classic_font='PressStart2P-Regular.ttf',
-                    classic_size=8).font
-                self.artist_font = resolver.style(
-                    'artist_text', classic_font='PressStart2P-Regular.ttf',
-                    classic_size=7).font
-                self.album_font = resolver.style(
-                    'album_text', classic_font='PressStart2P-Regular.ttf',
-                    classic_size=7).font
+                # The classic font has to be the schema default. The resolver
+                # uses it whenever the configured font equals that default,
+                # so passing PressStart2P for artist/album (default 5x7.bdf)
+                # drew PressStart2P at 7px, off its 8px grid, and picking
+                # 5x7.bdf in the web UI changed nothing.
+                fonts = {}
+                for element in ('title_text', 'artist_text', 'album_text'):
+                    classic_font, classic_size = self._CLASSIC_FONT_DEFAULTS[element]
+                    fonts[element] = resolver.style(
+                        element, classic_font=classic_font,
+                        classic_size=classic_size).font
+                self.title_font = fonts['title_text']
+                self.artist_font = fonts['artist_text']
+                self.album_font = fonts['album_text']
                 self.logger.info("Loaded custom fonts via element-style resolver")
                 return
             except Exception as e:

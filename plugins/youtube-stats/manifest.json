@@ -1,7 +1,7 @@
 {
   "id": "youtube-stats",
   "name": "YouTube Stats",
-  "version": "1.2.3",
+  "version": "1.3.0",
   "author": "ChuckBuilds",
   "description": "Display YouTube channel statistics including subscriber count, total views, and channel name on your LED matrix",
   "category": "social",
@@ -33,6 +33,12 @@
     }
   ],
   "versions": [
+    {
+      "released": "2026-09-16",
+      "version": "1.3.0",
+      "changelog": "update_interval works below 300 seconds. The core scheduled update() at the manifest's 300 seconds and ignored a shorter configured interval, so the 60-second floor the README describes was unreachable; the plugin now returns the configured value from get_update_interval(). A web-UI change to update_interval applies without a restart. Requires LEDMatrix core 3.4.0, the first with the get_update_interval() hook; the store now refuses the install on older cores (on those the setting would stay ignored).",
+      "ledmatrix_min_version": "3.4.0"
+    },
     {
       "released": "2026-09-15",
       "version": "1.2.3",
@@ -88,8 +94,8 @@
       "ledmatrix_min": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-02",
+  "last_updated": "2026-09-16",
   "compatible_versions": [
-    ">=2.0.0"
+    ">=3.4.0"
   ]
 }

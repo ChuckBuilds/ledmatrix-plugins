@@ -826,6 +826,236 @@ def test_vegas_summary_shows_the_finished_hand():
           "; ".join(problems))
 
 
+#: ``DEFAULT_DYNAMIC_DURATION_CAP`` in the core display controller.
+CORE_DEFAULT_CAP = 180.0
+
+
+def core_turn(plugin, mode="blackjack"):
+    """One turn's hook calls, in the order the 3.x display controller makes them.
+
+    ``display(force_clear=True)`` first (the executor dispatch), then
+    ``get_display_duration`` as the floor, then ``reset_cycle_state`` when the
+    mode is a new dynamic one, then ``get_cycle_duration`` and the caps, with
+    the floor winning over the cap exactly as the controller resolves them.
+    Returns what the controller would hold the plugin for, and whether the
+    hand drawn on the first frame is still the one being played.
+    """
+    dealt_before = plugin._hands_played
+    plugin.display(force_clear=True, display_mode=mode)
+    drawn = plugin._script
+    min_duration = plugin.get_display_duration()
+    dynamic = plugin.supports_dynamic_duration()
+    if dynamic:
+        plugin.reset_cycle_state()
+        cycle = plugin.get_cycle_duration(display_mode=mode)
+        global_cfg = (plugin.global_config.get("display", {})
+                      .get("dynamic_duration", {}) or {})
+        global_cap = global_cfg.get("max_duration_seconds", CORE_DEFAULT_CAP)
+        caps = [cap for cap in (plugin.get_dynamic_duration_cap(), global_cap)
+                if cap is not None and cap > 0]
+        cap = min(caps) if caps else CORE_DEFAULT_CAP
+        max_duration = min(cycle, cap) if cycle and cycle > 0 else cap
+        max_duration = max(min_duration, max_duration)
+    else:
+        max_duration = min_duration
+    return {"hands_dealt": plugin._hands_played - dealt_before,
+            "discarded": drawn is not plugin._script,
+            "min": min_duration, "max": max_duration}
+
+
+def _watch_to_the_end(plugin):
+    """Stand in for the frames of a turn: one regular frame, then time passes."""
+    plugin._last_render = 0.0
+    plugin.display(force_clear=False)
+    plugin._hand_started = time.monotonic() - 999.0
+    plugin._last_display = time.monotonic() - 60.0
+
+
+def _plugin_classes():
+    try:
+        from src.plugin_system.testing.mocks import (
+            MockCacheManager, MockDisplayManager, MockPluginManager)
+        from manager import BlackjackPlugin
+    except ImportError as exc:
+        print(f"  SKIP  plugin-level tests (LEDMatrix core not importable: {exc})")
+        return None
+
+    def make(config, width=128, height=32):
+        display = MockDisplayManager(width, height)
+        plugin = BlackjackPlugin("blackjack", config, display, MockCacheManager(),
+                                 MockPluginManager())
+        return plugin, display
+    return make
+
+
+def test_one_hand_per_turn_in_core_order():
+    """Audit M5: the controller draws the turn's first frame before it resets
+    the cycle. Dealing on both threw the drawn hand away and timed the turn
+    from one hand while playing another."""
+    make = _plugin_classes()
+    if make is None:
+        return
+    plugin, _ = make({"random_seed": 99})
+    bad = []
+    for index in range(60):
+        turn = core_turn(plugin)
+        if turn["hands_dealt"] != 1 or turn["discarded"]:
+            bad.append((index, turn))
+        elif abs(turn["max"] - plugin.get_cycle_duration()) > 1e-6:
+            bad.append((index, "slot is not the hand shown", turn))
+        _watch_to_the_end(plugin)
+    check("core order deals exactly one hand per turn, and times the turn from it",
+          not bad, str(bad[:2]))
+
+    # The other order -- a core that resets first -- must hold up as well.
+    plugin, _ = make({"random_seed": 99})
+    bad = []
+    for index in range(20):
+        before = plugin._hands_played
+        plugin.reset_cycle_state()
+        dealt = plugin._script
+        plugin.display(force_clear=True)
+        if plugin._hands_played - before != 1 or plugin._script is not dealt:
+            bad.append(index)
+        _watch_to_the_end(plugin)
+    check("reset-first order also deals exactly one hand per turn", not bad, str(bad))
+
+    # A frame the controller had to retry (update() held the lock) is still
+    # the same turn.
+    plugin.display(force_clear=True)
+    held = plugin._script
+    plugin.display(force_clear=True)
+    check("a repeated force_clear frame keeps an unwatched hand", plugin._script is held)
+
+
+def test_max_duration_caps_a_hand():
+    """Audit L3: the controller treats get_display_duration as a floor that
+    beats the cap, so a hand longer than max_duration_seconds ran over it."""
+    make = _plugin_classes()
+    if make is None:
+        return
+    plugin, _ = make({"random_seed": 5, "card_interval": 10,
+                      "dynamic_duration": {"enabled": True, "max_duration_seconds": 30}})
+    turn = core_turn(plugin)
+    check("a slow hand's turn stays inside max_duration_seconds",
+          turn["max"] <= 30.0 + 1e-6 and turn["min"] <= 30.0 + 1e-6, str(turn))
+    check("the slow hand really was longer than the cap", plugin._total_duration > 30.0)
+    plugin._hand_started = time.monotonic() - 30.0
+    state = plugin._view_state(plugin._elapsed())
+    check("the capped hand still reaches its result inside the cap",
+          plugin.is_cycle_complete() and bool(state.banner_text))
+
+    # The device-wide cap is part of the controller's limit too.
+    plugin, _ = make({"random_seed": 5})
+    plugin.global_config = {"display": {"dynamic_duration": {"max_duration_seconds": 12}}}
+    turn = core_turn(plugin)
+    check("the global dynamic-duration cap is honoured the same way",
+          turn["max"] <= 12.0 + 1e-6, str(turn))
+
+    plugin, _ = make({"random_seed": 5})
+    core_turn(plugin)
+    check("a hand under the cap plays at its configured pace",
+          abs(plugin.get_cycle_duration() - plugin._total_duration) < 1e-6)
+
+
+def test_display_duration_is_the_fixed_slot():
+    """Audit L4: display_duration was declared but never read."""
+    make = _plugin_classes()
+    if make is None:
+        return
+    plugin, _ = make({"random_seed": 5, "display_duration": 60,
+                      "dynamic_duration": {"enabled": False}})
+    turn = core_turn(plugin)
+    check("with dynamic duration off the slot is display_duration",
+          turn["max"] == 60.0 and plugin.get_display_duration() == 60.0, str(turn))
+    plugin, _ = make({"random_seed": 5, "dynamic_duration": {"enabled": False}})
+    check("display_duration defaults to the schema's 22s",
+          plugin.get_display_duration() == 22.0)
+
+
+def test_vegas_fixed_deals_a_new_hand_each_pass():
+    """Audit M6: the ticker got the same finished hand all session."""
+    make = _plugin_classes()
+    if make is None:
+        return
+    plugin, _ = make({"random_seed": 5})
+    scripts, images = [], set()
+    for _ in range(12):
+        image = plugin.get_vegas_content()
+        scripts.append(plugin._script)
+        images.add(image.tobytes())
+    check("every ticker pass summarises a different hand",
+          len({id(script) for script in scripts}) == 12 and len(images) > 1,
+          f"{len(images)} distinct images")
+
+    plugin, _ = make({"random_seed": 5})
+    plugin.display(force_clear=True)
+    on_panel = plugin._script
+    plugin.get_vegas_content()
+    check("the ticker summarises the hand already dealt rather than skipping it",
+          plugin._script is on_panel)
+    plugin.display(force_clear=True)
+    check("a hand whose result the ticker showed is not then played on the panel",
+          plugin._script is not on_panel)
+
+
+def test_vegas_static_pause_shows_a_finished_hand():
+    """Audit M7: the coordinator draws a STATIC plugin once and sleeps, which
+    left the opening frame -- an empty table -- up for the whole pause."""
+    make = _plugin_classes()
+    if make is None:
+        return
+    import threading
+
+    from blackjack_render import render_summary
+
+    plugin, display = make({"random_seed": 5, "vegas_mode": "static"})
+    mode = plugin.get_vegas_display_mode()
+    check("vegas_mode static is honoured",
+          mode is not None and getattr(mode, "value", None) == "static", str(mode))
+
+    # coordinator._handle_static_pause: display(force_clear=True), push, sleep.
+    plugin.display(force_clear=True)
+    display.update_display()
+    expected = render_summary(128, 32, plugin._script, plugin.theme)
+    check("the pause's one frame is the finished hand",
+          display.image.tobytes() == expected.tobytes())
+    check("the pause lasts the result-banner time, not a whole hand",
+          plugin.get_display_duration() == plugin.result_seconds)
+
+    # The next rotation turn plays a hand normally.
+    plugin._last_display = time.monotonic() - 60.0
+    turn = core_turn(plugin)
+    state = plugin._view_state(plugin._elapsed())
+    check("a rotation turn after the pause opens on a fresh table",
+          turn["hands_dealt"] == 1 and not state.banner_text
+          and turn["min"] == plugin.get_cycle_duration(), str(turn))
+
+    # A mode query from another thread (the ticker's prefetch) is not a pause.
+    plugin, display = make({"random_seed": 5, "vegas_mode": "static"})
+    worker = threading.Thread(target=plugin.get_vegas_display_mode)
+    worker.start()
+    worker.join()
+    plugin.display(force_clear=True)
+    check("only the drawing thread's mode query starts a still",
+          not plugin._view_state(plugin._elapsed()).banner_text
+          and plugin.get_display_duration() == plugin.get_cycle_duration())
+
+
+def test_clearing_the_seed_unseeds_the_shoe():
+    """Audit L6: random_seed back to 0 kept the seeded shoe until a restart."""
+    make = _plugin_classes()
+    if make is None:
+        return
+    plugin, _ = make({"random_seed": 1337})
+    plugin.on_config_change({"random_seed": 0})
+    check("clearing the seed switches the shoe to system entropy",
+          type(plugin._shoe.rng) is random.SystemRandom, type(plugin._shoe.rng).__name__)
+    shoe = plugin._shoe
+    plugin.on_config_change({"random_seed": 0, "card_interval": 3.0})
+    check("an unrelated change keeps the shoe mid-shoe", plugin._shoe is shoe)
+
+
 def test_plugin_drives_a_hand():
     try:
         from src.plugin_system.testing.mocks import (
@@ -843,14 +1073,14 @@ def test_plugin_drives_a_hand():
     check("high-FPS is declared", plugin.needs_high_fps is True)
     check("dynamic duration is on by default", plugin.supports_dynamic_duration())
 
-    plugin.reset_cycle_state()
+    # The 3.x controller's order on entering the mode: the first frame, then
+    # the duration, then the cycle reset (display_controller.py).
+    turn = core_turn(plugin)
     first = plugin._script
-    check("reset_cycle_state deals a hand", first is not None)
+    check("the turn's first frame deals a hand", first is not None)
+    check("reset_cycle_state after that frame keeps the same hand",
+          turn["hands_dealt"] == 1 and not turn["discarded"], str(turn))
     check("a hand is not complete the moment it starts", not plugin.is_cycle_complete())
-
-    plugin.display(force_clear=True)
-    check("the force_clear frame after a reset keeps the same hand",
-          plugin._script is first)
     check("display pushed a frame", display.update_called)
     check("the pushed frame is panel sized", display.image.size == (128, 32))
     check("get_cycle_duration matches the hand",
@@ -966,6 +1196,12 @@ def main():
                  test_action_tag_prefers_empty_space, test_flip_never_blanks_the_card,
                  test_card_art_scales,
                  test_vegas_summary_shows_the_finished_hand,
+                 test_one_hand_per_turn_in_core_order,
+                 test_max_duration_caps_a_hand,
+                 test_display_duration_is_the_fixed_slot,
+                 test_vegas_fixed_deals_a_new_hand_each_pass,
+                 test_vegas_static_pause_shows_a_finished_hand,
+                 test_clearing_the_seed_unseeds_the_shoe,
                  test_plugin_drives_a_hand,
                  test_plugin_renders_every_size):
         print(test.__name__)

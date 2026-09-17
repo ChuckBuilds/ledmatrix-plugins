@@ -61,7 +61,7 @@ def make_plugin(config):
     p.proximity_cooldown = pc.get("cooldown_seconds", 30)
     p.live_priority_enabled = config.get("live_priority", False)
     p.update_interval = config.get("update_interval", 5)
-    p.live_update_interval = config.get("live_update_interval", 2)
+    p.live_update_interval = config.get("live_update_interval", 5)
 
     p.display_mode = config.get("display_mode", "auto")
     # Overhead state machine

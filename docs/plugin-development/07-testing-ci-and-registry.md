@@ -129,7 +129,7 @@ Steps, in order:
    `ledmatrix_min_version` (not the deprecated `ledmatrix_min`) and a floor is
    declared somewhere; `compatible_versions` is present. Runs its regression
    suite too.
-3. **Registry coverage** (always) — `python update_registry.py --check`; see
+3. **Registry sync** (always) — `python update_registry.py --check`; see
    [the registry](#the-registry-pluginsjson) below.
 4. **Manifest schema validation** (changed plugins) — against the core's
    `schema/manifest_schema.json`.
@@ -223,13 +223,18 @@ registry:
 
 - For monorepo entries (non-empty `plugin_path`), if the manifest `version` is
   **greater** than the registry `latest_version`, it updates `latest_version` and
-  the entry's `last_updated`. It never downgrades.
+  the entry's `last_updated`. It never downgrades: a registry version *ahead* of
+  its manifest is warned about and left alone.
 - It also force-syncs `name`, `description`, `author`, `category`, `tags`,
-  `icon` and `last_updated` from manifest to registry when they differ.
+  `icon` and `last_updated` from manifest to registry when they differ. The
+  registry's `last_updated` is the newer of the manifest's top-level
+  `last_updated` and `versions[0].released`, so a release that forgot to bump
+  the top-level date still publishes its release date.
 - Third-party entries (empty `plugin_path`) are skipped by a local run. With
   `--external` it fetches `manifest.json` from the root of each one's GitHub
   repo (on the entry's `branch`) and raises `latest_version`, and sets
-  `last_updated` to that version's `released` date. Only those two fields move:
+  `last_updated` to that version's release date (the newer of its `released`
+  date and the manifest's `last_updated`). Only those two fields move:
   the name, description and tags stay as reviewed. It never downgrades, ignores
   a manifest whose `id` is not the entry's, and only warns on a repo it cannot
   read. The **Update Plugin Registry** workflow runs it daily and on every
@@ -239,12 +244,17 @@ registry:
   differ for weather, stocks, music and leaderboard): a `plugins/<dir>` with a
   manifest but no entry, a `plugin_path` with no manifest, or two entries
   claiming one path. A normal run warns; `--check` fails.
+- `--check` also fails when anything a normal run would write is missing from
+  the committed `plugins.json`: a `latest_version` behind its manifest, one
+  ahead of it, or a synced metadata field that differs. The pre-commit hook
+  keeps this green; without it, run `python update_registry.py` and commit
+  the result.
 
 ```bash
 python update_registry.py            # sync plugins.json from manifests
 python update_registry.py --external # also sync third-party versions (network)
 python update_registry.py --dry-run  # preview without writing
-python update_registry.py --check    # dry run; exit 1 on a coverage problem (CI)
+python update_registry.py --check    # dry run; exit 1 on drift or a coverage problem (CI)
 ```
 
 ---

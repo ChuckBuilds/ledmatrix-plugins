@@ -56,7 +56,7 @@
         "scroll_speed": {
           "x-advanced": true,
           "type": "number",
-          "description": "Scrolling speed in pixels per frame",
+          "description": "Pixels moved per scroll step. With scroll_delay it sets the speed: scroll_speed / scroll_delay pixels per second (50 by default), snapped to the nearest speed the panel can move in whole pixels",
           "minimum": 0.5,
           "maximum": 5.0,
           "default": 1.0

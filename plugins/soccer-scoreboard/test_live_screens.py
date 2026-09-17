@@ -166,10 +166,11 @@ def test_scroll_passes_real_logo_cache_to_renderer():
     # passed plugin_dir instead, leaving this dict untouched.
     #
     # Match on the team rather than the whole key: GameRenderer._logo_cache_key
-    # scopes entries by slot size ("MCI@32x32") so one team cached at two panel
-    # sizes cannot collide. What this test guards is that the shared dict is
-    # populated at all, which the size suffix does not change.
-    cached_teams = {key.split("@", 1)[0] for key in sd._logo_cache}
+    # scopes entries by logo directory and slot size ("soccer_logos:MCI@32x32")
+    # so a national flag and a club crest sharing an abbreviation, or one team
+    # cached at two panel sizes, cannot collide. What this test guards is that
+    # the shared dict is populated at all, which neither scope changes.
+    cached_teams = {key.split("@", 1)[0].rsplit(":", 1)[-1] for key in sd._logo_cache}
     assert {"MCI", "LIV"} <= cached_teams, (
         f"logos not loaded into shared cache: {list(sd._logo_cache)}"
     )

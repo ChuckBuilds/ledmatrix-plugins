@@ -328,9 +328,16 @@ width budget is at most one panel and anything wider is cropped to its start,
 so a two-panel arrangement would show the cards and lose the result, which is
 the half that matters.
 
-`vegas_mode: static` pauses the marquee and plays the whole hand out instead,
-for anyone who would rather watch than skim. SCROLL is not offered — it is for
-plugins with a list of interchangeable items, and a hand is one thing.
+Every pass of the marquee deals the next hand, so the ticker does not repeat
+one result all session. A hand whose result the ticker has shown is never then
+played out on the panel.
+
+`vegas_mode: static` stops the marquee on the hand instead: it shows a freshly
+dealt hand, finished, full-screen for `result_seconds`, then the marquee moves
+on. It cannot play the hand out — the marquee draws a paused plugin once and
+does not animate it — so this is a still, like the ticker item, but full-size
+and with the scroll stopped. SCROLL is not offered — it is for plugins with a
+list of interchangeable items, and a hand is one thing.
 
 ## How long a rotation lasts
 
@@ -341,8 +348,16 @@ cards, 30s or more for a long draw. That is what `dynamic_duration.enabled`
 buys, and it is **on by default**: a fixed slot either cuts the result banner
 off or holds a finished table on screen.
 
-With dynamic duration turned off the plugin falls back to `display_duration`
-and deals a fresh hand whenever the last one finishes inside the slot.
+`max_duration_seconds` is a real upper bound, together with the device-wide
+`display.dynamic_duration.max_duration_seconds` (whichever is smaller). A hand
+that would run longer — a slow `card_interval` and a long draw — is not cut off
+before its result: the whole hand plays faster, every beat and animation in
+proportion, so it still ends on its banner inside the limit.
+
+With dynamic duration turned off the slot is `display_duration` (22s by
+default), and the table deals a fresh hand whenever the last one finishes
+inside it. A hand longer than the slot is cut off, which is why dynamic
+duration is the default.
 
 ## Settings
 
@@ -376,10 +391,15 @@ Web UI label on the left, `config.json` key on the right.
 | Hole Card Flip Seconds | `flip_seconds` | `0.55` | Capped at `reveal_seconds` |
 | Render Frame Rate | `render_fps` | `40` | Frames drawn per second; lower it if the display loop is struggling |
 | Random Seed | `random_seed` | `0` | `0` means real randomness. Any other value repeats the same hands every restart — for tests and screenshots only |
-| Display Duration | `display_duration` | `22` | Fallback slot length, used only with dynamic duration off |
-| Dynamic Duration | `dynamic_duration` | `{ "enabled": true, "max_duration_seconds": 75 }` | Let the hand decide how long the rotation lasts. `enabled` holds the screen until the hand finishes; `max_duration_seconds` is the upper bound on one hand |
+| Display Duration | `display_duration` | `22` | Slot length in seconds, used only with dynamic duration off |
+| Vegas Marquee Mode | `vegas_mode` | `fixed` | `fixed` scrolls a still of each finished hand by with the marquee; `static` stops the marquee on a finished hand for `result_seconds` |
+| Dynamic Duration | `dynamic_duration` | `{ "enabled": true, "max_duration_seconds": 75 }` | Let the hand decide how long the rotation lasts. `enabled` holds the screen until the hand finishes; `max_duration_seconds` is the upper bound on one hand — a longer hand plays faster to fit rather than being cut off |
 
 ## Install
+
+Needs LEDMatrix 3.2.0 or newer. Earlier cores never read the plugin's
+request for the high frame rate, so the deal and the flips would play at one
+frame a second.
 
 Plugin Store → **Blackjack** → Install, then enable it. Or by hand:
 

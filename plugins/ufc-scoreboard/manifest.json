@@ -1,7 +1,7 @@
 {
   "id": "ufc-scoreboard",
   "name": "UFC Scoreboard",
-  "version": "1.13.1",
+  "version": "1.14.0",
   "author": "LegoGuy1000",
   "contributors": [
     {
@@ -32,6 +32,12 @@
   "default_duration": 15,
   "config_schema": "config_schema.json",
   "versions": [
+    {
+      "version": "1.14.0",
+      "released": "2026-09-16",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Settings saved in the web UI apply without a restart. on_config_change rebuilds the league managers, registry, scroll manager and rotation from the new config, so league enables, durations, live priority, display modes and favorites take effect immediately. A save that omits enabled keeps the current state. A fighter with no ESPN headshot no longer blanks the card. About one fighter in ten has no ESPN headshot (a 404). The switch cards downloaded missing headshots from display() and cached only successes, so every frame re-requested the image, logged an ERROR with a traceback, and drew Image Error instead of the fight. Headshots are now fetched during update(), never while drawing; a failure is retried after 15 minutes, doubling to 6 hours, with one warning per attempt; and the card is drawn without the missing headshot. No more 125 FPS loop for static fight cards. enable_scrolling was true whenever the scroll manager could be built, so every install re-rendered a static card every 8ms. This plugin's display modes never scroll, so it no longer asks for the high-FPS loop. Switch mode refreshes its managers off the render thread. The draw-time refresh in _try_manager_display() ran inline, freezing the panel for each due fetch; it now uses the same worker dispatch as afl/nrl/soccer. The *_display_mode \"scroll\" option is documented as ignored. The schema and README offered a scroll display mode that display() never had; fights always rotate one at a time and scroll only in Vegas mode. The option stays accepted so saved configs keep loading. scroll_settings.scroll_delay is likewise documented as ignored. Corrected get_update_interval() docstring. It claimed the sibling scoreboards gained the hook in #479; only football had it."
+    },
     {
       "version": "1.13.1",
       "released": "2026-09-16",
@@ -289,7 +295,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-15",
+  "last_updated": "2026-09-16",
   "stars": 0,
   "downloads": 0,
   "verified": true,
