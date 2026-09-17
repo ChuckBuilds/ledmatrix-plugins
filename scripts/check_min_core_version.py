@@ -124,6 +124,7 @@ MODULE_FIRST_VERSION = {
     "src.common.espn_dates": None,  # core #591
     "src.common.sports_helpers": None,  # core #583
     "src.core_config_keys": None,  # core #589
+    "src.matrix_support": None,  # core #595
     "src.pi5_matrix_support": None,  # core #586
 }
 
