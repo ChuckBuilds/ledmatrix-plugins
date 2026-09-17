@@ -160,9 +160,11 @@ jobs:
       # update_registry.py only updates entries already in plugins.json, so a
       # new plugins/<dir> with no hand-added entry was never published, and a
       # registry plugin_path pointing at nothing was only logged. --check is a
-      # dry run that fails on either. Runs on every PR this workflow sees,
+      # dry run that fails on either, and on any entry whose latest_version is
+      # behind or ahead of its manifest or whose synced metadata differs (it
+      # used to print PASS for those). Runs on every PR this workflow sees,
       # because a plugin can be added, renamed or removed in any of them.
-      - name: Check plugins.json covers every plugin directory
+      - name: Check plugins.json matches the plugin manifests
         if: always()
         working-directory: plugins-repo
         run: python update_registry.py --check

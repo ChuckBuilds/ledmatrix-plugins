@@ -260,8 +260,21 @@ else:
         # was importable all along
         and not present(trees["3.0.0"], module_of(f))
         and gate.first_version(module_of(f))[0] is None)
+    def suggested_entry(f):
+        # The first tag whose tree has the file, or None when only HEAD has
+        # it -- the exact line a contributor should paste into the table.
+        mod = module_of(f)
+        first = next((t for t in tags if present(trees[t], mod)), None)
+        return (f'"{mod}": "{first}",' if first
+                else f'"{mod}": None,  # core #<PR>, unreleased')
+
     check("no post-3.0.0 core module is missing from the table", not untracked,
           ", ".join(untracked[:5]))
+    if untracked:
+        print("        add to MODULE_FIRST_VERSION in "
+              "scripts/check_min_core_version.py:")
+        for f in untracked:
+            print(f"            {suggested_entry(f)}")
 
 # --------------------------------------------------------------------------
 print("\n" + "=" * 62)
