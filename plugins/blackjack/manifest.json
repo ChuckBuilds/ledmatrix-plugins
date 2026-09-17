@@ -1,7 +1,7 @@
 {
   "id": "blackjack",
   "name": "Blackjack",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "author": "ChuckBuilds",
   "description": "Deals one hand of Las Vegas blackjack per rotation. Cards slide in and flip face up a few seconds apart, the player follows basic strategy, the dealer plays the house rules, and the hand ends on a BLACKJACK! / BUST! / PUSH banner. Every hand comes off a real shuffled shoe, so no two rotations are the same.",
   "entry_point": "manager.py",
@@ -23,7 +23,7 @@
     "blackjack"
   ],
   "compatible_versions": [
-    ">=2.0.0"
+    ">=3.2.0"
   ],
   "display": {
     "design_size": {
@@ -34,6 +34,12 @@
   "update_interval": 3600,
   "default_duration": 22,
   "versions": [
+    {
+      "version": "1.3.0",
+      "released": "2026-09-16",
+      "ledmatrix_min_version": "3.2.0",
+      "notes": "The hooks now match what the core actually does. One hand per turn: the 3.x controller draws a turn's first frame before it resets the cycle, and the plugin dealt on both, so every turn threw away a hand unseen and was timed from it -- the finished table could sit frozen for seconds, and the RUN OF n streak counted hands nobody saw. A turn now keeps the hand its first signal dealt, in either order. max_duration_seconds (and the device-wide dynamic duration limit) is a real cap: the controller treats get_display_duration as a floor that beats the cap, so a slow hand ran straight past it; a hand that would outlast the cap now plays faster, every beat in proportion, and still ends on its result inside it. display_duration is read: with dynamic duration off it is the slot length (22s by default) instead of the length of the discarded hand. Vegas: fixed mode deals the next hand each time the marquee comes round rather than showing one result all session, and a hand the ticker has shown is not then played on the panel. Static mode can no longer promise to play the hand out -- the marquee draws a paused plugin once and sleeps, which left an empty table up for the whole pause -- so it now stops the marquee on a freshly dealt, finished hand for result_seconds. Setting random_seed back to 0 now returns the shoe to system entropy without a restart. Floor raised to 3.2.0, the first core that reads a plugin's needs_high_fps; on 3.0 and 3.1 the deal ran at one frame a second. 3.0 and 3.1 report their version as 1.0.0 and predate floor enforcement, so no core can use this floor to refuse them; it records the requirement, which the README now states."
+    },
     {
       "version": "1.2.1",
       "released": "2026-09-16",
