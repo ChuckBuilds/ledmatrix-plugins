@@ -92,7 +92,7 @@ class FlightTrackerPlugin(BasePlugin):
         
         # Normalize FlightAware config: copy nested keys to flat so enrichment
         # modules and legacy code paths both work
-        self._normalize_flightaware_config(self.config)
+        self._normalize_flightaware_config(self.config, log=self.logger)
 
         # Flight tracker configuration
         self.enabled = self.config.get('enabled', False)
@@ -231,7 +231,7 @@ class FlightTrackerPlugin(BasePlugin):
         # Faster fetch cadence while a flight is locked on, so altitude/distance
         # update smoothly during the overhead window. The ADS-B source is ~1Hz, so
         # this is safe; idle fetches stay at update_interval.
-        self.live_update_interval = self.config.get('live_update_interval', 2)
+        self.live_update_interval = self.config.get('live_update_interval', 5)
         
         # Last good SkyAware payload, held in memory rather than on disk.
         # It exists only to cover a failed poll, and the reader is this same
@@ -417,7 +417,7 @@ class FlightTrackerPlugin(BasePlugin):
         is left untouched.
         """
         self.config = new_config or {}
-        self._normalize_flightaware_config(self.config)
+        self._normalize_flightaware_config(self.config, log=self.logger)
 
         self.enabled = self.config.get('enabled', getattr(self, 'enabled', False))
         self.update_interval = self.config.get('update_interval', 5)
@@ -464,7 +464,7 @@ class FlightTrackerPlugin(BasePlugin):
         self.proximity_duration = self.proximity_config.get('duration_seconds', 30)
         self.proximity_cooldown = self.proximity_config.get('cooldown_seconds', 30)
         self.live_priority_enabled = self.config.get('live_priority', False)
-        self.live_update_interval = self.config.get('live_update_interval', 2)
+        self.live_update_interval = self.config.get('live_update_interval', 5)
 
         # Background service for flight plan data
         bg_svc = self._fa_config('background_service', {})
@@ -851,43 +851,98 @@ class FlightTrackerPlugin(BasePlugin):
         font_height = self._get_font_height(font)
         return int(font_height * padding_factor)
     
+    # flightaware.<nested key> -> the deprecated flat key it replaced.
+    _FA_FLAT_KEYS = {
+        'api_key': 'flightaware_api_key',
+        'enabled': 'flight_plan_enabled',
+        'max_api_calls_per_hour': 'max_api_calls_per_hour',
+        'daily_api_budget': 'daily_api_budget',
+        'cache_ttl_hours': 'flight_plan_cache_ttl_hours',
+        'min_callsign_length': 'min_callsign_length',
+        'airline_callsign_prefixes': 'airline_callsign_prefixes',
+        'background_service': 'background_service',
+    }
+
+    # The deprecated flat keys' schema defaults. The core merges these into
+    # every config, so a flat value only means "the user set this" when it
+    # differs from them.
+    _FA_FLAT_DEFAULTS = {
+        'flight_plan_enabled': False,
+        'max_api_calls_per_hour': 25,
+        'daily_api_budget': 60,
+        'flight_plan_cache_ttl_hours': 12,
+        'min_callsign_length': 4,
+        'airline_callsign_prefixes': [],
+        'background_service': {'enabled': True, 'fetch_interval_hours': 4, 'max_calls_per_run': 10},
+    }
+
     @staticmethod
-    def _normalize_flightaware_config(config: Dict) -> None:
-        """Normalize FlightAware config: copy nested flightaware.* to flat keys.
+    def _resolve_fa_value(config: Dict, key: str, default=None):
+        """One FlightAware setting, resolved between the nested and flat forms.
 
-        This ensures enrichment modules and any code reading flat keys from
-        config works regardless of whether the user has the new nested schema
-        or the old flat schema.  Called once at init before any config reads.
+        The nested ``flightaware`` section is what the web UI shows, so it
+        decides. The core merges its schema defaults into every config, so the
+        nested keys are always present and the old rule -- nested wins whenever
+        present -- silently replaced every legacy flat value with a default.
+
+        - ``api_key``: the nested key when it is set, else the legacy flat
+          ``flightaware_api_key`` (the README told people to put it in
+          config_secrets.json under that name). A key alone never makes a
+          paid call; ``flightaware.enabled`` has to be on as well.
+        - ``enabled``: only ``flightaware.enabled``. The legacy
+          ``flight_plan_enabled`` is not read: it has been overwritten with the
+          default since the nested section arrived, so honouring it now would
+          restart paid calls on boards whose owners see the toggle off.
+        - everything else: nested, falling back to the flat key only when the
+          nested key is absent altogether (a config the core did not merge).
         """
-        fa = config.get('flightaware', {})
-        if not fa:
-            return
-        flat_map = {
-            'api_key': 'flightaware_api_key',
-            'enabled': 'flight_plan_enabled',
-            'max_api_calls_per_hour': 'max_api_calls_per_hour',
-            'daily_api_budget': 'daily_api_budget',
-            'cache_ttl_hours': 'flight_plan_cache_ttl_hours',
-            'min_callsign_length': 'min_callsign_length',
-            'airline_callsign_prefixes': 'airline_callsign_prefixes',
-            'background_service': 'background_service',
-        }
-        for nested_key, flat_key in flat_map.items():
-            if nested_key in fa:
-                config[flat_key] = fa[nested_key]
-
-    def _fa_config(self, key, default=None):
-        """Read FlightAware config from nested 'flightaware' object with flat fallback."""
-        fa = self.config.get('flightaware', {})
+        fa = config.get('flightaware')
+        if not isinstance(fa, dict):
+            fa = {}
+        flat_key = FlightTrackerPlugin._FA_FLAT_KEYS.get(key, key)
+        if key == 'api_key':
+            return fa.get('api_key') or config.get(flat_key) or (default if default is not None else '')
+        if key == 'enabled':
+            return bool(fa.get('enabled', False))
         if key in fa:
             return fa[key]
-        # Backward compatibility: check old flat keys
-        flat_map = {
-            'api_key': 'flightaware_api_key',
-            'enabled': 'flight_plan_enabled',
-            'cache_ttl_hours': 'flight_plan_cache_ttl_hours',
-        }
-        return self.config.get(flat_map.get(key, key), default)
+        return config.get(flat_key, default)
+
+    @staticmethod
+    def _normalize_flightaware_config(config: Dict, log=None) -> None:
+        """Write the resolved FlightAware settings onto the flat keys.
+
+        enrichment/flightaware.py and the enrichment factory read the flat
+        names, so they must carry the same values _fa_config() returns. See
+        _resolve_fa_value() for which form wins. Legacy flat values that are
+        set but not used are logged, so a user who followed old instructions
+        learns where the setting went.
+        """
+        fa = config.get('flightaware')
+        if not isinstance(fa, dict):
+            fa = {}
+        ignored = []
+        for nested_key, flat_key in FlightTrackerPlugin._FA_FLAT_KEYS.items():
+            if nested_key == 'api_key':
+                continue
+            if nested_key in fa or nested_key == 'enabled':
+                raw = config.get(flat_key)
+                flat_default = FlightTrackerPlugin._FA_FLAT_DEFAULTS.get(flat_key)
+                resolved = FlightTrackerPlugin._resolve_fa_value(config, nested_key)
+                if raw is not None and raw != flat_default and raw != resolved:
+                    ignored.append(flat_key)
+        for nested_key, flat_key in FlightTrackerPlugin._FA_FLAT_KEYS.items():
+            if nested_key in fa or nested_key in ('api_key', 'enabled'):
+                config[flat_key] = FlightTrackerPlugin._resolve_fa_value(config, nested_key)
+        if ignored and log is not None:
+            log.warning(
+                "[Flight Tracker] Legacy FlightAware setting(s) %s are not used: set them in "
+                "the FlightAware section (flightaware.*) instead. Paid calls need "
+                "flightaware.enabled on.", ", ".join(ignored))
+
+    def _fa_config(self, key, default=None):
+        """Read one FlightAware setting (see _resolve_fa_value)."""
+        return self._resolve_fa_value(self.config, key, default)
 
     def _is_callsign_worth_fetching(self, callsign: str) -> bool:
         """Determine if a callsign is worth fetching flight plan data for."""
@@ -2547,6 +2602,13 @@ class FlightTrackerPlugin(BasePlugin):
         n = 2.0 ** zoom
         return x / n * 360.0 - 180.0
     
+    # No get_update_interval() hook, deliberately. The manifest's 5s is already
+    # the fastest the core will call update() (it clamps any plugin-requested
+    # interval to 5s or more), so a hook could only slow the cycle -- and each
+    # cycle also services FR24 detail fetches, METAR steps and tile prefetch,
+    # which must not wait on a long update_interval. update() throttles the
+    # aircraft fetch itself, which is what update_interval and
+    # live_update_interval control; values below 5 act as 5.
     def update(self) -> None:
         """Update aircraft data from the configured data source."""
         current_time = time.time()

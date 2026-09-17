@@ -72,6 +72,7 @@ CASES = [
     (("flightaware", "max_api_calls_per_hour"), lambda p: p.max_api_calls_per_hour),
     (("header_color",), lambda p: list(p._renderer.header_color)),
     (("show_aircraft_icon",), lambda p: p._renderer.show_aircraft_icon),
+    (("live_update_interval",), lambda p: p.live_update_interval),
 ]
 
 # Deliberately omits every key under test (and the sections that hold them).

@@ -82,25 +82,38 @@ Add the following to `config/config.json`:
 
 ### Secrets Configuration
 
+FlightAware AeroAPI is paid and optional. Two settings have to be in place
+before the plugin makes a single call: an API key, and
+`flightaware.enabled: true` ("Enable paid FlightAware API calls"). With
+`flightaware.enabled` off, no FlightAware request is made, whatever else is set.
+
 **Option 1: Via Web Interface (Recommended)**
-When configuring the plugin through the LEDMatrix web interface, the `flightaware_api_key` field is automatically saved to `config/config_secrets.json` as a secret. Just enter your API key in the plugin configuration form.
+Open the FlightAware section of the plugin's settings, enter the API key (it is
+saved to `config/config_secrets.json` as a secret) and turn on
+**Enable paid FlightAware API calls**.
 
 **Option 2: Manual Configuration**
-Add FlightAware API key to `config/config_secrets.json`:
+Add the key to `config/config_secrets.json`, and set `flightaware.enabled` to
+`true` under `ledmatrix-flights` in `config/config.json`:
 
 ```json
 {
   "ledmatrix-flights": {
-    "flightaware_api_key": "YOUR_API_KEY_HERE"
+    "flightaware": {
+      "api_key": "YOUR_API_KEY_HERE"
+    }
   }
 }
 ```
+
+A key saved under the old flat name, `"flightaware_api_key": "..."`, still
+works when `flightaware.api_key` is blank.
 
 **Getting a FlightAware API Key:**
 1. Sign up for a free account at [FlightAware AeroAPI](https://flightaware.com/aeroapi/)
 2. Navigate to your account settings and create an API key
 3. Free tier includes 1,000 requests per month
-4. The API key is only required if you enable `flight_plan_enabled` (for origin/destination information)
+4. The API key is only used when `flightaware.enabled` is on (for origin/destination information)
 
 **Note:** The plugin will work without an API key for basic aircraft tracking, but flight plan features (origin/destination) will be disabled.
 
@@ -117,8 +130,8 @@ under `ledmatrix-flights`. The full schema is
 | `enabled` | `false` | Enable or disable the flight tracker plugin. |
 | `data_source` | `"skyaware"` | Where to get live aircraft position data. Choose one setup path: (1) Local receiver — 'skyaware': requires a PiAware/dump1090 ADS-B receiver on your network, most accurate data. (2) Free cloud — 'adsbfi': free global ADS-B feed from adsb.fi, no account or hardware needed. 'adsblol': same idea via adsb.lol. Both free cloud options work worldwide with no sign-up — one of `skyaware`, `adsbfi`, `adsblol`. |
 | `skyaware_url` | `""` | URL to your local ADS-B receiver's aircraft.json endpoint. Only used when data_source is `skyaware`. Empty by default — there is no address that is right for every install — and the plugin logs which setting is missing until you set it. Typical values: `http://localhost:8080/data/aircraft.json` (dump1090-fa on this Pi), `http://localhost/skyaware/data/aircraft.json` (PiAware on this Pi), `http://<receiver-ip>/skyaware/data/aircraft.json`. |
-| `update_interval` | `5` | Interval in seconds between aircraft data updates (1–300). |
-| `live_update_interval` | `2` | Faster fetch interval (seconds) used while a flight is locked on for the overhead view, so altitude/distance update smoothly. The ADS-B source is ~1Hz, so a low value is safe. Idle fetches use update_interval (1–60). Advanced. |
+| `update_interval` | `5` | Interval in seconds between aircraft data updates (1–300). LEDMatrix runs a plugin's update at most every 5 seconds, so values below 5 act as 5. |
+| `live_update_interval` | `5` | Fetch interval (seconds) used while a flight is locked on for the overhead view, so altitude/distance update smoothly. Idle fetches use update_interval. Values below 5 act as 5, for the same reason (1–60). Advanced. |
 | `live_priority` | `false` | When enabled, an aircraft entering the proximity radius immediately preempts the normal rotation to show the overhead view for the proximity alert window (see proximity_alert.duration_seconds). The 'flight_tracker_live' rotation slot is registered alongside any other flight slot and is skipped unless this is on and a plane is overhead, so switching it on takes effect without a restart. While it is skipped the core logs one INFO line per rotation ("display() returned False for mode flight_tracker_live"); that is expected. Exception: with no rotation views selected the slot is only registered while this is on, so turning it on for such a board needs a restart. Leave off for legacy behavior. Advanced. |
 | `display_duration` | `30` | How long to show the flight tracker display (10-300 seconds). |
 | `flight_records` | — | Track all-time closest and farthest flights ever seen, shown as extra stats rotation slots. |
@@ -267,18 +280,32 @@ the top-level `background_service`:
 
 ### Legacy flat API keys
 
-The plugin accepts the FlightAware and OpenSky credentials either nested under
-`flightaware` (above) or as flat top-level keys. `_normalize_flightaware_config()`
-copies the nested form onto the flat names once at start-up, so both work and
-you only need to set one.
+These flat keys predate the `flightaware` section. They stay in the schema so
+older saved configs remain valid, but only one of the FlightAware ones is still
+read:
+
+- `flightaware_api_key` is used as the API key when `flightaware.api_key` is
+  blank. A key set in the FlightAware section wins.
+- `flight_plan_enabled` is **not** read. Paid calls need `flightaware.enabled`.
+  The flat flag was overridden by the section's default from the moment the
+  section was added, so honouring it now would quietly restart billing on
+  boards whose settings page shows FlightAware off.
+- `max_api_calls_per_hour`, `daily_api_budget`, `flight_plan_cache_ttl_hours`,
+  `min_callsign_length` and `airline_callsign_prefixes` are not read either; set
+  them in the FlightAware section. A flat key that holds something other than its
+  default and other than the section's value logs a warning naming it, so you
+  know to move it.
+
+`opensky_username` and `opensky_password` have no nested form and are read as
+they are.
 
 
 | Key | Default | Notes |
 |---|---|---|
 | `opensky_username` | *(blank)* | OpenSky Network username. Only needed if you have manually set enrichment_provider to 'opensky' via direct config edit. Leave blank for the standard free setup. Secret, masked in the web UI. Advanced. |
 | `opensky_password` | *(blank)* | OpenSky Network password. Only needed alongside opensky_username above. Secret, masked in the web UI. Advanced. |
-| `flightaware_api_key` | *(blank)* | Deprecated — use the FlightAware section above instead. Kept only for backward compatibility with older configs. Secret, masked in the web UI. Advanced. |
-| `flight_plan_enabled` | `false` | Deprecated: moved to FlightAware section. Advanced. |
+| `flightaware_api_key` | *(blank)* | Deprecated — use the FlightAware section above instead. Still used as the API key when the FlightAware section's key is blank; paid calls also need that section's enabled switch. Secret, masked in the web UI. Advanced. |
+| `flight_plan_enabled` | `false` | Deprecated and not read: paid FlightAware calls are switched on by the FlightAware section's enabled setting. Advanced. |
 | `max_api_calls_per_hour` | `25` | Deprecated: moved to FlightAware section. Advanced. |
 | `daily_api_budget` | `60` | Deprecated: moved to FlightAware section. Advanced. |
 | `flight_plan_cache_ttl_hours` | `12` | Deprecated: moved to FlightAware section. Advanced. |
@@ -417,7 +444,7 @@ This plugin requires access to SkyAware ADS-B data. You can use:
 Flight plan data is fetched from FlightAware AeroAPI:
 1. Sign up at https://www.flightaware.com/commercial/aeroapi/
 2. Get your API key
-3. Add to `config/config_secrets.json` as shown above
+3. Add it as shown in [Secrets Configuration](#secrets-configuration), and turn on `flightaware.enabled`
 
 The plugin includes rate limiting and cost controls to manage API usage.
 

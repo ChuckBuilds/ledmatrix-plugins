@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.14.1] - 2026-09-16
+
+### Fixed
+- **Paid FlightAware calls follow `flightaware.enabled`.** The enrichment
+  factory built the paid AeroAPI provider whenever `enrichment_provider` was
+  `flightaware` and a key was saved, so switching "Enable paid FlightAware API
+  calls" off kept every tracked-flight route lookup billing. It now also needs
+  `flightaware.enabled`, and falls back to the free adsb.lol lookup otherwise.
+- **A key saved as `flightaware_api_key` works again.** Start-up copied every
+  nested `flightaware.*` value over its flat key, and the core merges the
+  section's defaults into every config, so the empty `flightaware.api_key`
+  replaced a key saved under the old flat name, which the README's
+  `config_secrets.json` example used. The flat key is now used when the
+  section's key is blank.
+
+### Changed
+- **`flight_plan_enabled` is not read.** It has been overridden by the section's
+  default since the section was added. Honouring it now would restart paid calls
+  on boards whose settings page shows FlightAware off, so paid calls need
+  `flightaware.enabled`. The other flat FlightAware keys are not read either; a
+  flat value that differs from its default and from the section logs a warning
+  naming it.
+- **`live_update_interval` defaults to 5**, not 2. The core runs a plugin's
+  `update()` at most every 5 seconds, so a 2-second live fetch never happened.
+  Values below 5 act as 5 for both intervals, and the descriptions say so.
+
 ## [1.14.0] - 2026-09-15
 
 ### Changed

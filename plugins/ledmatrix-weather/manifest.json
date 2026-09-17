@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-weather",
   "name": "Weather Display",
-  "version": "2.7.1",
+  "version": "2.7.2",
   "author": "ChuckBuilds",
   "class_name": "WeatherPlugin",
   "update_interval": 60,
@@ -26,6 +26,12 @@
     "radar"
   ],
   "versions": [
+    {
+      "released": "2026-09-16",
+      "version": "2.7.2",
+      "notes": "The deprecated radar_zoom is honoured again, as the docs said. It was consulted only when radar_range_miles was missing, but the core merges radar_range_miles' default of 75 into every config, so a config saved with radar_zoom 8 (12 miles) showed 75 miles. radar_zoom now sets the range while radar_range_miles is still 75 and the zoom is not its own default of 6 (4=200, 5=100, 7=25, 8=12 miles); setting any other range overrides it. Schema and README descriptions say exactly that.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-09-15",
       "version": "2.7.1",
@@ -192,7 +198,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-11",
+  "last_updated": "2026-09-16",
   "stars": 0,
   "downloads": 0,
   "verified": true,

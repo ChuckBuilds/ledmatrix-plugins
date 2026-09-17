@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.4.4] - 2026-09-16
+
+### Fixed
+- **Artist and album text use the 5x7 bitmap face by default again.** The
+  element-style resolver was given Press Start 2P as the classic font for
+  those rows, and it uses the classic font whenever the configured font equals
+  the schema default (`5x7.bdf`). Every default config therefore drew them in
+  Press Start 2P at 7px, off that face's 8px grid, and choosing `5x7.bdf` in
+  the web UI changed nothing. An explicitly chosen font is still used.
+- README font lists no longer offer `cozette.bdf`, which the schema rejects.
+
 ## [1.4.3] - 2026-09-15
 
 ### Fixed

@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.1.0] - 2026-09-16
+
+### Fixed
+- **`update_interval` works.** It was read and never used: the core scheduled
+  `update()` at the manifest's 45 seconds, because it prefers the manifest's
+  value unless the plugin answers `get_update_interval()`. The plugin now
+  returns the configured interval, and a web-UI change applies without a
+  restart.
+
+### Changed
+- **Requires LEDMatrix core 3.4.0**, the first with the `get_update_interval()`
+  hook.
+
 ## [1.0.7] - 2026-09-15
 
 ### Fixed

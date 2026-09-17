@@ -1,7 +1,7 @@
 {
   "id": "news",
   "name": "News Ticker",
-  "version": "1.6.0",
+  "version": "1.6.1",
   "description": "Displays scrolling news headlines from RSS feeds including sports news from ESPN, NCAA updates, and custom RSS sources",
   "author": "ChuckBuilds",
   "category": "content",
@@ -20,6 +20,12 @@
   "branch": "main",
   "plugin_path": "plugins/news",
   "versions": [
+    {
+      "version": "1.6.1",
+      "released": "2026-09-16",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Documentation only. The README said global.dynamic_duration accepts true/false; the settings schema requires the object form, so a boolean fails validation (the plugin still reads one from an old hand-edited config). It also suggested font_size 6 for 64x32 panels, below the schema minimum of 8; the panel-size advice now uses 8, and the font-size comparison image's 6 panel is labelled as comparison only. No code change."
+    },
     {
       "version": "1.6.0",
       "released": "2026-09-15",
@@ -130,7 +136,7 @@
   ],
   "stars": 0,
   "downloads": 0,
-  "last_updated": "2026-09-15",
+  "last_updated": "2026-09-16",
   "verified": true,
   "screenshot": "",
   "display_modes": [

@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-music",
   "name": "Music Player - Now Playing",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "description": "Real-time now playing display for Spotify and YouTube Music with album art, scrolling text, and progress bars",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -65,6 +65,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.4.4",
+      "released": "2026-09-16",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Artist and album text draw in their default font again: the 5x7 bitmap face at 7px. The element-style resolver was given Press Start 2P as the classic font for those rows, and it uses the classic font whenever the configured font equals the schema default (5x7.bdf), so every default config drew them in Press Start 2P at 7px, off that face's 8px grid, and choosing 5x7.bdf in the web UI changed nothing. The resolver now gets each row's schema default. An explicitly chosen font is still used. README: the font lists no longer offer cozette.bdf, which the schema does not accept."
+    },
     {
       "version": "1.4.3",
       "released": "2026-09-15",
@@ -169,7 +175,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-07",
+  "last_updated": "2026-09-16",
   "stars": 0,
   "downloads": 0,
   "verified": true,

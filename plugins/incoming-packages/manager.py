@@ -249,6 +249,17 @@ class IncomingPackagesPlugin(BasePlugin):
 
     # ── lifecycle ──────────────────────────────────────────────────────────
 
+    def get_update_interval(self) -> Optional[float]:
+        """Seconds between update() calls: the configured update_interval.
+
+        The core prefers the manifest's update_interval (600) over the
+        plugin's config unless the plugin answers here, so an interval below
+        600 did nothing. The core clamps the answer to at least 5 seconds; the
+        schema's minimum is 60. Attribute read only: the core calls this on
+        every scheduling tick.
+        """
+        return self.update_interval
+
     def update(self) -> None:
         if not self.enabled:
             return
