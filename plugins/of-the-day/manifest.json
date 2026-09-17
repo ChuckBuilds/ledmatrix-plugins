@@ -1,7 +1,7 @@
 {
   "id": "of-the-day",
   "name": "Of The Day Display",
-  "version": "1.4.6",
+  "version": "1.4.7",
   "author": "ChuckBuilds",
   "description": "Display daily featured content like Word of the Day, Bible verses, or custom daily items. Supports multiple categories with rotating display and configurable data sources.",
   "category": "information",
@@ -21,6 +21,12 @@
     "of_the_day"
   ],
   "versions": [
+    {
+      "released": "2026-09-16",
+      "version": "1.4.7",
+      "changelog": "Documentation only: display_rotate_interval and subtitle_rotate_interval were described the wrong way round. display_rotate_interval is how often the plugin moves to the next category; subtitle_rotate_interval is how often the body swaps between the subtitle and the description. The settings descriptions and README (overview, field table, options table, Rotation and timing, troubleshooting) now say so; the old troubleshooting advice pointed at the wrong setting. No code change.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-09-15",
       "version": "1.4.6",
@@ -97,7 +103,7 @@
       "ledmatrix_min": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-02",
+  "last_updated": "2026-09-16",
   "stars": 0,
   "downloads": 0,
   "verified": true,

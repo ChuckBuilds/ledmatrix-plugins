@@ -42,11 +42,12 @@ favorable or appropriate
 ```
 
 The body rotates between the entry's `subtitle` and `description` every
-`display_rotate_interval` seconds, so a definition and an example sentence both
-get their turn without needing a taller panel.
+`subtitle_rotate_interval` seconds, so a definition and an example sentence
+both get their turn without needing a taller panel.
 
-With more than one category configured, the plugin also rotates between
-categories — a word today, a quote next turn — in `category_order`.
+With more than one category configured, the plugin also moves to the next
+category in `category_order` every `display_rotate_interval` seconds — a word,
+then a quote.
 
 ---
 
@@ -139,7 +140,7 @@ through `"365"`:
 |-------|----------|
 | `title` | The underlined heading |
 | `subtitle` | The first body line — a definition or short gloss |
-| `description` | The second body line, rotated in after `display_rotate_interval` |
+| `description` | The second body line, rotated in after `subtitle_rotate_interval` |
 
 Selection is by calendar date, not random: day 245 of any year shows entry
 `"245"`. That makes the display stable — it will not change halfway through the
@@ -179,8 +180,8 @@ For a leap year, day 366 has no entry unless you add one.
 | `categories` | object | *(empty)* | Your categories — see [above](#adding-a-category) |
 | `category_order` | array | `["word_of_the_day", "slovenian_word_of_the_day"]` | Display order |
 | `display_duration` | number | `40` | Seconds each category holds the panel |
-| `display_rotate_interval` | number | `20` | Seconds between body elements within a category |
-| `subtitle_rotate_interval` | number | `10` | Seconds between subtitle variants |
+| `display_rotate_interval` | number | `20` | Seconds before moving to the next category |
+| `subtitle_rotate_interval` | number | `10` | Seconds between the subtitle and description views |
 | `update_interval` | integer | `3600` | Seconds between checks for a new day |
 | `auto_fit_text` | boolean | `true` | Shrink the body font so long text fits |
 | `customization` | object | *(defaults)* | Fonts, sizes, colours and offsets |
@@ -192,14 +193,17 @@ Three intervals stack, from slowest to fastest:
 
 - **`display_duration`** (default `40`) — how long the whole category holds the
   panel before the display controller moves on.
-- **`display_rotate_interval`** (default `20`) — within that turn, how often the
-  body swaps between the entry's subtitle and description. At the defaults, a
-  40-second turn shows each of the two for 20 seconds.
-- **`subtitle_rotate_interval`** (default `10`) — how often the subtitle line
-  itself cycles, for entries carrying more than one.
+- **`display_rotate_interval`** (default `20`) — how often the plugin moves on
+  to the next enabled category. At the defaults, a 40-second turn with two
+  categories shows each for 20 seconds.
+- **`subtitle_rotate_interval`** (default `10`) — within a category, how often
+  the body swaps between the entry's subtitle and description. Moving to a new
+  category starts again on the subtitle, so at the defaults each category shows
+  its subtitle for 10 seconds, then its description for 10.
 
-If you shorten `display_duration` below `display_rotate_interval`, the second
-body element never appears — the turn ends first.
+Both timers run on the clock, not on screen time. If `display_duration` is
+shorter than `subtitle_rotate_interval`, the description usually never appears:
+by the next turn the category has moved on and starts again on the subtitle.
 
 `update_interval` is only a check for the date rolling over. Since entries
 change once a day, the hourly default is already far more often than needed.
@@ -299,8 +303,11 @@ Check the key names: they are `font_size` and `text_color`, not `size` and
 `color`. See [Fonts and colours](#fonts-and-colours).
 
 **The example sentence never appears.**
-`display_duration` is probably shorter than `display_rotate_interval`, so the
-turn ends before the body rotates. Raise the former or lower the latter.
+`display_duration` is probably shorter than `subtitle_rotate_interval`, so the
+turn ends before the body swaps to the description. Raise the former or lower
+the latter. Also check `display_rotate_interval` is longer than
+`subtitle_rotate_interval`: moving to the next category resets the body to the
+subtitle.
 
 **The word did not change at midnight.**
 `update_interval` decides how often the date is re-checked; at the default it
