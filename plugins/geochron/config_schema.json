@@ -147,14 +147,7 @@
         "additionalProperties": false
       },
       "default": [
-        {"name": "New York", "lat": 40.71, "lon": -74.01, "timezone": "America/New_York"},
-        {"name": "Los Angeles", "lat": 34.05, "lon": -118.24, "timezone": "America/Los_Angeles"},
-        {"name": "Rio de Janeiro", "lat": -22.91, "lon": -43.17, "timezone": "America/Sao_Paulo"},
-        {"name": "London", "lat": 51.51, "lon": -0.13, "timezone": "Europe/London"},
-        {"name": "Cairo", "lat": 30.04, "lon": 31.24, "timezone": "Africa/Cairo"},
-        {"name": "Moscow", "lat": 55.75, "lon": 37.62, "timezone": "Europe/Moscow"},
-        {"name": "Tokyo", "lat": 35.68, "lon": 139.65, "timezone": "Asia/Tokyo"},
-        {"name": "Sydney", "lat": -33.87, "lon": 151.21, "timezone": "Australia/Sydney"}
+        {"name": "New York", "lat": 40.71, "lon": -74.01, "timezone": "America/New_York"}
       ]
     },
     "show_digital_clock": {

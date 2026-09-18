@@ -5,14 +5,16 @@
 ### Changed
 - **The readout is a timezone list.** Your local time comes first, then one row
   per city that has a `timezone`: a short label on the left and the time
-  right-aligned, so the times read down a column. The subsolar coordinates,
-  the date and seconds are gone from it. They crowded the sidebar, and the
-  featured city was cut to "New Yo".
+  right-aligned, so the times read down a column. The subsolar coordinates
+  and seconds are gone from it; they crowded the sidebar, and the featured
+  city was cut to "New Yo". The date now heads the list (`show_date`).
 - **Wide panels size the sidebar to the list** and the map gives up the width.
   When there are more cities than rows, the local row stays pinned and the
   cities page every 5 seconds, split evenly across pages.
 - **Corner readouts** (non-wide panels) show the local time and the first city
   in the same label-and-time form, instead of UTC and the date.
+- **The default city list is New York alone**, not eight cities. Saved
+  configs keep whatever cities they already list.
 
 ### Added
 - **`show_date`** (default on) heads the timezone list with your local date,

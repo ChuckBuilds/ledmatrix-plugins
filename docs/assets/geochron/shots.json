@@ -443,7 +443,7 @@
         {
           "shot": "clock-24",
           "label": "clock_format: 24h",
-          "sublabel": "the default; cities page every 5 s"
+          "sublabel": "the default: date, then New York"
         },
         {
           "shot": "clock-12",

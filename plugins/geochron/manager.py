@@ -39,6 +39,12 @@ DEFAULT_COLORS = {
 BASE_MAP_COLORS = ("ocean_color", "land_color", "coastline_color")
 
 
+# Mirrors config_schema.json's cities default.
+DEFAULT_CITIES = [
+    {"name": "New York", "lat": 40.71, "lon": -74.01, "timezone": "America/New_York"},
+]
+
+
 def _load_font():
     try:
         return ImageFont.truetype(FONT_PATH, FONT_SIZE)
@@ -100,7 +106,7 @@ class GeochronPlugin(BasePlugin):
         if self.date_line_labels not in ("top", "bottom"):
             self.date_line_labels = "bottom"
 
-        self.cities = list(config.get("cities", []))[:8]
+        self.cities = list(config.get("cities", DEFAULT_CITIES))[:8]
         # The sidebar is sized to the timezone list, so it follows the clock format.
         # With the clock off there is nothing to put in it, so the map goes full width.
         self._sidebar_w = (gr.sidebar_width(self.font.getlength, self.clock_format)

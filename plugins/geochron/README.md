@@ -109,7 +109,7 @@ at a glance, while a 64-wide panel can only show a slice — which is why
 | `graticule_step_deg` | integer | `30` | Graticule spacing: `15`, `30`, `45` or `90` |
 | `show_sun_marker` | boolean | `true` | Marker at the subsolar point |
 | `show_cities` | boolean | `true` | Markers for the configured cities |
-| `cities` | array | 8 cities | Up to 8 `{name, label, lat, lon, timezone}` entries |
+| `cities` | array | New York | Up to 8 `{name, label, lat, lon, timezone}` entries |
 | `show_digital_clock` | boolean | `true` | The timezone list |
 | `show_date` | boolean | `true` | Your local date above the timezone list (wide panels) |
 | `show_date_line` | boolean | `true` | Dotted midnight line on the map, with the weekday on each side |
@@ -208,9 +208,8 @@ clocks actually change date.
 | `lat` / `lon` | Decimal degrees; negative is south and west |
 | `timezone` | IANA zone, used for that city's local time |
 
-The defaults are eight well-spread cities, chosen to span the map rather than
-for any other reason. Replace them with your own — these are here so you can
-copy the exact timezone strings:
+The default is New York alone. Add your own — these well-spread cities are
+here so you can copy the exact coordinates and timezone strings:
 
 | City | Latitude | Longitude | Timezone |
 |------|----------|-----------|----------|
