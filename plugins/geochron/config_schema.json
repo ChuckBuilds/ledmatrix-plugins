@@ -109,6 +109,8 @@
     "cities": {
       "type": "array",
       "title": "City Markers",
+      "x-widget": "array-table",
+      "x-columns": ["name", "label", "timezone", "lat", "lon"],
       "description": "Cities to mark on the map. Each is plotted as a dot, and each with a timezone gets a row in the timezone list beside your local time.",
       "maxItems": 8,
       "items": {

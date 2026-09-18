@@ -13,6 +13,9 @@
   cities page every 5 seconds, split evenly across pages.
 - **Corner readouts** (non-wide panels) show the local time and the first city
   in the same label-and-time form, instead of UTC and the date.
+- **Cities edit as a table in the web UI** (name, short label, timezone,
+  latitude, longitude). The schema named no widget, so the form fell back to
+  a comma-separated text box that could not hold a list of cities.
 - **The default city list is New York alone**, not eight cities. Saved
   configs keep whatever cities they already list.
 
