@@ -318,6 +318,27 @@ class NewsTickerPlugin(BasePlugin):
         except (ValueError, TypeError):
             return default
 
+    #: Pixel faces rasterise cleanly only at multiples of their design grid.
+    PIXEL_FONT_GRIDS = {'PressStart2P-Regular.ttf': 8, '4x6-font.ttf': 7}
+
+    @classmethod
+    def _crisp_font(cls, name: str, size: int) -> Tuple[str, int]:
+        """Snap a pixel face down to its crisp grid; other faces pass through.
+
+        Off-grid, 1-bit rendering drops glyph columns -- PressStart2P at 6 draws
+        "Reuters:" as "Reutera!". Snapping down never draws larger than the
+        user asked for. PressStart2P below 8 has no crisp size, so it swaps to
+        the narrower 4x6 face at 7 rather than shrinking further.
+        """
+        grid = cls.PIXEL_FONT_GRIDS.get(name)
+        if not grid:
+            return name, size
+        if size < grid:
+            if name == 'PressStart2P-Regular.ttf':
+                return '4x6-font.ttf', cls.PIXEL_FONT_GRIDS['4x6-font.ttf']
+            return name, grid
+        return name, (size // grid) * grid
+
     def _load_element_font(self, element_cfg: Dict[str, Any],
                            default_name: str, default_size: int):
         """Resolve an element's configured font, or None for "keep the default".
@@ -337,6 +358,7 @@ class NewsTickerPlugin(BasePlugin):
             size = default_size
         if name == default_name and size == default_size:
             return None
+        name, size = self._crisp_font(name, size)
         key = (name, size)
         if key not in self._font_cache:
             font = None

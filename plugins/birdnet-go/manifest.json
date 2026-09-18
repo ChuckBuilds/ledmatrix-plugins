@@ -1,7 +1,7 @@
 {
   "id": "birdnet-go",
   "name": "BirdNET-Go",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "author": "ChuckBuilds",
   "description": "Show what BirdNET-Go is hearing. One screen cycles a different species each turn \u2014 name, confidence, how many times it has been heard today, and a photo \u2014 and a second shows today's stats: species count, total detections and the most-heard species. Polls the BirdNET-Go REST API, with optional MQTT for instant pop-ups.",
   "category": "integration",
@@ -21,6 +21,12 @@
   "entry_point": "manager.py",
   "class_name": "BirdNetGoPlugin",
   "versions": [
+    {
+      "released": "2026-09-18",
+      "version": "1.2.4",
+      "changelog": "Bird photo fills the full panel height with a 1.2x centre zoom; names, confidence and count beside it drop to smaller crisp fonts so more fits",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-09-03",
       "version": "1.2.3",

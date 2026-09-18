@@ -53,6 +53,13 @@ _MAX_FRAME_DT = 0.25
 _MAX_SOURCE_IMAGES = 32
 _MAX_PANEL_IMAGES = 16
 
+# Narrow fallback face for long names beside the photo; crisp only at 7px.
+NARROW_FONT_PATH = 'assets/fonts/4x6-font.ttf'
+NARROW_FONT_SIZE = 7
+
+# Centre zoom applied after the photo is cover-fit to its box.
+_PHOTO_ZOOM = 1.2
+
 # Case-insensitive fallback variants tried when a mapped field is missing.
 _FIELD_VARIANTS = {
     'common_name': ['CommonName', 'commonName', 'common_name', 'Common_Name'],
@@ -154,6 +161,7 @@ class BirdNetGoPlugin(BasePlugin):
         self._last_rendered_mode = DETECTION_MODE
 
         self._font_cache: Dict[int, Any] = {}
+        self._narrow_font_cache: Any = None
         self._resolved_font_path = self._resolve_font_path()
         self.font = self._font_for(self.font_size)
 
@@ -165,9 +173,10 @@ class BirdNetGoPlugin(BasePlugin):
 
     # ------------------------------------------------------------------ fonts
 
-    def _resolve_font_path(self) -> Optional[str]:
-        """Locate the configured font, searching cwd and the project root."""
-        font_path = self.font_path
+    def _resolve_font_path(self, font_path: Optional[str] = None,
+                           warn: bool = True) -> Optional[str]:
+        """Locate a font (default: the configured one), searching cwd and the project root."""
+        font_path = self.font_path if font_path is None else font_path
         if not font_path:
             return None
         if os.path.isabs(font_path):
@@ -180,7 +189,8 @@ class BirdNetGoPlugin(BasePlugin):
         project_path = Path(__file__).parent.parent.parent / font_path
         if project_path.exists():
             return str(project_path)
-        self.logger.warning("Font not found: %s, using default", self.font_path)
+        if warn:
+            self.logger.warning("Font not found: %s, using default", font_path)
         return None
 
     def _font_for(self, size: int):
@@ -199,6 +209,41 @@ class BirdNetGoPlugin(BasePlugin):
             font = ImageFont.load_default()
         self._font_cache[size] = font
         return font
+
+    def _narrow_font(self):
+        """4x6 pixel font at its crisp size, for names too wide beside a photo.
+
+        Narrower glyphs, not a smaller PressStart2P: off its 8px grid PressStart2P
+        drops columns under 1-bit rendering. None when the core lacks the font.
+        """
+        if self._narrow_font_cache is None:
+            path = self._resolve_font_path(NARROW_FONT_PATH, warn=False)
+            font = False
+            if path:
+                try:
+                    font = ImageFont.truetype(path, NARROW_FONT_SIZE)
+                except Exception as e:
+                    self.logger.debug("Narrow font load failed: %s", e)
+            self._narrow_font_cache = font
+        return self._narrow_font_cache or None
+
+    def _fit_font(self, text: str, font, max_w: int, max_h: int):
+        """Step ``font`` down to a crisp smaller face until ``text`` fits ``max_w``.
+
+        Returns the first candidate that fits, else the narrowest one (which
+        then scrolls or truncates, but shows more of the word per frame).
+        """
+        candidates = [font]
+        if getattr(font, 'size', 0) > 8:
+            candidates.append(self._font_for(8))
+        narrow = self._narrow_font()
+        if narrow is not None:
+            candidates.append(narrow)
+        candidates = [f for f in candidates if self._measure(text, f)[1] <= max_h] or [font]
+        for candidate in candidates:
+            if self._measure(text, candidate)[0] <= max_w:
+                return candidate
+        return min(candidates, key=lambda f: self._measure(text, f)[0])
 
     @staticmethod
     def _measure(text: str, font) -> Tuple[int, int, int]:
@@ -644,17 +689,23 @@ class BirdNetGoPlugin(BasePlugin):
             return None
 
     def _resize_image(self, img: Image.Image, box_w: int, box_h: int) -> Image.Image:
-        scale = min(box_w / img.width, box_h / img.height)
-        new_w = max(1, int(img.width * scale))
-        new_h = max(1, int(img.height * scale))
+        """Fill the box edge to edge, zoomed in so the bird isn't a speck.
+
+        Species photos are landscape with the bird near the centre; cover-fit
+        plus a centre zoom trims background, not bird.
+        """
+        scale = max(box_w / img.width, box_h / img.height) * _PHOTO_ZOOM
+        new_w = max(box_w, round(img.width * scale))
+        new_h = max(box_h, round(img.height * scale))
         resized = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+        left = (new_w - box_w) // 2
+        top = (new_h - box_h) // 2
+        resized = resized.crop((left, top, left + box_w, top + box_h))
         frame = Image.new('RGB', (box_w, box_h), self.bg_color)
-        x = (box_w - new_w) // 2
-        y = (box_h - new_h) // 2
         if resized.mode == 'RGBA':
-            frame.paste(resized, (x, y), resized)
+            frame.paste(resized, (0, 0), resized)
         else:
-            frame.paste(resized.convert('RGB'), (x, y))
+            frame.paste(resized.convert('RGB'), (0, 0))
         return frame
 
     def _cache_source_image(self, species: str, img: Image.Image) -> None:
@@ -730,7 +781,7 @@ class BirdNetGoPlugin(BasePlugin):
 
         # Scroll. The cache is keyed by everything that changes its pixels, so a
         # size or species change rebuilds it instead of scrolling stale content.
-        key = (text, box_h, getattr(font, 'size', 0), color)
+        key = (text, box_h, getattr(font, 'path', ''), getattr(font, 'size', 0), color)
         if self._scroll_cache is None or self._scroll_cache_key != key:
             self._scroll_cache = self._build_scroll_cache(text, box_h, font, color)
             self._scroll_cache_key = key
@@ -829,7 +880,8 @@ class BirdNetGoPlugin(BasePlugin):
             species = det.get('scientific_name') or det.get('common_name')
             pil_img = self._species_img_cache.get(species)
             if pil_img is not None:
-                box = min(h, w // 3)
+                # Full-height square, capped at half the width so the name keeps room.
+                box = min(h, w // 2)
                 img_box_w = box
                 frame.paste(self._panel_image(species, pil_img, box, h), (0, 0))
 
@@ -881,12 +933,23 @@ class BirdNetGoPlugin(BasePlugin):
             if row_h <= 0:
                 break
             font = self._font_for(max(5, min(int(row_h * 0.78), size_cap)))
+            if img_box_w and kind in ('name', 'sci'):
+                # Beside the photo the text column is narrow: shrink long names
+                # so the whole word reads instead of scrolling a few big letters.
+                font = self._fit_font(name_line if kind == 'name' else sci_line,
+                                      font, text_w, row_h)
             if kind == 'name':
                 text, color, scroll = name_line, self.text_color, True
             elif kind == 'sci':
                 text = self._truncate(sci_line, font, text_w)
                 color, scroll = self._dim(self.text_color, 0.55), False
             else:
+                if img_box_w:
+                    # Scale with the name: 8px is PressStart2P's crisp size, and
+                    # the narrow face still beats "3." for "94%" on tight panels.
+                    font = self._fit_font(min(meta_options, key=len),
+                                          self._font_for(min(8, getattr(font, 'size', 8))),
+                                          text_w, row_h)
                 text = self._first_fitting(meta_options, font, text_w)
                 color, scroll = self.accent_color, False
             frame.paste(
