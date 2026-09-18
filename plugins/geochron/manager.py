@@ -291,12 +291,10 @@ class GeochronPlugin(BasePlugin):
         cities = []
         for city in self.cities:
             tz_name = city.get("timezone")
-            if not tz_name:
+            # No zone, or a typo: the city is still a dot, just not a row.
+            if not tz_name or tz_name not in pytz.all_timezones_set:
                 continue
-            try:
-                city_dt = now_utc.astimezone(pytz.timezone(tz_name))
-            except Exception:
-                continue
+            city_dt = now_utc.astimezone(pytz.timezone(tz_name))
             cities.append({"label": gr.city_label(city), "local_dt": city_dt, "tz": tz_name})
         local_name = getattr(self.timezone, "zone", None) or self.timezone_str
         return gr.build_zones(local_dt, local_name, cities, self.clock_format)
