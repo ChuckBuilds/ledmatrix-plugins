@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "3.10.5",
+  "version": "3.10.6",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "3.10.6",
+      "released": "2026-09-18",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Upcoming games show their date and time properly again on the beta adaptive layout. switch_upcoming_center defaults to \"Date and time, stacked\" and the adaptive card joined the two onto one line, fitting that into the strip the logos leave -- about 40px on a 128x64 and 20px on a 64x32. It dropped to the smallest font trying to fit and still could not: 128x64 rendered \"01/18 6:\" and the font's missing-glyph box, 96x48 lost the time entirely, and a 192x48 ran the line under both logos. Finished games were unaffected, so a board showed its results perfectly and its schedule badly. The rows are stacked now, kept together rather than pushed to opposite ends of a tall gap, and drawn at one fixed size on every panel and for every kick-off. The general text ladder had made the same sentence three different things -- a 128x64 got a 7px face, a 256x64 an 8px one and a 512x64 a 16px one, decided by how much room the logos left rather than by anything about the game -- and on a 192x48, where the gap is exactly six characters wide, \"6:30PM\" and \"12:30PM\" came out at different sizes. A gap too narrow for a row now widens the box onto the logos instead of shrinking the type; a smaller face is used only where no panel could hold the row at all, which beats truncating it. No setting changed; the classic layout, the scroll and Vegas cards, and the \"Matchup separator\" and \"Nothing\" modes render exactly as before."
+    },
     {
       "version": "3.10.5",
       "released": "2026-09-17",
