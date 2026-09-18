@@ -49,6 +49,9 @@ class StockTickerPlugin(BasePlugin):
 
         # Plugin state
         self.stock_data = {}
+        # display() runs once per frame, so the empty-data warning is kept to
+        # one line per gap rather than one per frame. See display().
+        self._warned_no_data = False
         self.current_stock_index = 0
         self.scroll_complete = False
         self._has_scrolled = False
@@ -181,12 +184,23 @@ class StockTickerPlugin(BasePlugin):
     def display(self, force_clear: bool = False) -> None:
         """Display stocks with scrolling or static mode."""
         if not self.stock_data:
-            self.logger.warning("No stock data available, showing error state")
+            # Once per gap, not once per frame. The display loop calls this at
+            # the scroll frame rate, so on a cold start -- where the first
+            # fetch is still in flight, or was deferred past the startup
+            # update budget -- warning every frame wrote ~1000 identical lines
+            # in the second before the data landed, burying real errors.
+            if not self._warned_no_data:
+                self.logger.warning("No stock data available, showing error state")
+                self._warned_no_data = True
             # A static frame: release the scroll state and its frame hold.
             self.display_manager.set_scrolling_state(False)
             self._show_error_state()
             return
-        
+
+        if self._warned_no_data:
+            self.logger.info("Stock data is available again")
+            self._warned_no_data = False
+
         if self.config_manager.display_mode == "scroll":
             self._display_scrolling(force_clear)
         else:

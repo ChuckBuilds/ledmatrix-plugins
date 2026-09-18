@@ -133,11 +133,13 @@ def test_the_season_is_fetched_here_when_the_service_cannot_fetch_ranges(service
     sent = [call["dates"] for call in manager.session.calls]
     start, end = sent[0].split("-")  # {year}0901-{year+1}0801
     year = int(start[:4])
-    assert sent[1:] == [
+    # The chunks are fetched concurrently, so only the rejected range keeps a
+    # fixed position; which chunk answers first is not significant.
+    assert sorted(sent[1:]) == sorted([
         f"{year}09", f"{year}10", f"{year}11", f"{year}12",
         f"{year + 1}01", f"{year + 1}02", f"{year + 1}03", f"{year + 1}04",
         f"{year + 1}05", f"{year + 1}06", f"{year + 1}07", end,
-    ]
+    ])
     assert len(data["events"]) == 12
     assert manager.cache_manager.store[f"nhl_schedule_{year}"] is data
 

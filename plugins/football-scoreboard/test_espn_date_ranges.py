@@ -152,10 +152,12 @@ def test_on_an_older_core_the_season_is_fetched_here_in_chunks():
     sent = [call["dates"] for call in manager.session.calls]
     start, end = sent[0].split("-")  # {year}0801-{year+1}0301
     year = int(start[:4])
-    assert sent[1:] == [
+    # The chunks are fetched concurrently, so only the rejected range keeps a
+    # fixed position; which chunk answers first is not significant.
+    assert sorted(sent[1:]) == sorted([
         f"{year}08", f"{year}09", f"{year}10", f"{year}11", f"{year}12",
         f"{year + 1}01", f"{year + 1}02", end,
-    ]
+    ])
     assert all(call["limit"] <= football_espn_dates.ESPN_MAX_LIMIT for call in manager.session.calls)
     assert len(data["events"]) == 8
     cached = [value for key, value in manager.cache_manager.store.items() if "schedule" in key]

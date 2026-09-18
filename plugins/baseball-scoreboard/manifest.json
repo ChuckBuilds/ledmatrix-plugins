@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.46.0",
+  "version": "1.46.1",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.46.1",
+      "released": "2026-09-17",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Scoreboards fill in faster on a cold start. Since ESPN began rejecting date-range queries, a season is fetched as one request per month, and a month over ESPN's 500-event cap becomes one request per day -- about 130 requests for four busy months of college baseball, previously issued one at a time (17.7s on a Raspberry Pi 4). Chunks now go out six at a time. This does not change the 'update() timed out' lines some boots log: those are LEDMatrix core's shared 20-second startup budget running out, and the data still arrives on the next update. Measured on a Raspberry Pi 4 against live ESPN, two capped months (63 requests, 3101 events), run order alternated: 6.4-7.5s before, 1.1-2.1s after -- the same requests and the same events, with merged events still in the same order. A truncated month is dropped as soon as it is seen, so peak memory during a cold season fetch rises about 16 MB rather than 43 MB, which matters on 1 GB boards. Synced from LEDMatrix core ChuckBuilds/LEDMatrix#596."
+    },
     {
       "version": "1.46.0",
       "released": "2026-09-16",
@@ -496,7 +502,7 @@
     {
       "released": "2026-07-08",
       "version": "1.14.2",
-      "notes": "Shrink the Traditional Scoreboard's ball/strike/out circle indicators further (they were still a bit overpowering) and move the batting-team ▲/▼ indicator out of the At Bat column into the header row's empty team-column cell, right next to the inning numbers.",
+      "notes": "Shrink the Traditional Scoreboard's ball/strike/out circle indicators further (they were still a bit overpowering) and move the batting-team \u25b2/\u25bc indicator out of the At Bat column into the header row's empty team-column cell, right next to the inning numbers.",
       "ledmatrix_min": "2.0.0"
     },
     {
@@ -514,7 +520,7 @@
     {
       "released": "2026-07-07",
       "version": "1.13.1",
-      "notes": "Fix the Traditional Scoreboard's At Bat side panel (added in 1.13.0) clipping its ball/strike/out dots off the right edge of the display -- the fit check compared leftover space against a flush-left grid, but the grid is actually centered, so it was eating into the panel's reserved space from the left too. Also account for the Outs row's extra batting-team ▲/▼ arrow, which wasn't factored into the width check at all.",
+      "notes": "Fix the Traditional Scoreboard's At Bat side panel (added in 1.13.0) clipping its ball/strike/out dots off the right edge of the display -- the fit check compared leftover space against a flush-left grid, but the grid is actually centered, so it was eating into the panel's reserved space from the left too. Also account for the Outs row's extra batting-team \u25b2/\u25bc arrow, which wasn't factored into the width check at all.",
       "ledmatrix_min": "2.0.0"
     },
     {
@@ -556,7 +562,7 @@
     {
       "released": "2026-07-02",
       "version": "1.7.0",
-      "notes": "Add exclude_teams (hide specific teams from live rotation and recent/final scores — spoiler protection) and filtering.favorite_live_boost (tune how much more often your favorite's live game appears in rotation vs other live games) per league.",
+      "notes": "Add exclude_teams (hide specific teams from live rotation and recent/final scores \u2014 spoiler protection) and filtering.favorite_live_boost (tune how much more often your favorite's live game appears in rotation vs other live games) per league.",
       "ledmatrix_min": "2.0.0"
     },
     {
