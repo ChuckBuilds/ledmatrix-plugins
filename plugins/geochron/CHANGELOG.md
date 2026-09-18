@@ -1,5 +1,33 @@
 # Changelog
 
+## [1.2.0] - 2026-09-18
+
+### Changed
+- **The readout is a timezone list.** Your local time comes first, then one row
+  per city that has a `timezone`: a short label on the left and the time
+  right-aligned, so the times read down a column. The subsolar coordinates,
+  the date and seconds are gone from it. They crowded the sidebar, and the
+  featured city was cut to "New Yo".
+- **Wide panels size the sidebar to the list** and the map gives up the width.
+  When there are more cities than rows, the local row stays pinned and the
+  cities page every 5 seconds, split evenly across pages.
+- **Corner readouts** (non-wide panels) show the local time and the first city
+  in the same label-and-time form, instead of UTC and the date.
+
+### Added
+- **`show_date`** (default on) heads the timezone list with your local date,
+  e.g. `FRI AUG 1`, when the sidebar has a row to spare.
+- **`show_date_line`** (default on) draws a dotted line on the map where it is
+  midnight right now, with the weekday on each side. East of it is already
+  tomorrow; it sweeps west 15 degrees an hour. **`date_line_labels`** puts
+  the weekdays along the `bottom` (default) or `top` edge of the map.
+- **`cities[].label`**, up to 4 characters, overrides the automatic label
+  (initials for multi-word names, otherwise the first three letters).
+
+### Deprecated
+- **`show_seconds` has no effect.** It stays in the schema so saved configs
+  still validate.
+
 ## [1.1.0] - 2026-09-16
 
 ### Fixed

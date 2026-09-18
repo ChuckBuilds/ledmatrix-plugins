@@ -73,6 +73,7 @@ class _Geo:
         self.night_brightness = 0.35
         self.colors = {"night_tint_color": (0, 0, 40)}
         self.map_center_longitude = 0
+        self._sidebar_w = None
         self.show_terminator_bands = True
         self.logger = _Logger()
         self.terminator_calls = 0
@@ -99,7 +100,7 @@ def _install_stubs(geo):
 
     class _Renderer:
         @staticmethod
-        def _layout(dw, dh, map_center_lon=0):
+        def _layout(dw, dh, map_center_lon=0, sidebar_w=None):
             return {"dw": dw, "dh": dh, "map_x": 0, "map_y": 0, "sidebar_w": 0}
 
         @staticmethod

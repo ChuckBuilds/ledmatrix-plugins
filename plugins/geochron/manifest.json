@@ -1,7 +1,7 @@
 {
   "id": "geochron",
   "name": "Geochron World Clock",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "author": "ChuckBuilds",
   "description": "High-fidelity world map clock showing the real-time day/night terminator with civil/nautical/astronomical twilight bands, the subsolar point, configurable city markers, and a digital UTC/local clock - a classic Geochron, reimagined for LED matrix panels of any size.",
   "entry_point": "manager.py",
@@ -24,6 +24,12 @@
     ">=3.4.0"
   ],
   "versions": [
+    {
+      "version": "1.2.0",
+      "released": "2026-09-18",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "The readout is now a timezone list: your local time, then one row per city with a timezone, each a short label and the time right-aligned. Subsolar coordinates and seconds are gone from it; the local date heads it instead, and a dotted midnight line on the map shows where the date turns over. Wide panels size the sidebar to the list and page through cities that do not fit, keeping the local row pinned. Cities take an optional short label."
+    },
     {
       "version": "1.1.0",
       "released": "2026-09-16",

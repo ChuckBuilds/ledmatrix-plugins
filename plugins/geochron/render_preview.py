@@ -32,6 +32,10 @@ TEXT_PRIMARY_COLOR = (255, 255, 255)
 TEXT_SECONDARY_COLOR = (180, 180, 180)
 
 NIGHT_BRIGHTNESS = 0.20
+CLOCK_FORMAT = "24h"
+SHOW_DATE = True
+SHOW_DATE_LINE = True
+DATE_LINE_LABELS = "bottom"
 GRATICULE_STEP_DEG = 30
 
 CITIES = [
@@ -69,35 +73,27 @@ def _load_font():
 FONT = _load_font()
 
 
-def draw_readout(draw, layout, dt_utc, local_dt, sub_lat, sub_lon, featured_city, dh):
-    readout = gr.build_readout(layout, dt_utc, local_dt, sub_lat, sub_lon, featured_city, "24h", True)
-    primary = TEXT_PRIMARY_COLOR
-    secondary = TEXT_SECONDARY_COLOR
+SIDEBAR_W = gr.sidebar_width(FONT.getlength, CLOCK_FORMAT)
 
-    if readout["mode"] == "sidebar":
-        x, y = readout["anchor"]
-        for text, color_key in readout["rows"]:
-            color = primary if color_key == "primary" else secondary
-            draw.text((x, y), text, fill=color, font=FONT)
-            y += readout["row_h"]
-        return
 
-    x, y = readout["anchor"]
-    n = len(readout["rows"])
-    max_w = max((draw.textlength(t, font=FONT) for t, _ in readout["rows"]), default=0)
-    box_top = y - n * readout["row_h"]
-    draw.rectangle([0, box_top, max_w + 2, dh - 1], fill=(10, 10, 10))
-    ty = box_top + 1
-    for text, color_key in readout["rows"]:
-        color = primary if color_key == "primary" else secondary
-        draw.text((x, ty), text, fill=color, font=FONT)
-        ty += readout["row_h"]
+def zones_at(dt_utc, local_dt):
+    cities = [{"label": gr.city_label(c), "local_dt": dt_utc.astimezone(pytz.timezone(c["timezone"])),
+               "tz": c["timezone"]} for c in CITIES]
+    local_name = getattr(local_dt.tzinfo, "zone", None) if local_dt is not None else None
+    return gr.build_zones(local_dt, local_name, cities, CLOCK_FORMAT)
+
+
+def build_readout(layout, dt_utc, local_dt):
+    date_text = None
+    if SHOW_DATE and layout["sidebar_w"]:
+        date_text = gr.sidebar_date(local_dt or dt_utc, FONT.getlength, layout["sidebar_w"] - 4)
+    return gr.build_readout(layout, dt_utc, zones_at(dt_utc, local_dt), date_text=date_text)
 
 
 def render_frame(base, dw, dh, darkness, sub_lat, sub_lon, dt_utc, local_dt, featured_city,
                  map_center_lon=0.0, show_grid=True, show_sun=True, show_cities=True,
                  show_clock=True):
-    layout = gr._layout(dw, dh, map_center_lon=map_center_lon)
+    layout = gr._layout(dw, dh, map_center_lon=map_center_lon, sidebar_w=SIDEBAR_W)
     map_img = gr.render_map_image(base, darkness, layout, NIGHT_BRIGHTNESS, NIGHT_TINT_COLOR)
 
     canvas = Image.new("RGB", (dw, dh), (0, 0, 0))
@@ -110,8 +106,13 @@ def render_frame(base, dw, dh, darkness, sub_lat, sub_lon, dt_utc, local_dt, fea
         gr.draw_sun_marker(draw, layout, sub_lat, sub_lon, SUN_MARKER_COLOR)
     if show_cities:
         gr.draw_cities(draw, layout, CITIES, CITY_MARKER_COLOR)
-    if show_clock:
-        draw_readout(draw, layout, dt_utc, local_dt, sub_lat, sub_lon, featured_city, dh)
+    readout = build_readout(layout, dt_utc, local_dt) if show_clock else None
+    if SHOW_DATE_LINE:
+        avoid = gr.readout_box(draw, readout, FONT) if readout else None
+        gr.draw_date_line(draw, layout, dt_utc, FONT, SUN_MARKER_COLOR, TEXT_PRIMARY_COLOR,
+                          DATE_LINE_LABELS, avoid)
+    if readout:
+        gr.draw_readout(draw, readout, FONT, TEXT_PRIMARY_COLOR, TEXT_SECONDARY_COLOR)
 
     return canvas
 

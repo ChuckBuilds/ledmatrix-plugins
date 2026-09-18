@@ -178,34 +178,54 @@
     {
       "name": "clock-24",
       "config": {
-        "clock_format": "24h",
-        "show_seconds": true
+        "clock_format": "24h"
       },
       "standalone": false,
       "width": 256,
-      "height": 128,
+      "height": 64,
       "scale": 3
     },
     {
       "name": "clock-12",
       "config": {
-        "clock_format": "12h",
-        "show_seconds": true
+        "clock_format": "12h"
       },
       "standalone": false,
       "width": 256,
-      "height": 128,
+      "height": 64,
       "scale": 3
     },
     {
-      "name": "clock-nosec",
+      "name": "clock-labels",
       "config": {
-        "clock_format": "24h",
-        "show_seconds": false
+        "clock_format": "12h",
+        "timezone": "America/Chicago",
+        "cities": [
+          {
+            "name": "Chicago",
+            "label": "HOME",
+            "lat": 41.88,
+            "lon": -87.63,
+            "timezone": "America/Chicago"
+          },
+          {
+            "name": "London",
+            "lat": 51.51,
+            "lon": -0.13,
+            "timezone": "Europe/London"
+          },
+          {
+            "name": "Tokyo",
+            "label": "TYO",
+            "lat": 35.68,
+            "lon": 139.65,
+            "timezone": "Asia/Tokyo"
+          }
+        ]
       },
       "standalone": false,
       "width": 256,
-      "height": 128,
+      "height": 64,
       "scale": 3
     },
     {
@@ -215,7 +235,7 @@
       },
       "standalone": false,
       "width": 256,
-      "height": 128,
+      "height": 64,
       "scale": 3
     },
     {
@@ -422,8 +442,8 @@
       "cells": [
         {
           "shot": "clock-24",
-          "label": "24h with seconds",
-          "sublabel": "the default"
+          "label": "clock_format: 24h",
+          "sublabel": "the default; cities page every 5 s"
         },
         {
           "shot": "clock-12",
@@ -431,9 +451,9 @@
           "sublabel": ""
         },
         {
-          "shot": "clock-nosec",
-          "label": "show_seconds: false",
-          "sublabel": "a shorter readout"
+          "shot": "clock-labels",
+          "label": "your own cities and labels",
+          "sublabel": "HOME and TYO set with cities[].label"
         },
         {
           "shot": "clock-off",
