@@ -17,6 +17,9 @@
     "show_cities",
     "cities",
     "show_digital_clock",
+    "show_date",
+    "show_date_line",
+    "date_line_labels",
     "clock_format",
     "show_seconds",
     "colors"
@@ -106,7 +109,9 @@
     "cities": {
       "type": "array",
       "title": "City Markers",
-      "description": "Cities to mark on the map. Each is plotted as a dot; labels and local times are shown when space allows.",
+      "x-widget": "array-table",
+      "x-columns": ["name", "label", "timezone", "lat", "lon"],
+      "description": "Cities to mark on the map. Each is plotted as a dot, and each with a timezone gets a row in the timezone list beside your local time.",
       "maxItems": 8,
       "items": {
         "type": "object",
@@ -115,6 +120,12 @@
             "type": "string",
             "title": "Name",
             "maxLength": 20
+          },
+          "label": {
+            "type": "string",
+            "title": "Short Label",
+            "maxLength": 4,
+            "description": "Up to 4 characters for the timezone list (e.g. NYC). Blank uses initials for multi-word names (New York -> NY) or the first three letters (Tokyo -> TOK)."
           },
           "lat": {
             "type": "number",
@@ -138,21 +149,33 @@
         "additionalProperties": false
       },
       "default": [
-        {"name": "New York", "lat": 40.71, "lon": -74.01, "timezone": "America/New_York"},
-        {"name": "Los Angeles", "lat": 34.05, "lon": -118.24, "timezone": "America/Los_Angeles"},
-        {"name": "Rio de Janeiro", "lat": -22.91, "lon": -43.17, "timezone": "America/Sao_Paulo"},
-        {"name": "London", "lat": 51.51, "lon": -0.13, "timezone": "Europe/London"},
-        {"name": "Cairo", "lat": 30.04, "lon": 31.24, "timezone": "Africa/Cairo"},
-        {"name": "Moscow", "lat": 55.75, "lon": 37.62, "timezone": "Europe/Moscow"},
-        {"name": "Tokyo", "lat": 35.68, "lon": 139.65, "timezone": "Asia/Tokyo"},
-        {"name": "Sydney", "lat": -33.87, "lon": 151.21, "timezone": "Australia/Sydney"}
+        {"name": "New York", "lat": 40.71, "lon": -74.01, "timezone": "America/New_York"}
       ]
     },
     "show_digital_clock": {
       "type": "boolean",
       "title": "Show Digital Clock",
       "default": true,
-      "description": "Show a digital UTC/local time readout"
+      "description": "Show the timezone list: your local time, then each city that has a timezone. Wide panels page through the cities when they do not all fit."
+    },
+    "show_date": {
+      "type": "boolean",
+      "title": "Show Date",
+      "default": true,
+      "description": "Head the timezone list with your local date (e.g. FRI AUG 1) on wide panels. It takes one row from the list."
+    },
+    "show_date_line": {
+      "type": "boolean",
+      "title": "Show Midnight Line",
+      "default": true,
+      "description": "A dotted line on the map where it is midnight right now, with the weekday on each side. East of it is already tomorrow. It sweeps west 15 degrees an hour."
+    },
+    "date_line_labels": {
+      "type": "string",
+      "title": "Midnight Line Weekdays",
+      "enum": ["bottom", "top"],
+      "default": "bottom",
+      "description": "Where the weekdays either side of the midnight line sit: along the bottom or the top edge of the map."
     },
     "clock_format": {
       "type": "string",
@@ -166,7 +189,7 @@
       "type": "boolean",
       "title": "Show Seconds",
       "default": true,
-      "description": "Show seconds in the digital clock readout"
+      "description": "No longer used: the timezone list shows hours and minutes, which read at a glance beside the map. Kept so saved configs stay valid."
     },
     "colors": {
       "type": "object",

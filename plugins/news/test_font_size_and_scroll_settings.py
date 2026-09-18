@@ -159,6 +159,22 @@ def test_font_size():
 
 
 @_fail_loudly
+def test_off_grid_element_fonts_snap_crisp():
+    print("[crisp element fonts]")
+    # PressStart2P off its 8px grid drops glyph columns under 1-bit rendering
+    # ("Reuters:" drew as "Reutera!" at 6). Sizes snap down; below 8 the label
+    # swaps to the narrower 4x6 face at its crisp 7.
+    plugin = make({"font_size": 16}, {
+        "headline_text": {"font": "PressStart2P-Regular.ttf", "font_size": 12},
+        "source_text": {"font": "PressStart2P-Regular.ttf", "font_size": 6}})
+    headline, info = plugin.fonts["headline"], plugin.fonts["info"]
+    check(headline.size == 8, f"headline 12 snaps down to 8 (got {headline.size})")
+    check(plugin.fonts["separator"] is headline, "separator keeps sharing the headline face")
+    check(info.size == 7 and os.path.basename(info.path) == "4x6-font.ttf",
+          f"source 6 becomes 4x6 @ 7 (got {os.path.basename(info.path)} @ {info.size})")
+
+
+@_fail_loudly
 def test_scroll_settings():
     print("[scroll speed and dynamic duration]")
     plugin = make({"display": {"scroll_speed": 1.0, "scroll_delay": 0.016},
@@ -187,7 +203,7 @@ def test_static_frames_release_scroll_state():
 
 
 if __name__ == "__main__":
-    for test in (test_font_size, test_scroll_settings, test_static_frames_release_scroll_state):
+    for test in (test_font_size, test_off_grid_element_fonts_snap_crisp, test_scroll_settings, test_static_frames_release_scroll_state):
         try:
             test()
         except _ChecksFailed:

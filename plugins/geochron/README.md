@@ -51,9 +51,9 @@ required**.
 - Every `update_interval` seconds the night side is darkened and tinted, with
   smooth civil, nautical and astronomical twilight bands across the terminator
   — or a hard line if bands are off.
-- The **digital clock ticks every frame** for smooth seconds, independent of
-  the map's update cadence. That is why `update_interval` can be generous
-  without the clock stuttering.
+- The **timezone list redraws every frame**, independent of the map's update
+  cadence. That is why `update_interval` can be generous without the times
+  lagging.
 
 All computation is `numpy` over a fixed lat/lon grid, cheap enough to run on
 Pi-class hardware.
@@ -81,9 +81,9 @@ size:
 
 | Aspect ratio | Mode | Layout |
 |--------------|------|--------|
-| ≥ 3.0 (128×32, 256×32) | Wide sidebar | Map plus a sidebar with UTC time and date, local time, and subsolar coordinates |
-| 1.5 – 3.0 (64×32, 128×64) | Near bleed | Full-bleed map with a small corner readout |
-| < 1.5 (64×64, 128×96) | Square / tall | Full-bleed map cropped to a longitude band, with a corner readout |
+| ≥ 3.0 (128×32, 256×32, 256×64) | Wide sidebar | Map plus a sidebar listing your local time and each city's time; the map narrows to fit the list |
+| 1.5 – 3.0 (64×32, 128×64) | Near bleed | Full-bleed map with a corner box: local time and the first city |
+| < 1.5 (64×64, 128×96) | Square / tall | Full-bleed map cropped to a longitude band, with the same corner box |
 
 ![The same map on 64x32, 128x32, 128x64 and 256x128
 panels](../../docs/assets/geochron/panel-sizes.png)
@@ -109,10 +109,13 @@ at a glance, while a 64-wide panel can only show a slice — which is why
 | `graticule_step_deg` | integer | `30` | Graticule spacing: `15`, `30`, `45` or `90` |
 | `show_sun_marker` | boolean | `true` | Marker at the subsolar point |
 | `show_cities` | boolean | `true` | Markers for the configured cities |
-| `cities` | array | 8 cities | Up to 8 `{name, lat, lon, timezone}` entries |
-| `show_digital_clock` | boolean | `true` | The digital time readout |
+| `cities` | array | New York | Up to 8 `{name, label, lat, lon, timezone}` entries |
+| `show_digital_clock` | boolean | `true` | The timezone list |
+| `show_date` | boolean | `true` | Your local date above the timezone list (wide panels) |
+| `show_date_line` | boolean | `true` | Dotted midnight line on the map, with the weekday on each side |
+| `date_line_labels` | string | `bottom` | Where those weekdays sit: `bottom` or `top` edge of the map |
 | `clock_format` | string | `24h` | `12h` or `24h` |
-| `show_seconds` | boolean | `true` | Seconds in the readout |
+| `show_seconds` | boolean | `true` | No longer used since 1.2.0; the list shows hours and minutes |
 | `colors.*` | array | see below | Nine RGB colours for map and text elements |
 
 The terminator drifts about a quarter of a degree a minute, so
@@ -159,17 +162,31 @@ the sun is directly overhead at that instant. It tracks west at roughly 15° an
 hour and north/south with the seasons, which is what the
 [seasonal comparison](#through-the-year) below shows.
 
-**City markers** are red dots at each configured city. Labels and local times
-appear when the panel has room for them.
+**City markers** are red dots at each configured city. Their times are in the
+timezone list.
 
 ### The clock
 
-![The clock in 24-hour, 12-hour, without seconds, and turned
+![The timezone list in 24-hour, 12-hour, with custom labels, and turned
 off](../../docs/assets/geochron/clock.png)
 
-The readout shows UTC time and date, and on a wide panel the local time and the
-subsolar coordinates as well. It redraws every frame regardless of
-`update_interval`, so seconds tick smoothly.
+The readout is a timezone list. Your local time comes first, then one row per
+city that has a `timezone`: a short label on the left and the time on the right,
+so the times read down a column. A city in your own zone is folded into the
+local row rather than listed twice. With no cities it shows UTC.
+
+On a wide panel your local date (`FRI AUG 1`) heads the list, the sidebar is
+sized to it, and the map narrows to make room. When the cities do not all fit, the local row stays put and the rest page
+every 5 seconds. Turn the list off and the map takes the whole panel. Other
+panels show a small corner box with the local time and the first city.
+
+The **midnight line** is the dotted line on the map: where it is midnight right
+now, with the weekday either side of it, along the bottom edge of the map
+(`date_line_labels: top` moves them to the top). Everything east of it, up to the
+edge of the map at 180°, is already tomorrow. It sweeps west 15° an hour,
+so it crosses the whole map once a day. It follows the sun (mean solar time),
+not timezone borders, so it can sit up to an hour or so off where a zone's
+clocks actually change date.
 
 ### Cities
 
@@ -186,13 +203,13 @@ subsolar coordinates as well. It redraws every frame regardless of
 
 | Key | What it does |
 |-----|--------------|
-| `name` | Label, shown when there is room |
+| `name` | The city's name; its label is built from this unless `label` is set |
+| `label` | Optional, up to 4 characters (`NYC`, `HOME`). Blank uses initials for multi-word names (New York → `NY`) or the first three letters (Tokyo → `TOK`) |
 | `lat` / `lon` | Decimal degrees; negative is south and west |
 | `timezone` | IANA zone, used for that city's local time |
 
-The defaults are eight well-spread cities, chosen to span the map rather than
-for any other reason. Replace them with your own — these are here so you can
-copy the exact timezone strings:
+The default is New York alone. Add your own — these well-spread cities are
+here so you can copy the exact coordinates and timezone strings:
 
 | City | Latitude | Longitude | Timezone |
 |------|----------|-----------|----------|
@@ -231,8 +248,8 @@ Nine settings under `colors`, each an `[R, G, B]` array:
 | `sun_marker_color` | `[255, 220, 0]` | The subsolar point |
 | `city_marker_color` | `[255, 60, 60]` | City dots |
 | `grid_color` | `[70, 70, 70]` | The graticule |
-| `text_primary_color` | `[255, 255, 255]` | Clock and headings |
-| `text_secondary_color` | `[180, 180, 180]` | Dates and labels |
+| `text_primary_color` | `[255, 255, 255]` | Every time, and the local label |
+| `text_secondary_color` | `[180, 180, 180]` | City labels in the timezone list |
 
 Keep `coastline_color` lighter than `land_color` — the coastline is what gives
 the continents their shape at small sizes, and losing the contrast turns the
@@ -285,10 +302,9 @@ small panel that is all you get.
 Coastlines are probably too close in colour to the land. Keep
 `coastline_color` clearly lighter than `land_color`.
 
-**The seconds stutter.**
-They should not — the clock redraws every frame independently of
-`update_interval`. If they do, the panel's overall frame rate is the
-constraint, not this setting.
+**A city is missing from the list.**
+It needs a `timezone`; cities without one are only a dot on the map. On a wide
+panel with more cities than rows, wait 5 seconds for the next page.
 
 ---
 

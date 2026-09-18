@@ -1,7 +1,7 @@
 {
   "id": "news",
   "name": "News Ticker",
-  "version": "1.6.1",
+  "version": "1.6.2",
   "description": "Displays scrolling news headlines from RSS feeds including sports news from ESPN, NCAA updates, and custom RSS sources",
   "author": "ChuckBuilds",
   "category": "content",
@@ -20,6 +20,12 @@
   "branch": "main",
   "plugin_path": "plugins/news",
   "versions": [
+    {
+      "released": "2026-09-18",
+      "version": "1.6.2",
+      "changelog": "Headline and source fonts snap to crisp pixel sizes; a Press Start 2P source label below 8px switches to 4x6 so it stops dropping glyph columns",
+      "ledmatrix_min_version": "3.4.0"
+    },
     {
       "version": "1.6.1",
       "released": "2026-09-16",

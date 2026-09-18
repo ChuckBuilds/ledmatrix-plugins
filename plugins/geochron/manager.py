@@ -39,6 +39,12 @@ DEFAULT_COLORS = {
 BASE_MAP_COLORS = ("ocean_color", "land_color", "coastline_color")
 
 
+# Mirrors config_schema.json's cities default.
+DEFAULT_CITIES = [
+    {"name": "New York", "lat": 40.71, "lon": -74.01, "timezone": "America/New_York"},
+]
+
+
 def _load_font():
     try:
         return ImageFont.truetype(FONT_PATH, FONT_SIZE)
@@ -94,8 +100,17 @@ class GeochronPlugin(BasePlugin):
         self.show_digital_clock = bool(config.get("show_digital_clock", True))
         self.clock_format = config.get("clock_format", "24h")
         self.show_seconds = bool(config.get("show_seconds", True))
+        self.show_date = bool(config.get("show_date", True))
+        self.show_date_line = bool(config.get("show_date_line", True))
+        self.date_line_labels = config.get("date_line_labels", "bottom")
+        if self.date_line_labels not in ("top", "bottom"):
+            self.date_line_labels = "bottom"
 
-        self.cities = list(config.get("cities", []))[:8]
+        self.cities = list(config.get("cities", DEFAULT_CITIES))[:8]
+        # The sidebar is sized to the timezone list, so it follows the clock format.
+        # With the clock off there is nothing to put in it, so the map goes full width.
+        self._sidebar_w = (gr.sidebar_width(self.font.getlength, self.clock_format)
+                           if self.show_digital_clock else 0)
 
         colors_cfg = config.get("colors", {}) or {}
         self.colors = {key: self._rgb(colors_cfg, key) for key in DEFAULT_COLORS}
@@ -211,7 +226,8 @@ class GeochronPlugin(BasePlugin):
     def _render_for_size(self, size, darkness):
         """Render and cache the map for one panel size."""
         dw, dh = size
-        layout = gr._layout(dw, dh, map_center_lon=self.map_center_longitude)
+        layout = gr._layout(dw, dh, map_center_lon=self.map_center_longitude,
+                            sidebar_w=self._sidebar_w)
         image = gr.render_map_image(
             self._base_map, darkness, layout, self.night_brightness,
             self.colors["night_tint_color"]
@@ -262,58 +278,47 @@ class GeochronPlugin(BasePlugin):
                 gr.draw_sun_marker(draw, layout, self._subsolar_lat, self._subsolar_lon, self.colors["sun_marker_color"])
             if self.show_cities:
                 gr.draw_cities(draw, layout, self.cities, self.colors["city_marker_color"])
-            if self.show_digital_clock:
+            if self.show_digital_clock or self.show_date_line:
                 self._draw_readout(draw, layout)
 
             self.display_manager.update_display()
         except Exception as e:
             self.logger.error("Error displaying geochron: %s", e, exc_info=True)
 
-    def _draw_readout(self, draw, layout):
-        now_utc = datetime.now(timezone.utc)
+    def _zones(self, now_utc):
+        """Local zone plus every configured city that names a timezone."""
         local_dt = now_utc.astimezone(self.timezone) if self.timezone else None
-
-        featured_city = None
-        if self.cities:
-            city = self.cities[0]
+        cities = []
+        for city in self.cities:
             tz_name = city.get("timezone")
-            if tz_name:
-                try:
-                    city_tz = pytz.timezone(tz_name)
-                    featured_city = {
-                        "name": city.get("name", ""),
-                        "local_dt": now_utc.astimezone(city_tz),
-                    }
-                except Exception:
-                    featured_city = None
+            # No zone, or a typo: the city is still a dot, just not a row.
+            if not tz_name or tz_name not in pytz.all_timezones_set:
+                continue
+            city_dt = now_utc.astimezone(pytz.timezone(tz_name))
+            cities.append({"label": gr.city_label(city), "local_dt": city_dt, "tz": tz_name})
+        local_name = getattr(self.timezone, "zone", None) or self.timezone_str
+        return gr.build_zones(local_dt, local_name, cities, self.clock_format)
 
-        readout = gr.build_readout(
-            layout, now_utc, local_dt, self._subsolar_lat, self._subsolar_lon,
-            featured_city, self.clock_format, self.show_seconds,
-            measure=lambda text: draw.textlength(text, font=self.font),
-        )
-
-        primary = self.colors["text_primary_color"]
-        secondary = self.colors["text_secondary_color"]
-
-        if readout["mode"] == "sidebar":
-            x, y = readout["anchor"]
-            for text, color_key in readout["rows"]:
-                color = primary if color_key == "primary" else secondary
-                draw.text((x, y), text, fill=color, font=self.font)
-                y += readout["row_h"]
-            return
-
-        x, y = readout["anchor"]
-        n = len(readout["rows"])
-        max_w = max((draw.textlength(t, font=self.font) for t, _ in readout["rows"]), default=0)
-        box_top = y - n * readout["row_h"]
-        draw.rectangle([0, box_top, max_w + 2, layout["dh"] - 1], fill=(10, 10, 10))
-        ty = box_top + 1
-        for text, color_key in readout["rows"]:
-            color = primary if color_key == "primary" else secondary
-            draw.text((x, ty), text, fill=color, font=self.font)
-            ty += readout["row_h"]
+    def _draw_readout(self, draw, layout):
+        """The midnight line and the timezone list, both from one clock read."""
+        now_utc = datetime.now(timezone.utc)
+        readout = None
+        if self.show_digital_clock:
+            date_text = None
+            if self.show_date and layout.get("sidebar_w"):
+                local_dt = now_utc.astimezone(self.timezone) if self.timezone else now_utc
+                date_text = gr.sidebar_date(local_dt, self.font.getlength, layout["sidebar_w"] - 4)
+            readout = gr.build_readout(layout, now_utc, self._zones(now_utc), date_text=date_text)
+        if self.show_date_line:
+            # Drawn first so the corner readout sits on top; the weekdays keep
+            # clear of it rather than hiding under it.
+            avoid = gr.readout_box(draw, readout, self.font) if readout else None
+            gr.draw_date_line(draw, layout, now_utc, self.font,
+                              self.colors["sun_marker_color"], self.colors["text_primary_color"],
+                              self.date_line_labels, avoid)
+        if readout is not None:
+            gr.draw_readout(draw, readout, self.font,
+                            self.colors["text_primary_color"], self.colors["text_secondary_color"])
 
     def on_config_change(self, new_config):
         old_colors = getattr(self, "colors", None)

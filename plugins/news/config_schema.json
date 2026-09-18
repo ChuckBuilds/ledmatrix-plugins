@@ -398,7 +398,7 @@
             "font_size": {
               "type": "integer",
               "title": "Font Size",
-              "description": "Font size in pixels",
+              "description": "Font size in pixels. Pixel fonts snap down to their crisp size (Press Start 2P: multiples of 8; below 8 it switches to 4x6 at 7).",
               "minimum": 4,
               "maximum": 24,
               "default": 16,
@@ -433,7 +433,7 @@
             "font_size": {
               "type": "integer",
               "title": "Font Size",
-              "description": "Font size in pixels",
+              "description": "Font size in pixels. Pixel fonts snap down to their crisp size (Press Start 2P: multiples of 8; below 8 it switches to 4x6 at 7).",
               "minimum": 4,
               "maximum": 16,
               "default": 8,
