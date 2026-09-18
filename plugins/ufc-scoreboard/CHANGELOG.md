@@ -6,11 +6,11 @@
 - **The bundled ESPN date helper fetches its chunks concurrently.** Since ESPN
   began rejecting `dates=YYYYMMDD-YYYYMMDD`, a season is fetched as one request
   per month, and a month over the 500-event cap becomes one per day -- about
-  130 requests for a cold college-baseball season, previously issued one at a
-  time. That outran the startup update budget core shares across all plugins,
-  so scoreboards logged `update() timed out` on first run and were deferred
-  with nothing on the panel. Measured on a Pi 4 against live ESPN with run order
-  alternated: one college-baseball month 5.3s before, 1.5-1.8s after; two
+  130 requests for four busy months of college baseball, previously issued one
+  at a time (17.7s on a Pi 4; 2.6-3.3s now). This does not change the
+  `update() timed out` lines some boots log: those are core's shared 20s
+  startup budget running out, and the data still lands a tick later.
+  Measured on a Pi 4 against live ESPN with run order alternated: one college-baseball month 5.3s before, 1.5-1.8s after; two
   capped months (63 requests, 3101 events) 6.4-7.5s before, 1.1-2.1s after.
   Same requests, same events, and merged events keep their existing order.
   A truncated month is dropped as soon as it is seen, so peak memory during a
