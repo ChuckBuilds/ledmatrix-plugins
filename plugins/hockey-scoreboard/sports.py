@@ -1479,6 +1479,57 @@ class SportsCore(SportsCoreSharedMixin, ABC):
                 f"Error fetching odds for game {game.get('id', 'N/A')}: {e}"
             )
 
+    #: How many games past the one on screen keep their odds warm. One is
+    #: enough for the line to be ready when the rotation advances; more just
+    #: re-creates the whole-slate fetch this replaced.
+    _LIVE_ODDS_LOOKAHEAD: ClassVar[int] = 1
+
+    def _wants_live_odds(self, game: Dict) -> bool:
+        """Whether a live game is near enough the front of the rotation to be
+        worth an odds request.
+
+        Odds used to be fetched for *every* live game in the league on every
+        update. The renderer only ever draws ``current_game``, and a full
+        rotation of a big slate takes minutes while ``live_odds_update_interval``
+        is 60s -- so all but one of those requests expired before the game they
+        belonged to came round.
+
+        Measured 2026-09-19 over a full college-football slate: 11,978 odds
+        requests in 13h on one rig, 54% of all its ESPN traffic, across only
+        ~140 distinct games. The eager loop also cost up to 2s of ``update()``
+        per live game, because ``_fetch_odds`` waits on its worker thread.
+
+        Mirrors the narrowing already applied to the upcoming path and to
+        ``_attach_odds_to_rotated_games``: only games about to be on screen are
+        asked about. ``get_odds`` still caches per game, so a game re-entering
+        the window inside its TTL costs a cache lookup, not a request.
+
+        The rotation state read here is the previous cycle's -- the new list is
+        still being built -- which is exactly the question being asked: is this
+        game at or near the position currently on the panel?
+        """
+        # Read defensively: this predicate lives on SportsCore so it sits
+        # beside _fetch_odds, but live_games/_rotation_schedule belong to
+        # SportsLive, which is the only caller.
+        with self._games_lock:
+            games = list(getattr(self, "live_games", ()) or ())
+            index = getattr(self, "current_game_index", 0)
+            schedule = list(getattr(self, "_rotation_schedule", ()) or ())
+        if not games:
+            # Cold start: nothing is on screen yet, so let the games seen on
+            # this first pass through rather than render a blank line for a
+            # whole cycle. Bounded -- the next pass has a rotation to narrow by.
+            return True
+        order = schedule or [g.get("id") for g in games]
+        if not order:
+            return True
+        start = index if 0 <= index < len(order) else 0
+        wanted = {
+            order[(start + offset) % len(order)]
+            for offset in range(self._LIVE_ODDS_LOOKAHEAD + 1)
+        }
+        return game.get("id") in wanted
+
     def _get_timezone(self):
         """Timezone event start times are rendered in.
 
@@ -1531,8 +1582,15 @@ class SportsCore(SportsCoreSharedMixin, ABC):
         current_time = time.time()
 
         # Check if we have cached rankings that are still valid
+        # Gate on when the last look happened, not on whether it found
+        # anything. Professional leagues publish no poll, so `rankings`
+        # comes back empty -- and an empty dict is falsy, so this guard
+        # never short-circuited and the standings endpoint was re-fetched
+        # on every update instead of hourly. Measured 2026-09-19 on an
+        # MLB-only rig: 453 standings requests in a day against the 24
+        # the one-hour duration intends. An empty result is a result.
         if (
-            self._team_rankings_cache
+            self._rankings_cache_timestamp
             and current_time - self._rankings_cache_timestamp
             < self._rankings_cache_duration
         ):
@@ -1759,6 +1817,33 @@ class SportsCore(SportsCoreSharedMixin, ABC):
     def _fetch_data(self) -> Optional[Dict]:
         pass
 
+    #: Hour of the Eastern day past which last night's games are assumed over.
+    #:
+    #: The live fetch asks ESPN for a two-day window so a game that started
+    #: yesterday and is still running is not lost. ESPN rejects date *ranges*,
+    #: so that window is split into one request per day -- doubling every live
+    #: poll. Measured 2026-09-19: 1,858 requests per rig spent on yesterday's
+    #: date, which after breakfast holds nothing but final games.
+    #:
+    #: No sport on these boards runs six hours past midnight, and one that
+    #: somehow did is still covered: a game already being tracked keeps its own
+    #: day in the window regardless of the hour.
+    _LOOKBACK_CUTOFF_HOUR = 6
+
+    def _needs_previous_day(self, now) -> bool:
+        """Whether the previous Eastern day can still hold a live game."""
+        if now.hour < self._LOOKBACK_CUTOFF_HOUR:
+            return True
+        previous = (now - timedelta(days=1)).strftime("%Y%m%d")
+        for game in (getattr(self, "live_games", None) or []):
+            start = game.get("start_time_utc") if hasattr(game, "get") else None
+            try:
+                if start.astimezone(now.tzinfo).strftime("%Y%m%d") == previous:
+                    return True
+            except (AttributeError, ValueError, OSError, OverflowError):
+                continue
+        return False
+
     def _fetch_todays_games(self) -> Optional[Dict]:
         """Fetch only today's games for live updates (not entire season)."""
         try:
@@ -1770,12 +1855,16 @@ class SportsCore(SportsCoreSharedMixin, ABC):
             yesterday = now - timedelta(days=1)
             formatted_date = now.strftime("%Y%m%d")
             formatted_date_yesterday = yesterday.strftime("%Y%m%d")
+            dates_param = (
+                f"{formatted_date_yesterday}-{formatted_date}"
+                if self._needs_previous_day(now) else formatted_date
+            )
             # Fetch todays games only
             url = f"https://site.api.espn.com/apis/site/v2/sports/{self.sport}/{self.league}/scoreboard"
             data = fetch_espn_scoreboard(
                 self.session,
                 url,
-                params={"dates": f"{formatted_date_yesterday}-{formatted_date}", "limit": ESPN_MAX_LIMIT},
+                params={"dates": dates_param, "limit": ESPN_MAX_LIMIT},
                 headers=self.headers,
                 timeout=10,
                 logger=self.logger,
@@ -3733,6 +3822,14 @@ class SportsLive(SportsLiveSharedMixin, SportsCore):
                     
                     for game in data["events"]:
                         details = self._extract_game_details(game)
+                        # Let the idle back-off know when the next game
+                        # starts, so it cannot sleep through a kickoff.
+                        # getattr-guarded: the core version floor is
+                        # advisory, so an older core must stay loadable.
+                        _note_start = getattr(
+                            self, "_note_scheduled_start_candidate", None)
+                        if _note_start is not None:
+                            _note_start(details)
                         if details:
                             # Filter out final games and games that appear to
                             # be over. A game we were tracking live going final
@@ -3789,9 +3886,11 @@ class SportsLive(SportsLiveSharedMixin, SportsCore):
 
                                 # Detect goals (per-side score increments) and
                                 # arm a celebration when a celebratable team
-                                # scores.
+                                # scores. Every included live game, not just
+                                # the one on screen: a goal is worth a takeover
+                                # whichever game is showing when it lands.
                                 self._check_for_goal(details)
-                                if self.show_odds:
+                                if self.show_odds and self._wants_live_odds(details):
                                     self._fetch_odds(details)
                                 new_live_games.append(details)
 

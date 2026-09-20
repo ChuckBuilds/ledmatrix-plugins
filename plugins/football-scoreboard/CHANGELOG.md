@@ -56,6 +56,54 @@
   matching the other three. An audit of all 607 bundled PNGs in the repo found
   no other placeholder in any plugin.
 
+## [3.10.6] - 2026-09-18
+
+### Fixed
+- **Upcoming games show their date and time properly on the adaptive
+  layout.** `switch_upcoming_center` defaults to `date_time`, described in the
+  schema as "Date and time, stacked", and the classic scoreboard has always
+  drawn them as two rows. The adaptive card (`layout_mode: adaptive`) joined
+  them with a space and fitted `"01/18 6:30PM"` as a single string into the
+  centre region -- which is only the gap the logos leave: 40px on a 128x64,
+  20px on a 64x32. The line dropped to the bottom of the font ladder trying to
+  fit and still did not, so 128x64 drew `01/18 6:` plus the face's
+  missing-glyph box, 96x48 drew `01/18` and lost the time, and a 192x48 ran
+  the line under both logos. Recent cards were unaffected, which is how it
+  presented: finals rendered perfectly, schedules did not.
+
+  Three things changed, all inside the `date_time` branch:
+
+  - **Two rows, not one line.** Each row then only has to find half the
+    width, which is the whole reason the classic layout stacks them.
+  - **One pinned rung, on every board and for every kick-off.** The general
+    ladder has nothing between PressStart2P 16 and 8 (the face is only crisp
+    at multiples of 8), so the gap width alone decided the treatment: a
+    128x64 got 4x6-font 7, a 256x64 PressStart2P 8 and a 512x64
+    PressStart2P 16 -- three renderings of the same sentence on three boards
+    of the same height. Worse, on a 192x48 the gap is exactly 96px and
+    PressStart2P is 16px per character, so the six-character `6:30PM` fitted
+    with nothing to spare while the seven-character `12:30PM` was 16px over
+    and halved. The stack now has its own one-rung ladder
+    (`ADAPTIVE_LADDER_UPCOMING`). A gap too narrow widens the box onto the
+    logos rather than shrinking the type; the 4x6 face is a floor for a row
+    no panel can hold at all (`Fri Sep 19` is 80px on a 64px board), where
+    the only alternative is truncation.
+  - **Placed as one block.** Splitting the region and drawing each row in
+    its own half left 23px of black between date and time on a 128x64 and
+    read as two unrelated lines. They now sit one-eighth of a row apart,
+    the proportion the classic scorebug uses.
+
+  Both leagues this plugin serves go through the same renderer, so NFL and
+  NCAA FB are fixed together. No other scoreboard has the adaptive layout, so
+  there is no sibling port owed here.
+
+  No configuration changed. The classic layout, the scroll and Vegas cards,
+  and the `vs` and `none` centre modes render exactly as before: `recent` and
+  `live` are byte-identical at all eight harness sizes, the `sports-drift`
+  gate is clean and all 72 scroll-card goldens match. Regression test:
+  `test_adaptive_upcoming_stacks.py` (13 checks; fails on the previous code at
+  4 of the 8 sizes).
+
 ## [3.10.5] - 2026-09-17
 
 ### Changed

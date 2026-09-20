@@ -192,11 +192,29 @@ def test_the_lookback_window_recovers_from_a_rejected_range():
 
 
 def test_todays_games_recover_from_a_rejected_range():
+    # The lookback is only asked for while it can still hold a live game (see
+    # _needs_previous_day), so force it on here: what this pins is the range
+    # *recovery*, not when the range is requested.
     manager = make_manager(FixedCoreService())
+    manager._needs_previous_day = lambda _now: True
     data = manager._fetch_todays_games()
     sent = [call["dates"] for call in manager.session.calls]
     assert len(sent) == 3  # the rejected range, then yesterday and today
     assert len(data["events"]) == 2
+
+
+def test_todays_games_ask_only_for_today_once_yesterday_is_over():
+    # Past the cutoff with nothing live from yesterday there is no range to be
+    # rejected, so the whole recovery is skipped and one request does it. This
+    # is the point of the narrowing: ESPN rejects ranges, so a two-day window
+    # cost two requests on every live poll for a day that holds only finals.
+    manager = make_manager(FixedCoreService())
+    manager._needs_previous_day = lambda _now: False
+    data = manager._fetch_todays_games()
+    sent = [call["dates"] for call in manager.session.calls]
+    assert len(sent) == 1
+    assert "-" not in sent[0]           # a single date, not a range
+    assert len(data["events"]) == 1
 
 
 def test_espn_data_source_schedule_recovers_from_a_rejected_range():

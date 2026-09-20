@@ -32,6 +32,18 @@
       "notes": "The score and win celebration is redrawn in the scoring team's own colours, read from its logo: a team-coloured gradient behind the screen, goalposts for a field goal or extra point, the goal line for a touchdown, a sunburst for a win, and confetti in the team's colours. The opposing crest dims so the team that scored reads at a glance. The animation also works now: the old flash and pulse ran at 2.5 and 4 Hz against a board the core samples once a second, so they aliased into a colour that changed at random. Every frame is now a finished card, the score glows on a continuous ramp instead of toggling, and the plugin asks the core for its high-FPS loop while a celebration is on screen. Two new advanced settings per league: celebration_team_colors and celebration_confetti, both on by default. Also replaces three bundled team logos: Dallas and Tampa Bay were the grey placeholder a failed download writes, so both rendered as a grey box with the abbreviation in text on every card, and Green Bay's was 4096x4096 artwork that cost 150ms and 67MB to decode for a crest drawn at most 96 pixels tall. All six are now ESPN's 500x500 badges."
     },
     {
+      "version": "3.10.7",
+      "released": "2026-09-20",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Three live-game fixes. New live games are picked up promptly again: a league with nothing on backs its polling off as empty checks mount, and that back-off had no notion of the schedule, so a league idle overnight reached its 15-minute ceiling and a game kicking off inside that window went unnoticed until the window closed -- restarting the display being the one thing that forced an immediate look. The idle wait is now clamped by the next kickoff the league already knows about, taken from scoreboard data it downloads anyway, and held at the live cadence for a quarter of an hour after a scheduled start in case the provider is slow to flip the status. The clamp needs the matching core change; on a core without it the plugin loads and behaves exactly as it did before. Second, live odds are fetched only for the game on screen and the next one in the rotation rather than for every live game in the league on every update: across a full college-football Saturday the old behaviour issued 11,978 odds requests in 13 hours on one rig -- 54% of all its ESPN traffic -- over only ~140 distinct games, because the 60-second live odds cache expired long before a game came round again in a rotation that takes minutes. It also cost up to two seconds of each update per live game. Third, the live poll stops asking for yesterday's scoreboard once yesterday is over. ESPN rejects date ranges, so the two-day lookback was split into one request per day and doubled every live poll; 1,858 requests per rig went to a date holding only finished games. The lookback is kept early in the day and for as long as a tracked game that started yesterday is still running. Fourth, a league that publishes no poll no longer re-fetches the standings endpoint on every update. The hourly rankings cache was gated on whether the last look found anything, and professional leagues return an empty set -- which is falsy, so the cache never satisfied. Measured on an MLB-only rig: 453 standings requests in a day against the 24 the one-hour cache intends. An empty result is now cached like any other."
+    },
+    {
+      "version": "3.10.6",
+      "released": "2026-09-18",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Upcoming games show their date and time properly again on the beta adaptive layout. switch_upcoming_center defaults to \"Date and time, stacked\" and the adaptive card joined the two onto one line, fitting that into the strip the logos leave -- about 40px on a 128x64 and 20px on a 64x32. It dropped to the smallest font trying to fit and still could not: 128x64 rendered \"01/18 6:\" and the font's missing-glyph box, 96x48 lost the time entirely, and a 192x48 ran the line under both logos. Finished games were unaffected, so a board showed its results perfectly and its schedule badly. The rows are stacked now, kept together rather than pushed to opposite ends of a tall gap, and drawn at one fixed size on every panel and for every kick-off. The general text ladder had made the same sentence three different things -- a 128x64 got a 7px face, a 256x64 an 8px one and a 512x64 a 16px one, decided by how much room the logos left rather than by anything about the game -- and on a 192x48, where the gap is exactly six characters wide, \"6:30PM\" and \"12:30PM\" came out at different sizes. A gap too narrow for a row now widens the box onto the logos instead of shrinking the type; a smaller face is used only where no panel could hold the row at all, which beats truncating it. No setting changed; the classic layout, the scroll and Vegas cards, and the \"Matchup separator\" and \"Nothing\" modes render exactly as before."
+    },
+    {
       "version": "3.10.5",
       "released": "2026-09-17",
       "ledmatrix_min_version": "3.4.0",
@@ -797,7 +809,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-16",
+  "last_updated": "2026-09-20",
   "stars": 0,
   "downloads": 0,
   "verified": true,

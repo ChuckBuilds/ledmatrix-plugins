@@ -61,6 +61,12 @@
       "notes": "Adds the goal and win celebration the other scoreboards ship. When a favorite scores or wins a live game the scorebug gives way to a full-screen takeover drawn in that team's own colours, read from its crest: a team-coloured gradient, the goal net framing the score, the opposing crest dimmed so the team that scored reads at a glance, team-coloured confetti, and the scoring side's digits glowing. A win gets a sunburst instead of the net. A goal waved off after review re-bases silently rather than celebrating twice, and a win only fires for a game the plugin watched go live. Five new per-league settings: celebration_enabled, and the advanced celebration_duration, celebrate_opponent_goals, celebration_team_colors and celebration_confetti."
     },
     {
+      "version": "1.31.2",
+      "released": "2026-09-20",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Three live-game fixes. New live games are picked up promptly again: a league with nothing on backs its polling off as empty checks mount, and that back-off had no notion of the schedule, so a league idle overnight reached its 15-minute ceiling and a game kicking off inside that window went unnoticed until the window closed -- restarting the display being the one thing that forced an immediate look. The idle wait is now clamped by the next kickoff the league already knows about, taken from scoreboard data it downloads anyway, and held at the live cadence for a quarter of an hour after a scheduled start in case the provider is slow to flip the status. The clamp needs the matching core change; on a core without it the plugin loads and behaves exactly as it did before. Second, live odds are fetched only for the game on screen and the next one in the rotation rather than for every live game in the league on every update: across a full college-football Saturday the old behaviour issued 11,978 odds requests in 13 hours on one rig -- 54% of all its ESPN traffic -- over only ~140 distinct games, because the 60-second live odds cache expired long before a game came round again in a rotation that takes minutes. It also cost up to two seconds of each update per live game. Third, the live poll stops asking for yesterday's scoreboard once yesterday is over. ESPN rejects date ranges, so the two-day lookback was split into one request per day and doubled every live poll; 1,858 requests per rig went to a date holding only finished games. The lookback is kept early in the day and for as long as a tracked game that started yesterday is still running. Fourth, a league that publishes no poll no longer re-fetches the standings endpoint on every update. The hourly rankings cache was gated on whether the last look found anything, and professional leagues return an empty set -- which is falsy, so the cache never satisfied. Measured on an MLB-only rig: 453 standings requests in a day against the 24 the one-hour cache intends. An empty result is now cached like any other. Fifth, standings no longer fail noisily for leagues without a poll. This board asked ESPN's /rankings endpoint directly, which professional leagues do not serve, so every attempt logged a 404 as an error -- measured at 9 an hour against NHL. It now tries the endpoint the league actually publishes, ordered by whether that league has a poll, and treats a 404 as the routine way a league says it has none. This brings the board in line with the football and baseball boards, which were fixed earlier."
+    },
+    {
       "version": "1.31.1",
       "released": "2026-09-17",
       "ledmatrix_min_version": "3.4.0",
@@ -543,7 +549,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-16",
+  "last_updated": "2026-09-20",
   "stars": 0,
   "downloads": 0,
   "verified": true,

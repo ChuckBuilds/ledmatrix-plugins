@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-flights",
   "name": "Flight Tracker",
-  "version": "1.14.1",
+  "version": "1.14.2",
   "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky/adsb.fi/adsb.lol data, map backgrounds, area mode, flight tracking, anchor airport, flight records, and optional airport weather (METAR/TAF/PIREP/SIGMET via the free NOAA Aviation Weather Center API)",
   "author": "ChuckBuilds",
   "category": "custom",
@@ -37,6 +37,12 @@
   ],
   "min_ledmatrix_version": "2.0.0",
   "versions": [
+    {
+      "version": "1.14.2",
+      "released": "2026-09-20",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Aircraft-type enrichment no longer re-requests SkyAware database files the feeder does not serve. A /db/<PREFIX>.json that answers 404 is now remembered as absent for ten minutes instead of being asked for again on every pass; measured against one feeder that was 10,503 404s in a day, the same few prefixes roughly 1,700 times each, and 24% of every HTTP request the device made. Network errors are held for one minute only, so a feeder that comes back is picked up quickly, and an upgraded feeder that starts serving a prefix is picked up when the hold-off expires."
+    },
     {
       "version": "1.14.1",
       "released": "2026-09-16",
@@ -300,5 +306,5 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-16"
+  "last_updated": "2026-09-20"
 }

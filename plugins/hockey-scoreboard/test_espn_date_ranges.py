@@ -156,6 +156,19 @@ def test_on_a_fixed_core_the_season_goes_to_the_background_service():
 
 
 def test_todays_games_recover_from_a_rejected_range():
+    # The lookback is only asked for while it can still hold a live game (see
+    # _needs_previous_day), so force it on here: what this pins is the range
+    # *recovery*, not when the range is requested.
     manager = make_manager(FixedCoreService())
+    manager._needs_previous_day = lambda _now: True
     data = manager._fetch_todays_games()
     assert len(data["events"]) == 2
+
+
+def test_todays_games_ask_only_for_today_once_yesterday_is_over():
+    # Past the cutoff with nothing live from yesterday there is no range to be
+    # rejected, so one request does it -- which is the point of the narrowing.
+    manager = make_manager(FixedCoreService())
+    manager._needs_previous_day = lambda _now: False
+    data = manager._fetch_todays_games()
+    assert len(data["events"]) == 1
