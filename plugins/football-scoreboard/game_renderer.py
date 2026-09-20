@@ -106,6 +106,26 @@ try:
         FontStep("press_start", 8),
         FontStep("4x6-font", 7),
     )
+    # The stacked date and time on an upcoming card. One rung on purpose,
+    # where every other element scales: a kick-off is the same sentence on
+    # every board, and the general ladder made it three different things.
+    #
+    # The ladder above has nothing between 16 and 8 -- PressStart2P only
+    # rasterizes crisp at multiples of 8, so there is no 12 or 10 to land on
+    # -- and the centre gap is a hard 96px on a 192x48. "6:30PM" is six
+    # characters, exactly 96px at rung 16, so it fits with nothing to spare
+    # while "12:30PM" is 16px over and drops to rung 8. Same panel, same
+    # layout, half the type, decided by whether the hour has two digits.
+    # Pinning the rung takes the string out of the decision.
+    #
+    # The 4x6 rung is a floor, not a step the layout takes to fit a gap: it
+    # is reached only when the whole panel cannot hold a row at 8 (a
+    # "Fri Sep 19" date is 80px on a 64px board). Narrow gaps widen the box
+    # instead -- see _render_game_card_adaptive.
+    ADAPTIVE_LADDER_UPCOMING = (
+        FontStep("press_start", 8),
+        FontStep("4x6-font", 7),
+    )
     # The down & distance line only -- NOT the clock, status band, records or
     # dates, which keep ADAPTIVE_LADDER_TEXT and the arcade face above.
     #
@@ -1086,6 +1106,43 @@ class GameRenderer(SportsGameRendererMixin):
                                      fit.font, fill=fill)
         return (x, y)
 
+    def _fit_upcoming_rows(self, rows, region: "Region", ladder=None):
+        """The stacked upcoming centre: one fitted row per string, one size.
+
+        Fitted independently the rows can still disagree when ``ladder`` has
+        more than one rung, because each gets the largest that fits its own
+        band and the strings are different lengths: "01/18" reached
+        press_start 8 in a 40px gap where "6:30PM" only reached 4x6-font 7,
+        so the date came out bigger than the time and in a different face. A
+        two-row block in two faces reads as a mistake rather than as a stack,
+        so the pair takes the smaller rung and the longer row decides it.
+
+        Returns (bands, fits). The caller re-places the fits as one tight
+        block; the bands are only what they were sized against.
+        """
+        bands = (region.split_v(*((1,) * len(rows)))
+                 if len(rows) > 1 else [region])
+        fits = [self._fit_element('score', text, band,
+                                  ladder or ADAPTIVE_LADDER_UPCOMING)
+                for band, text in zip(bands, rows)]
+        if not fits:
+            return bands, fits
+        smallest = min(fits, key=lambda fit: fit.size_px or 0)
+        if all(fit.size_px == smallest.size_px for fit in fits):
+            return bands, fits
+        # Re-measured from the ORIGINAL string, not from smallest.text, which
+        # may itself have been ellipsized to reach that rung. A row that then
+        # overflows reports fits=False and the caller widens.
+        rebuilt = []
+        for text, band in zip(rows, bands):
+            ink_w, ink_h, baseline, y_offset = measure_ink(text, smallest.font)
+            rebuilt.append(FitResult(smallest.font, smallest.family,
+                                     smallest.size_px, text, ink_w, ink_h,
+                                     baseline, y_offset,
+                                     fits=(ink_w <= band.w and ink_h <= band.h),
+                                     line_height=ink_h))
+        return bands, rebuilt
+
     def _load_raw_logo(self, team_abbrev: str, logo_path) -> Optional[Image.Image]:
         """Load a logo unresized (the adaptive path fits it per region;
         results are cached per size by the LayoutContext)."""
@@ -1355,15 +1412,76 @@ class GameRenderer(SportsGameRendererMixin):
             if self._upcoming_center_mode() == "none":
                 pass
             elif self._upcoming_center_mode() != "vs":
-                # Date and time stacked in the middle instead of top/bottom.
-                stacked = " ".join(t for t in (game_date, game_time) if t)
-                if stacked:
-                    fit = self._fit_element('score', stacked, score_region,
-                                            ADAPTIVE_LADDER_TEXT)
-                    # The stacked centre stands in for the score, set in the
-                    # score face, so it takes score_text's colour.
-                    self._draw_fit_outline(draw_overlay, fit, score_region,
-                                           fill=self._element_color('score_text'))
+                # Date over time, one per row -- the stack the classic
+                # scorebug has always drawn (core sports_shared
+                # _draw_upcoming_center_switch puts the date at center_y - 7
+                # and the time 9px under it), which is what this mode is
+                # named for and what the comment here has always claimed.
+                #
+                # It was one line, " ".join'd. A centre region is only the gap
+                # the logos leave, so "01/18 6:30PM" had to drop to the bottom
+                # of the ladder to get near fitting and still did not: at
+                # 128x64 it truncated to "01/18 6:" plus the face's tofu
+                # glyph, and at the 192x48 this plugin is most often run on it
+                # ran under both logos.
+                rows = [text for text in (game_date, game_time) if text]
+                if rows:
+                    # Vertical budget is the whole card, not score_region.h.
+                    # This mode leaves the status band and the detail band
+                    # empty -- unlike vs and none, which put the time and the
+                    # date in them -- so the stack owns the column. Keeping
+                    # score_region's centre preserves the user's score
+                    # y_offset, and holding back a sixteenth leaves room for
+                    # the gap between the rows, without which two rows "fit"
+                    # a card that they then overrun.
+                    budget = height - height // 16
+                    stack = Region(score_region.x,
+                                   score_region.y + (score_region.h - budget) // 2,
+                                   score_region.w, budget)
+
+                    def overflows(candidate):
+                        # Caught on the fitted TEXT as well as on
+                        # FitResult.fits: fit_text_proportional ellipsizes to
+                        # make the box and then reports fits=True, so the flag
+                        # alone is True on exactly the renders this catches.
+                        # fits still matters for rows re-measured at another
+                        # row's size, which keep their text and overrun.
+                        return any(fit.text != text or not fit.fits
+                                   for fit, text in zip(candidate, rows))
+
+                    # Rung 8 in the gap; rung 8 across the panel; and only
+                    # then a smaller face. Widening is preferred to dropping a
+                    # rung so the kick-off is the same size on every board --
+                    # a narrow gap moves the rows onto the logos rather than
+                    # shrinking them. The last step is a floor for a row no
+                    # panel can hold at 8 ("Fri Sep 19" is 80px on a 64px
+                    # board), where truncating would be the only alternative.
+                    bands, fits = self._fit_upcoming_rows(
+                        rows, stack, ADAPTIVE_LADDER_UPCOMING[:1])
+                    if overflows(fits):
+                        stack = Region(0, stack.y, width, budget)
+                        bands, fits = self._fit_upcoming_rows(
+                            rows, stack, ADAPTIVE_LADDER_UPCOMING[:1])
+                        if overflows(fits):
+                            bands, fits = self._fit_upcoming_rows(
+                                rows, stack, ADAPTIVE_LADDER_UPCOMING)
+                    # Sized from the split bands, placed as one tight block.
+                    # Drawing into the bands themselves centres each row in
+                    # its own half, which on a 128x64 left 23px of black
+                    # between the date and the time and read as two unrelated
+                    # lines. The classic scorebug sets them 9px apart in an
+                    # 8px face; one eighth of the ink height is that same
+                    # proportion at whatever rung the ladder picked here.
+                    row_h = max(max((fit.height for fit in fits), default=0), 1)
+                    pitch = row_h + max(1, row_h // 8)
+                    top = stack.y + (stack.h - pitch * len(fits)) // 2
+                    for index, fit in enumerate(fits):
+                        band = Region(stack.x, top + index * pitch,
+                                      stack.w, pitch)
+                        # The stacked centre stands in for the score, set in
+                        # the score face, so it takes score_text's colour.
+                        self._draw_fit_outline(draw_overlay, fit, band,
+                                               fill=self._element_color('score_text'))
             else:
                 if game_time:
                     region = self._region_for(regs.status_band, 'time')
