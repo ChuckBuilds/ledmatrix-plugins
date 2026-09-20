@@ -27,7 +27,6 @@ Run: <core-venv>/bin/python plugins/ledmatrix-flights/test_absent_skyaware_db_is
 """
 
 import sys
-import types
 from pathlib import Path
 
 plugin_dir = Path(__file__).parent
@@ -77,7 +76,7 @@ def _run(stub, responder, clock, aircraft):
     """Drive one enrichment pass with patched requests.get and time.monotonic."""
     calls = []
 
-    def fake_get(url, timeout=None):
+    def fake_get(url, **_kwargs):
         calls.append(url)
         return responder(url)
 
