@@ -1,7 +1,7 @@
 {
   "id": "masters-tournament",
   "name": "Masters Tournament",
-  "version": "3.2.0",
+  "version": "3.2.1",
   "description": "Broadcast-quality Masters Tournament display with real ESPN player headshots, accurate Augusta National hole layouts, fun facts, past champions, live leaderboards, and pixel-perfect LED matrix rendering",
   "category": "sports",
   "author": "ChuckBuilds",
@@ -44,6 +44,12 @@
     "height": 64
   },
   "versions": [
+    {
+      "version": "3.2.1",
+      "released": "2026-09-20",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "The 18 Augusta hole renderings are downscaled from roughly 4500x1800 to 768 pixels wide, which cuts the plugin's download from 207 MB to 5.8 MB and its hole images from 131 ms and 31 MB of RAM each to decode down to 5 ms and 1 MB. Nothing is drawn any smaller: a hole map is at most 248 pixels wide on the largest supported panel, so the old art was being thrown away at load. The cards are visually identical, under one part in 255 different on average. Also stops download_assets.py overwriting those renderings with the crude 200x150 schematics its fallback generator draws -- one run of that script used to replace the shipped artwork with no way back but a git checkout. It now fills in only the holes that are missing."
+    },
     {
       "version": "3.2.0",
       "released": "2026-09-16",
