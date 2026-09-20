@@ -1,5 +1,61 @@
 # Changelog
 
+## [3.11.0] - 2026-09-20
+
+### Added
+- **The score and win celebration is drawn in the scoring team's colours.**
+  Read from the team's own logo rather than from a colour table, so it covers
+  every team ESPN names, including FCS opponents. Checked against ESPN's
+  published values for all 32 NFL clubs: the crest's dominant colour matches
+  the official primary or alternate for 30 of them, and where it differs it
+  differs usefully -- Pittsburgh's official primary is `#000000` and Denver's
+  is a near-black navy, where the crest gives gold and orange, which are what
+  read on a panel. The screen picks two colours: the crest's largest area
+  becomes a dark gradient behind everything, and its most legible saturated
+  colour becomes the banner, the glowing score digits and the confetti. So
+  Chicago gets orange on navy, Baltimore gold on purple, Green Bay gold on
+  dark green.
+- **Scenery per kind of score**: the goal line and its hash marks for a
+  touchdown, the goalposts framing the score for a field goal or an extra
+  point, a sunburst for a win, diagonal stripes for anything else.
+- **Team-coloured confetti**, seeded from the game so the same score always
+  falls the same way and a golden screen can lock it down.
+- Two advanced per-league settings, both `true` by default:
+  `celebration_team_colors` and `celebration_confetti`.
+- Goldens for the touchdown, field goal and win screens, plus tests for the
+  palette, the points-to-scenery mapping and the frame contract below.
+
+### Fixed
+- **The celebration's animation now actually animates.** The old screen flashed
+  its background at 2.5 Hz and toggled the score highlight between two colours
+  at 4 Hz. Unless a league is in `scroll` mode the core redraws this plugin
+  once a second (its high-FPS loop is reserved for plugins that scroll or
+  declare `needs_high_fps`), so both effects were sampled far below their rate
+  and aliased into a colour that changed at random. The score now glows on a
+  continuous ramp, which reads as a pulse at 125 FPS and as a slow glow at 1,
+  and every frame across the window is a finished card -- tested at three panel
+  sizes, one second apart.
+- **The banner is no longer clipped in the opening frame.** It slid down into
+  place from `y=-3`, so a board sampling once a second could catch its only
+  frame with the top row of the text cut off. It fades from white into the team
+  colour instead, which cannot clip.
+- **The plugin asks the core for its high-FPS loop while a celebration is on
+  screen** (`needs_high_fps`), so a score that arrives while another plugin is
+  showing gets a smooth celebration rather than a stepped one. Scrolling boards
+  behave exactly as before.
+- **Three bundled team logos were wrong.** `DAL.png` and `TB.png` were the
+  64x64 grey placeholder the logo downloader writes when a fetch fails, so
+  Dallas and Tampa Bay rendered as a grey box with the abbreviation in text on
+  every card -- not just the celebration. The core does recognise them
+  (`is_placeholder_logo` matches the placeholder's geometry and background even
+  without its metadata marker), so a running board did repair itself, but only
+  after the six-hour retry back-off, and a fresh install showed grey until
+  then. `GB.png` was 4096x4096, 279 KB of artwork costing 150 ms and 67 MB of
+  RAM to decode for a crest that is drawn at most 96 pixels tall. All three are
+  now ESPN's 500x500 badges, byte-identical to what the downloader would fetch,
+  matching the other three. An audit of all 607 bundled PNGs in the repo found
+  no other placeholder in any plugin.
+
 ## [3.10.6] - 2026-09-18
 
 ### Fixed

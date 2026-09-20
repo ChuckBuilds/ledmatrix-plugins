@@ -358,6 +358,12 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "live_priority": cfg.get("live_priority", True),
                 "celebration_enabled": cfg.get("celebration_enabled", True),
                 "celebration_duration": cfg.get("celebration_duration", 8),
+                "celebration_team_colors": cfg.get(
+                    "celebration_team_colors", True
+                ),
+                "celebration_confetti": cfg.get(
+                    "celebration_confetti", True
+                ),
                 "celebrate_opponent_goals": cfg.get("celebrate_opponent_goals", False),
                 "show_favorite_teams_only": filtering.get(
                     "show_favorite_teams_only",
@@ -1173,6 +1179,27 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
     # ------------------------------------------------------------------
     # Live priority / content
     # ------------------------------------------------------------------
+    @property
+    def needs_high_fps(self) -> bool:
+        """Whether the controller should drive this plugin at 125 FPS.
+
+        Without this attribute the core falls back to `enable_scrolling`
+        (LEDMatrix display_controller), which is false on a switch-mode board
+        -- so the celebration's confetti and breathing score were being
+        sampled once a second. The controller reads this once when it enters a
+        mode, which is the moment that matters: a goal arms the takeover while
+        some other plugin is on screen, live priority hands this plugin the
+        panel, and the celebration is drawn smoothly from its first frame. One
+        armed while this plugin is already showing still steps at 1 FPS for the
+        rest of that turn, which is what the choreography is built to survive.
+        """
+        try:
+            if self.enable_scrolling:
+                return True
+            return self._get_active_celebration_manager() is not None
+        except Exception:  # noqa: BLE001 - the controller reads this bare
+            return bool(getattr(self, "enable_scrolling", False))
+
     def has_live_priority(self) -> bool:
         """Whether live games should interrupt the normal rotation."""
         return bool(self.is_enabled and self.live_priority)

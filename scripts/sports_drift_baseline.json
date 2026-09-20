@@ -152,7 +152,6 @@
     "sports.py::SportsLive._check_for_goal",
     "sports.py::SportsLive._check_for_win",
     "sports.py::SportsLive._classify_live_S",
-    "sports.py::SportsLive._draw_celebration_layout",
     "sports.py::SportsLive._draw_scorebug_layout",
     "sports.py::SportsLive._is_S_really_over",
     "sports.py::SportsLive._is_favorite",

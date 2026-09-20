@@ -14,6 +14,16 @@ Covers:
   then defers to the normal scorebug.
 - A celebration screen actually renders (non-blank score, side-dependent
   highlight), with production-font goldens at the supported sizes.
+- The team-colour palette read off the scoring side's crest: the colours it
+  picks, that lifting one keeps its hue, the no-crest fallback, and the
+  config switch.
+- Per-score scenery (goalposts for a kick, the goal line for a touchdown, a
+  sunburst for a win) and the points-to-motif mapping.
+- The 1 FPS contract: the core samples a switch-mode board once a second, so
+  every frame across the window has to be a finished card, and the scoring
+  side has to glow on a ramp rather than toggle (a toggle aliases).
+- That the plugin asks the controller for the high-FPS loop while a
+  celebration is on screen.
 
 Run with the core venv (golden checks need assets/fonts, so run from the core
 LEDMatrix tree like the safety harness):
@@ -376,7 +386,9 @@ def test_config_adapter_forwards_celebration_keys():
 # ---------------------------------------------------------------------------
 # Rendering
 # ---------------------------------------------------------------------------
-def _render_celebration(scored_side, width=128, height=32, elapsed=2.5):
+def _render_celebration(scored_side, width=128, height=32, elapsed=2.5,
+                        motif="touchdown", kind="score", phrase="TOUCHDOWN!",
+                        home="KC", away="DAL", team_colors=True, confetti=True):
     """Render a celebration screen deterministically via production fonts."""
     import sports
     from sports import SportsCore
@@ -404,26 +416,30 @@ def _render_celebration(scored_side, width=128, height=32, elapsed=2.5):
     live.config = {}
     live.logger = logging.getLogger("g")
     live.fonts = SportsCore._load_fonts(live)
+    live.celebration_duration = 8
+    live.celebration_team_colors = team_colors
+    live.celebration_confetti = confetti
 
     # Real bundled NFL logos as crests — committed, reproducible inputs.
     def _logo_loader(team_id, abbr, path, url=None):
-        im = Image.open(path).convert("RGBA")
+        im = Image.open(os.path.join(_LOGOS, f"{abbr}.png")).convert("RGBA")
         im.thumbnail((height, height), Image.Resampling.LANCZOS)
         return im
 
     live._load_and_resize_logo = _logo_loader
 
-    game = _game(away="DAL", home="KC", away_score="24", home_score="17")
-    game["away_logo_path"] = os.path.join(_LOGOS, "DAL.png")
-    game["home_logo_path"] = os.path.join(_LOGOS, "KC.png")
+    game = _game(away=away, home=home, away_score="24", home_score="17")
+    game["away_logo_path"] = os.path.join(_LOGOS, f"{away}.png")
+    game["home_logo_path"] = os.path.join(_LOGOS, f"{home}.png")
     celebration = {
-        "kind": "score",
+        "kind": kind,
+        "motif": motif,
         "game": game,
         "scored_side": scored_side,
-        "team_abbr": "DAL" if scored_side == "away" else "KC",
+        "team_abbr": away if scored_side == "away" else home,
         "away_score": 24, "home_score": 17,
         "started_at": 0.0,
-        "phrase": "TOUCHDOWN!",
+        "phrase": phrase,
     }
 
     # Freeze elapsed time so the flash/pulse animation is deterministic.
@@ -458,8 +474,28 @@ _REAL_FONTS = (
 )
 
 
+def _font_path(rel):
+    """Resolve a core-shipped font the way the plugin itself does.
+
+    The probe below tested these paths against the process cwd, and
+    scripts/run_plugin_tests.py -- the runner CI uses -- runs each test with
+    cwd set to the plugin directory. So the golden screens skipped under the
+    very runner that exists to check them, and reported a pass while doing it.
+    LEDMATRIX_CORE is the absolute contract that runner already provides for
+    exactly this case.
+    """
+    if os.path.exists(rel):
+        return rel
+    core = os.environ.get("LEDMATRIX_CORE")
+    if core:
+        candidate = os.path.join(core, rel)
+        if os.path.exists(candidate):
+            return candidate
+    return rel
+
+
 def _real_fonts_available():
-    return all(os.path.exists(p) for p in _REAL_FONTS)
+    return all(os.path.exists(_font_path(p)) for p in _REAL_FONTS)
 
 
 def _check_golden(name, img, update):
@@ -475,7 +511,9 @@ def _check_golden(name, img, update):
     bbox = diff.getbbox()
     if bbox is not None:
         worst = max(max(px) for px in diff.crop(bbox).getdata())
-        assert worst == 0, f"golden drift for {name} ({img.width}x{img.height}): max Δ={worst}"
+        assert worst == 0, (
+            f"golden drift for {name} ({img.width}x{img.height}): "
+            f"max delta={worst}")
 
 
 def test_golden_celebration_screen():
@@ -487,6 +525,19 @@ def test_golden_celebration_screen():
     update = os.environ.get("UPDATE_GOLDEN") == "1"
     for w, h in ((128, 32), (128, 64), (192, 48)):
         _check_golden("celebration_switch", _render_celebration("away", w, h), update)
+    # One golden per kind of scenery, at the most common panel. These lock the
+    # team palette, the goalposts, the goal line and the sunburst down, so a
+    # change to any of them has to be looked at rather than merged.
+    for name, kwargs in (
+        ("celebration_touchdown", dict(motif="touchdown", phrase="TOUCHDOWN!",
+                                       scored_side="home")),
+        ("celebration_field_goal", dict(motif="kick", phrase="KC FIELD GOAL!",
+                                        scored_side="home")),
+        ("celebration_win", dict(motif="win", kind="win", phrase="PIT WINS!",
+                                 scored_side="away", away="PIT")),
+    ):
+        side = kwargs.pop("scored_side")
+        _check_golden(name, _render_celebration(side, 128, 32, **kwargs), update)
     print("PASS: golden celebration screen" + (" (regenerated)" if update else ""))
 
 
@@ -499,7 +550,9 @@ def test_celebration_score_fits_on_tall_panels():
     # fill the width, so the between-the-logos probe has nothing to look at;
     # the 128x64 golden covers that size.
     for w, h in ((192, 48),):
-        img = _render_celebration("away", w, h)
+        # Confetti off: this probe asks whether the SCORE is inside the panel,
+        # and a flake is allowed to land on the bottom row.
+        img = _render_celebration("away", w, h, confetti=False)
         # Between the two edge-pasted logos (each at most h wide).
         left, right = h, w - h
         bottom = img.crop((left, h - 1, right, h)).convert("RGB")
@@ -508,6 +561,234 @@ def test_celebration_score_fits_on_tall_panels():
         assert not _is_mostly_black(img, (left, h // 2, right, h - 1)), (
             f"no celebration score drawn at {w}x{h}")
     print("PASS: celebration score stays inside tall panels")
+
+
+# ---------------------------------------------------------------------------
+# Team-colour palette
+# ---------------------------------------------------------------------------
+def _brightest(img, box=None):
+    region = img.crop(box) if box else img
+    return max(region.convert("RGB").getextrema()[i][1] for i in range(3))
+
+
+def test_palette_reads_the_scoring_team_off_its_crest():
+    """The takeover's colours come from the crest, so a Chiefs score renders
+    red where a Steelers score renders gold. Checked on the crests this plugin
+    ships, which are the same files the board draws from."""
+    import sports
+
+    for abbr, want_hue in (("KC", "red"), ("PIT", "gold"), ("GB", "gold")):
+        logo = Image.open(os.path.join(_LOGOS, f"{abbr}.png")).convert("RGBA")
+        logo.thumbnail((32, 32), Image.Resampling.LANCZOS)
+        palette = sports._logo_palette(logo)
+        assert palette, f"{abbr}: no palette derived from the crest"
+        r, g, b = palette["headline"]
+        if want_hue == "red":
+            assert r > 150 and r > g * 2 and r > b * 2, f"{abbr} headline {palette['headline']} is not red"
+        else:
+            assert r > 150 and g > 110 and b < 110, f"{abbr} headline {palette['headline']} is not gold"
+        # Every headline has to survive being shrunk to 6px of text.
+        assert sports._rgb_luminance(palette["headline"]) >= 100, (
+            f"{abbr} headline {palette['headline']} is too dark to read on a panel")
+        # And the backdrop has to stay out of its way.
+        assert sports._rgb_luminance(palette["deep"]) <= 36, (
+            f"{abbr} backdrop {palette['deep']} is too bright to put text on")
+    print("PASS: the palette reads the scoring team's colours off its crest")
+
+
+def test_palette_prefers_a_legible_crest_colour_over_lifting_a_dark_one():
+    """Green Bay's dark green only reaches legibility as a teal, and the gold
+    right next to it on the same crest is just as much theirs. The ranking has
+    to reach for the colour that already reads."""
+    import sports
+
+    logo = Image.open(os.path.join(_LOGOS, "GB.png")).convert("RGBA")
+    logo.thumbnail((32, 32), Image.Resampling.LANCZOS)
+    palette = sports._logo_palette(logo)
+    r, g, b = palette["headline"]
+    assert not (b > r and g > r), (
+        f"GB headline {palette['headline']} came back teal -- a dark colour was "
+        "lifted instead of a legible one being preferred")
+    # The backdrop still carries the green the crest is mostly made of.
+    assert palette["deep"][1] >= palette["deep"][0], (
+        f"GB backdrop {palette['deep']} lost the green")
+    print("PASS: the palette prefers a legible crest colour over lifting a dark one")
+
+
+def test_lifting_a_colour_keeps_its_hue():
+    """Scaling the channels to brighten a dark saturated colour turns
+    Baltimore's navy-purple into magenta. Lifting has to work in HSV."""
+    import sports
+
+    navy_purple = (39, 15, 98)
+    lifted = sports._lift_color(navy_purple)
+    assert sports._rgb_luminance(lifted) >= 100, f"{lifted} is still too dark"
+    assert lifted[2] > lifted[0] > lifted[1], (
+        f"{lifted} is no longer a blue-purple -- the hue moved")
+    # Capping is exact on the way down, so a cap must not move the hue at all.
+    capped = sports._cap_luminance((248, 61, 1), 34)
+    assert capped[0] > capped[1] > capped[2], f"{capped} lost the orange"
+    assert sports._rgb_luminance(capped) <= 35, f"{capped} was not capped"
+    print("PASS: lifting and capping a colour both keep its hue")
+
+
+def test_palette_falls_back_when_there_is_no_crest():
+    """A team whose badge has not downloaded yet still gets a celebration."""
+    from sports import SportsLive
+
+    live = _make_live()
+    live.celebration_team_colors = True
+    live._load_and_resize_logo = lambda *a, **k: None
+    celebration = {"game": _game(), "scored_side": "home"}
+    palette = SportsLive._celebration_palette(live, celebration)
+    assert palette == SportsLive._DEFAULT_CELEBRATION_PALETTE, (
+        "a missing crest must fall back to the default palette")
+
+    # And a crest that raises must not take the takeover down with it.
+    def _boom(*a, **k):
+        raise OSError("unreadable png")
+
+    live._load_and_resize_logo = _boom
+    palette = SportsLive._celebration_palette(live, {"game": _game(), "scored_side": "away"})
+    assert palette == SportsLive._DEFAULT_CELEBRATION_PALETTE, (
+        "an unreadable crest must fall back, not raise")
+    print("PASS: the palette falls back when there is no usable crest")
+
+
+def test_team_colors_can_be_switched_off():
+    lit = _render_celebration("home", team_colors=True)
+    plain = _render_celebration("home", team_colors=False)
+    assert ImageChops.difference(lit, plain).getbbox() is not None, (
+        "celebration_team_colors=False renders identically to True")
+    print("PASS: celebration_team_colors switches the crest palette off")
+
+
+# ---------------------------------------------------------------------------
+# Motifs
+# ---------------------------------------------------------------------------
+def test_score_motif_mapping():
+    from sports import SportsLive
+
+    assert SportsLive._score_motif(6) == "touchdown"
+    assert SportsLive._score_motif(7) == "touchdown"
+    assert SportsLive._score_motif(3) == "kick", "a field goal is a kick"
+    assert SportsLive._score_motif(1) == "kick", "an extra point is a kick too"
+    assert SportsLive._score_motif(2) == "score"
+    print("PASS: _score_motif maps points to the right scenery")
+
+
+def test_celebration_records_the_motif_it_was_armed_with():
+    live = _make_live(favorite_teams=["KC"])
+    live._check_for_score(_game(away_score="0", home_score="0"))
+    live._check_for_score(_game(away_score="0", home_score="3"))  # KC field goal
+    assert live.active_celebration["motif"] == "kick", (
+        "a field goal must arm the goalposts")
+
+    live = _make_live(favorite_teams=["KC"])
+    live._check_for_score(_game(away_score="0", home_score="0"))
+    live._check_for_score(_game(away_score="0", home_score="7"))  # KC touchdown
+    assert live.active_celebration["motif"] == "touchdown"
+
+    live = _make_live(favorite_teams=["KC"])
+    live._check_for_score(_game(away_score="0", home_score="0"))
+    live._check_for_win(_game(away_score="3", home_score="24", is_final=True))
+    assert live.active_celebration["motif"] == "win"
+    print("PASS: the celebration records the motif it was armed with")
+
+
+def test_motifs_render_differently():
+    """Each kind of score gets its own scenery, so the screens must differ."""
+    shots = {
+        m: _render_celebration("home", motif=m, confetti=False)
+        for m in ("touchdown", "kick", "win", "score")
+    }
+    names = sorted(shots)
+    for i, a in enumerate(names):
+        for b in names[i + 1:]:
+            assert ImageChops.difference(shots[a], shots[b]).getbbox() is not None, (
+                f"the {a} and {b} scenery render identically")
+    print("PASS: each motif renders its own scenery")
+
+
+# ---------------------------------------------------------------------------
+# The 1 FPS contract
+# ---------------------------------------------------------------------------
+def test_every_celebration_frame_is_a_finished_card():
+    """On a switch-mode board the core samples this plugin once a second, so
+    any single frame may be the only one a viewer sees. Every frame across the
+    whole window has to carry the headline and the score -- no blank frame, no
+    frame caught mid-wipe, and nothing clipped off the top by an entry
+    animation (the headline used to slide in from y=-3).
+    """
+    # Every panel size the core's safety harness renders, plus 192x48.
+    for w, h in ((64, 32), (128, 32), (64, 64), (96, 48), (128, 64),
+                 (256, 32), (128, 96), (256, 128), (192, 48)):
+        for elapsed in [0.0] + [i + 0.5 for i in range(8)]:
+            img = _render_celebration("home", w, h, elapsed=elapsed)
+            headline = img.crop((0, 0, w, max(2, h // 4)))
+            assert _brightest(img, (0, 0, w, h)) > 40, (
+                f"{w}x{h} at t={elapsed}s: the panel is effectively blank")
+            assert _brightest(headline) > 60, (
+                f"{w}x{h} at t={elapsed}s: no headline on the top rows -- a "
+                "frame that lands here shows a card with no message on it")
+    print("PASS: every celebration frame is a finished card")
+
+
+def test_the_scoring_side_glows_rather_than_toggling():
+    """The scoring digits breathe on a continuous ramp. A binary flash aliases
+    into a colour that changes at random once a second; a ramp cannot. Sampled
+    one second apart, consecutive frames must never be identical (it is still
+    animating) and must never swap between exactly two states (it is not a
+    toggle)."""
+    frames = [
+        _render_celebration("home", elapsed=t, confetti=False)
+        for t in (0.9, 1.9, 2.9, 3.9, 4.9, 5.9)
+    ]
+    signatures = {f.tobytes() for f in frames}
+    assert len(signatures) > 2, (
+        "sampled once a second the score only ever showed two states -- the "
+        "highlight is toggling, not breathing")
+    print("PASS: the scoring side glows on a ramp rather than toggling")
+
+
+# ---------------------------------------------------------------------------
+# High-FPS declaration
+# ---------------------------------------------------------------------------
+def test_manager_asks_for_high_fps_while_celebrating():
+    """Without needs_high_fps the core falls back to enable_scrolling, which is
+    false on a switch-mode board -- so the confetti was being sampled once a
+    second. The plugin has to ask."""
+    import manager
+
+    plugin = object.__new__(manager.FootballScoreboardPlugin)
+    plugin.logger = logging.getLogger("fps")
+    plugin.enable_scrolling = False
+    plugin.is_enabled = True
+    plugin._league_registry = {"nfl": {"enabled": True}}
+
+    celebrating = [False]
+
+    class _Live:
+        def has_active_celebration(self):
+            return celebrating[0]
+
+    plugin._get_league_manager_for_mode = lambda league, mode: _Live()
+
+    assert plugin.needs_high_fps is False, (
+        "a quiet switch-mode board must not be driven at 125 FPS")
+    celebrating[0] = True
+    assert plugin.needs_high_fps is True, (
+        "a celebration must ask for the high-FPS loop")
+
+    # Scrolling boards keep the behaviour they had before this existed.
+    celebrating[0] = False
+    plugin.enable_scrolling = True
+    assert plugin.needs_high_fps is True
+
+    # And the controller reads this attribute bare, so it must never raise.
+    broken = object.__new__(manager.FootballScoreboardPlugin)
+    assert broken.needs_high_fps is False, "needs_high_fps raised on a bare instance"
+    print("PASS: the manager asks for high FPS while a celebration is on screen")
 
 
 def main():
@@ -533,6 +814,17 @@ def main():
         test_celebration_renders_score_and_side_highlight,
         test_golden_celebration_screen,
         test_celebration_score_fits_on_tall_panels,
+        test_palette_reads_the_scoring_team_off_its_crest,
+        test_palette_prefers_a_legible_crest_colour_over_lifting_a_dark_one,
+        test_lifting_a_colour_keeps_its_hue,
+        test_palette_falls_back_when_there_is_no_crest,
+        test_team_colors_can_be_switched_off,
+        test_score_motif_mapping,
+        test_celebration_records_the_motif_it_was_armed_with,
+        test_motifs_render_differently,
+        test_every_celebration_frame_is_a_finished_card,
+        test_the_scoring_side_glows_rather_than_toggling,
+        test_manager_asks_for_high_fps_while_celebrating,
     ]
     failed = 0
     for t in tests:

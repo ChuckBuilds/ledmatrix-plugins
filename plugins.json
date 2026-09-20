@@ -264,7 +264,7 @@
       "last_updated": "2026-09-20",
       "verified": true,
       "screenshot": "",
-      "latest_version": "3.10.7"
+      "latest_version": "3.11.0"
     },
     {
       "id": "geochron",
@@ -359,7 +359,7 @@
       "last_updated": "2026-09-20",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.31.2",
+      "latest_version": "1.32.0",
       "icon": "fas fa-hockey-puck"
     },
     {
@@ -508,10 +508,10 @@
       "plugin_path": "plugins/masters-tournament",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-16",
+      "last_updated": "2026-09-20",
       "verified": true,
       "screenshot": "",
-      "latest_version": "3.2.0"
+      "latest_version": "3.2.1"
     },
     {
       "id": "mqtt-notifications",
@@ -784,7 +784,7 @@
       "last_updated": "2026-09-20",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.30.2"
+      "latest_version": "2.31.0"
     },
     {
       "id": "static-image",
@@ -1072,7 +1072,7 @@
       "downloads": 0,
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.28.2",
+      "latest_version": "1.29.0",
       "last_updated": "2026-09-20"
     },
     {
@@ -1119,7 +1119,7 @@
       "last_updated": "2026-09-20",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.27.2"
+      "latest_version": "1.28.0"
     },
     {
       "id": "jellyfin-now-playing",

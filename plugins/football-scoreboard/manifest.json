@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "3.10.7",
+  "version": "3.11.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "3.11.0",
+      "released": "2026-09-20",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "The score and win celebration is redrawn in the scoring team's own colours, read from its logo: a team-coloured gradient behind the screen, goalposts for a field goal or extra point, the goal line for a touchdown, a sunburst for a win, and confetti in the team's colours. The opposing crest dims so the team that scored reads at a glance. The animation also works now: the old flash and pulse ran at 2.5 and 4 Hz against a board the core samples once a second, so they aliased into a colour that changed at random. Every frame is now a finished card, the score glows on a continuous ramp instead of toggling, and the plugin asks the core for its high-FPS loop while a celebration is on screen. Two new advanced settings per league: celebration_team_colors and celebration_confetti, both on by default. Also replaces three bundled team logos: Dallas and Tampa Bay were the grey placeholder a failed download writes, so both rendered as a grey box with the abbreviation in text on every card, and Green Bay's was 4096x4096 artwork that cost 150ms and 67MB to decode for a crest drawn at most 96 pixels tall. All six are now ESPN's 500x500 badges."
+    },
     {
       "version": "3.10.7",
       "released": "2026-09-20",

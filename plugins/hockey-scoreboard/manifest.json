@@ -1,7 +1,7 @@
 {
   "id": "hockey-scoreboard",
   "name": "Hockey Scoreboard",
-  "version": "1.31.2",
+  "version": "1.32.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, and NCAA Women's hockey with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/hockey-scoreboard",
@@ -54,6 +54,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.32.0",
+      "released": "2026-09-20",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Adds the goal and win celebration the other scoreboards ship. When a favorite scores or wins a live game the scorebug gives way to a full-screen takeover drawn in that team's own colours, read from its crest: a team-coloured gradient, the goal net framing the score, the opposing crest dimmed so the team that scored reads at a glance, team-coloured confetti, and the scoring side's digits glowing. A win gets a sunburst instead of the net. A goal waved off after review re-bases silently rather than celebrating twice, and a win only fires for a game the plugin watched go live. Five new per-league settings: celebration_enabled, and the advanced celebration_duration, celebrate_opponent_goals, celebration_team_colors and celebration_confetti."
+    },
     {
       "version": "1.31.2",
       "released": "2026-09-20",

@@ -459,6 +459,22 @@ See [The selection settings](#the-selection-settings).
 | `<league>.celebration_enabled` | boolean | `true` |
 | `<league>.celebration_duration` | number | `8` |
 | `<league>.celebrate_opponent_goals` | boolean | `false` |
+| `<league>.celebration_team_colors` | boolean | `true` |
+| `<league>.celebration_confetti` | boolean | `true` |
+
+The takeover is drawn in the **scoring team's own colours**, read from that
+team's logo: a team-coloured gradient behind the screen, the opposing crest
+dimmed so the team that scored reads at a glance, confetti in the team's
+colours, and the scoring side's digits glowing. A winner gets a sunburst behind
+the banner. Turn the colours off with `celebration_team_colors: false` for a
+fixed navy and amber, and the confetti off on its own with
+`celebration_confetti: false`.
+
+Every frame is a finished screen rather than a step of an animation, because
+unless a league is in `scroll` mode the core redraws this plugin about once a
+second and any single frame may be the only one anyone sees. When a goal
+arrives while another plugin is on screen the plugin asks the core for its
+high-FPS loop, and the confetti and the glow run smoothly.
 
 ### Display options
 

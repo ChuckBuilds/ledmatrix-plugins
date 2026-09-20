@@ -702,45 +702,38 @@ def create_hole_layout(hole_num, layout):
     return img
 
 
-def create_course_hole_images():
-    """Create all 18 hole layout images."""
-    print("\nCreating accurate Augusta National hole layouts...")
+def create_course_hole_images(force=False):
+    """Create the 18 hole layout images that are missing.
+
+    These are a FALLBACK. What this draws is the schematic in
+    create_hole_layout() -- a 200x150 canvas of coloured shapes -- and what
+    the plugin ships is a set of illustrated Augusta National aerials, which
+    is what the README means by "real Augusta National overhead maps". This
+    used to overwrite them unconditionally, so one run of this script
+    replaced the shipped art with the schematics and there was no way back
+    except a git checkout. It now skips any hole that already has a file;
+    pass force=True to regenerate anyway.
+    """
+    print()
+    print("Creating accurate Augusta National hole layouts...")
 
     from masters_helpers import AUGUSTA_HOLES
 
+    created = skipped = 0
     for hole_num in range(1, 19):
+        save_path = COURSES_DIR / f"hole_{hole_num:02d}.png"
+        if save_path.exists() and not force:
+            skipped += 1
+            continue
         layout = AUGUSTA_HOLE_LAYOUTS[hole_num]
         hole_info = AUGUSTA_HOLES[hole_num]
         img = create_hole_layout(hole_num, layout)
-        save_path = COURSES_DIR / f"hole_{hole_num:02d}.png"
-        img.save(save_path)
+        img.save(save_path, optimize=True)
+        created += 1
         print(f"  [created] hole_{hole_num:02d}.png - {hole_info['name']} "
               f"(Par {hole_info['par']}, {hole_info['yardage']}y)")
-
-
-# ═══════════════════════════════════════════════════════════════
-# COUNTRY FLAGS (small pixel art for LED display)
-# ═══════════════════════════════════════════════════════════════
-
-FLAG_COLORS = {
-    "USA": [((0, 0, 100), 0.4), ((200, 0, 0), 0.3), ((255, 255, 255), 0.3)],
-    "ESP": [((200, 0, 0), 0.25), ((255, 200, 0), 0.50), ((200, 0, 0), 0.25)],
-    "ENG": [((255, 255, 255), 1.0)],  # White with red cross
-    "AUS": [((0, 0, 128), 1.0)],
-    "JPN": [((255, 255, 255), 1.0)],  # White with red circle
-    "NIR": [((255, 255, 255), 1.0)],  # Simplified
-    "IRL": [((0, 155, 72), 0.33), ((255, 255, 255), 0.34), ((255, 130, 0), 0.33)],
-    "NOR": [((200, 16, 32), 1.0)],
-    "SWE": [((0, 106, 167), 1.0)],
-    "RSA": [((0, 120, 60), 0.34), ((255, 255, 255), 0.08), ((200, 0, 0), 0.08),
-            ((255, 255, 255), 0.08), ((0, 0, 128), 0.42)],
-    "CAN": [((255, 0, 0), 0.25), ((255, 255, 255), 0.50), ((255, 0, 0), 0.25)],
-    "GER": [((0, 0, 0), 0.33), ((220, 0, 0), 0.34), ((255, 200, 0), 0.33)],
-    "ARG": [((108, 180, 230), 0.33), ((255, 255, 255), 0.34), ((108, 180, 230), 0.33)],
-    "SCO": [((0, 0, 128), 1.0)],
-    "WAL": [((255, 255, 255), 0.5), ((0, 128, 0), 0.5)],
-    "FIJ": [((0, 0, 128), 1.0)],
-}
+    if skipped:
+        print(f"  [kept] {skipped} hole image(s) already present were left alone")
 
 
 def create_country_flags():
