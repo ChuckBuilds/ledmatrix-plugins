@@ -516,6 +516,18 @@
           "default": false,
           "description": "Also celebrate when the opponent scores, not just favorites (off by default)"
         },
+        "celebration_team_colors": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": true,
+          "description": "Draw the celebration in the scoring team's colours, read from its logo. Off uses a fixed navy and amber palette"
+        },
+        "celebration_confetti": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": true,
+          "description": "Fall team-coloured confetti across the celebration screen"
+        },
         "game_limits": {
           "type": "object",
           "title": "Game Limits",
@@ -1004,6 +1016,18 @@
           "type": "boolean",
           "default": false,
           "description": "Also celebrate when the opponent scores, not just favorites (off by default)"
+        },
+        "celebration_team_colors": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": true,
+          "description": "Draw the celebration in the scoring team's colours, read from its logo. Off uses a fixed navy and amber palette"
+        },
+        "celebration_confetti": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": true,
+          "description": "Fall team-coloured confetti across the celebration screen"
         },
         "game_limits": {
           "type": "object",

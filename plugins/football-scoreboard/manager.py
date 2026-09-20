@@ -752,6 +752,12 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "celebrate_opponent_scores": league_config.get(
                     "celebrate_opponent_scores", False
                 ),
+                "celebration_team_colors": league_config.get(
+                    "celebration_team_colors", True
+                ),
+                "celebration_confetti": league_config.get(
+                    "celebration_confetti", True
+                ),
                 "filtering": filtering,
                 "background_service": {
                     "request_timeout": 30,
@@ -2300,6 +2306,28 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
             ):
                 return league_key, live_manager
         return None
+
+    @property
+    def needs_high_fps(self) -> bool:
+        """Whether the controller should drive this plugin at 125 FPS.
+
+        Without this attribute the core falls back to `enable_scrolling`
+        (LEDMatrix display_controller), which is false on a switch-mode board
+        -- so the celebration's confetti and breathing score were being
+        sampled once a second. The controller reads this once when it enters
+        a mode, which is the moment that matters: a score arms the takeover
+        while some other plugin is on screen, live priority hands football the
+        panel, and the celebration is drawn smoothly from its first frame. A
+        celebration armed while football is already showing still steps at
+        1 FPS for the rest of that turn, which is what the choreography is
+        built to survive.
+        """
+        try:
+            if self.enable_scrolling:
+                return True
+            return self._get_active_celebration_manager() is not None
+        except Exception:  # noqa: BLE001 - the controller reads this bare
+            return bool(getattr(self, "enable_scrolling", False))
 
     def has_live_priority(self) -> bool:
         if not self.is_enabled:

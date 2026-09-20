@@ -50,6 +50,13 @@ These are not general Python advice — they exist because of how *this* stack w
    `docs/plugin-development/07-testing-ci-and-registry.md`); design for the
    classic four first (64×32, 128×32, 128×64, 256×32). Harness lives in the
    **core** repo: `LEDMatrix/scripts/check_plugin.py`.
+   **Animation is sampled at 1 FPS unless you ask for more:** the core's
+   `display_controller` runs its 125 FPS loop only for a plugin that declares
+   `needs_high_fps` (a property is fine — it is read once per mode entry) or
+   sets `enable_scrolling`; everything else gets one `display()` call per
+   second, so a sub-second flash or an on/off toggle aliases into a colour
+   that changes at random. Use continuous ramps, make every frame a finished
+   screen, and declare `needs_high_fps` when it genuinely needs motion.
 6. **Guard optional core imports** (`VegasDisplayMode`, `src.adaptive_layout`,
    `src.element_style`, core `BaseOddsManager`, …) with `try/except ImportError`
    and a classic fallback — older cores stay loadable.

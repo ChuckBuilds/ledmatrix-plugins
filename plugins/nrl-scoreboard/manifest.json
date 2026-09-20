@@ -1,7 +1,7 @@
 {
   "id": "nrl-scoreboard",
   "name": "NRL Scoreboard",
-  "version": "1.27.1",
+  "version": "1.28.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NRL (National Rugby League) games with real-time scores and game status.",
   "category": "sports",
@@ -18,6 +18,12 @@
     "nrl_upcoming"
   ],
   "versions": [
+    {
+      "version": "1.28.0",
+      "released": "2026-09-20",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "The goal and win celebration is redrawn in the scoring team's own colours, read from its logo: a team-coloured gradient behind the screen, a sunburst behind a winner, and confetti in the team's colours. The opposing crest dims so the team that scored reads at a glance. The animation also works now: the old flash and pulse ran at 2.5 and 4 Hz against a board the core samples once a second, so they aliased into a colour that changed at random. Every frame is now a finished card, the score glows on a continuous ramp instead of toggling, and the plugin asks the core for its high-FPS loop while a celebration is on screen. Also picks up the score-placement fix football got in 3.9.2, which kept the digits inside panels 48 and 64 pixels tall. Two new advanced settings: celebration_team_colors and celebration_confetti, both on by default."
+    },
     {
       "version": "1.27.1",
       "released": "2026-09-17",

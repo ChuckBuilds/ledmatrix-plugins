@@ -363,8 +363,28 @@ _REAL_FONTS = (
 )
 
 
+def _font_path(rel):
+    """Resolve a core-shipped font the way the plugin itself does.
+
+    The probe below tested these paths against the process cwd, and
+    scripts/run_plugin_tests.py -- the runner CI uses -- runs each test with
+    cwd set to the plugin directory. So the golden screens skipped under the
+    very runner that exists to check them, and reported a pass while doing it.
+    LEDMATRIX_CORE is the absolute contract that runner already provides for
+    exactly this case.
+    """
+    if os.path.exists(rel):
+        return rel
+    core = os.environ.get("LEDMATRIX_CORE")
+    if core:
+        candidate = os.path.join(core, rel)
+        if os.path.exists(candidate):
+            return candidate
+    return rel
+
+
 def _real_fonts_available():
-    return all(os.path.exists(p) for p in _REAL_FONTS)
+    return all(os.path.exists(_font_path(p)) for p in _REAL_FONTS)
 
 
 def _check_golden(name, img, update):
@@ -380,7 +400,7 @@ def _check_golden(name, img, update):
     bbox = diff.getbbox()
     if bbox is not None:
         worst = max(max(px) for px in diff.crop(bbox).getdata())
-        assert worst == 0, f"golden drift for {name} ({img.width}x{img.height}): max Δ={worst}"
+        assert worst == 0, f"golden drift for {name} ({img.width}x{img.height}): max delta={worst}"
 
 
 def test_golden_celebration_screen():

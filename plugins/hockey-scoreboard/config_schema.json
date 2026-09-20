@@ -754,6 +754,37 @@
           "default": true,
           "description": "Prioritize live NHL games over scheduled games"
         },
+        "celebration_enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show a celebratory takeover screen when a favorite team scores a goal or wins a live game"
+        },
+        "celebration_duration": {
+          "x-advanced": true,
+          "type": "integer",
+          "default": 8,
+          "minimum": 3,
+          "maximum": 30,
+          "description": "How long the goal/win celebration stays on screen (seconds)"
+        },
+        "celebrate_opponent_goals": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": false,
+          "description": "Also celebrate when the opponent scores, not just favorites (off by default)"
+        },
+        "celebration_team_colors": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": true,
+          "description": "Draw the celebration in the scoring team's colours, read from its logo. Off uses a fixed navy and amber palette"
+        },
+        "celebration_confetti": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": true,
+          "description": "Fall team-coloured confetti across the celebration screen"
+        },
         "dynamic_duration": {
           "type": "object",
           "description": "Dynamic duration settings - automatically adjust display time based on content",
@@ -1265,6 +1296,37 @@
           "default": false,
           "description": "Prioritize live NCAA Men's Hockey games over scheduled games"
         },
+        "celebration_enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show a celebratory takeover screen when a favorite team scores a goal or wins a live game"
+        },
+        "celebration_duration": {
+          "x-advanced": true,
+          "type": "integer",
+          "default": 8,
+          "minimum": 3,
+          "maximum": 30,
+          "description": "How long the goal/win celebration stays on screen (seconds)"
+        },
+        "celebrate_opponent_goals": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": false,
+          "description": "Also celebrate when the opponent scores, not just favorites (off by default)"
+        },
+        "celebration_team_colors": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": true,
+          "description": "Draw the celebration in the scoring team's colours, read from its logo. Off uses a fixed navy and amber palette"
+        },
+        "celebration_confetti": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": true,
+          "description": "Fall team-coloured confetti across the celebration screen"
+        },
         "dynamic_duration": {
           "type": "object",
           "description": "Dynamic duration settings - automatically adjust display time based on content",
@@ -1775,6 +1837,37 @@
           "type": "boolean",
           "default": false,
           "description": "Prioritize live NCAA Women's Hockey games over scheduled games"
+        },
+        "celebration_enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show a celebratory takeover screen when a favorite team scores a goal or wins a live game"
+        },
+        "celebration_duration": {
+          "x-advanced": true,
+          "type": "integer",
+          "default": 8,
+          "minimum": 3,
+          "maximum": 30,
+          "description": "How long the goal/win celebration stays on screen (seconds)"
+        },
+        "celebrate_opponent_goals": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": false,
+          "description": "Also celebrate when the opponent scores, not just favorites (off by default)"
+        },
+        "celebration_team_colors": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": true,
+          "description": "Draw the celebration in the scoring team's colours, read from its logo. Off uses a fixed navy and amber palette"
+        },
+        "celebration_confetti": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": true,
+          "description": "Fall team-coloured confetti across the celebration screen"
         },
         "dynamic_duration": {
           "type": "object",

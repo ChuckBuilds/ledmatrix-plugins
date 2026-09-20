@@ -1,5 +1,37 @@
 # Changelog
 
+## [1.32.0] - 2026-09-20
+
+### Added
+- **A goal and win celebration takeover**, the same one football, soccer, AFL
+  and NRL ship. When a favorite scores or wins a live game the scorebug gives
+  way to a full-screen celebration for eight seconds: a gradient in the
+  scoring team's colours, the goal net framing the score, the opposing crest
+  dimmed so the team that scored reads at a glance, team-coloured confetti,
+  and the scoring side's digits glowing. A win gets a sunburst instead of the
+  net. Boston reads black and gold, Toronto blue, Vegas gold, Edmonton orange
+  on navy.
+- The colours come from the team's own crest rather than a colour table, so
+  they cover every team ESPN names -- all three leagues, including the NCAA
+  programmes no table would list. The crest's largest area becomes the dark
+  backdrop and its most legible saturated colour becomes the banner, the
+  digits and the confetti.
+- Detection is built for hockey: a goal is a per-side increment, a goal waved
+  off after review re-bases silently instead of re-firing, and a win only
+  fires for a game this plugin watched go live, once, and never on the tie the
+  feed briefly shows mid-shootout.
+- Five new per-league settings: `celebration_enabled` (default `true`) plus
+  the advanced `celebration_duration`, `celebrate_opponent_goals`,
+  `celebration_team_colors` and `celebration_confetti`.
+- The plugin now declares `needs_high_fps` while a celebration is on screen,
+  so a goal that arrives while another plugin is showing gets a smooth
+  celebration rather than one stepped once a second. Scrolling boards behave
+  exactly as before.
+- `test_goal_celebration.py`, covering detection, the palette, the scenery,
+  the config path and the frame contract, with production-font goldens at
+  128x32, 128x64 and 256x128. Its crests come from the core's committed
+  assets/sports/nhl_logos, since this plugin deliberately bundles none.
+
 ## [1.31.1] - 2026-09-17
 
 ### Changed

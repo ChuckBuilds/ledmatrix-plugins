@@ -325,8 +325,25 @@ is what `dynamic_duration.max_duration_seconds` is for.
 ## Score and win celebrations
 
 When a favorite team scores or wins a **live** game, the scorebug briefly gives
-way to a full-screen celebration: the two logos at the edges, the new score
-centered with the scoring side's digits pulsing, and a banner at the top.
+way to a full-screen celebration, drawn in the **scoring team's own colours**:
+a team-coloured gradient behind the screen, the two logos at the edges with the
+opponent's dimmed so the team that scored reads at a glance, confetti in the
+team's colours, the new score centered with the scoring side's digits glowing,
+and a banner at the top.
+
+The colours are read from the team's own logo, so they work for every team ESPN
+names -- including the FCS opponents no colour table would list. Turn them off
+with `celebration_team_colors: false` for a fixed navy and amber, and turn the
+confetti off on its own with `celebration_confetti: false`.
+
+Behind the banner sits a piece of scenery chosen by what just happened:
+
+| Score | Scenery |
+|---|---|
+| Touchdown | The goal line and its hash marks |
+| Field goal or extra point | The goalposts, framing the score |
+| Anything else | Diagonal team-colour stripes |
+| Win | A sunburst behind the winner |
 
 The banner is chosen from the **points scored between two updates**, not from
 any feed text, so it works the same way in both leagues:
@@ -347,6 +364,16 @@ for either.
 Configured per league: `celebration_enabled` (default `true`),
 `celebration_duration` (default `8` seconds), and `celebrate_opponent_scores`
 (default `false`; with no favorites configured, any team's score celebrates).
+The two colour settings above, `celebration_team_colors` and
+`celebration_confetti`, both default to `true`.
+
+Every frame of the celebration is a finished screen rather than a step of an
+animation. That is deliberate: unless a league is in `scroll` mode the core
+redraws this plugin about once a second, so any single frame may be the only
+one anyone sees. When a score arrives while another plugin is on screen, the
+plugin asks the core for its high-FPS loop and the confetti and the glow run
+smoothly; when it arrives while football is already showing, the same screens
+simply step once a second instead.
 
 ## Adaptive layout
 
@@ -511,6 +538,8 @@ All **Advanced**.
 | `<league>.celebration_enabled` | boolean | `true` |
 | `<league>.celebration_duration` | 3–30 s | `8` (**Advanced**) |
 | `<league>.celebrate_opponent_scores` | boolean | `false` (**Advanced**) |
+| `<league>.celebration_team_colors` | boolean | `true` (**Advanced**) |
+| `<league>.celebration_confetti` | boolean | `true` (**Advanced**) |
 
 ### Dynamic duration
 

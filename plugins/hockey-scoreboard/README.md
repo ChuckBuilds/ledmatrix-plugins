@@ -322,6 +322,34 @@ NHL default differs, both are given as *NHL / NCAA*.
 | `<league>.enabled` | boolean | `true` / `false` | Build this league's managers at all. |
 | `<league>.live_priority` | boolean | `true` / `false` | Let this league's live games interrupt the rotation and display immediately. |
 
+### Goal and win celebrations
+
+When a favorite team scores or wins a **live** game, the scorebug briefly
+gives way to a full-screen celebration drawn in the **scoring team's own
+colours**, read from that team's crest: a team-coloured gradient behind the
+screen, the goal net framing the score, the opposing crest dimmed so the team
+that scored reads at a glance, confetti in the team's colours, and the scoring
+side's digits glowing. A winner gets a sunburst behind the banner instead of
+the net.
+
+| Key | Type | Default | What it does |
+|---|---|---|---|
+| `<league>.celebration_enabled` | boolean | `true` | Show the takeover when a favorite scores or wins a live game. |
+| `<league>.celebration_duration` | 3-30 s | `8` | **Advanced.** How long it holds the panel. |
+| `<league>.celebrate_opponent_goals` | boolean | `false` | **Advanced.** Also celebrate the opponent's goals. |
+| `<league>.celebration_team_colors` | boolean | `true` | **Advanced.** Draw it in the scoring team's colours. Off uses a fixed navy and amber. |
+| `<league>.celebration_confetti` | boolean | `true` | **Advanced.** Fall team-coloured confetti across the screen. |
+
+A goal that is later waved off re-bases silently rather than celebrating
+again, and a win only fires for a game this plugin actually watched go live,
+so a board started after the final horn stays quiet.
+
+Every frame is a finished screen rather than a step of an animation, because
+unless a league is in `scroll` mode the core redraws this plugin about once a
+second and any single frame may be the only one anyone sees. When a goal
+arrives while another plugin is on screen the plugin asks the core for its
+high-FPS loop, and the confetti and the glow run smoothly.
+
 ### Display modes
 
 | Key | Type | Default |

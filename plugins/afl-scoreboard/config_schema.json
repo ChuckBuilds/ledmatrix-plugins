@@ -477,6 +477,18 @@
       "description": "Also celebrate when the opponent scores, not just favorites (off by default)",
       "x-advanced": true
     },
+    "celebration_team_colors": {
+      "type": "boolean",
+      "default": true,
+      "description": "Draw the celebration in the scoring team's colours, read from its logo. Off uses a fixed navy and amber palette",
+      "x-advanced": true
+    },
+    "celebration_confetti": {
+      "type": "boolean",
+      "default": true,
+      "description": "Fall team-coloured confetti across the celebration screen",
+      "x-advanced": true
+    },
     "timezone": {
       "x-advanced": true,
       "type": "string",
@@ -1588,6 +1600,8 @@
     "celebration_enabled",
     "celebration_duration",
     "celebrate_opponent_goals",
+    "celebration_team_colors",
+    "celebration_confetti",
     "timezone",
     "game_limits",
     "display_options",

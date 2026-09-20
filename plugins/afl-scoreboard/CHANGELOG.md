@@ -1,5 +1,42 @@
 # Changelog
 
+## [1.29.0] - 2026-09-20
+
+### Added
+- **The goal and win celebration is drawn in the scoring team's colours.**
+  Read from the team's own logo rather than from a colour table, so it covers
+  every team the feed names. The screen picks two colours out of the crest:
+  its largest area becomes a dark gradient behind everything, and its most
+  legible saturated colour becomes the banner, the glowing score digits and
+  the confetti. A sunburst sits behind a winner; a goal gets diagonal
+  team-colour stripes.
+- **Team-coloured confetti**, seeded from the game so the same goal always
+  falls the same way.
+- Two advanced settings, both `true` by default: `celebration_team_colors`
+  and `celebration_confetti`.
+
+### Fixed
+- **The celebration's animation now actually animates.** The old screen
+  flashed its background at 2.5 Hz and toggled the score highlight between two
+  colours at 4 Hz. Unless a league is in `scroll` mode the core redraws this
+  plugin once a second (its high-FPS loop is reserved for plugins that scroll
+  or declare `needs_high_fps`), so both effects were sampled far below their
+  rate and aliased into a colour that changed at random. The score now glows
+  on a continuous ramp, and every frame across the window is a finished card.
+- **The banner is no longer clipped in the opening frame.** It slid down into
+  place from `y=-3`, so a board sampling once a second could catch its only
+  frame with the top row of the text cut off. It fades from white into the
+  team colour instead, which cannot clip.
+- **The score no longer runs off the bottom of a tall panel.** Ported from
+  football-scoreboard 3.9.2 (#338), which scaled the score font with the panel
+  and then lifted it by the measured ink when it would clip; this lineage's
+  copy of the celebration still placed it at a fixed offset sized for the old
+  8px face.
+- **The plugin asks the core for its high-FPS loop while a celebration is on
+  screen** (`needs_high_fps`), so a goal that arrives while another plugin is
+  showing gets a smooth celebration rather than a stepped one. Scrolling
+  boards behave exactly as before.
+
 ## [1.28.1] - 2026-09-17
 
 ### Changed
