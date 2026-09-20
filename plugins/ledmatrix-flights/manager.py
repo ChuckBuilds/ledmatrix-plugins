@@ -1636,7 +1636,15 @@ class FlightTrackerPlugin(BasePlugin):
                         self._skyaware_db_cache[prefix] = db_data
                     else:
                         db_data = {}
-                        self._skyaware_db_absent[prefix] = now + self._SKYAWARE_DB_MISS_TTL
+                        # Only a definitive "not here" earns the long hold. A
+                        # 5xx says the feeder is unwell, not that the file is
+                        # missing -- same class as a connection error -- and
+                        # holding those for ten minutes would keep a recovered
+                        # feeder suppressed long after it came back.
+                        ttl = (self._SKYAWARE_DB_MISS_TTL
+                               if resp.status_code == 404
+                               else self._SKYAWARE_DB_ERROR_TTL)
+                        self._skyaware_db_absent[prefix] = now + ttl
                 except (requests.RequestException, IOError, json.JSONDecodeError) as e:
                     self.logger.debug(f"[Flight Tracker] SkyAware DB fetch failed for prefix {prefix}: {e}")
                     db_data = {}

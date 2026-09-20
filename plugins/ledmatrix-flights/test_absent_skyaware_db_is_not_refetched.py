@@ -138,6 +138,27 @@ def main():
     check("the error hold-off is shorter than the miss hold-off",
           stub2._SKYAWARE_DB_ERROR_TTL < stub2._SKYAWARE_DB_MISS_TTL)
 
+    print("\na 5xx is held briefly, like a connection error, not for ten minutes")
+    # A server error says the feeder is unwell, not that the file is missing.
+    # Holding it for the miss TTL would keep a recovered feeder suppressed.
+    stub4, clock4 = _Stub(), [0.0]
+    sick = lambda url: _Resp(503)
+    check("the first pass asks", _run(stub4, sick, clock4, _ac("A0E000")) ==
+          ["http://feeder.local/db/A0.json"])
+    clock4[0] += 5
+    check("it holds off briefly", _run(stub4, sick, clock4, _ac("A0E000")) == [])
+    clock4[0] += stub4._SKYAWARE_DB_ERROR_TTL
+    check("but retries on the error TTL, not the miss TTL",
+          _run(stub4, sick, clock4, _ac("A0E000")) == ["http://feeder.local/db/A0.json"])
+
+    print("\na 404 still earns the long hold")
+    stub5, clock5 = _Stub(), [0.0]
+    gone = lambda url: _Resp(404)
+    _run(stub5, gone, clock5, _ac("A0E000"))
+    clock5[0] += stub5._SKYAWARE_DB_ERROR_TTL + 5
+    check("still silent well past the error TTL",
+          _run(stub5, gone, clock5, _ac("A0E000")) == [])
+
     print("\nseveral absent prefixes are each remembered independently")
     stub3, clock3 = _Stub(), [0.0]
     missing = lambda url: _Resp(404)
