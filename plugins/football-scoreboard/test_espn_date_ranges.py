@@ -186,9 +186,20 @@ def test_the_lookback_window_recovers_from_a_rejected_range():
     manager = make_manager(FixedCoreService())
     data = manager._get_weeks_data()
     sent = [call["dates"] for call in manager.session.calls]
-    assert "-" in sent[0]
-    assert all("-" not in dates for dates in sent[1:])
-    assert [event["id"] for event in data["events"]] == ["game-" + d for d in sent[1:]]
+    assert "-" in sent[0]                       # the range was tried first
+    assert all("-" not in dates for dates in sent[1:])   # then re-asked per day
+
+    # Compare as sets: the chunks go out concurrently, so the order the calls
+    # are *recorded* in is thread scheduling, not behaviour. Asserting the two
+    # lists were equal made this test fail whenever the workers happened to
+    # finish out of order -- it failed most runs, which is worse than no test,
+    # because a real regression here would have looked like the usual noise.
+    assert {event["id"] for event in data["events"]} == {"game-" + d for d in sent[1:]}
+
+    # The order that *is* guaranteed, and worth pinning: whatever order the
+    # chunks came back in, the events are assembled oldest-first.
+    returned = [event["id"] for event in data["events"]]
+    assert returned == sorted(returned)
 
 
 def test_todays_games_recover_from_a_rejected_range():
