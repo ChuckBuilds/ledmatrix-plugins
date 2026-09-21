@@ -58,10 +58,10 @@ def _write_logos(folder):
         Image.new("RGBA", (120, 120), (200, 30, 30, 255)).save(folder / ("%s.png" % team))
 
 
-def test_sports_cache(tmp):
+def test_sports_cache(tmp_path):
     print("SportsCore logo cache")
     import sports
-    logo_dir = tmp / "sports_logos"
+    logo_dir = tmp_path / "sports_logos"
     _write_logos(logo_dir)
 
     body = dict((name, lambda self, *a, **k: None)
@@ -90,14 +90,25 @@ def test_sports_cache(tmp):
           survivor in probe._logo_cache)
 
 
-def test_renderer_cache(tmp):
+def test_renderer_cache(tmp_path):
     # GameRenderer._load_and_resize_logo(league, team_abbrev) takes two
     # arguments; a static checker resolves the name to SportsCore's
     # four-argument method and reports a missing logo_path.
     # pylint: disable=no-value-for-parameter
     print("\nGameRenderer logo cache")
-    os.chdir(str(tmp))
-    _write_logos(tmp / "assets" / "sports" / "mlb_logos")
+    # Restore the working directory here rather than leaning on main()'s
+    # finally: under pytest there is no main(), and a leaked chdir would
+    # follow every test that runs after this one.
+    _here = os.getcwd()
+    try:
+        os.chdir(str(tmp_path))
+        _write_logos(tmp_path / "assets" / "sports" / "mlb_logos")
+        _renderer_cache_checks()
+    finally:
+        os.chdir(_here)
+
+
+def _renderer_cache_checks():
     from game_renderer import GameRenderer
 
     shared = {}
