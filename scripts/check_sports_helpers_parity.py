@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Keep the scoreboards' helper copies identical to core's sports_helpers.
 
-LEDMatrix core ships ``src/common/sports_helpers.py`` (core PR #583): helpers
-every scoreboard's ``sports.py`` carries a byte-identical private copy of --
+LEDMatrix core ships ``src/common/sports_helpers.py`` (core PR #583, on core
+main since 2026-09-15): helpers every scoreboard's ``sports.py`` carries a
+byte-identical private copy of --
 ``_clamp_window``, ``_clamp_seconds``, ``_logo_needs_refresh`` (with
 ``_MIN_WINDOW_DAYS`` / ``_MAX_WINDOW_DAYS``) and the ``SportsCore`` methods
 ``_mode_customization``, ``_setting_int``, ``_reset_dwell_on_reentry``,
@@ -368,8 +369,12 @@ def run(core: Optional[Path], plugins_dir: Path, min_plugins: int = MIN_PLUGINS,
         return 2
     core_file = core / CORE_MODULE
     if not core_file.is_file():
-        print(f"SKIP: core does not ship sports_helpers yet "
-              f"({core_file.as_posix()} not found; lands with ChuckBuilds/LEDMatrix#583)")
+        # Core main has shipped this since ChuckBuilds/LEDMatrix#583, so in this
+        # repo's CI it is always present. The skip is for someone running the
+        # gate against an older core checkout, where there is nothing to compare.
+        print(f"SKIP: this core checkout does not ship sports_helpers "
+              f"({core_file.as_posix()} not found; it landed in "
+              f"ChuckBuilds/LEDMatrix#583)")
         return 2
     if not plugins_dir.is_dir():
         print(f"SKIP: no plugins directory at {plugins_dir}")

@@ -3,9 +3,12 @@
 
 The unit section builds small synthetic core + plugin trees in temp dirs, so it
 runs anywhere. The integration section runs the gate on this repo's real
-scoreboards when LEDMATRIX_CORE points at a core that ships
-src/common/sports_helpers.py, and skips otherwise (core main, until
-ChuckBuilds/LEDMatrix#583 merges).
+scoreboards. It skips only when no core checkout can be found at all (someone
+running the suite without one). A core that is found but does not ship
+src/common/sports_helpers.py -- or a LEDMATRIX_CORE that is not a checkout --
+is a failure rather than a skip: core main has shipped that module since
+ChuckBuilds/LEDMatrix#583, so its absence means the checkout broke or the
+module moved, which is exactly when this gate must go red instead of quiet.
 
 Run: python scripts/test_check_sports_helpers_parity.py
 """
@@ -188,7 +191,7 @@ check("copy + core import is a warning, not a failure",
 
 code, out = with_tree(lambda c, p: run(c, p), core_src=None)
 check("core without the module exits 2",
-      code == 2 and "core does not ship sports_helpers yet" in out, f"exit {code}")
+      code == 2 and "does not ship sports_helpers" in out, f"exit {code}")
 
 code, out = run(None, Path(tempfile.gettempdir()))
 check("missing core exits 2", code == 2 and "SKIP" in out, f"exit {code}")
@@ -232,10 +235,17 @@ check("a RENAMES key core no longer defines is reported",
 # --------------------------------------------------------------------------
 print("\nintegration (this repo's scoreboards)")
 
-core = gate.find_core(os.environ.get("LEDMATRIX_CORE") or None)
-if core is None or not (core / gate.CORE_MODULE).is_file():
-    print("  SKIP  LEDMATRIX_CORE does not ship src/common/sports_helpers.py "
-          "(ChuckBuilds/LEDMatrix#583 not merged yet)")
+core_env = os.environ.get("LEDMATRIX_CORE") or None
+core = gate.find_core(core_env)
+if core is None and not core_env:
+    print("  SKIP  no LEDMatrix core checkout found "
+          "(set LEDMATRIX_CORE to run this section)")
+elif core is None:
+    check("LEDMATRIX_CORE is a core checkout", False,
+          f"{core_env} has no src/ directory")
+elif not (core / gate.CORE_MODULE).is_file():
+    check("core ships src/common/sports_helpers.py", False,
+          f"{(core / gate.CORE_MODULE).as_posix()} not found")
 else:
     code, out = run(core, gate.PLUGINS_DIR)
     check("the real tree matches core", code == 0, f"exit {code}")
