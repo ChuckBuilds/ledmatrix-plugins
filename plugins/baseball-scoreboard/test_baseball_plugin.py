@@ -14,6 +14,8 @@ import os
 import sys
 import time
 import logging
+
+import pytest
 from typing import Dict, Any
 
 # Set emulator mode BEFORE any imports
@@ -194,6 +196,28 @@ def test_plugin_initialization():
         import traceback
         traceback.print_exc()
         return None
+
+
+@pytest.fixture(name="plugin")
+def _plugin_for_pytest():
+    """Supply the plugin the four step tests take as an argument.
+
+    This file is a sequential smoke test: main() initialises a plugin once and
+    threads it through update -> display -> info -> cleanup. pytest collects
+    those steps as tests too, and without this it errors on all four with
+    "fixture 'plugin' not found". Building one per test keeps the pytest path
+    independent, which is what pytest expects; main() is untouched and still
+    threads a single plugin through in order.
+    """
+    built = test_plugin_initialization()
+    if built is None:
+        pytest.skip("plugin could not be initialised in this environment")
+    yield built
+    try:
+        built.cleanup()
+    except Exception:  # pylint: disable=broad-exception-caught
+        # Teardown must not fail the test; cleanup() can raise anything.
+        pass
 
 
 def test_plugin_update(plugin):
