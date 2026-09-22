@@ -1,0 +1,9 @@
+{
+  "_comment": "Renders the ticker from a recorded ESPN leaders payload, so the harness draws real content with no network. The season is pinned, which also means resolve_season() answers from config and the cache key matches the fixture.",
+  "config": {
+    "season": 2025,
+    "season_type": "regular",
+    "players_per_category": 5
+  },
+  "mock_data": "test/fixtures/espn_leaders.json"
+}

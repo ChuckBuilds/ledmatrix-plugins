@@ -1,0 +1,278 @@
+{
+  "plugin": "nfl-stat-leaders",
+  "_comment": "Leaderboards are seeded onto the plugin instance rather than fetched from ESPN, and last_update is seeded so update() does not re-fetch and clear them. The ticker scrolls, so shots step frames. Players and numbers are invented.",
+  "defaults": {
+    "width": 256,
+    "height": 32,
+    "scale": 3,
+    "freeze_time": "2026-01-05T18:00:00+00:00",
+    "skip_update": true,
+    "frames": 120,
+    "config": {
+      "enabled": true,
+      "season": 2025,
+      "season_type": "regular"
+    },
+    "attrs": {
+      "boards": [
+        {
+          "key": "passing_yards",
+          "title": "PASSING YARDS",
+          "short_title": "PASS YDS",
+          "leaders": [
+            {
+              "rank": 1,
+              "name": "J. Allen",
+              "position": "QB",
+              "team": "BUF",
+              "value": "4,183"
+            },
+            {
+              "rank": 2,
+              "name": "P. Mahomes",
+              "position": "QB",
+              "team": "KC",
+              "value": "4,004"
+            },
+            {
+              "rank": 3,
+              "name": "J. Burrow",
+              "position": "QB",
+              "team": "CIN",
+              "value": "3,987"
+            },
+            {
+              "rank": 4,
+              "name": "L. Jackson",
+              "position": "QB",
+              "team": "BAL",
+              "value": "3,812"
+            },
+            {
+              "rank": 5,
+              "name": "C. Stroud",
+              "position": "QB",
+              "team": "HOU",
+              "value": "3,631"
+            }
+          ]
+        },
+        {
+          "key": "rushing_yards",
+          "title": "RUSHING YARDS",
+          "short_title": "RUSH YDS",
+          "leaders": [
+            {
+              "rank": 1,
+              "name": "S. Barkley",
+              "position": "RB",
+              "team": "PHI",
+              "value": "1,838"
+            },
+            {
+              "rank": 2,
+              "name": "D. Henry",
+              "position": "RB",
+              "team": "BAL",
+              "value": "1,788"
+            },
+            {
+              "rank": 3,
+              "name": "J. Gibbs",
+              "position": "RB",
+              "team": "DET",
+              "value": "1,412"
+            },
+            {
+              "rank": 4,
+              "name": "B. Robinson",
+              "position": "RB",
+              "team": "WSH",
+              "value": "1,377"
+            },
+            {
+              "rank": 5,
+              "name": "K. Walker",
+              "position": "RB",
+              "team": "SEA",
+              "value": "1,204"
+            }
+          ]
+        },
+        {
+          "key": "receiving_touchdowns",
+          "title": "RECEIVING TDS",
+          "short_title": "REC TDS",
+          "leaders": [
+            {
+              "rank": 1,
+              "name": "J. Chase",
+              "position": "WR",
+              "team": "CIN",
+              "value": "17"
+            },
+            {
+              "rank": 2,
+              "name": "T. Hill",
+              "position": "WR",
+              "team": "MIA",
+              "value": "12"
+            },
+            {
+              "rank": 3,
+              "name": "M. Evans",
+              "position": "WR",
+              "team": "TB",
+              "value": "11"
+            }
+          ]
+        }
+      ],
+      "resolved_season": 2025,
+      "last_update": 1799200000.0
+    }
+  },
+  "shots": [
+    {
+      "name": "hero",
+      "frames": 150
+    },
+    {
+      "name": "size-64x32",
+      "width": 64,
+      "scale": 8,
+      "frames": 196,
+      "standalone": false
+    },
+    {
+      "name": "size-128x32",
+      "width": 128,
+      "scale": 6,
+      "frames": 191,
+      "standalone": false
+    },
+    {
+      "name": "size-256x32",
+      "width": 256,
+      "scale": 3,
+      "frames": 150,
+      "standalone": false
+    },
+    {
+      "name": "size-128x64",
+      "width": 128,
+      "height": 64,
+      "scale": 6,
+      "frames": 566,
+      "standalone": false
+    },
+    {
+      "name": "team-colors-on",
+      "frames": 150,
+      "standalone": false,
+      "config": {
+        "global": {
+          "appearance": {
+            "team_color_accents": true
+          }
+        }
+      }
+    },
+    {
+      "name": "team-colors-off",
+      "frames": 150,
+      "standalone": false,
+      "config": {
+        "global": {
+          "appearance": {
+            "team_color_accents": false
+          }
+        }
+      }
+    },
+    {
+      "name": "top-three-on",
+      "frames": 150,
+      "standalone": false,
+      "config": {
+        "global": {
+          "appearance": {
+            "highlight_top_three": true
+          }
+        }
+      }
+    },
+    {
+      "name": "top-three-off",
+      "frames": 150,
+      "standalone": false,
+      "config": {
+        "global": {
+          "appearance": {
+            "highlight_top_three": false
+          }
+        }
+      }
+    }
+  ],
+  "composites": [
+    {
+      "name": "panel-sizes",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "size-64x32",
+          "label": "64 x 32",
+          "sublabel": "one player at a time"
+        },
+        {
+          "shot": "size-128x32",
+          "label": "128 x 32",
+          "sublabel": "the design size: one whole entry"
+        },
+        {
+          "shot": "size-256x32",
+          "label": "256 x 32",
+          "sublabel": "two entries at once"
+        },
+        {
+          "shot": "size-128x64",
+          "label": "128 x 64",
+          "sublabel": "three rows: name, number, position and club"
+        }
+      ]
+    },
+    {
+      "name": "team-colors",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "team-colors-on",
+          "label": "Club colours",
+          "sublabel": "global.appearance.team_color_accents: true"
+        },
+        {
+          "shot": "team-colors-off",
+          "label": "One accent colour",
+          "sublabel": "global.appearance.team_color_accents: false"
+        }
+      ]
+    },
+    {
+      "name": "top-three",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "top-three-on",
+          "label": "Podium badges",
+          "sublabel": "global.appearance.highlight_top_three: true"
+        },
+        {
+          "shot": "top-three-off",
+          "label": "Club-coloured badges",
+          "sublabel": "global.appearance.highlight_top_three: false"
+        }
+      ]
+    }
+  ]
+}

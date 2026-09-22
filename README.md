@@ -79,7 +79,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 
 ## Available Plugins
 
-### Sports (18)
+### Sports (19)
 
 | Plugin | Description | Preview |
 |--------|-------------|---------|
@@ -99,6 +99,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 | [Masters Tournament](./plugins/masters-tournament/) | Live Masters golf leaderboard, hole tracking, player cards | <a href="./plugins/masters-tournament/"><img src="./docs/assets/masters-tournament/hero.png" width="240" alt="masters-tournament on an LED panel"></a> |
 | [NFL Draft](./plugins/nfl-draft/) | Projected & live NFL draft picks from ESPN | <a href="./plugins/nfl-draft/"><img src="./docs/assets/nfl-draft/hero.png" width="240" alt="nfl-draft on an LED panel"></a> |
 | [March Madness](./plugins/march-madness/) | NCAA tournament bracket tracker with round branding and live scores | <a href="./plugins/march-madness/"><img src="./docs/assets/march-madness/hero.png" width="240" alt="march-madness on an LED panel"></a> |
+| [NFL Stat Leaders](./plugins/nfl-stat-leaders/) | Scrolling NFL statistical leaderboards: passing, rushing & receiving yards and TDs | <a href="./plugins/nfl-stat-leaders/"><img src="./docs/assets/nfl-stat-leaders/hero.png" width="240" alt="nfl-stat-leaders on an LED panel"></a> |
 | [Sports Leaderboard](./plugins/ledmatrix-leaderboard/) | League standings, rankings, conference records | <a href="./plugins/ledmatrix-leaderboard/"><img src="./docs/assets/ledmatrix-leaderboard/hero.png" width="240" alt="ledmatrix-leaderboard on an LED panel"></a> |
 | [Olympics Countdown](./plugins/olympics/) | Countdown to next Olympics with live medal counts | <a href="./plugins/olympics/"><img src="./docs/assets/olympics/hero.png" width="240" alt="olympics on an LED panel"></a> |
 
@@ -224,6 +225,7 @@ outside this monorepo, so review their source before installing.
 | Tidbyt Baseball Scoreboard | [@trsadler](https://github.com/trsadler) | [MLB-Scoreboard-LEDMatrix](https://github.com/trsadler/MLB-Scoreboard-LEDMatrix) — split team-color MLB live scoreboard |
 | F1 Live | [@BigC07](https://github.com/BigC07) | [ledmatrix-f1-live](https://github.com/BigC07/ledmatrix-f1-live) — F1 Scoreboard fork with live timing, flags and the podium from F1's live feed |
 | Sleeper Fantasy | [@ant456](https://github.com/ant456) | [ledmatrix-sleeper-fantasy](https://github.com/ant456/ledmatrix-sleeper-fantasy) — fantasy football matchups and scores from Sleeper |
+| NASCAR Race Leaderboard | [@crazzybrad](https://github.com/crazzybrad) | [LEDMATRIX-NASCAR-PLUGIN](https://github.com/crazzybrad/LEDMATRIX-NASCAR-PLUGIN) — live NASCAR lap status, favourite-driver position and rotating leaderboard pages |
 
 
 Want to see your plugin here? Check out [3rd Party Plugin Development](#3rd-party-plugin-development) below or submit a plugin via [Discord](https://discord.gg/RdrC37rEag).

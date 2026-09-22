@@ -1266,6 +1266,33 @@
       "verified": false,
       "screenshot": "",
       "latest_version": "0.2.6"
+    },
+    {
+      "id": "nfl-stat-leaders",
+      "name": "NFL Stat Leaders",
+      "description": "A scrolling ticker of the NFL's statistical leaders -- passing, rushing and receiving yards and touchdowns, plus receptions, sacks, interceptions, tackles and passer rating. Each category is a separate leaderboard you can turn on or off, drawn with club crests and club colours. Data comes from ESPN's public feed, so no API key is needed.",
+      "author": "ChuckBuilds",
+      "category": "sports",
+      "tags": [
+        "nfl",
+        "football",
+        "fantasy",
+        "stats",
+        "leaderboard",
+        "leaders",
+        "espn",
+        "scrolling"
+      ],
+      "icon": "fas fa-ranking-star",
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "branch": "main",
+      "plugin_path": "plugins/nfl-stat-leaders",
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2026-09-22",
+      "verified": true,
+      "screenshot": "",
+      "latest_version": "1.0.0"
     }
   ]
 }
