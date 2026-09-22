@@ -1,5 +1,6 @@
 import logging
-from typing import Any, Dict, Optional
+import time
+from typing import Any, Dict, List, Optional, Tuple
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -28,8 +29,107 @@ def power_play_slot(draw, width, clock_text, clock_xy, clock_font,
             top + (bottom - top - pp_h) // 2 - pp_box[1])
 
 
+# ESPN spells a goal's strength out in full ("Power play", "Shorthanded");
+# the card has room for a badge, not a sentence. Even strength gets nothing --
+# it is the default state and saying so wastes the one slot that matters.
+GOAL_STRENGTH_BADGES: Dict[str, str] = {
+    "power-play": "PP",
+    "short-handed": "SH",
+    "empty-net": "EN",
+    "penalty-shot": "PS",
+}
+
+
+def _goal_strength_badge(play: Dict) -> Optional[str]:
+    """Short badge for a goal's strength, or None at even strength."""
+    strength = play.get("strength") or {}
+    if not isinstance(strength, dict):
+        return None
+    key = (strength.get("abbreviation") or "").strip().lower()
+    if key in GOAL_STRENGTH_BADGES:
+        return GOAL_STRENGTH_BADGES[key]
+    text = (strength.get("text") or "").strip().lower()
+    for candidate, badge in GOAL_STRENGTH_BADGES.items():
+        if candidate.replace("-", " ") == text:
+            return badge
+    return None
+
+
+def _extract_goal(play: Dict) -> Optional[Dict]:
+    """Pull the scorer, assisters and context out of one ESPN scoring play.
+
+    Hockey's feed is kinder than baseball's here: the play itself carries each
+    athlete's id, name and headshot URL, plus their season goal/assist totals,
+    so the card has something worth drawing before any athlete lookup happens.
+    Returns None for a play that names nobody -- an own goal, or a feed that
+    filled in the text and not the participants."""
+    scorer = None
+    assists: List[Dict] = []
+    for participant in play.get("participants") or []:
+        athlete = participant.get("athlete") or {}
+        athlete_id = str(athlete.get("id", "") or "")
+        name = athlete.get("displayName") or athlete.get("shortName") or ""
+        if not name:
+            continue
+        entry = {
+            "id": athlete_id,
+            "name": name,
+            "short_name": athlete.get("shortName") or name,
+            "headshot_url": (athlete.get("headshot") or {}).get("href"),
+        }
+        role = participant.get("type")
+        if role == "scorer" and scorer is None:
+            entry["season_goals"] = participant.get("ytdGoals")
+            scorer = entry
+        elif role == "assister":
+            entry["season_assists"] = participant.get("ytdAssists")
+            assists.append(entry)
+    if scorer is None:
+        return None
+
+    period = play.get("period") or {}
+    clock = play.get("clock") or {}
+    return {
+        "play_id": str(play.get("id", "") or ""),
+        "scorer": scorer,
+        "assists": assists,
+        "team_id": str((play.get("team") or {}).get("id", "") or ""),
+        "period": period.get("displayValue") or (
+            str(period.get("number")) if period.get("number") else ""
+        ),
+        "clock": clock.get("displayValue") or "",
+        "strength": _goal_strength_badge(play),
+        "away_score": play.get("awayScore"),
+        "home_score": play.get("homeScore"),
+    }
+
+
+def _latest_goal(plays: Optional[List[Dict]], team_id: Optional[str] = None) -> Optional[Dict]:
+    """The most recent scoring play, optionally restricted to one team.
+
+    Scanned backwards because ESPN appends, and restricted by team because the
+    card is armed off a score delta: if both sides scored between two polls,
+    the newest goal overall may not be the one that fired the celebration."""
+    for play in reversed(plays or []):
+        if not play.get("scoringPlay"):
+            continue
+        goal = _extract_goal(play)
+        if goal is None:
+            continue
+        if team_id and goal["team_id"] and goal["team_id"] != str(team_id):
+            continue
+        return goal
+    return None
+
+
 class Hockey(SportsCore):
     """Base class for hockey sports with common functionality."""
+
+    # Set by league-specific base managers to opt into the ESPN per-game
+    # summary endpoint, which is where the goal scorer lives. Left None for
+    # college hockey: its summary carries no `plays` array at all, so there
+    # is nothing to read a scorer out of.
+    espn_summary_sport_league: Optional[Tuple[str, str]] = None
 
     def __init__(
         self,
@@ -46,6 +146,9 @@ class Hockey(SportsCore):
         # True mirrors the adapter's own fallback in manager.py and the
         # schema's defaults.show_powerplay.
         self.show_powerplay = self.mode_config.get("show_powerplay", True)
+        # Opt-in: the card costs one extra ESPN summary request per goal, and
+        # a second for the scorer's bio. Off unless asked for.
+        self.show_goal_scorer = self.mode_config.get("show_goal_scorer", False)
 
     def _extract_game_details(self, game_event: Dict) -> Optional[Dict]:
         """Extract relevant game details from ESPN Hockey API response."""
@@ -174,6 +277,156 @@ class HockeyLive(Hockey, SportsLive):
         sport_key: str,
     ):
         super().__init__(config, display_manager, cache_manager, logger, sport_key)
+        # The goal-scorer card, armed off the celebration and shown once it
+        # ends. Holds the resolved goal for the game that scored, the window
+        # the card owns the panel for, and a per-celebration guard so one
+        # goal triggers exactly one lookup.
+        self._goal_card: Optional[Dict] = None
+        self._goal_card_armed_at: Optional[float] = None
+        self._player_bio_cache: Dict[str, Optional[Dict]] = {}
+        self._headshot_mgr = None  # lazily created on the render path
+
+    # ------------------------------------------------------------------
+    # Goal-scorer card
+    #
+    # The celebration already knows a goal happened and which team scored --
+    # it is armed from a score delta on the scoreboard feed. What that feed
+    # never carries is *who* scored, so the card is a second request made
+    # while the celebration is on screen, and drawn in the seconds after it
+    # clears.
+    # ------------------------------------------------------------------
+
+    def _goal_card_cfg(self) -> Dict:
+        return self.config.get("customization", {}).get("goal_scorer", {})
+
+    def update(self):
+        super().update()
+        if self.test_mode or not self.show_goal_scorer:
+            return
+        if not self.espn_summary_sport_league:
+            return  # college hockey: no play data to read a scorer from
+
+        celebration = self.active_celebration
+        if not celebration or celebration.get("kind") != "goal":
+            return
+        started_at = celebration.get("started_at")
+        if started_at is None or started_at == self._goal_card_armed_at:
+            return  # already handled this goal
+
+        # super().update() is where the score delta was spotted and the
+        # celebration armed, so this runs inside the same cycle -- the lookup
+        # has the whole celebration window to land before the card is due.
+        self._goal_card_armed_at = started_at
+        self._goal_card = None
+        self._resolve_goal_scorer(celebration)
+
+    def _resolve_goal_scorer(self, celebration: Dict) -> None:
+        """Look up who scored, off-thread, and arm the card when it lands.
+
+        Fire-and-forget: the render path only ever reads the result, so a slow
+        or failed lookup costs the card rather than the display. The bio is
+        fetched in the same thread, after the play -- the card is already
+        worth drawing from the play alone, and the bio only adds trivia."""
+        game = celebration.get("game") or {}
+        game_id = game.get("id")
+        if not game_id:
+            return
+        scored_side = celebration.get("scored_side")
+        team_id = game.get(f"{scored_side}_id") if scored_side else None
+        sport, league = self.espn_summary_sport_league
+        show_until = (
+            celebration.get("started_at", time.time())
+            + float(getattr(self, "celebration_duration", 8) or 8)
+            + float(self._goal_card_cfg().get("dwell_seconds", 6))
+        )
+
+        import threading
+
+        def resolve():
+            try:
+                summary = self.data_source.fetch_game_summary(sport, league, str(game_id))
+                if not summary:
+                    return
+                goal = _latest_goal(summary.get("plays"), team_id)
+                if goal is None:
+                    self.logger.debug(
+                        f"No named scorer in the summary for game {game_id}; "
+                        "skipping the goal card"
+                    )
+                    return
+                scorer_id = goal["scorer"].get("id")
+                if scorer_id:
+                    self._fetch_player_bio(sport, league, scorer_id)
+                    goal["bio"] = self._player_bio_cache.get(scorer_id)
+                    url = (goal.get("bio") or {}).get("headshot_url") or \
+                        goal["scorer"].get("headshot_url")
+                    self._prefetch_headshot(scorer_id, url, league)
+                goal["game_id"] = str(game_id)
+                goal["team_abbr"] = game.get(f"{scored_side}_abbr", "")
+                goal["team_color"] = game.get(f"{scored_side}_team_color")
+                goal["show_from"] = celebration.get("started_at", time.time()) + float(
+                    getattr(self, "celebration_duration", 8) or 8
+                )
+                goal["show_until"] = show_until
+                self._goal_card = goal
+            except Exception as e:
+                self.logger.debug(f"Goal-scorer lookup failed for {game_id}: {e}")
+
+        threading.Thread(target=resolve, daemon=True).start()
+
+    def _fetch_player_bio(self, sport: str, league: str, player_id: str) -> None:
+        """Cache a scorer's bio in memory and, when the core gave us one, in
+        the durable cache. Stores None on a definitive miss so a player with
+        no ESPN record is not re-fetched on every goal."""
+        if player_id in self._player_bio_cache:
+            return
+        cache_key = f"hockey_player_{player_id}"
+        if self.cache_manager is not None:
+            try:
+                cached = self.cache_manager.get(cache_key)
+                if cached is not None:
+                    self._player_bio_cache[player_id] = cached or None
+                    return
+            except Exception as e:
+                self.logger.debug(f"Player bio cache read failed for {player_id}: {e}")
+
+        bio = self.data_source.fetch_player_details(sport, league, player_id)
+        self._player_bio_cache[player_id] = bio
+        if self.cache_manager is not None:
+            try:
+                self.cache_manager.set(cache_key, bio or {}, ttl=86400)
+            except Exception as e:
+                self.logger.debug(f"Player bio cache write failed for {player_id}: {e}")
+
+    def _get_headshot_manager(self):
+        """Lazily create the headshot loader, reusing the hockey logo
+        manager's download/cache machinery. None means the card renders
+        text-only rather than failing."""
+        if self._headshot_mgr is None:
+            try:
+                from hockey_headshot_manager import HockeyHeadshotManager
+                self._headshot_mgr = HockeyHeadshotManager(
+                    self.display_manager, self.logger, self.sport_key
+                )
+            except Exception as e:
+                self.logger.debug(f"Could not create headshot manager: {e}")
+                return None
+        return self._headshot_mgr
+
+    def _prefetch_headshot(self, player_id: str, url: Optional[str], league: str) -> None:
+        """Warm the on-disk headshot cache so the render path only ever does
+        a synchronous cache read. Already off the render thread (called from
+        the resolve thread), so no extra thread is needed here."""
+        if not url:
+            return
+        mgr = self._get_headshot_manager()
+        if mgr is None:
+            return
+        try:
+            mgr.load_headshot(str(player_id), url, league=league, max_size=48,
+                              allow_download=True)
+        except Exception as e:
+            self.logger.debug(f"Headshot prefetch failed for {player_id}: {e}")
 
     def _test_mode_update(self):
         if self.current_game and self.current_game["is_live"]:
@@ -193,8 +446,337 @@ class HockeyLive(Hockey, SportsLive):
             self.current_game["clock"] = f"{minutes:02d}:{seconds:02d}"
             # Always update display in test mode
 
+    # Ordered largest-to-smallest fallback ladder within the same clean X11
+    # bitmap family. BDF fonts are fixed-size bitmaps -- they cannot shrink to
+    # an arbitrary computed size the way a scalable .ttf can -- so when the
+    # configured font's measured row height will not fit the rows the card
+    # needs, step down to the next smaller sibling rather than lose a row off
+    # the bottom.
+    _GOAL_CARD_FONT_LADDER: List[str] = [
+        "9x15.bdf", "8x13.bdf", "7x13.bdf", "6x13.bdf",
+        "6x12.bdf", "6x10.bdf", "6x9.bdf", "5x8.bdf", "5x7.bdf",
+    ]
+
+    # Top-to-bottom order the card's rows are drawn in.
+    _GOAL_CARD_ROW_ORDER: Tuple[str, ...] = (
+        "header", "name", "team", "stats", "assists", "vitals", "hometown",
+    )
+    # The order rows are given up in when the panel cannot fit them all, least
+    # useful first. Not the reverse of the draw order: the assists read above
+    # the trivia but below the scorer's own season line, which is the thing
+    # that makes this a player card rather than a ticker line.
+    _GOAL_CARD_DROP_ORDER: Tuple[str, ...] = (
+        "hometown", "vitals", "assists", "team", "stats",
+    )
+
+    @staticmethod
+    def _readable_on(background: Tuple[int, int, int]) -> Tuple[int, int, int]:
+        """Black or white, whichever reads against `background`. Team colours
+        run from near-black navy to bright gold, so a banner knocked out in a
+        fixed colour is illegible for roughly half the league."""
+        r, g, b = background[:3]
+        # Rec. 601 luma -- close enough for a two-way choice, and cheap.
+        return (0, 0, 0) if (0.299 * r + 0.587 * g + 0.114 * b) > 140 else (255, 255, 255)
+
+    @staticmethod
+    def _truncate_to_width(draw, text: str, font, max_width: int) -> str:
+        """Hard-truncate text (no ellipsis -- pixel fonts render one poorly at
+        these sizes) so it never draws past the panel edge. A long name is
+        more useful clipped than bleeding off-canvas."""
+        if draw.textbbox((0, 0), text, font=font)[2] <= max_width:
+            return text
+        truncated = text
+        while len(truncated) > 1:
+            truncated = truncated[:-1]
+            if draw.textbbox((0, 0), truncated, font=font)[2] <= max_width:
+                return truncated
+        return truncated
+
+    @staticmethod
+    def _fit_segments(draw, segments: List[str], font, fit_width: int,
+                      separator: str = "  ") -> str:
+        """Join `segments` into one line that fits fit_width, dropping whole
+        trailing segments rather than cutting through the middle of one.
+        "Age 33  6' 0"" reads as a finished line; "Age 33  6' " does not."""
+        if not segments:
+            return ""
+        trimmed = list(segments)
+        while len(trimmed) > 1:
+            if draw.textbbox((0, 0), separator.join(trimmed), font=font)[2] <= fit_width:
+                break
+            trimmed = trimmed[:-1]
+        return separator.join(trimmed)
+
+    def _load_multiline_fit_font(self, font_cfg: Dict, lines: List[str],
+                                 available_width: int, available_height: int):
+        """Largest font from the ladder that fits every line's actual text in
+        the space available, falling back a rung at a time. Measures the real
+        strings rather than a generic glyph, so a long name pushes the ladder
+        down where a short one would not."""
+        needed_rows = max(1, len(lines))
+        candidates = [font_cfg.get("font", "9x15.bdf")]
+        for fallback in self._GOAL_CARD_FONT_LADDER:
+            if fallback not in candidates:
+                candidates.append(fallback)
+
+        result = None
+        for i, font_name in enumerate(candidates):
+            cfg_try = dict(font_cfg)
+            cfg_try["font"] = font_name
+            font = self._load_custom_font_from_element_config(
+                cfg_try, default_size=font_cfg.get("font_size", 24)
+            )
+            try:
+                row_h = (font.getbbox("Ay")[3] - font.getbbox("Ay")[1]) + 3
+                max_line_w = max((font.getbbox(t)[2] for t in lines), default=0)
+            except AttributeError:
+                row_h, max_line_w = 10, available_width + 1  # keep trying
+            result = (font, row_h)
+            if (needed_rows * row_h <= available_height
+                    and max_line_w <= available_width) or i == len(candidates) - 1:
+                break
+        return result
+
+    @staticmethod
+    def _build_goal_card_rows(goal: Dict) -> Dict[str, List[str]]:
+        """Assemble the card's rows as {row_key: [segment, ...]}.
+
+        Everything past the scorer's name is optional. The play alone yields a
+        banner, a name and a season goal count; the athlete lookup adds the
+        rest. A field ESPN did not send is absent rather than drawn as an
+        empty label."""
+        scorer = goal.get("scorer") or {}
+        bio = goal.get("bio") or {}
+        rows: Dict[str, List[str]] = {}
+
+        header = [f"{goal.get('team_abbr') or ''} GOAL".strip()]
+        when = " ".join(p for p in (goal.get("period"), goal.get("clock")) if p)
+        if when:
+            header.append(when)
+        if goal.get("strength"):
+            header.append(goal["strength"])
+        rows["header"] = header
+        # Both spellings, longest first. The renderer picks the longest that
+        # fits rather than hard-cutting: ESPN hands us "J. Brodzinski"
+        # alongside "Jonny Brodzinski", and the abbreviation is a far better
+        # narrow-panel answer than "Jonny Brodzinsk".
+        full_name = bio.get("display_name") or scorer.get("name") or "Scorer"
+        short_name = scorer.get("short_name") or ""
+        rows["name"] = [full_name]
+        if short_name and short_name != full_name:
+            rows["name"].append(short_name)
+
+        jersey = bio.get("jersey")
+        position = bio.get("position") or ""
+        team_line = [p for p in (f"#{jersey}" if jersey else "", position) if p]
+        if team_line:
+            rows["team"] = team_line
+
+        stats = [f"{label} {value}" for label, value in (bio.get("stat_pairs") or [])[:4]]
+        if not stats and scorer.get("season_goals") is not None:
+            # No bio yet: the play still knows how many the scorer has.
+            stats = [f"G {scorer['season_goals']}"]
+        if stats:
+            rows["stats"] = stats
+
+        assists = [a.get("short_name") or a.get("name") for a in goal.get("assists") or []]
+        assists = [a for a in assists if a]
+        if assists:
+            # "A:" rather than "Assists:" -- the row is usually the widest
+            # after the stat line and the abbreviation is universal in hockey.
+            rows["assists"] = [f"A: {assists[0]}"] + assists[1:]
+
+        vitals = []
+        if bio.get("age"):
+            vitals.append(f"Age {bio['age']}")
+        for key in ("height", "weight"):
+            if bio.get(key):
+                vitals.append(str(bio[key]))
+        if vitals:
+            rows["vitals"] = vitals
+
+        if bio.get("birthplace"):
+            rows["hometown"] = [str(bio["birthplace"])]
+        return rows
+
+    def _maybe_draw_goal_card(self, game: Dict, force_clear: bool = False) -> bool:
+        """Draw the goal-scorer card if one is armed, due, and for this game.
+
+        Returns True when it drew, so the caller skips the scorebug for this
+        frame. The card replaces the scorebug rather than overlaying it --
+        there is no room on a hockey scorebug for a face and five rows of
+        text."""
+        if not self.show_goal_scorer:
+            return False
+        card = self._goal_card
+        if not card:
+            return False
+        if str(game.get("id") or "") != card.get("game_id"):
+            return False
+        now = time.time()
+        if now < card.get("show_from", 0):
+            return False  # celebration still owns the panel
+        if now >= card.get("show_until", 0):
+            self._goal_card = None
+            return False
+        self._draw_goal_card(card, force_clear)
+        return True
+
+    def _draw_goal_card(self, goal: Dict, force_clear: bool = False) -> None:
+        """Draw the goal-scorer card: headshot on the left, then a team-colour
+        "<TEAM> GOAL" banner with the period, clock and strength, the scorer's
+        name, number and position, their season line, the assists, and their
+        age/height/weight and hometown.
+
+        Rows are priority-ordered rather than tiered by a hardcoded panel
+        table: the font ladder is asked to fit them all, and when it cannot,
+        the next row in _GOAL_CARD_DROP_ORDER is given up and the ladder asked
+        again. A 128x32 keeps the banner, the name and a stat or two; a 256x64
+        carries the lot."""
+        try:
+            w, h = self.display_width, self.display_height
+            img = Image.new("RGB", (w, h), (0, 0, 0))
+            draw = ImageDraw.Draw(img)
+
+            cfg = self._goal_card_cfg()
+            text_color = tuple(cfg.get("text_color", [255, 255, 255]))
+            stat_color = tuple(cfg.get("stat_color", [0, 220, 255]))
+            detail_color = tuple(cfg.get("detail_color", [170, 170, 170]))
+            accent = tuple(cfg.get("accent_color", [255, 200, 0]))
+            if cfg.get("use_team_colors", True) and goal.get("team_color"):
+                accent = tuple(goal["team_color"])
+
+            rows = self._build_goal_card_rows(goal)
+            if not cfg.get("show_stats", True):
+                rows.pop("stats", None)
+            if not cfg.get("show_assists", True):
+                rows.pop("assists", None)
+            if not cfg.get("show_bio_details", True):
+                for key in ("vitals", "hometown"):
+                    rows.pop(key, None)
+
+            colors = {
+                "header": accent,
+                # The name stays white: team colours are legible but a dark
+                # navy still reads poorly at the size a name is drawn, and the
+                # banner directly above already carries the team's colour.
+                "name": text_color,
+                "team": accent,
+                "stats": stat_color,
+                "assists": text_color,
+                "vitals": detail_color,
+                "hometown": detail_color,
+            }
+
+            margin = 1
+            headshot = None
+            if cfg.get("show_headshot", True) and w >= 96 and h >= 32:
+                size = min(max(24, h - 2 * (margin + 2)), h - 2 * (margin + 1), w // 3)
+                mgr = self._get_headshot_manager()
+                if mgr is not None and self.espn_summary_sport_league:
+                    _, league = self.espn_summary_sport_league
+                    scorer = goal.get("scorer") or {}
+                    # Cache-only on the render path: the resolve thread warmed
+                    # the disk copy, so a miss draws text-only rather than
+                    # blocking the panel on a download.
+                    headshot = mgr.load_headshot(
+                        str(scorer.get("id") or ""),
+                        (goal.get("bio") or {}).get("headshot_url")
+                        or scorer.get("headshot_url"),
+                        league=league, max_size=size, allow_download=False,
+                    )
+
+            if headshot is not None:
+                hx, hy = margin + 1, (h - headshot.height) // 2
+                draw.rectangle(
+                    [hx - 1, hy - 1, hx + headshot.width, hy + headshot.height],
+                    outline=accent,
+                )
+                img.paste(headshot, (hx, hy), headshot)
+                text_x = hx + headshot.width + 4
+            else:
+                text_x = margin + 1
+
+            # Reserve the margin plus 1px for the outline _draw_text_with_outline
+            # paints beyond the glyph on every side.
+            avail_w = max(8, w - text_x - margin - 2)
+            avail_h = h - 2 * margin
+
+            font_cfg = dict(cfg)
+            font_cfg.setdefault("font", "9x15.bdf")
+            font_size_cap = font_cfg.get("font_size", 24)
+            separators = {"team": " "}
+
+            keys = [k for k in self._GOAL_CARD_ROW_ORDER if rows.get(k)]
+            texts = {
+                k: (rows[k][-1] if k == "name"
+                    else separators.get(k, "  ").join(rows[k]))
+                for k in keys
+            }
+            droppable = [k for k in self._GOAL_CARD_DROP_ORDER if k in keys]
+            font, row_h = None, 0
+            while keys:
+                font_cfg["font_size"] = max(
+                    6, min(font_size_cap, round(avail_h / len(keys) - 3))
+                )
+                font, row_h = self._load_multiline_fit_font(
+                    font_cfg, [texts[k] for k in keys], avail_w, avail_h
+                )
+                if row_h * len(keys) <= avail_h or not droppable:
+                    break
+                keys.remove(droppable.pop(0))
+            if font is None:
+                return
+
+            header_bar = (
+                cfg.get("header_bar", True) and "header" in keys
+                and h >= 48 and row_h >= 8
+            )
+
+            y = max(margin, (h - row_h * len(keys)) // 2)
+            for key in keys:
+                if y >= h:
+                    break
+                if key == "name":
+                    # Alternatives, not segments: take the longest spelling
+                    # that fits, falling back to truncating the shortest.
+                    text = rows[key][-1]
+                    for candidate in rows[key]:
+                        if draw.textbbox((0, 0), candidate, font=font)[2] <= avail_w:
+                            text = candidate
+                            break
+                else:
+                    text = self._fit_segments(
+                        draw, rows[key], font, avail_w, separators.get(key, "  ")
+                    )
+                text = self._truncate_to_width(draw, text, font, avail_w)
+                if key == "header" and header_bar:
+                    # Knocked-out banner: team colour behind, glyphs in
+                    # whichever of black/white reads against it. Drawn flat --
+                    # _draw_text_with_outline's black outline would smear a
+                    # knocked-out glyph.
+                    draw.rectangle(
+                        [text_x - 1, y, text_x + avail_w, min(h - 1, y + row_h - 2)],
+                        fill=accent,
+                    )
+                    draw.fontmode = "1"
+                    draw.text((text_x + 1, y), text, font=font,
+                              fill=self._readable_on(accent))
+                else:
+                    self._draw_text_with_outline(
+                        draw, text, (text_x, y), font, fill=colors[key]
+                    )
+                y += row_h
+
+            self.display_manager.image.paste(img, (0, 0))
+            self.display_manager.update_display()
+        except Exception as e:
+            self.logger.error(f"Error drawing goal-scorer card: {e}", exc_info=True)
+
     def _draw_scorebug_layout(self, game: Dict, force_clear: bool = False) -> None:
         """Draw the detailed scorebug layout for a live Hockey game."""
+        if self._maybe_draw_goal_card(game, force_clear):
+            return
         try:
             main_img = Image.new(
                 "RGBA", (self.display_width, self.display_height), (0, 0, 0, 255)

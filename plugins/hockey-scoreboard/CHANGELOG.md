@@ -1,5 +1,59 @@
 # Changelog
 
+## [1.33.0] - 2026-09-22
+
+### Added
+- **A goal-scorer card for the NHL, off by default.** Turn on
+  `nhl.display_options.show_goal_scorer` and the celebration takeover gets a
+  second beat: once it clears, the panel shows a card for the player who
+  actually scored — headshot framed in the team colour, a `<TEAM> GOAL`
+  banner carrying the period, clock and strength (PP/SH/EN), the scorer's
+  name, number and position, their season line, the assists, and their age,
+  height and hometown.
+
+  The celebration could never say this on its own. It is armed from a **score
+  delta** on the scoreboard feed, and that feed carries the score and never
+  the scorer, so the card is a second request — made while the celebration is
+  still on screen, so the answer is there by the time the card is due.
+- **New options under `customization.goal_scorer`:** `dwell_seconds`,
+  `show_headshot`, `show_stats`, `show_assists`, `show_bio_details`,
+  `header_bar`, `use_team_colors`, `font` / `font_size`, and the
+  `accent_color` / `text_color` / `stat_color` / `detail_color` pickers.
+- **`fetch_game_summary` and `fetch_player_details` on the ESPN data source**,
+  for the per-game plays and the scorer's bio. The bio is cached for a day,
+  in memory and through the core cache.
+
+### Notes
+- **NHL only, and that is a data limit rather than a preference.** College
+  hockey's ESPN summary carries no `plays` array at all, so there is no scorer
+  to read. The gate is a league opting in via `espn_summary_sport_league`, not
+  a league-name test, so college hockey simply never makes the request.
+- The card also needs `celebration_enabled`, since the celebration is what
+  arms it.
+- Everything past the scorer's name degrades on its own. The goal play carries
+  the scorer, the assists, the headshot and a season goal count, so the card
+  is worth drawing before the bio lands; a field ESPN did not send is absent
+  rather than drawn as an empty label. Rows are dropped least-important-first
+  on panels too small to hold them all, rows built from several fields give up
+  whole fields rather than being cut part-way through one (`Age 33`, not
+  `Age 33  6' `), and a name too wide for the panel falls back to the short
+  spelling ESPN also provides (`J. Brodzinski`) before anything is truncated.
+- **The headshot cache is bounded from the start.** Each is cropped and
+  downscaled to a 192px square — about 40 KB against the ~200 KB ESPN serves —
+  and the directory is held to 200 files, least-recently-used evicted first.
+  That ceiling is the one the baseball scoreboard had to learn the hard way
+  (1.47.0); carrying it over rather than repeating the bug.
+- The headshot loader is deliberately **not** named `logo_manager.py`.
+  baseball-scoreboard already ships a module of that name and imports it from
+  inside a method, and the core loads a plugin's top-level modules under their
+  bare names — a second `logo_manager` is exactly the cross-plugin binding
+  CLAUDE.md non-negotiable #4 exists to prevent.
+- `ESPNDataSource.fetch_player_details` and `_parse_player_details` are
+  recorded as intended divergences from the baseball lineage. Baseball needs a
+  second `/overview` request because some of its athletes carry no season
+  summary; NHL athletes always do, so hockey makes one request instead of two.
+  `fetch_game_summary` is identical across both.
+
 ## [1.32.0] - 2026-09-20
 
 ### Added

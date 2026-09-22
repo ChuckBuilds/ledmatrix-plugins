@@ -13,6 +13,13 @@ ESPN_NHL_SCOREBOARD_URL = "https://site.api.espn.com/apis/site/v2/sports/hockey/
 
 class BaseNHLManager(Hockey):
     """Base class for NHL managers with common functionality."""
+
+    # NHL is the one hockey league whose ESPN summary carries a `plays` array,
+    # which is where a goal's scorer and assists live. College hockey's
+    # summary has no play data at all, so the goal-scorer card stays off
+    # there -- the gate is this attribute being set, not a league name test.
+    espn_summary_sport_league = ("hockey", "nhl")
+
     # Class variables for warning tracking
     _no_data_warning_logged = False
     _last_warning_time = 0

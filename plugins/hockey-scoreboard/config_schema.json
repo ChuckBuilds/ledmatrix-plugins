@@ -706,6 +706,12 @@
               "type": "boolean",
               "default": true,
               "description": "Highlight powerplay situations for NHL games"
+            },
+            "show_goal_scorer": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": false,
+              "description": "After a goal celebration, show a card for the player who scored: headshot, name, number and position, their season line, the assists, and their age, height and hometown. NHL only -- college hockey's ESPN summary carries no play data, so there is no scorer to read. Costs one extra ESPN request per goal for the play, and one for the scorer's bio the first time they are seen. Needs celebration_enabled, since the card is armed by the celebration. Configure look and timing under Customization > Goal Scorer Card"
             }
           }
         },
@@ -2548,6 +2554,144 @@
             "loss_color",
             "tie_color"
           ],
+          "additionalProperties": false
+        },
+        "goal_scorer": {
+          "type": "object",
+          "title": "Goal Scorer Card",
+          "description": "A full-screen card for the player who just scored, shown in the seconds after the goal celebration clears: headshot, a \"<TEAM> GOAL\" banner with the period, clock and strength (PP/SH/EN), the scorer's name, number and position, their season line, the assists, and their age, height and hometown. Enable per-league via NHL > Display Options > Show Goal Scorer (NHL only). Rows are dropped least-important-first on panels too small to hold them all.",
+          "properties": {
+            "dwell_seconds": {
+              "x-advanced": true,
+              "type": "number",
+              "default": 6,
+              "minimum": 2,
+              "maximum": 20,
+              "description": "How many seconds the card stays on screen once the goal celebration has finished. The card follows the celebration rather than replacing it, so the full takeover is celebration_duration plus this"
+            },
+            "show_headshot": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": true,
+              "description": "Draw the scorer's ESPN headshot on the left of the card, framed in the team's colour. Hidden automatically on panels narrower than 96 pixels or shorter than 32, and whenever the image has not been cached yet"
+            },
+            "show_stats": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": true,
+              "description": "Include the scorer's season line (G/A/PTS/+- for a skater). Before the bio lookup lands, the goal play's own season goal count is shown instead"
+            },
+            "show_assists": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": true,
+              "description": "Include the assists row. Dropped automatically on panels too short to hold it"
+            },
+            "show_bio_details": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": true,
+              "description": "Include the trivia rows -- age, height and weight, and hometown. These are the first rows a short panel drops anyway"
+            },
+            "header_bar": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": true,
+              "description": "Draw the \"<TEAM> GOAL\" banner as text knocked out of a solid team-colour bar instead of plain coloured text. Only applies on panels 48 pixels tall or more, where the banner row is tall enough to read"
+            },
+            "use_team_colors": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": true,
+              "description": "Colour the banner, the number/position row and the headshot frame with the scoring team's real ESPN colour instead of the flat accent_color"
+            },
+            "font": {
+              "x-advanced": true,
+              "type": "string",
+              "default": "9x15.bdf",
+              "description": "Font for the card's text -- a clean bitmap font that auto-fits the largest size the panel and the text allow, stepping down to a smaller same-family sibling rather than losing a row. A fixed-size .bdf font renders at its native pixel size regardless of font_size; use a scalable .ttf if you want font_size to control the size"
+            },
+            "font_size": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 24,
+              "minimum": 6,
+              "maximum": 24,
+              "description": "Maximum font size cap, for scalable .ttf fonts only (ignored by fixed-size .bdf fonts like the default). The card auto-fits, so the default effectively means 'as big as fits' -- lower it to force a smaller, more consistent size"
+            },
+            "accent_color": {
+              "x-advanced": true,
+              "type": "array",
+              "x-widget": "color-picker",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "default": [
+                255,
+                200,
+                0
+              ],
+              "minItems": 3,
+              "maxItems": 3,
+              "description": "Colour [R, G, B] for the banner, the number/position row and the headshot frame when use_team_colors is off or the team's colour is unavailable"
+            },
+            "text_color": {
+              "x-advanced": true,
+              "type": "array",
+              "x-widget": "color-picker",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "default": [
+                255,
+                255,
+                255
+              ],
+              "minItems": 3,
+              "maxItems": 3,
+              "description": "Text colour [R, G, B] for the scorer's name and the assists row"
+            },
+            "stat_color": {
+              "x-advanced": true,
+              "type": "array",
+              "x-widget": "color-picker",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "default": [
+                0,
+                220,
+                255
+              ],
+              "minItems": 3,
+              "maxItems": 3,
+              "description": "Text colour [R, G, B] for the season stat line"
+            },
+            "detail_color": {
+              "x-advanced": true,
+              "type": "array",
+              "x-widget": "color-picker",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "default": [
+                170,
+                170,
+                170
+              ],
+              "minItems": 3,
+              "maxItems": 3,
+              "description": "Text colour [R, G, B] for the quieter trivia rows -- age, height and weight, hometown"
+            }
+          },
           "additionalProperties": false
         }
       },

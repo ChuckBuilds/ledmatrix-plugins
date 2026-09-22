@@ -1,7 +1,7 @@
 {
   "id": "hockey-scoreboard",
   "name": "Hockey Scoreboard",
-  "version": "1.32.0",
+  "version": "1.33.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, and NCAA Women's hockey with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/hockey-scoreboard",
@@ -54,6 +54,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.33.0",
+      "released": "2026-09-22",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "A goal-scorer card for the NHL, off by default. Turn on nhl.display_options.show_goal_scorer and the celebration takeover gets a second beat: once it clears, the panel shows a card for the player who actually scored -- headshot framed in the team colour, a '<TEAM> GOAL' banner carrying the period, clock and strength (PP/SH/EN), the scorer's name, number and position, their season line, the assists, and their age, height and hometown. The celebration could never say this on its own: it is armed from a score delta on the scoreboard feed, which carries the score and never the scorer, so the card is a second request made while the celebration is still on screen. Everything past the name degrades on its own -- the goal play itself carries the scorer, the assists, the headshot and a season goal count, so the card is worth drawing before the bio lookup lands. Rows are dropped least-important-first on panels that cannot hold them all, rows built from several fields give up whole fields rather than being cut part-way through one, and a name too wide falls back to the short spelling ESPN also provides before anything is truncated. NHL only, and that is a data limit rather than a preference: college hockey's ESPN summary carries no play data at all. Cost is one request per goal for the play plus one per new scorer for the bio, which is why it is opt-in. Headshots are cached on disk as 192px squares (~40 KB against the ~200 KB ESPN serves) with the directory held to 200 files, least-recently-used evicted first, so the cache cannot grow without bound on an SD card."
+    },
     {
       "version": "1.32.0",
       "released": "2026-09-20",
@@ -549,7 +555,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-20",
+  "last_updated": "2026-09-22",
   "stars": 0,
   "downloads": 0,
   "verified": true,
