@@ -2704,7 +2704,8 @@
         "odds_text",
         "rank_text",
         "layout",
-        "favorite_result_colors"
+        "favorite_result_colors",
+        "goal_scorer"
       ],
       "additionalProperties": false
     },
