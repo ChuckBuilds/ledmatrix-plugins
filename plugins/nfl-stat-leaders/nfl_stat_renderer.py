@@ -26,19 +26,18 @@ import colorsys
 import logging
 import math
 import os
+import sys
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 from PIL import Image, ImageDraw, ImageFont
 
-# Image.Resampling.LANCZOS arrived in Pillow 9.1.
-try:
-    RESAMPLE_FILTER = Image.Resampling.LANCZOS
-    RESAMPLE_BOX = Image.Resampling.BOX
-except AttributeError:  # pragma: no cover - Pillow < 9.1
-    RESAMPLE_FILTER = Image.LANCZOS
-    RESAMPLE_BOX = Image.BOX
+#: LANCZOS keeps a crest's detail as it shrinks; BOX averages evenly, which
+#: is what a colour sample wants. Both are unconditional: requirements.txt
+#: floors Pillow at 12.2.0, where Image.Resampling has long existed.
+RESAMPLE_FILTER = Image.Resampling.LANCZOS
+RESAMPLE_BOX = Image.Resampling.BOX
 
 RGB = Tuple[int, int, int]
 
@@ -654,10 +653,9 @@ def _asset_roots() -> Tuple[str, ...]:
 
     The display service runs with the core checkout as its working
     directory and installs plugins beneath it, which is what makes the
-    first two entries work on a Pi. The third is the one that matters
-    everywhere else: the core package is already imported by the time a
-    plugin runs, so its own location names the checkout even when the
-    plugin is being rendered from the monorepo by the test harness.
+    path-relative entries work on a Pi. The core package's own location is
+    the one that matters everywhere else: it names the checkout even when
+    the plugin is being rendered from the monorepo by the test harness.
     """
     here = Path(__file__).resolve()
     roots = [
@@ -671,13 +669,12 @@ def _asset_roots() -> Tuple[str, ...]:
     if env_root:
         roots.insert(0, Path(env_root))
 
-    try:
-        import src  # the core package; on sys.path whenever a plugin loads
-
-        core_root = Path(src.__file__).resolve().parent.parent
-        roots.insert(0, core_root)
-    except Exception:  # noqa: BLE001 - only a hint; the others still apply
-        pass
+    # The core package, read from sys.modules rather than imported: a plugin
+    # only ever runs with the core already loaded, and asking for it this way
+    # cannot fail, import anything, or need an except clause around it.
+    core_file = getattr(sys.modules.get("src"), "__file__", None)
+    if core_file:
+        roots.insert(0, Path(core_file).resolve().parent.parent)
 
     seen = []
     for root in roots:

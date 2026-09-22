@@ -363,7 +363,9 @@ class NFLStatLeadersPlugin(BasePlugin):
                 value = (config.get("display", {})
                                .get("dynamic_duration", {})
                                .get("max_duration_seconds"))
-            except Exception:  # noqa: BLE001 - a missing core config is fine
+            except Exception as exc:  # noqa: BLE001 - a core without this
+                # block is fine; the class default below covers it.
+                self.logger.debug("Could not read the core's duration cap: %s", exc)
                 continue
             if value:
                 return float(value)
