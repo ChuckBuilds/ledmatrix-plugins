@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-09-21",
+  "last_updated": "2026-09-22",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -1242,6 +1242,30 @@
       "screenshot": "https://raw.githubusercontent.com/ChuckBuilds/ledmatrix-plugins/main/plugins/blackjack/assets/hero.png",
       "latest_version": "1.3.0",
       "icon": "fa-diamond"
+    },
+    {
+      "id": "ledmatrix-nascar",
+      "name": "NASCAR Race Leaderboard",
+      "description": "Live NASCAR lap status, favorite-driver position and rotating leaderboard pages for the Cup, O'Reilly and Craftsman Truck series, from NASCAR's public unauthenticated timing feed. Falls back to the next scheduled race when nothing is live, and shows the winner then your favorites' finishing positions at the checkered flag.",
+      "author": "Crazzybrad",
+      "category": "sports",
+      "tags": [
+        "nascar",
+        "racing",
+        "motorsports",
+        "leaderboard",
+        "sports",
+        "live"
+      ],
+      "repo": "https://github.com/crazzybrad/LEDMATRIX-NASCAR-PLUGIN",
+      "branch": "main",
+      "plugin_path": "",
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2026-09-22",
+      "verified": false,
+      "screenshot": "",
+      "latest_version": "0.2.6"
     }
   ]
 }
