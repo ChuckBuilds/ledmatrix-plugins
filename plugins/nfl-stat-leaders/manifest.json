@@ -1,0 +1,72 @@
+{
+  "id": "nfl-stat-leaders",
+  "name": "NFL Stat Leaders",
+  "version": "1.0.0",
+  "author": "ChuckBuilds",
+  "description": "A scrolling ticker of the NFL's statistical leaders -- passing, rushing and receiving yards and touchdowns, plus receptions, sacks, interceptions, tackles and passer rating. Each category is a separate leaderboard you can turn on or off, drawn with club crests and club colours. Data comes from ESPN's public feed, so no API key is needed.",
+  "entry_point": "manager.py",
+  "class_name": "NFLStatLeadersPlugin",
+  "api_version": "1.0.0",
+  "category": "sports",
+  "tags": [
+    "nfl",
+    "football",
+    "fantasy",
+    "stats",
+    "leaderboard",
+    "leaders",
+    "espn",
+    "scrolling"
+  ],
+  "icon": "fas fa-ranking-star",
+  "display_modes": [
+    "nfl_stat_leaders"
+  ],
+  "update_interval": 3600,
+  "default_duration": 60,
+  "config_schema": "config_schema.json",
+  "requirements_file": "requirements.txt",
+  "min_ledmatrix_version": "3.4.0",
+  "compatible_versions": [
+    ">=3.4.0"
+  ],
+  "versions": [
+    {
+      "version": "1.0.0",
+      "released": "2026-09-22",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Initial release. Scrolling NFL statistical leaderboards from ESPN's public leaders feed (no API key). Eleven categories, six of them on by default: passing, rushing and receiving yards and touchdowns. Each board shows a rank badge, the club crest, the player and the number, coloured from the crest's own dominant colour, with gold/silver/bronze badges for the top three. Requires LEDMatrix core 3.4.0 for the frame hold the scroll pacing passes to set_scrolling_state()."
+    }
+  ],
+  "requires": {
+    "python": ">=3.9",
+    "display_size": {
+      "min_width": 64,
+      "min_height": 32
+    }
+  },
+  "display": {
+    "design_size": {
+      "width": 128,
+      "height": 32
+    }
+  },
+  "api_requirements": [
+    {
+      "name": "ESPN API",
+      "required": true,
+      "description": "ESPN's public NFL leaders feed. No API key and no account are required.",
+      "url": "https://site.web.api.espn.com/apis/common/v3/sports/football/nfl/leaders"
+    }
+  ],
+  "assets": {
+    "uses_core_assets": true,
+    "nfl_logos": "assets/sports/nfl_logos/"
+  },
+  "stars": 0,
+  "downloads": 0,
+  "verified": true,
+  "screenshot": "",
+  "license": "GPL-3.0",
+  "last_updated": "2026-09-22"
+}

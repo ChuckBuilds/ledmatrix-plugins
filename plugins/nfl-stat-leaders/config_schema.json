@@ -1,0 +1,300 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "NFL Stat Leaders Configuration",
+  "description": "Configuration schema for the NFL Stat Leaders plugin",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "enabled"
+  ],
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable the NFL stat leaders ticker"
+    },
+    "update_interval": {
+      "type": "integer",
+      "default": 3600,
+      "minimum": 900,
+      "maximum": 86400,
+      "description": "Seconds between refreshes of the leaderboards. ESPN updates these after games, so hourly is plenty"
+    },
+    "categories": {
+      "type": "object",
+      "description": "Which leaderboards to show. They appear in the order listed here",
+      "additionalProperties": false,
+      "default": {
+        "passing_yards": true,
+        "passing_touchdowns": true,
+        "rushing_yards": true,
+        "rushing_touchdowns": true,
+        "receiving_yards": true,
+        "receiving_touchdowns": true,
+        "receptions": false,
+        "sacks": false,
+        "interceptions": false,
+        "total_tackles": false,
+        "quarterback_rating": false
+      },
+      "properties": {
+        "passing_yards": {
+          "type": "boolean",
+          "default": true,
+          "title": "Passing Yards",
+          "description": "Show the passing yards leaderboard"
+        },
+        "passing_touchdowns": {
+          "type": "boolean",
+          "default": true,
+          "title": "Passing Tds",
+          "description": "Show the passing tds leaderboard"
+        },
+        "rushing_yards": {
+          "type": "boolean",
+          "default": true,
+          "title": "Rushing Yards",
+          "description": "Show the rushing yards leaderboard"
+        },
+        "rushing_touchdowns": {
+          "type": "boolean",
+          "default": true,
+          "title": "Rushing Tds",
+          "description": "Show the rushing tds leaderboard"
+        },
+        "receiving_yards": {
+          "type": "boolean",
+          "default": true,
+          "title": "Receiving Yards",
+          "description": "Show the receiving yards leaderboard"
+        },
+        "receiving_touchdowns": {
+          "type": "boolean",
+          "default": true,
+          "title": "Receiving Tds",
+          "description": "Show the receiving tds leaderboard"
+        },
+        "receptions": {
+          "type": "boolean",
+          "default": false,
+          "title": "Receptions",
+          "description": "Show the receptions leaderboard"
+        },
+        "sacks": {
+          "type": "boolean",
+          "default": false,
+          "title": "Sacks",
+          "description": "Show the sacks leaderboard"
+        },
+        "interceptions": {
+          "type": "boolean",
+          "default": false,
+          "title": "Interceptions",
+          "description": "Show the interceptions leaderboard"
+        },
+        "total_tackles": {
+          "type": "boolean",
+          "default": false,
+          "title": "Tackles",
+          "description": "Show the tackles leaderboard"
+        },
+        "quarterback_rating": {
+          "type": "boolean",
+          "default": false,
+          "title": "Qb Rating",
+          "description": "Show the qb rating leaderboard"
+        }
+      }
+    },
+    "players_per_category": {
+      "type": "integer",
+      "default": 5,
+      "minimum": 1,
+      "maximum": 10,
+      "description": "How many players each leaderboard shows. More players means a longer scroll"
+    },
+    "season": {
+      "type": "integer",
+      "default": 0,
+      "minimum": 0,
+      "maximum": 2100,
+      "description": "Season to show, named for the year it kicks off in (2025 means the 2025-26 season). 0 picks the current season automatically, falling back to the last completed one during the off-season"
+    },
+    "season_type": {
+      "type": "string",
+      "enum": [
+        "regular",
+        "postseason"
+      ],
+      "default": "regular",
+      "description": "Regular-season or postseason leaders"
+    },
+    "global": {
+      "type": "object",
+      "description": "Display, scrolling and appearance settings",
+      "additionalProperties": false,
+      "properties": {
+        "display_duration": {
+          "type": "number",
+          "default": 30,
+          "minimum": 10,
+          "maximum": 300,
+          "description": "Seconds to show the ticker when dynamic duration is off"
+        },
+        "scroll_mode": {
+          "x-advanced": true,
+          "type": "string",
+          "enum": [
+            "one_shot",
+            "continuous"
+          ],
+          "default": "one_shot",
+          "description": "one_shot scrolls the ticker through once and holds; continuous keeps looping"
+        },
+        "request_timeout": {
+          "x-advanced": true,
+          "type": "integer",
+          "default": 30,
+          "minimum": 5,
+          "maximum": 120,
+          "description": "Seconds to wait for ESPN before giving up"
+        },
+        "display_options": {
+          "type": "object",
+          "description": "Scroll pacing",
+          "additionalProperties": false,
+          "properties": {
+            "scroll_speed": {
+              "x-advanced": true,
+              "type": "number",
+              "default": 1.0,
+              "minimum": 0.5,
+              "maximum": 5.0,
+              "description": "Pixels moved per scroll step. With scroll_delay this sets the speed: scroll_speed / scroll_delay pixels per second (100 by default), snapped to the nearest speed the panel can move in whole pixels"
+            },
+            "scroll_delay": {
+              "x-advanced": true,
+              "type": "number",
+              "default": 0.01,
+              "minimum": 0.001,
+              "maximum": 0.1,
+              "description": "Seconds between scroll steps"
+            }
+          }
+        },
+        "dynamic_duration": {
+          "type": "object",
+          "description": "Match the time on screen to how long the ticker takes to scroll",
+          "additionalProperties": false,
+          "default": {
+            "enabled": true,
+            "min_duration_seconds": 45,
+            "max_duration_seconds": 600,
+            "buffer_ratio": 0.1,
+            "controller_cap_seconds": 600
+          },
+          "properties": {
+            "enabled": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": true,
+              "description": "Size the display time to the ticker's width"
+            },
+            "min_duration_seconds": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 45,
+              "minimum": 10,
+              "maximum": 300,
+              "description": "Shortest display time when dynamic duration is on"
+            },
+            "max_duration_seconds": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 600,
+              "minimum": 30,
+              "maximum": 1200,
+              "description": "Longest display time when dynamic duration is on"
+            },
+            "buffer_ratio": {
+              "x-advanced": true,
+              "type": "number",
+              "default": 0.1,
+              "minimum": 0.01,
+              "maximum": 1.0,
+              "description": "Extra time added to the calculated duration, as a fraction"
+            },
+            "controller_cap_seconds": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 600,
+              "minimum": 60,
+              "maximum": 1800,
+              "description": "Failsafe cap the display controller applies to this plugin's slot"
+            }
+          }
+        },
+        "appearance": {
+          "type": "object",
+          "description": "How the ticker looks",
+          "additionalProperties": false,
+          "properties": {
+            "team_color_accents": {
+              "type": "boolean",
+              "default": true,
+              "description": "Colour each player's number and rank badge with their club's colour, sampled from its crest. Off uses the accent colour for everything"
+            },
+            "highlight_top_three": {
+              "type": "boolean",
+              "default": true,
+              "description": "Give the top three gold, silver and bronze rank badges"
+            },
+            "show_league_logo": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show the NFL shield on the category cards"
+            },
+            "accent_color": {
+              "type": "string",
+              "default": "#FFB612",
+              "pattern": "^#?[0-9a-fA-F]{6}$",
+              "description": "Colour of the category titles and the divider line, as a hex value"
+            },
+            "pixel_perfect_text": {
+              "type": "boolean",
+              "default": true,
+              "description": "Render text with hard pixel edges. Turn off only if you prefer the softer anti-aliased look"
+            },
+            "crisp_logos": {
+              "type": "boolean",
+              "default": true,
+              "description": "Give crests hard edges instead of a ring of half-lit pixels"
+            },
+            "text_outline": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": true,
+              "description": "Draw a black outline around text so it stays readable over crests"
+            },
+            "logo_scale": {
+              "x-advanced": true,
+              "type": "number",
+              "default": 1.0,
+              "minimum": 0.4,
+              "maximum": 1.4,
+              "description": "Crest size as a fraction of the default"
+            },
+            "font_size": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 0,
+              "minimum": 0,
+              "maximum": 32,
+              "description": "Font size in pixels. 0 picks a size that suits the panel height. Values are snapped to the font's pixel grid (multiples of 8) to keep text sharp"
+            }
+          }
+        }
+      }
+    }
+  }
+}

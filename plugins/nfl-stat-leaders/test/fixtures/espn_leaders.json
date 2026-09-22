@@ -1,0 +1,682 @@
+{
+  "nfl-stat-leaders_2025_2": {
+    "fetched_at": 1758542400.0,
+    "payload": {
+      "categories": [
+        {
+          "name": "passingYards",
+          "displayName": "Passing Yards",
+          "shortDisplayName": "PASS YDS",
+          "leaders": [
+            {
+              "displayValue": "4,183",
+              "value": 4183.0,
+              "athlete": {
+                "id": "4001",
+                "displayName": "J. Allen",
+                "shortName": "J. Allen",
+                "position": {
+                  "abbreviation": "QB"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/2?lang=en"
+              }
+            },
+            {
+              "displayValue": "4,004",
+              "value": 4004.0,
+              "athlete": {
+                "id": "4002",
+                "displayName": "P. Mahomes",
+                "shortName": "P. Mahomes",
+                "position": {
+                  "abbreviation": "QB"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/12?lang=en"
+              }
+            },
+            {
+              "displayValue": "3,987",
+              "value": 3987.0,
+              "athlete": {
+                "id": "4003",
+                "displayName": "J. Burrow",
+                "shortName": "J. Burrow",
+                "position": {
+                  "abbreviation": "QB"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/4?lang=en"
+              }
+            },
+            {
+              "displayValue": "3,812",
+              "value": 3812.0,
+              "athlete": {
+                "id": "4004",
+                "displayName": "L. Jackson",
+                "shortName": "L. Jackson",
+                "position": {
+                  "abbreviation": "QB"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/33?lang=en"
+              }
+            },
+            {
+              "displayValue": "3,631",
+              "value": 3631.0,
+              "athlete": {
+                "id": "4005",
+                "displayName": "C. Stroud",
+                "shortName": "C. Stroud",
+                "position": {
+                  "abbreviation": "QB"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/34?lang=en"
+              }
+            }
+          ]
+        },
+        {
+          "name": "passingTouchdowns",
+          "displayName": "Passing Touchdowns",
+          "shortDisplayName": "PASS TD",
+          "leaders": [
+            {
+              "displayValue": "37",
+              "value": 37.0,
+              "athlete": {
+                "id": "4001",
+                "displayName": "J. Goff",
+                "shortName": "J. Goff",
+                "position": {
+                  "abbreviation": "QB"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/8?lang=en"
+              }
+            },
+            {
+              "displayValue": "33",
+              "value": 33.0,
+              "athlete": {
+                "id": "4002",
+                "displayName": "B. Purdy",
+                "shortName": "B. Purdy",
+                "position": {
+                  "abbreviation": "QB"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/25?lang=en"
+              }
+            },
+            {
+              "displayValue": "31",
+              "value": 31.0,
+              "athlete": {
+                "id": "4003",
+                "displayName": "D. Prescott",
+                "shortName": "D. Prescott",
+                "position": {
+                  "abbreviation": "QB"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/6?lang=en"
+              }
+            },
+            {
+              "displayValue": "29",
+              "value": 29.0,
+              "athlete": {
+                "id": "4004",
+                "displayName": "J. Herbert",
+                "shortName": "J. Herbert",
+                "position": {
+                  "abbreviation": "QB"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/24?lang=en"
+              }
+            },
+            {
+              "displayValue": "28",
+              "value": 28.0,
+              "athlete": {
+                "id": "4005",
+                "displayName": "T. Tagovailoa",
+                "shortName": "T. Tagovailoa",
+                "position": {
+                  "abbreviation": "QB"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/15?lang=en"
+              }
+            }
+          ]
+        },
+        {
+          "name": "rushingYards",
+          "displayName": "Rushing Yards",
+          "shortDisplayName": "RUSH YDS",
+          "leaders": [
+            {
+              "displayValue": "1,838",
+              "value": 1838.0,
+              "athlete": {
+                "id": "4001",
+                "displayName": "S. Barkley",
+                "shortName": "S. Barkley",
+                "position": {
+                  "abbreviation": "RB"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/21?lang=en"
+              }
+            },
+            {
+              "displayValue": "1,788",
+              "value": 1788.0,
+              "athlete": {
+                "id": "4002",
+                "displayName": "D. Henry",
+                "shortName": "D. Henry",
+                "position": {
+                  "abbreviation": "RB"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/33?lang=en"
+              }
+            },
+            {
+              "displayValue": "1,412",
+              "value": 1412.0,
+              "athlete": {
+                "id": "4003",
+                "displayName": "J. Gibbs",
+                "shortName": "J. Gibbs",
+                "position": {
+                  "abbreviation": "RB"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/8?lang=en"
+              }
+            },
+            {
+              "displayValue": "1,377",
+              "value": 1377.0,
+              "athlete": {
+                "id": "4004",
+                "displayName": "B. Robinson",
+                "shortName": "B. Robinson",
+                "position": {
+                  "abbreviation": "RB"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/28?lang=en"
+              }
+            },
+            {
+              "displayValue": "1,204",
+              "value": 1204.0,
+              "athlete": {
+                "id": "4005",
+                "displayName": "K. Walker III",
+                "shortName": "K. Walker III",
+                "position": {
+                  "abbreviation": "RB"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/26?lang=en"
+              }
+            }
+          ]
+        },
+        {
+          "name": "rushingTouchdowns",
+          "displayName": "Rushing Touchdowns",
+          "shortDisplayName": "RUSH TD",
+          "leaders": [
+            {
+              "displayValue": "16",
+              "value": 16.0,
+              "athlete": {
+                "id": "4001",
+                "displayName": "D. Henry",
+                "shortName": "D. Henry",
+                "position": {
+                  "abbreviation": "RB"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/33?lang=en"
+              }
+            },
+            {
+              "displayValue": "13",
+              "value": 13.0,
+              "athlete": {
+                "id": "4002",
+                "displayName": "S. Barkley",
+                "shortName": "S. Barkley",
+                "position": {
+                  "abbreviation": "RB"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/21?lang=en"
+              }
+            },
+            {
+              "displayValue": "12",
+              "value": 12.0,
+              "athlete": {
+                "id": "4003",
+                "displayName": "J. Jacobs",
+                "shortName": "J. Jacobs",
+                "position": {
+                  "abbreviation": "RB"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/9?lang=en"
+              }
+            },
+            {
+              "displayValue": "11",
+              "value": 11.0,
+              "athlete": {
+                "id": "4004",
+                "displayName": "B. Robinson",
+                "shortName": "B. Robinson",
+                "position": {
+                  "abbreviation": "RB"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/28?lang=en"
+              }
+            },
+            {
+              "displayValue": "10",
+              "value": 10.0,
+              "athlete": {
+                "id": "4005",
+                "displayName": "J. Gibbs",
+                "shortName": "J. Gibbs",
+                "position": {
+                  "abbreviation": "RB"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/8?lang=en"
+              }
+            }
+          ]
+        },
+        {
+          "name": "receivingYards",
+          "displayName": "Receiving Yards",
+          "shortDisplayName": "REC YDS",
+          "leaders": [
+            {
+              "displayValue": "1,708",
+              "value": 1708.0,
+              "athlete": {
+                "id": "4001",
+                "displayName": "J. Chase",
+                "shortName": "J. Chase",
+                "position": {
+                  "abbreviation": "WR"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/4?lang=en"
+              }
+            },
+            {
+              "displayValue": "1,533",
+              "value": 1533.0,
+              "athlete": {
+                "id": "4002",
+                "displayName": "J. Jefferson",
+                "shortName": "J. Jefferson",
+                "position": {
+                  "abbreviation": "WR"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/16?lang=en"
+              }
+            },
+            {
+              "displayValue": "1,204",
+              "value": 1204.0,
+              "athlete": {
+                "id": "4003",
+                "displayName": "B. Nabers",
+                "shortName": "B. Nabers",
+                "position": {
+                  "abbreviation": "WR"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/19?lang=en"
+              }
+            },
+            {
+              "displayValue": "1,163",
+              "value": 1163.0,
+              "athlete": {
+                "id": "4004",
+                "displayName": "A. St. Brown",
+                "shortName": "A. St. Brown",
+                "position": {
+                  "abbreviation": "WR"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/8?lang=en"
+              }
+            },
+            {
+              "displayValue": "1,096",
+              "value": 1096.0,
+              "athlete": {
+                "id": "4005",
+                "displayName": "T. McLaurin",
+                "shortName": "T. McLaurin",
+                "position": {
+                  "abbreviation": "WR"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/28?lang=en"
+              }
+            }
+          ]
+        },
+        {
+          "name": "receivingTouchdowns",
+          "displayName": "Receiving Touchdowns",
+          "shortDisplayName": "REC TD",
+          "leaders": [
+            {
+              "displayValue": "17",
+              "value": 17.0,
+              "athlete": {
+                "id": "4001",
+                "displayName": "J. Chase",
+                "shortName": "J. Chase",
+                "position": {
+                  "abbreviation": "WR"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/4?lang=en"
+              }
+            },
+            {
+              "displayValue": "12",
+              "value": 12.0,
+              "athlete": {
+                "id": "4002",
+                "displayName": "T. Hill",
+                "shortName": "T. Hill",
+                "position": {
+                  "abbreviation": "WR"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/15?lang=en"
+              }
+            },
+            {
+              "displayValue": "11",
+              "value": 11.0,
+              "athlete": {
+                "id": "4003",
+                "displayName": "M. Evans",
+                "shortName": "M. Evans",
+                "position": {
+                  "abbreviation": "WR"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/27?lang=en"
+              }
+            },
+            {
+              "displayValue": "10",
+              "value": 10.0,
+              "athlete": {
+                "id": "4004",
+                "displayName": "C. Lamb",
+                "shortName": "C. Lamb",
+                "position": {
+                  "abbreviation": "WR"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/6?lang=en"
+              }
+            },
+            {
+              "displayValue": "9",
+              "value": 9.0,
+              "athlete": {
+                "id": "4005",
+                "displayName": "D. Adams",
+                "shortName": "D. Adams",
+                "position": {
+                  "abbreviation": "WR"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/20?lang=en"
+              }
+            }
+          ]
+        },
+        {
+          "name": "receptions",
+          "displayName": "Receptions",
+          "shortDisplayName": "REC",
+          "leaders": [
+            {
+              "displayValue": "127",
+              "value": 127.0,
+              "athlete": {
+                "id": "4001",
+                "displayName": "J. Chase",
+                "shortName": "J. Chase",
+                "position": {
+                  "abbreviation": "WR"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/4?lang=en"
+              }
+            },
+            {
+              "displayValue": "115",
+              "value": 115.0,
+              "athlete": {
+                "id": "4002",
+                "displayName": "A. St. Brown",
+                "shortName": "A. St. Brown",
+                "position": {
+                  "abbreviation": "WR"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/8?lang=en"
+              }
+            }
+          ]
+        },
+        {
+          "name": "sacks",
+          "displayName": "Sacks",
+          "leaders": [
+            {
+              "displayValue": "14.5",
+              "value": 14.5,
+              "athlete": {
+                "id": "4001",
+                "displayName": "T. Watt",
+                "shortName": "T. Watt",
+                "position": {
+                  "abbreviation": "LB"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/23?lang=en"
+              }
+            },
+            {
+              "displayValue": "13.0",
+              "value": 13.0,
+              "athlete": {
+                "id": "4002",
+                "displayName": "M. Garrett",
+                "shortName": "M. Garrett",
+                "position": {
+                  "abbreviation": "DE"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/5?lang=en"
+              }
+            }
+          ]
+        },
+        {
+          "name": "defensiveInterceptions",
+          "displayName": "Interceptions",
+          "leaders": [
+            {
+              "displayValue": "6",
+              "value": 6.0,
+              "athlete": {
+                "id": "4001",
+                "displayName": "K. Byard",
+                "shortName": "K. Byard",
+                "position": {
+                  "abbreviation": "S"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/3?lang=en"
+              }
+            },
+            {
+              "displayValue": "5",
+              "value": 5.0,
+              "athlete": {
+                "id": "4002",
+                "displayName": "X. McKinney",
+                "shortName": "X. McKinney",
+                "position": {
+                  "abbreviation": "S"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/9?lang=en"
+              }
+            }
+          ]
+        },
+        {
+          "name": "totalTackles",
+          "displayName": "Total Tackles",
+          "leaders": [
+            {
+              "displayValue": "151",
+              "value": 151.0,
+              "athlete": {
+                "id": "4001",
+                "displayName": "Z. Baun",
+                "shortName": "Z. Baun",
+                "position": {
+                  "abbreviation": "LB"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/21?lang=en"
+              }
+            },
+            {
+              "displayValue": "148",
+              "value": 148.0,
+              "athlete": {
+                "id": "4002",
+                "displayName": "B. Wagner",
+                "shortName": "B. Wagner",
+                "position": {
+                  "abbreviation": "LB"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/28?lang=en"
+              }
+            }
+          ]
+        },
+        {
+          "name": "quarterbackRating",
+          "displayName": "Passer Rating",
+          "leaders": [
+            {
+              "displayValue": "101.4",
+              "value": 101.4,
+              "athlete": {
+                "id": "4001",
+                "displayName": "J. Allen",
+                "shortName": "J. Allen",
+                "position": {
+                  "abbreviation": "QB"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/2?lang=en"
+              }
+            },
+            {
+              "displayValue": "99.7",
+              "value": 99.7,
+              "athlete": {
+                "id": "4002",
+                "displayName": "L. Jackson",
+                "shortName": "L. Jackson",
+                "position": {
+                  "abbreviation": "QB"
+                }
+              },
+              "team": {
+                "$ref": "http://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/2025/teams/33?lang=en"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
