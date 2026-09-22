@@ -1,2 +1,6 @@
-requests>=2.33.0
-Pillow>=12.2.0
+# Floors are security floors, not API floors: this plugin works with much
+# older releases of both, but Codacy's dependency scan flags the known
+# vulnerabilities that the older ones carry. Kept at the newest release of
+# each so a fresh install cannot resolve to a flagged one.
+requests>=2.34.2
+Pillow>=12.3.0
