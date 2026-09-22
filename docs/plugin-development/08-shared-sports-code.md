@@ -89,7 +89,9 @@ helpers every `sports.py` carries verbatim (`_clamp_window`, `_clamp_seconds`,
 `_upcoming_date_and_time_text`). `scripts/check_sports_helpers_parity.py`
 compares each plugin copy with core's as a docstring-stripped AST and fails on
 any difference, so a fix to one side has to land on both. It skips (exit 2)
-until core ships the module. A copy that is absent is fine: once a plugin
+only against a core checkout predating that module; CI runs it against core
+main, where it is present, and its guard test fails rather than skips if it
+ever goes missing. A copy that is absent is fine: once a plugin
 floors `ledmatrix_min_version` on the release that ships `sports_helpers`, it
 may delete its copies and inherit `SportsHelpersMixin` (the sunset rule below).
 
