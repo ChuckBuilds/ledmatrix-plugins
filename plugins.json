@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-09-20",
+  "last_updated": "2026-09-21",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -187,10 +187,10 @@
       "plugin_path": "plugins/countdown",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-15",
+      "last_updated": "2026-09-21",
       "verified": true,
       "screenshot": "",
-      "latest_version": "3.3.1",
+      "latest_version": "3.3.2",
       "icon": "fa-clock"
     },
     {

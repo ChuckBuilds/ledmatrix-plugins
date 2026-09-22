@@ -494,8 +494,15 @@ class CountdownPlugin(BasePlugin):
     def _calculate_fit_size(self, image_size: Tuple[int, int], display_size: Tuple[int, int]) -> Tuple[int, int]:
         iw, ih = image_size
         dw, dh = display_size
+        if iw <= 0 or ih <= 0:
+            return (max(1, dw), max(1, dh))
         scale = min(dw / iw, dh / ih)
-        return (int(iw * scale), int(ih * scale))
+        # A very wide or very tall source rounds its short side down to zero
+        # here -- a 2000x3 banner into 128x32 gives (128, 0). Image.resize
+        # rejects a zero dimension, and the raise is caught upstream as a
+        # failed load, so the image vanishes with only a log line to say why.
+        # One pixel is the smallest thing that can still be seen.
+        return (max(1, int(iw * scale)), max(1, int(ih * scale)))
 
     # ─── Time calculation ─────────────────────────────────────────────────────
 
@@ -705,7 +712,13 @@ class CountdownPlugin(BasePlugin):
             # Pixel overrides (from advanced modal) take precedence over preset
             _has_px_override = any(layout.get(k) for k in ('image_x','image_y','image_width','image_height'))
 
-            img_w = layout.get('image_width')  or (dw // 3)
+            # 'image-only' draws no text beside the image, so the image area
+            # is the whole display. The image-left/image-right presets reserve
+            # a third of the width for the image and give the rest to the text.
+            # An explicit image_width/image_height from the advanced modal
+            # still wins over both.
+            _default_img_w = dw if layout_preset == 'image-only' else (dw // 3)
+            img_w = layout.get('image_width')  or _default_img_w
             img_h = layout.get('image_height') or dh
 
             if _has_px_override:
