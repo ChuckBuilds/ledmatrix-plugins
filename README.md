@@ -225,6 +225,7 @@ outside this monorepo, so review their source before installing.
 | Tidbyt Baseball Scoreboard | [@trsadler](https://github.com/trsadler) | [MLB-Scoreboard-LEDMatrix](https://github.com/trsadler/MLB-Scoreboard-LEDMatrix) — split team-color MLB live scoreboard |
 | F1 Live | [@BigC07](https://github.com/BigC07) | [ledmatrix-f1-live](https://github.com/BigC07/ledmatrix-f1-live) — F1 Scoreboard fork with live timing, flags and the podium from F1's live feed |
 | Sleeper Fantasy | [@ant456](https://github.com/ant456) | [ledmatrix-sleeper-fantasy](https://github.com/ant456/ledmatrix-sleeper-fantasy) — fantasy football matchups and scores from Sleeper |
+| NASCAR Race Leaderboard | [@crazzybrad](https://github.com/crazzybrad) | [LEDMATRIX-NASCAR-PLUGIN](https://github.com/crazzybrad/LEDMATRIX-NASCAR-PLUGIN) — live NASCAR lap status, favourite-driver position and rotating leaderboard pages |
 
 
 Want to see your plugin here? Check out [3rd Party Plugin Development](#3rd-party-plugin-development) below or submit a plugin via [Discord](https://discord.gg/RdrC37rEag).
