@@ -1,5 +1,71 @@
 # Changelog
 
+## [1.47.0] - 2026-09-22
+
+### Added
+- **The Now Batting / Now Pitching screen is a baseball card.** It used to be
+  two lines of text -- `Pitcher: G. Cole` over `Batter: J. Soto` -- which is
+  all the play-by-play feed gives you. It now draws one player at a time as a
+  card: their ESPN headshot framed in the team colour, a `NOW BATTING` /
+  `NOW PITCHING` banner knocked out of a team-colour bar, the player's name,
+  their team, number and position, this season's stats, age and bat/throw
+  hand, hometown, and height/weight/seasons played. With both players enabled
+  the screen's dwell is split between them, batter first, so one rotation
+  shows both cards instead of making the pitcher wait for the screen to come
+  round again.
+- **New options under `customization.at_bat_info`:** `style`
+  (`card`, the default, or `text` for the original layout), `show_batter`,
+  `show_pitcher`, `show_headshot`, `show_stats`, `show_bio_details`,
+  `header_bar`, and the `text_color` / `stat_color` / `detail_color` pickers
+  the card's rows use.
+- **A player's age, hometown, height/weight, seasons played, draft, college
+  and team** are now parsed from the ESPN athlete record, alongside
+  bats/throws recovered from the combined `Right/Left` display string ESPN
+  fills in far more often than the structured fields the parser was reading.
+
+### Changed
+- **Season stats come from ESPN's own per-position season summary**
+  (`AVG`/`HR`/`RBI`/`OPS` for a hitter, `ERA`/`K`/`WHIP`/`SV` for a pitcher),
+  already ordered for display. The player-card screen had been reading the
+  athlete *overview* endpoint, whose first split is **career** totals with no
+  batting average in it at all -- so a card headed as season stats was showing
+  386 career home runs as this season's. The overview is still the fallback
+  for feeds (some NCAA athletes) that carry no season summary.
+- **Rows built from several fields give up whole fields** when the panel is
+  narrow, instead of being cut part-way through one: `Age 34` rather than
+  `Age 34  B/T`, and `AVG .241  HR 18` rather than `AVG .241  H`. The season
+  line already worked this way on the player-card screen; the rest of the
+  card now does too.
+- **The card's layout is not tiered by a hardcoded panel-size table.** The
+  rows are priority-ordered and the least useful are given up until what is
+  left fits, so a 128x32 keeps the banner, the name and a stat or two while a
+  256x64 carries the whole card -- one layout that scales, rather than several
+  that drift apart.
+- **`style: "text"` also stops the ESPN athlete lookup.** The text layout has
+  always run off the play-by-play roster names alone, so switching back to it
+  no longer pays for a fetch it does not use.
+
+### Fixed
+- **The headshot cache had no ceiling.** Every player whose card was drawn
+  left ESPN's full-size PNG on disk -- about 200 KB each, a ~600x436 image
+  kept to draw a square no larger than 85 pixels -- and nothing ever deleted
+  one. MLB alone has ~1200 active players and ESPN's NCAA baseball coverage
+  is roughly ten times that, so a board left running through a season grew
+  the directory without limit on an SD card. Headshots are now cropped and
+  downscaled to a 192px square before being written (~40 KB, no visible
+  difference at any panel size), and the directory is held to 200 files,
+  evicting least-recently-used first -- a ceiling of roughly 8 MB. Files
+  cached by an earlier version keep their original size until they are
+  evicted. The in-memory cache of decoded squares is bounded too, the way
+  `SportsCore._logo_cache` already bounds team logos.
+
+### Notes
+- Card style is MLB and NCAA Baseball only. On MiLB, on a brand-new at-bat, or
+  for an athlete ESPN has no record for, the screen falls back to the text
+  layout on its own rather than drawing an empty card.
+- The banner's text flips between black and white against the team colour, so
+  it stays legible for the navy teams as well as the gold ones.
+
 ## [1.46.1] - 2026-09-17
 
 ### Changed

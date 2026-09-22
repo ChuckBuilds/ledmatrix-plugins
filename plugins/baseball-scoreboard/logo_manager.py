@@ -7,6 +7,8 @@ the team-logo loaders that used to live here had no callers.
 """
 
 import logging
+import os
+from collections import OrderedDict
 from io import BytesIO
 from pathlib import Path
 from typing import Optional
@@ -36,7 +38,9 @@ class BaseballLogoManager:
         self.display_manager = display_manager
         self.logger = logger
         self.sport_key = sport_key
-        self._logo_cache = {}
+        # Bounded LRU of decoded headshots -- see _MEMORY_CACHE_MAX. Mirrors
+        # the bound SportsCore._logo_cache carries for team logos.
+        self._logo_cache: "OrderedDict[str, Image.Image]" = OrderedDict()
 
         # Get display dimensions
         if display_manager and hasattr(display_manager, 'matrix') and display_manager.matrix is not None:
@@ -55,6 +59,25 @@ class BaseballLogoManager:
     # league (MLB and NCAA athlete-id spaces differ), plus an in-memory cache
     # keyed by id+size. Mirrors the masters plugin's headshot loader.
     _HEADSHOT_DIR = Path(__file__).resolve().parent / "assets" / "headshots"
+    # Headshots are stored pre-cropped and downscaled, not at ESPN's native
+    # size. ESPN serves a ~600x436, ~200 KB PNG; the biggest square any card
+    # draws is min(height - 4, width // 3), which is 85px on the largest
+    # panel the harness covers. Keeping the square we actually use takes
+    # each file to ~40 KB and costs nothing visible on any panel up to 576
+    # wide; past that the render upscales slightly rather than the cache
+    # carrying a megapixel per player.
+    _DISK_HEADSHOT_SIZE = 192
+    # ...and the directory is capped, least-recently-used first. Nothing
+    # used to remove a file, and the number of athletes is not small: MLB
+    # alone has ~1200 active players and ESPN's NCAA baseball coverage is
+    # ten times that, so a board left running through a season would grow
+    # this directory without limit on an SD card. 200 files is roughly
+    # 8 MB, and far more players than any rotation revisits.
+    _MAX_CACHED_HEADSHOTS = 200
+    # Decoded in-memory squares, keyed by id+size. Two players are current
+    # at a time, so this only needs to be big enough to ride out a pitching
+    # change without re-reading the disk.
+    _MEMORY_CACHE_MAX = 32
     # Headshot URLs come from ESPN's athlete API; only fetch from ESPN's own
     # domains (SSRF guard) and cap the download size (memory-exhaustion guard).
     _ALLOWED_HEADSHOT_HOSTS = (".espncdn.com", ".espn.com")
@@ -112,6 +135,8 @@ class BaseballLogoManager:
 
         cache_key = f"headshot_{league}_{player_id}_{max_size}"
         if cache_key in self._logo_cache:
+            # Re-insert to mark most recently used.
+            self._logo_cache.move_to_end(cache_key)
             return self._logo_cache[cache_key]
 
         # Sanitize the id/league before they touch the filesystem -- they
@@ -125,7 +150,17 @@ class BaseballLogoManager:
                 try:
                     with Image.open(disk_path) as src:
                         img = self._crop_square(src.convert("RGBA"), max_size)
-                    self._logo_cache[cache_key] = img
+                    # Stamp the file so the directory cap below evicts by
+                    # genuine last use, not by when it was first downloaded
+                    # -- otherwise a favourite team's regulars get dropped
+                    # ahead of a one-off from a game nobody watches again.
+                    # One stat-sized write per player per process start, as
+                    # the in-memory cache absorbs every repeat hit.
+                    try:
+                        os.utime(disk_path, None)
+                    except OSError:
+                        pass
+                    self._remember(cache_key, img)
                     return img
                 except Exception as e:
                     self.logger.debug(f"Failed to load cached headshot {player_id}: {e}")
@@ -137,14 +172,18 @@ class BaseballLogoManager:
                 full = self._download_headshot_image(url)
                 if full is None:
                     return None
+                # Crop and downscale once, here, so the disk copy is the
+                # square the card draws rather than ESPN's full-size PNG.
+                stored = self._crop_square(full, self._DISK_HEADSHOT_SIZE)
                 if disk_path is not None:
                     try:
                         disk_path.parent.mkdir(parents=True, exist_ok=True)
-                        full.save(disk_path, "PNG")
+                        stored.save(disk_path, "PNG")
+                        self._prune_headshot_cache()
                     except Exception as e:
                         self.logger.debug(f"Could not cache headshot to disk for {player_id}: {e}")
-                img = self._crop_square(full, max_size)
-                self._logo_cache[cache_key] = img
+                img = self._crop_square(stored, max_size)
+                self._remember(cache_key, img)
                 return img
             except Exception as e:
                 self.logger.debug(f"Failed to download headshot for {player_id}: {e}")
@@ -152,6 +191,33 @@ class BaseballLogoManager:
             self.logger.debug(f"Refusing non-ESPN headshot URL for {player_id}")
 
         return None
+
+    def _remember(self, cache_key: str, img: Image.Image) -> None:
+        """Store a decoded square, evicting the least recently used entries
+        past _MEMORY_CACHE_MAX."""
+        self._logo_cache[cache_key] = img
+        while len(self._logo_cache) > self._MEMORY_CACHE_MAX:
+            self._logo_cache.popitem(last=False)
+
+    def _prune_headshot_cache(self) -> None:
+        """Hold the on-disk cache to _MAX_CACHED_HEADSHOTS files, deleting
+        the least recently used first (see the os.utime stamp on a cache
+        hit). Swallows filesystem errors: a cache that cannot be trimmed is
+        not a reason to fail the render that just warmed it."""
+        try:
+            files = sorted(
+                (p for p in self._HEADSHOT_DIR.rglob("*.png") if p.is_file()),
+                key=lambda p: p.stat().st_mtime,
+            )
+        except OSError as e:
+            self.logger.debug(f"Could not scan the headshot cache to prune it: {e}")
+            return
+        excess = len(files) - self._MAX_CACHED_HEADSHOTS
+        for stale in files[:excess] if excess > 0 else []:
+            try:
+                stale.unlink()
+            except OSError as e:
+                self.logger.debug(f"Could not evict cached headshot {stale.name}: {e}")
 
     def _download_headshot_image(self, url: str) -> Optional[Image.Image]:
         """Download a headshot with a hard size cap (memory-exhaustion guard),

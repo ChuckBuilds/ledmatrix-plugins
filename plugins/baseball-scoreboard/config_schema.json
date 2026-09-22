@@ -2634,9 +2634,54 @@
         },
         "at_bat_info": {
           "type": "object",
-          "title": "Pitcher / Batter / Last Play Screen",
-          "description": "A dedicated full-screen view (not an overlay on the scorebug -- there is not enough room there) that periodically rotates into the live display, showing the current pitcher, batter, and a short code for the last completed play. Enable per-league via Display Options > Show Pitcher/Batter and Show Last Play (MLB and NCAA Baseball only).",
+          "title": "Pitcher / Batter Player Card",
+          "description": "A dedicated full-screen view (not an overlay on the scorebug -- there is not enough room there) that periodically rotates into the live display for whoever is at the plate and on the mound. By default it is drawn as a baseball card: headshot, a NOW BATTING / NOW PITCHING banner, the player's name, season stats, team and number, age and bat/throw hand, hometown, and height/weight -- with the panel keeping as many of those rows as it has room for. Set style to 'text' for the original plain pitcher/batter line-up. Enable per-league via Display Options > Show Pitcher/Batter and Show Last Play (MLB and NCAA Baseball only).",
           "properties": {
+            "style": {
+              "type": "string",
+              "enum": [
+                "card",
+                "text"
+              ],
+              "default": "card",
+              "description": "How this screen is drawn. 'card' is a full baseball card for one player at a time -- headshot, banner, name, season stats, team/number/position, age and bat/throw, hometown, height/weight -- dropping the least important rows on panels too small to fit them all. 'text' is the original layout: a 'Pitcher: X' line, a 'Batter: Y' line and the last-play code. Card style needs the extra ESPN athlete lookup and is unavailable for MiLB; when no bio has resolved yet it falls back to the text layout on its own rather than drawing an empty card."
+            },
+            "show_batter": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": true,
+              "description": "Card style only. Include a card for the current batter"
+            },
+            "show_pitcher": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": true,
+              "description": "Card style only. Include a card for the current pitcher. With both on, the screen's dwell is split between them -- batter first -- so one rotation shows both cards instead of making the pitcher wait for the screen to come round again. Give dwell_seconds a couple of extra seconds when showing both."
+            },
+            "show_headshot": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": true,
+              "description": "Card style only. Draw the player's ESPN headshot on the left of the card, framed in their team's colour. Hidden automatically on panels narrower than 96 pixels or shorter than 32, and whenever the image has not been cached yet -- the card then uses the full width for text"
+            },
+            "show_stats": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": true,
+              "description": "Card style only. Include the season stat line (AVG/HR/RBI for a hitter, ERA/K/WHIP for a pitcher -- ESPN picks the set that suits the position). Trailing stats are dropped whole on a narrow panel rather than cut part-way through a number"
+            },
+            "show_bio_details": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": true,
+              "description": "Card style only. Include the trivia rows -- age and bat/throw hand, hometown, height/weight and seasons played. These are the first rows a short panel drops anyway; turn this off to keep a tall panel to the name, stats and team"
+            },
+            "header_bar": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": true,
+              "description": "Card style only. Draw the NOW BATTING / NOW PITCHING banner as black text knocked out of a solid team-colour bar instead of plain coloured text. Only applies on panels 48 pixels tall or more, where the banner row is tall enough for it to read"
+            },
             "font": {
               "x-advanced": true,
               "type": "string",
@@ -2655,7 +2700,7 @@
               "x-advanced": true,
               "type": "boolean",
               "default": true,
-              "description": "Color the pitcher's name with the fielding team's real ESPN color and the batter's name with the batting team's color, instead of the flat pitcher_color/batter_color below. Falls back to those flat colors when off, or when a team's color isn't available."
+              "description": "Colour the card's banner, name and headshot frame (and, in text style, the pitcher and batter lines) with the real ESPN team colour -- the fielding team for the pitcher, the batting team for the hitter -- instead of the flat pitcher_color/batter_color below. Falls back to those flat colours when off, or when a team's colour isn't available."
             },
             "pitcher_color": {
               "x-advanced": true,
@@ -2673,7 +2718,7 @@
               ],
               "minItems": 3,
               "maxItems": 3,
-              "description": "Text color [R, G, B] for the pitcher line when use_team_colors is off or the fielding team's color is unavailable"
+              "description": "Text colour [R, G, B] for the pitcher's banner and name when use_team_colors is off or the fielding team's colour is unavailable"
             },
             "batter_color": {
               "x-advanced": true,
@@ -2691,7 +2736,7 @@
               ],
               "minItems": 3,
               "maxItems": 3,
-              "description": "Text color [R, G, B] for the batter line when use_team_colors is off or the batting team's color is unavailable"
+              "description": "Text colour [R, G, B] for the batter's banner and name when use_team_colors is off or the batting team's colour is unavailable"
             },
             "last_play_color": {
               "x-advanced": true,
@@ -2709,7 +2754,61 @@
               ],
               "minItems": 3,
               "maxItems": 3,
-              "description": "Text color [R, G, B] for the last-play code line"
+              "description": "Text colour [R, G, B] for the last-play code line in text style. The card shows the code in the banner instead, in the banner's own colour"
+            },
+            "text_color": {
+              "x-advanced": true,
+              "type": "array",
+              "x-widget": "color-picker",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "default": [
+                255,
+                255,
+                255
+              ],
+              "minItems": 3,
+              "maxItems": 3,
+              "description": "Card style only. Text colour [R, G, B] for the team / number / position row"
+            },
+            "stat_color": {
+              "x-advanced": true,
+              "type": "array",
+              "x-widget": "color-picker",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "default": [
+                0,
+                220,
+                255
+              ],
+              "minItems": 3,
+              "maxItems": 3,
+              "description": "Card style only. Text colour [R, G, B] for the season stat line"
+            },
+            "detail_color": {
+              "x-advanced": true,
+              "type": "array",
+              "x-widget": "color-picker",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "default": [
+                170,
+                170,
+                170
+              ],
+              "minItems": 3,
+              "maxItems": 3,
+              "description": "Card style only. Text colour [R, G, B] for the quieter trivia rows -- age and bat/throw, hometown, height/weight"
             },
             "dwell_seconds": {
               "x-advanced": true,
@@ -2717,7 +2816,7 @@
               "default": 4,
               "minimum": 2,
               "maximum": 15,
-              "description": "How many seconds to show this screen each time it rotates in"
+              "description": "How many seconds to show this screen each time it rotates in. In card style with both players on, this time is split between the two cards"
             },
             "interval_seconds": {
               "x-advanced": true,

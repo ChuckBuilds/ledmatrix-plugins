@@ -6,7 +6,7 @@ to support different APIs and data providers.
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, Optional
+from typing import Dict, List, Optional, Tuple
 import requests
 import logging
 
@@ -113,7 +113,8 @@ class ESPNDataSource(DataSource):
     def fetch_player_details(self, sport: str, league: str, player_id: str) -> Optional[Dict]:
         """Fetch a player's bio + season stats from ESPN's athlete + overview
         endpoints. Returns a parsed dict (display_name, jersey, position, bat,
-        throw, height, weight, headshot_url, stats) or None on any failure.
+        throw, height, weight, age, birthplace, experience, college, team,
+        headshot_url, stats) or None on any failure.
 
         Mirrors the masters plugin's fetch_player_details; the bio endpoint
         carries the identity/headshot and the /overview endpoint carries the
@@ -145,15 +146,37 @@ class ESPNDataSource(DataSource):
             self.logger.debug(f"Failed to fetch player details for {player_id}: {e}")
             return None
 
-    @staticmethod
-    def _parse_player_details(bio_data: Dict, overview_data: Optional[Dict]) -> Optional[Dict]:
+    # ESPN reports bats/throws on this endpoint as a combined display string
+    # ("Right/Left") far more reliably than through the structured
+    # bats/throws objects, which come back null for most athletes.
+    _HAND_WORDS = {"right": "R", "left": "L", "switch": "S", "both": "S"}
+
+    @classmethod
+    def _split_bats_throws(cls, display: Optional[str]) -> Tuple[Optional[str], Optional[str]]:
+        """'Right/Left' -> ('R', 'L'). Returns (None, None) when the field is
+        missing or in an unexpected shape."""
+        if not isinstance(display, str) or "/" not in display:
+            return None, None
+        bats, _, throws = display.partition("/")
+        return (
+            cls._HAND_WORDS.get(bats.strip().lower()),
+            cls._HAND_WORDS.get(throws.strip().lower()),
+        )
+
+    @classmethod
+    def _parse_player_details(cls, bio_data: Dict, overview_data: Optional[Dict]) -> Optional[Dict]:
         """Combine the bio + overview responses into one flat player dict.
 
-        The overview's statistics block is `{names/labels: [...], splits:
-        [{stats: [...]}, ...]}` -- we zip the labels against the first split's
-        values into a {label: value} map, then pull the baseball-relevant ones
-        (AVG/HR/RBI for hitters, ERA/W-L/K for pitchers) while keeping the full
-        map so anything ESPN provides is available to the renderer."""
+        Season stats come from the bio record's `statsSummary`, which is
+        ESPN's own position-appropriate pick for the current season
+        (AVG/HR/RBI/OPS for a hitter, ERA/K/WHIP/SV for a pitcher) and is
+        already ordered for display. The /overview endpoint is only a
+        fallback: its first split is usually *career* totals with no AVG in
+        them at all, so preferring it silently labelled career home runs as
+        season home runs. Its statistics block is `{names/labels: [...],
+        splits: [{stats: [...]}, ...]}` -- we zip the labels against the
+        first split's values into a {label: value} map.
+        """
         try:
             athlete = bio_data.get("athlete") or bio_data
             if not isinstance(athlete, dict):
@@ -165,7 +188,28 @@ class ESPNDataSource(DataSource):
                 position = position.get("abbreviation") or position.get("displayName") or ""
 
             stats: Dict[str, str] = {}
-            if overview_data:
+            # Ordered (label, value) pairs, as ESPN ranked them -- the card
+            # renders them left to right and drops from the right when the
+            # panel is narrow, so the order carries meaning.
+            stat_pairs: List[Tuple[str, str]] = []
+            summary = athlete.get("statsSummary") or {}
+            for entry in summary.get("statistics") or []:
+                if not isinstance(entry, dict):
+                    continue
+                label = (
+                    entry.get("abbreviation")
+                    or entry.get("shortDisplayName")
+                    or entry.get("name")
+                )
+                value = entry.get("displayValue")
+                if value is None:
+                    value = entry.get("value")
+                if label and value is not None:
+                    stat_pairs.append((str(label), str(value)))
+                    stats[str(label)] = str(value)
+            stats_title = summary.get("displayName") if stat_pairs else None
+
+            if not stats and overview_data:
                 stat_block = overview_data.get("statistics") or {}
                 labels = stat_block.get("names") or stat_block.get("labels") or []
                 splits = stat_block.get("splits") or []
@@ -176,6 +220,24 @@ class ESPNDataSource(DataSource):
                         if label:
                             stats[str(label)] = value
 
+            bat = (athlete.get("bats") or {}).get("abbreviation") \
+                if isinstance(athlete.get("bats"), dict) else athlete.get("bats")
+            throw = (athlete.get("throws") or {}).get("abbreviation") \
+                if isinstance(athlete.get("throws"), dict) else athlete.get("throws")
+            if not bat or not throw:
+                display_bat, display_throw = cls._split_bats_throws(
+                    athlete.get("displayBatsThrows")
+                )
+                bat = bat or display_bat
+                throw = throw or display_throw
+
+            team = athlete.get("team") or {}
+            if not isinstance(team, dict):
+                team = {}
+            college = athlete.get("college") or {}
+            if not isinstance(college, dict):
+                college = {}
+
             return {
                 "player_id": athlete.get("id"),
                 "display_name": athlete.get("displayName"),
@@ -183,14 +245,23 @@ class ESPNDataSource(DataSource):
                 "last_name": athlete.get("lastName"),
                 "jersey": athlete.get("jersey"),
                 "position": position or "",
-                "bat": (athlete.get("bats") or {}).get("abbreviation")
-                if isinstance(athlete.get("bats"), dict) else athlete.get("bats"),
-                "throw": (athlete.get("throws") or {}).get("abbreviation")
-                if isinstance(athlete.get("throws"), dict) else athlete.get("throws"),
+                "bat": bat,
+                "throw": throw,
                 "height": athlete.get("displayHeight") or athlete.get("height"),
                 "weight": athlete.get("displayWeight") or athlete.get("weight"),
+                "age": athlete.get("age"),
+                "birthplace": athlete.get("displayBirthPlace"),
+                "experience": athlete.get("displayExperience"),
+                "debut_year": athlete.get("debutYear"),
+                "draft": athlete.get("displayDraft"),
+                "college": college.get("shortName") or college.get("name"),
+                "team_id": str(team.get("id")) if team.get("id") else None,
+                "team_abbr": team.get("abbreviation"),
+                "team_name": team.get("shortDisplayName") or team.get("displayName"),
                 "headshot_url": headshot,
                 "stats": stats,
+                "stat_pairs": stat_pairs,
+                "stats_title": stats_title,
             }
         except Exception:
             return None
