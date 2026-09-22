@@ -1065,6 +1065,22 @@ class BaseballLive(Baseball, SportsLive):
         )
         self._headshot_mgr = None  # lazily created in the render path
 
+    def _at_bat_card_style(self) -> str:
+        """'card' (the default) draws the pitcher/batter screen as a full
+        player card -- headshot, team, vitals, season stats; 'text' restores
+        the original two-line "Pitcher: X / Batter: Y" layout."""
+        cfg = self.config.get("customization", {}).get("at_bat_info", {})
+        return str(cfg.get("style", "card")).lower()
+
+    def _wants_player_bios(self) -> bool:
+        """True when some enabled screen needs the extra ESPN athlete lookup.
+        The pitcher/batter screen only needs it in card style -- the text
+        layout has always run off the play-by-play roster names alone, and
+        users who switch back to it should not keep paying for the fetch."""
+        if self.show_player_card:
+            return True
+        return self.show_pitcher_batter and self._at_bat_card_style() == "card"
+
     def update(self):
         super().update()
         if self.test_mode:
@@ -1088,9 +1104,9 @@ class BaseballLive(Baseball, SportsLive):
             self._fetch_play_by_play(game_id)
 
         # Lazily enrich the current batter/pitcher with a full bio (season
-        # stats) for the player card -- only for the two current athlete IDs,
+        # stats) for the player cards -- only for the two current athlete IDs,
         # throttled, so we never hammer the athlete API from the render loop.
-        if self.show_player_card:
+        if self._wants_player_bios():
             pbp = self._play_by_play_cache.get(game_id) or {}
             for pid, info in (
                 (pbp.get("batter_id"), pbp.get("batter_info")),
@@ -1365,21 +1381,39 @@ class BaseballLive(Baseball, SportsLive):
     _TEST_MODE_PLAYER_BIOS = {
         "b_soto": {"display_name": "Juan Soto", "jersey": "22", "position": "RF",
                    "bat": "L", "throw": "L", "headshot_url": None,
+                   "age": 27, "birthplace": "Santo Domingo, DR",
+                   "height": "6' 0\"", "weight": "224 lbs",
+                   "experience": "9th Season", "team_abbr": "NYM",
                    "stats": {"AVG": ".288", "HR": "41", "RBI": "109"}},
         "b_judge": {"display_name": "Aaron Judge", "jersey": "99", "position": "CF",
                     "bat": "R", "throw": "R", "headshot_url": None,
+                    "age": 34, "birthplace": "Linden, CA",
+                    "height": "6' 7\"", "weight": "282 lbs",
+                    "experience": "11th Season", "team_abbr": "NYY",
                     "stats": {"AVG": ".322", "HR": "58", "RBI": "144"}},
         "b_freeman": {"display_name": "Freddie Freeman", "jersey": "5", "position": "1B",
                       "bat": "L", "throw": "R", "headshot_url": None,
+                      "age": 36, "birthplace": "Villa Park, CA",
+                      "height": "6' 5\"", "weight": "220 lbs",
+                      "experience": "17th Season", "team_abbr": "LAD",
                       "stats": {"AVG": ".282", "HR": "22", "RBI": "89"}},
         "b_betts": {"display_name": "Mookie Betts", "jersey": "50", "position": "SS",
                     "bat": "R", "throw": "R", "headshot_url": None,
+                    "age": 33, "birthplace": "Nashville, TN",
+                    "height": "5' 9\"", "weight": "180 lbs",
+                    "experience": "13th Season", "team_abbr": "LAD",
                     "stats": {"AVG": ".289", "HR": "19", "RBI": "75"}},
         "p_cole": {"display_name": "Gerrit Cole", "jersey": "45", "position": "SP",
                    "bat": "R", "throw": "R", "headshot_url": None,
+                   "age": 35, "birthplace": "Newport Beach, CA",
+                   "height": "6' 4\"", "weight": "220 lbs",
+                   "experience": "13th Season", "team_abbr": "NYY",
                    "stats": {"ERA": "3.41", "W": "8", "L": "5", "SO": "165"}},
         "p_yama": {"display_name": "Yoshinobu Yamamoto", "jersey": "18", "position": "SP",
                    "bat": "R", "throw": "R", "headshot_url": None,
+                   "age": 28, "birthplace": "Okayama, Japan",
+                   "height": "5' 10\"", "weight": "176 lbs",
+                   "experience": "3rd Season", "team_abbr": "LAD",
                    "stats": {"ERA": "2.90", "W": "11", "L": "4", "SO": "180"}},
     }
 
@@ -1448,8 +1482,8 @@ class BaseballLive(Baseball, SportsLive):
                 )
                 sample = self._TEST_MODE_AT_BAT_SAMPLES[sample_index]
                 self._play_by_play_cache[game_id] = sample
-                # Seed the bio cache so the player card renders offline.
-                if self.show_player_card:
+                # Seed the bio cache so both player cards render offline.
+                if self._wants_player_bios():
                     for pid in (sample.get("batter_id"), sample.get("pitcher_id")):
                         if pid and pid not in self._player_bio_cache:
                             self._player_bio_cache[pid] = self._TEST_MODE_PLAYER_BIOS.get(pid)
@@ -1494,8 +1528,48 @@ class BaseballLive(Baseball, SportsLive):
         if not showing:
             return False
 
+        # Card style is the default, but it needs a resolved bio to say
+        # anything the text layout doesn't. Until one lands -- MiLB, a fresh
+        # at-bat, an athlete ESPN has no record for -- fall through to the
+        # plain text layout rather than show a card with three empty rows.
+        if self.show_pitcher_batter and self._at_bat_card_style() == "card":
+            subject = self._pick_at_bat_card_subject(pbp, at_bat_cfg, now, dwell)
+            if subject is not None:
+                role, info, bio = subject
+                self._draw_at_bat_card_screen(game, role, info, bio, pbp, force_clear)
+                return True
+
         self._draw_at_bat_info_screen(game, pbp, force_clear)
         return True
+
+    def _pick_at_bat_card_subject(
+        self, pbp: Dict, cfg: Dict, now: float, dwell: float
+    ) -> Optional[Tuple[str, Optional[Dict], Dict]]:
+        """Pick whose card this frame shows, as (role, roster_info, bio).
+
+        With both players available the dwell is *split* between them --
+        batter first, then pitcher -- so a single rotation shows both cards
+        instead of making the pitcher wait for the screen to come round
+        again. Returns None when no bio has resolved yet, which sends the
+        caller back to the text layout."""
+        candidates: List[Tuple[str, Optional[Dict], Dict]] = []
+        for role, enabled, id_key, info_key in (
+            ("batter", cfg.get("show_batter", True), "batter_id", "batter_info"),
+            ("pitcher", cfg.get("show_pitcher", True), "pitcher_id", "pitcher_info"),
+        ):
+            if not enabled:
+                continue
+            player_id = pbp.get(id_key)
+            bio = self._player_bio_cache.get(player_id) if player_id else None
+            if bio:
+                candidates.append((role, pbp.get(info_key), bio))
+        if not candidates:
+            return None
+
+        slot = dwell / len(candidates) if dwell > 0 else 0
+        elapsed = max(0.0, dwell - (self._at_bat_screen_showing_until - now))
+        index = int(elapsed / slot) if slot > 0 else 0
+        return candidates[min(index, len(candidates) - 1)]
 
     @staticmethod
     def _truncate_to_width(draw, text: str, font, max_width: int) -> str:
@@ -1593,6 +1667,295 @@ class BaseballLive(Baseball, SportsLive):
         except Exception as e:
             self.logger.error(f"Error drawing at-bat info screen: {e}", exc_info=True)
 
+    # Top-to-bottom order the at-bat card's rows are drawn in.
+    _AT_BAT_CARD_ROW_ORDER: Tuple[str, ...] = (
+        "header", "name", "team", "stats", "vitals", "hometown", "extra",
+    )
+    # The order rows are given up in when the panel can't fit them all,
+    # least useful first. Deliberately not the reverse of the draw order:
+    # the season line reads several rows down but is worth more than the
+    # team/number row it sits under, so a 128x32 keeps the banner, the name
+    # and a stat or two while the biographical trivia only appears on a
+    # panel with the height to spare.
+    _AT_BAT_CARD_DROP_ORDER: Tuple[str, ...] = (
+        "extra", "hometown", "vitals", "team", "stats", "name",
+    )
+
+    @staticmethod
+    def _readable_on(background: Tuple[int, int, int]) -> Tuple[int, int, int]:
+        """Black or white, whichever reads against `background`. Team colors
+        run from near-black navy to bright yellow, so a banner knocked out in
+        a fixed color is illegible for roughly half the league."""
+        r, g, b = background[:3]
+        # Rec. 601 luma -- close enough for a two-way choice, and cheap.
+        return (0, 0, 0) if (0.299 * r + 0.587 * g + 0.114 * b) > 140 else (255, 255, 255)
+
+    # Separator between the segments of each row. A row is built as a list of
+    # whole segments so a narrow panel can give up trailing ones intact --
+    # see _fit_segments.
+    _AT_BAT_CARD_ROW_SEPARATOR: Dict[str, str] = {"team": " "}
+
+    @classmethod
+    def _at_bat_card_row_text(cls, key: str, segments: List[str]) -> str:
+        """Render one row's segments as the string it is drawn as."""
+        return cls._AT_BAT_CARD_ROW_SEPARATOR.get(key, "  ").join(segments)
+
+    @staticmethod
+    def _build_at_bat_card_rows(
+        role: str, info: Optional[Dict], bio: Dict,
+        last_play_code: Optional[str] = None,
+    ) -> Dict[str, List[str]]:
+        """Assemble the card's rows as {row_key: [segment, ...]}.
+
+        Every field ESPN might not have sent is simply absent from the
+        result rather than rendering as an empty or half-built line, so a
+        sparse NCAA athlete record degrades to a banner, a name and
+        whatever stats exist."""
+        info = info or {}
+        rows: Dict[str, List[str]] = {}
+
+        header = ["NOW BATTING" if role == "batter" else "NOW PITCHING"]
+        if last_play_code:
+            header.append(str(last_play_code))
+        rows["header"] = header
+        rows["name"] = [bio.get("display_name") or info.get("name") or "Player"]
+
+        jersey = bio.get("jersey") or info.get("jersey")
+        position = bio.get("position") or info.get("position") or ""
+        team = bio.get("team_abbr") or info.get("team_abbr") or ""
+        team_line = [
+            part for part in (team, f"#{jersey}" if jersey else "", position) if part
+        ]
+        if team_line:
+            rows["team"] = team_line
+
+        age = bio.get("age")
+        bat = bio.get("bat") or info.get("bat")
+        throw = bio.get("throw") or info.get("throw")
+        vitals = []
+        if age:
+            vitals.append(f"Age {age}")
+        if bat and throw:
+            vitals.append(f"B/T {bat}/{throw}")
+        elif bat:
+            vitals.append(f"Bats {bat}")
+        elif throw:
+            vitals.append(f"Throws {throw}")
+        if vitals:
+            rows["vitals"] = vitals
+
+        hometown = bio.get("birthplace")
+        if hometown:
+            rows["hometown"] = [str(hometown)]
+
+        extra = [
+            str(part) for part in
+            (bio.get("height"), bio.get("weight"), bio.get("experience"))
+            if part
+        ]
+        if extra:
+            rows["extra"] = extra
+
+        return rows
+
+    @staticmethod
+    def _fit_segments(draw, segments: List[str], font, fit_width: int,
+                      separator: str = "  ") -> str:
+        """Join `segments` into one line that fits fit_width.
+
+        Drops whole trailing segments rather than letting a hard truncation
+        cut through the middle of one: "AVG .312  H" silently loses the
+        HR/RBI values with no sign anything is missing, and "Age 34  B/T"
+        reads as a field the feed didn't fill in. Callers still truncate the
+        result as a last resort, for when even a single segment overflows."""
+        if not segments:
+            return ""
+        trimmed = list(segments)
+        while len(trimmed) > 1:
+            candidate = separator.join(trimmed)
+            if draw.textbbox((0, 0), candidate, font=font)[2] <= fit_width:
+                break
+            trimmed = trimmed[:-1]
+        return separator.join(trimmed)
+
+    def _at_bat_card_team_color(self, game: Dict, role: str, info: Optional[Dict]):
+        """Team color for the at-bat card. Prefers the athlete's own roster
+        team (authoritative), then infers from the half-inning -- the
+        fielding team is pitching, the team at bat is hitting -- which is
+        what the text layout has always done."""
+        color = self._player_card_team_color(game, info)
+        if color:
+            return color
+        batting_away = (game.get("inning_half") or "top").lower() == "top"
+        if role == "batter":
+            return game.get("away_team_color") if batting_away else game.get("home_team_color")
+        return game.get("home_team_color") if batting_away else game.get("away_team_color")
+
+    def _draw_at_bat_card_screen(
+        self, game: Dict, role: str, info: Optional[Dict], bio: Dict,
+        pbp: Dict, force_clear: bool = False,
+    ) -> None:
+        """Draw the pitcher/batter screen as a baseball card: headshot on the
+        left, then a "NOW BATTING"/"NOW PITCHING" banner, the player's name,
+        season stats, team/number/position, age and bat/throw, hometown, and
+        height/weight/experience.
+
+        Nothing here is tiered by a hardcoded panel-size table. The font
+        ladder is asked to fit every row; if it cannot, the next row in
+        _AT_BAT_CARD_DROP_ORDER is given up and the ladder is asked again,
+        until what is left fits. That keeps a 128x32 and a 512x64 showing the
+        same card with the detail each has room for, instead of two layouts
+        that drift apart."""
+        try:
+            w, h = self.display_width, self.display_height
+            img = Image.new("RGB", (w, h), (0, 0, 0))
+            draw = ImageDraw.Draw(img)
+
+            info = info or {}
+            cfg = self.config.get("customization", {}).get("at_bat_info", {})
+            text_color = tuple(cfg.get("text_color", [255, 255, 255]))
+            stat_color = tuple(cfg.get("stat_color", [0, 220, 255]))
+            detail_color = tuple(cfg.get("detail_color", [170, 170, 170]))
+            flat_role_color = tuple(
+                cfg.get("batter_color", [255, 255, 0]) if role == "batter"
+                else cfg.get("pitcher_color", [255, 255, 255])
+            )
+
+            team_color = self._at_bat_card_team_color(game, role, info)
+            use_team_colors = cfg.get("use_team_colors", True)
+            accent = team_color if (use_team_colors and team_color) else flat_role_color
+
+            last_play_code = pbp.get("last_play_code") if self.show_last_play else None
+            rows = self._build_at_bat_card_rows(role, info, bio, last_play_code)
+            if cfg.get("show_stats", True):
+                stats = self._format_card_stats(bio)
+                if stats:
+                    rows["stats"] = [f"{label} {value}" for label, value in stats]
+            if not cfg.get("show_bio_details", True):
+                for key in ("vitals", "hometown", "extra"):
+                    rows.pop(key, None)
+
+            colors = {
+                "header": accent,
+                # The name stays white: team colors are brightness-clamped
+                # into a legible band but a dark navy or maroon still reads
+                # poorly at the size a name is drawn, and the banner right
+                # above it already carries the team's color.
+                "name": text_color,
+                "team": accent,
+                "stats": stat_color,
+                "vitals": detail_color,
+                "hometown": detail_color,
+                "extra": detail_color,
+            }
+
+            margin = 1
+            headshot = None
+            if cfg.get("show_headshot", True) and w >= 96 and h >= 32:
+                # Height-constrained so it never overflows a 32px panel, and
+                # capped at a third of the width so the text column keeps the
+                # room it needs for a full name.
+                headshot_size = min(
+                    max(24, h - 2 * (margin + 2)), h - 2 * (margin + 1), w // 3
+                )
+                mgr = self._get_headshot_manager()
+                if mgr is not None and self.espn_summary_sport_league:
+                    _, league = self.espn_summary_sport_league
+                    # Cache-only on the render path: update() prefetches the
+                    # bytes off-thread, so a miss renders text-only rather
+                    # than blocking the display on a network fetch.
+                    headshot = mgr.load_headshot(
+                        str(bio.get("player_id") or info.get("player_id") or "")
+                        or str(info.get("id") or ""),
+                        bio.get("headshot_url") or info.get("headshot_url"),
+                        league=league,
+                        max_size=headshot_size,
+                        allow_download=False,
+                    )
+
+            if headshot is not None:
+                hx, hy = margin + 1, (h - headshot.height) // 2
+                draw.rectangle(
+                    [hx - 1, hy - 1, hx + headshot.width, hy + headshot.height],
+                    outline=accent,
+                )
+                img.paste(headshot, (hx, hy), headshot)
+                text_x = hx + headshot.width + 4
+            else:
+                text_x = margin + 1
+
+            # Reserve the margin plus 1px for the text outline, which
+            # _draw_text_with_outline paints 1px beyond the glyph on every
+            # side, so nothing bleeds into the edge columns.
+            avail_w = max(8, w - text_x - margin - 2)
+            avail_h = h - 2 * margin
+
+            font_cfg = dict(cfg)
+            # Match config_schema.json's default explicitly -- same pattern
+            # (and reasoning) as _draw_traditional_scoreboard_screen.
+            font_cfg.setdefault("font", "9x15.bdf")
+            font_size_cap = font_cfg.get("font_size", 24)
+
+            keys = [k for k in self._AT_BAT_CARD_ROW_ORDER if rows.get(k)]
+            texts = {k: self._at_bat_card_row_text(k, rows[k]) for k in keys}
+            droppable = [k for k in self._AT_BAT_CARD_DROP_ORDER if k in keys]
+            font, row_h = None, 0
+            while keys:
+                font_cfg["font_size"] = max(
+                    6, min(font_size_cap, round(avail_h / len(keys) - 3))
+                )
+                font, row_h = self._load_multiline_fit_font(
+                    font_cfg, [texts[k] for k in keys], avail_w, avail_h
+                )
+                if row_h * len(keys) <= avail_h or not droppable:
+                    break
+                keys.remove(droppable.pop(0))
+            if font is None:
+                return
+
+            header_bar = (
+                cfg.get("header_bar", True)
+                and "header" in keys
+                and h >= 48
+                and row_h >= 8
+            )
+
+            total_height = row_h * len(keys)
+            y = max(margin, (h - total_height) // 2)
+            for key in keys:
+                if y >= h:
+                    break
+                text = self._fit_segments(
+                    draw, rows[key], font, avail_w,
+                    self._AT_BAT_CARD_ROW_SEPARATOR.get(key, "  "),
+                )
+                text = self._truncate_to_width(draw, text, font, avail_w)
+                if key == "header" and header_bar:
+                    # Knocked-out banner: the team color behind, glyphs in
+                    # whichever of black/white reads against it. Drawn flat
+                    # rather than through _draw_text_with_outline, whose
+                    # black outline would smear a knocked-out glyph.
+                    draw.rectangle(
+                        [text_x - 1, y, text_x + avail_w, min(h - 1, y + row_h - 2)],
+                        fill=accent,
+                    )
+                    draw.fontmode = "1"
+                    draw.text(
+                        (text_x + 1, y), text, font=font,
+                        fill=self._readable_on(accent),
+                    )
+                else:
+                    self._draw_text_with_outline(
+                        draw, text, (text_x, y), font, fill=colors[key]
+                    )
+                y += row_h
+
+            self.display_manager.image.paste(img, (0, 0))
+            self.display_manager.update_display()
+
+        except Exception as e:
+            self.logger.error(f"Error drawing at-bat player card: {e}", exc_info=True)
+
     def _get_headshot_manager(self):
         """Lazily create the headshot loader (a BaseballLogoManager, which
         already has the disk/memory-cache + download machinery). Returns None
@@ -1679,9 +2042,19 @@ class BaseballLive(Baseball, SportsLive):
     @staticmethod
     def _format_card_stats(bio: Dict) -> List[Tuple[str, str]]:
         """Pick a compact, position-appropriate set of (label, value) stat
-        pairs from a bio's stats dict. Prefers hitter stats (AVG/HR/RBI); falls
-        back to pitcher stats (ERA/W-L/K); else surfaces whatever ESPN gave,
-        so NCAA feeds with sparse/odd labels still show *something*."""
+        pairs for a bio.
+
+        ESPN's `statsSummary` already picks and orders the right stats for the
+        player's position (AVG/HR/RBI/OPS for a hitter, ERA/K/WHIP/SV for a
+        pitcher), so when the parser captured it as `stat_pairs` that wins.
+        The hand-rolled selection below stays as the fallback for feeds
+        without one: hitter stats (AVG/HR/RBI), then pitcher stats
+        (ERA/W-L/K), then whatever labels ESPN gave, so NCAA feeds with
+        sparse/odd labels still show *something*."""
+        stat_pairs = bio.get("stat_pairs") or []
+        if stat_pairs:
+            return [(str(label), str(value)) for label, value in stat_pairs[:4]]
+
         stats = bio.get("stats") or {}
         if not stats:
             return []
@@ -1838,21 +2211,12 @@ class BaseballLive(Baseball, SportsLive):
             # The stat line ("AVG .312  HR 28  RBI 71") is the longest line
             # and the one most likely to overflow avail_w on narrow panels,
             # since its font size was fit alongside the shorter name/jersey
-            # lines. Rather than let the _truncate_to_width call below
-            # hard-cut it mid-pair (e.g. "AVG .312  H", silently losing the
-            # HR/RBI values with no indication anything's missing), drop
-            # whole trailing (label, value) pairs -- 3 stats, then 2, then
-            # 1 -- until what's left actually fits; only truncate
-            # mid-string as a last resort if even a single stat overflows.
+            # lines. _fit_stat_pairs drops whole trailing pairs rather than
+            # letting the _truncate_to_width call below hard-cut it mid-pair.
             if stat_str and stats:
-                fit_w = max(8, avail_w)
-                trimmed_stats = list(stats)
-                while len(trimmed_stats) > 1:
-                    candidate = "  ".join(f"{lbl} {val}" for lbl, val in trimmed_stats)
-                    if draw.textbbox((0, 0), candidate, font=font)[2] <= fit_w:
-                        break
-                    trimmed_stats = trimmed_stats[:-1]
-                trimmed_stat_str = "  ".join(f"{lbl} {val}" for lbl, val in trimmed_stats)
+                trimmed_stat_str = self._fit_segments(
+                    draw, [f"{lbl} {val}" for lbl, val in stats], font, max(8, avail_w)
+                )
                 if trimmed_stat_str != stat_str:
                     for idx, (line_text, line_color) in enumerate(lines):
                         if line_text == stat_str:

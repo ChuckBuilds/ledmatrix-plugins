@@ -403,7 +403,7 @@ a panel.
 | `odds_update_interval` | `3600` | How often betting odds are refreshed for recent and upcoming games |
 | `live_odds_update_interval` | `60` | How often betting odds are refreshed for games in progress |
 | `play_by_play_update_interval` | `20` | MLB and NCAA only. How often the live at-bat summary is refetched for the pitcher/batter, last-play and player-card screens |
-| `player_bio_update_interval` | `300` | MLB and NCAA only. How often a player's bio and headshot are refetched for the player card |
+| `player_bio_update_interval` | `300` | MLB and NCAA only. How often a player's bio and headshot are refetched for the card screens |
 
 Background fetching itself (timeout, retries, queue priority) is fixed by the
 plugin and has no per-league setting.
@@ -444,9 +444,9 @@ all cost an extra per-game data fetch.
 
 | Option | Default | What it does |
 |--------|---------|--------------|
-| `display_options.show_pitcher_batter` | `false` | A screen naming the current pitcher and batter during a live at-bat |
+| `display_options.show_pitcher_batter` | `false` | A baseball card for the current batter and pitcher: headshot, name, team, number, position, season stats, age, hometown |
 | `display_options.show_last_play` | `false` | Adds a short code for the last completed play (`1B`, `HR`, `K`, `BB`) to that screen |
-| `display_options.show_player_card` | `false` | A full card for the current batter: headshot, number, position, bat/throw and season stats |
+| `display_options.show_player_card` | `false` | A separate card screen on its own slower rotation, for the batter only by default |
 | `display_options.show_traditional_scoreboard` | `false` | A full-screen ballpark scoreboard: inning-by-inning line score, R/H/E, and an at-bat panel |
 
 `show_last_play` only does anything with `show_pitcher_batter` on — it adds a
@@ -459,8 +459,8 @@ built from; only the traditional scoreboard has a `game_scope` option, because
 only it has anything to say about a finished game.
 
 They also need panel height. The traditional scoreboard wants 64 rows or more
-for a line score; the player card hides the headshot and falls back to a
-compact two-line text card on a 64×32 panel.
+for a line score; both card screens hide the headshot on panels under 96 wide
+or 32 tall and show whichever rows fit.
 
 #### Traditional scoreboard: `customization.traditional_scoreboard`
 
@@ -497,32 +497,90 @@ whichever game the normal rotation is already showing, then reverts.
 }
 ```
 
-#### Pitcher / batter: `customization.at_bat_info`
+#### Now batting / now pitching: `customization.at_bat_info`
 
-Names the current at-bat's pitcher and batter, labelled in full
-(`Pitcher: G. Cole` / `Batter: J. Soto`) so there is no confusing the `B` with
-the balls indicator. Text auto-fits, falling back to a smaller font — and only
-as a last resort truncating — rather than running off the edge.
+A baseball card for whoever is at the plate and on the mound: their headshot
+framed in the team colour, a `NOW BATTING` / `NOW PITCHING` banner, the
+player's name, team, number and position, this season's stats, age and
+bat/throw hand, hometown, and height/weight/seasons played.
+
+```
+┌────────────┬──────────────────────────────────┐
+│            │ NOW BATTING  K                   │  ← banner, team colour
+│   ┌────┐   │ Aaron Judge                      │
+│   │face│   │ NYY #99 RF                       │
+│   └────┘   │ AVG .241  HR 18  RBI 41          │
+│            │ Age 34  B/T R/R                  │
+│            │ Linden, CA                       │
+└────────────┴──────────────────────────────────┘
+```
+
+With both players on, the screen's `dwell_seconds` is **split between them**,
+batter first, so one rotation shows both cards rather than making the pitcher
+wait for the screen to come round again. Give it a couple of extra seconds if
+you turn both on.
+
+There is no panel-size table behind this. The rows are priority-ordered and
+the least useful are given up until what is left fits, so a 128×32 keeps the
+banner, the name and a stat or two, a 128×64 adds the team and the trivia, and
+a 256×64 carries the whole card. Rows made of several fields drop whole
+trailing fields rather than being cut part-way through one — `Age 34`, not
+`Age 34  B/T`. The headshot hides itself on panels under 96 wide or 32 tall.
+
+**Card style needs the extra ESPN athlete lookup, and is MLB and NCAA Baseball
+only.** On MiLB, on a brand-new at-bat, or for an athlete ESPN has no record
+for, the screen falls back on its own to the original text layout — the
+pitcher and batter labelled in full (`Pitcher: G. Cole` / `Batter: J. Soto`),
+so there is no confusing the `B` with the balls indicator — rather than
+drawing an empty card. Set `style` to `text` to pin it there always, which
+also stops the athlete lookup the card needs.
 
 | Option | Default | What it does |
 |--------|---------|--------------|
+| `style` | `card` | `card` for the full player card, `text` for the original two-line layout |
+| `show_batter` | `true` | Card style. Include the current batter |
+| `show_pitcher` | `true` | Card style. Include the current pitcher |
+| `show_headshot` | `true` | Card style. The headshot, framed in the team's colour |
+| `show_stats` | `true` | Card style. The season stat line |
+| `show_bio_details` | `true` | Card style. Age/bat-throw, hometown, height/weight/seasons |
+| `header_bar` | `true` | Card style. Banner knocked out of a solid team-colour bar (panels 48 rows and taller) |
 | `favorites_only` | `false` | Only rotate in for favourites' games |
-| `dwell_seconds` | `4` | How long it stays |
+| `dwell_seconds` | `4` | How long it stays — split between the two cards when both are on |
 | `interval_seconds` | `25` | How often it rotates in |
 | `font` | `9x15.bdf` | As above |
 | `font_size` | `24` | Cap for scalable fonts only |
-| `use_team_colors` | `true` | Pitcher in the fielding team's colour, batter in the batting team's |
+| `use_team_colors` | `true` | Banner, name row and headshot frame in the team's colour — fielding team for the pitcher, batting team for the hitter |
 | `pitcher_color` | `[255, 255, 255]` | Fallback when team colours are off |
 | `batter_color` | `[255, 255, 0]` | Fallback when team colours are off |
-| `last_play_color` | `[0, 255, 255]` | The last-play code — always flat, since a play code belongs to no team |
+| `text_color` | `[255, 255, 255]` | Card style. The player's name |
+| `stat_color` | `[0, 220, 255]` | Card style. The season stat line |
+| `detail_color` | `[170, 170, 170]` | Card style. The quieter trivia rows |
+| `last_play_color` | `[0, 255, 255]` | Text style only. The last-play code line — always flat, since a play code belongs to no team. The card shows the code in the banner instead |
+
+Headshots come from ESPN's athlete API and are cached in memory and on disk
+under `assets/headshots/`, which is gitignored. They are only ever downloaded
+in the background, never on the render path, so a player the plugin has not
+seen before shows a text-only card for one rotation.
+
+Each one is cropped and downscaled to a 192px square before it is written —
+about 40 KB, against the ~200 KB full-size PNG ESPN serves — and the directory
+is held to 200 files, least-recently-used evicted first. That caps the cache
+at roughly **8 MB**, which matters on an SD card: MLB has ~1200 active players
+and ESPN's NCAA baseball coverage is ten times that.
 
 #### Player card
 
-A "baseball card" for the current batter, and optionally the pitcher: headshot,
-jersey number, position, bat/throw, and season stats (`AVG`/`HR`/`RBI` for
-hitters, `ERA`/`W-L`/`K` for pitchers). Headshots come from ESPN's athlete API
-and are cached in memory and on disk under `assets/headshots/`, which is
-gitignored. If a headshot cannot be loaded the card renders text-only.
+A second, slower card rotation for the current batter — and optionally the
+pitcher — separate from the pitcher/batter screen above: headshot, jersey
+number, position, bat/throw, and season stats. Turn it on if you want a card
+on its own schedule; if you just want the at-bat to look like a baseball card,
+`show_pitcher_batter` already does that.
+
+Stats are ESPN's own per-position season pick — `AVG`/`HR`/`RBI`/`OPS` for a
+hitter, `ERA`/`K`/`WHIP`/`SV` for a pitcher — trimmed from the right to
+whatever the panel fits. Headshots come from ESPN's athlete API and are cached
+in memory and on disk under `assets/headshots/`, which is gitignored. If a
+headshot cannot be loaded the card renders text-only.
 
 Under `customization.player_card`:
 

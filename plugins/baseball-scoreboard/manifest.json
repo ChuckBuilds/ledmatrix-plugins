@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.46.2",
+  "version": "1.47.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.47.0",
+      "released": "2026-09-22",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "The Now Batting / Now Pitching screen is a baseball card. It used to be two lines of text -- 'Pitcher: G. Cole' over 'Batter: J. Soto' -- which is all the play-by-play feed gives you. It now draws one player at a time as a card: their ESPN headshot framed in the team colour, a NOW BATTING / NOW PITCHING banner knocked out of a team-colour bar, the player's name, team, number and position, this season's stats, age and bat/throw hand, hometown, and height/weight/seasons played. With both players enabled the screen's dwell is split between them, batter first, so one rotation shows both cards instead of making the pitcher wait for the screen to come round again. Nothing is tiered by a hardcoded panel table: the rows are priority-ordered and the least useful are given up until what is left fits, so a 128x32 keeps the banner, the name and a stat or two while a 256x64 carries the full card. Rows made of several fields drop whole trailing fields rather than being cut part-way through one -- 'Age 34' rather than 'Age 34  B/T'. Season stats now come from ESPN's own per-position season summary (AVG/HR/RBI/OPS for a hitter, ERA/K/WHIP/SV for a pitcher); the player-card screen was reading the athlete overview endpoint, whose first split is career totals with no batting average in it at all, so it had been labelling 386 career home runs as this season's. Set customization.at_bat_info.style to 'text' for the original layout, which also stops the extra ESPN athlete lookup the card needs. The card is MLB and NCAA Baseball only; on MiLB, on a brand-new at-bat, or for an athlete ESPN has no record for, the screen falls back to the text layout on its own rather than drawing an empty card. This release also puts a ceiling on the headshot cache, which had none: every player whose card was drawn left ESPN's full-size PNG on disk, about 200 KB each for a square no larger than 85 pixels, and nothing ever deleted one -- a board left running through a season grew the directory without limit on an SD card. Headshots are now cropped and downscaled to a 192px square before being written (~40 KB, no visible difference at any panel size) and the directory is held to 200 files, least-recently-used evicted first, a ceiling of roughly 8 MB. The in-memory cache of decoded squares is bounded too."
+    },
     {
       "version": "1.46.2",
       "released": "2026-09-20",
@@ -686,7 +692,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-20",
+  "last_updated": "2026-09-22",
   "stars": 0,
   "downloads": 0,
   "verified": true,
