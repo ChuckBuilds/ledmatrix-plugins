@@ -24,6 +24,68 @@ NIGHT_TINT_STRENGTH = 0.40
 # Text row height in pixels: the 4x6 face at its crisp 7px + a 1px line gap.
 ROW_H = 8
 
+# rpi-rgb-led-matrix maps each 8-bit channel through a CIE1931 table onto 11
+# internal bit planes and lights only the top pwm_bits of them
+# (lib/framebuffer.cc: luminance_cie1931, kBitPlanes, min_bit_plane).
+PANEL_BIT_PLANES = 11
+
+
+def night_color(color, night_brightness, night_tint_color):
+    """A base-map colour as the night side draws it, before the uint8 cast."""
+    s = NIGHT_TINT_STRENGTH
+    return tuple(c * float(night_brightness) * (1.0 - s) + t * s
+                 for c, t in zip(color, night_tint_color))
+
+
+def panel_level(value, pwm_bits, brightness):
+    """PWM step the panel lights for one 8-bit channel value; 0 is off."""
+    v = float(value) * brightness / 255.0
+    lum = v / 902.3 if v <= 8 else ((v + 16.0) / 116.0) ** 3
+    # roundf in the library rounds half away from zero; Python's round() does not.
+    table = int(math.floor(((1 << PANEL_BIT_PLANES) - 1) * lum + 0.5))
+    return table >> (PANEL_BIT_PLANES - pwm_bits)
+
+
+def night_lift(land_color, ocean_color, night_brightness, night_tint_color,
+               pwm_bits, brightness):
+    """Keep night-side land and ocean at least one panel step apart.
+
+    Darkened to night_brightness, land and ocean are a few counts apart --
+    (9, 17, 22) against (5, 8, 27) at the defaults. The panel keeps that
+    difference at 8 PWM bits and brightness 80 (green steps 1 against 0), but
+    at 7 bits, or dimmed, both round to the same step and the night side
+    reads as one flat block with no countries under it.
+
+    Returns None when some channel already separates them on this panel.
+    Otherwise (channel, low, high, target): on the night side, the channel
+    where land and ocean differ most by day is remapped so the brighter of
+    the two (night value high) reaches target, the lowest input one step
+    above the dimmer (low). The dimmer one, and everything darker, is left
+    alone, so the night side gets no brighter than it has to.
+    """
+    if not 1 <= pwm_bits <= PANEL_BIT_PLANES or brightness <= 0:
+        return None
+    land = night_color(land_color, night_brightness, night_tint_color)
+    ocean = night_color(ocean_color, night_brightness, night_tint_color)
+    # render_map_image truncates to uint8, so the panel sees the int() value.
+    levels = [(panel_level(int(a), pwm_bits, brightness),
+               panel_level(int(b), pwm_bits, brightness)) for a, b in zip(land, ocean)]
+    if any(a != b for a, b in levels):
+        return None
+    channel = max(range(3), key=lambda i: abs(land_color[i] - ocean_color[i]))
+    if land_color[channel] == ocean_color[channel]:
+        return None
+    low, high = sorted((land[channel], ocean[channel]))
+    if high <= low:
+        # night_brightness 0: an all-tint night side is what was asked for.
+        return None
+    want = levels[channel][0] + 1
+    target = next((c for c in range(256)
+                   if panel_level(c, pwm_bits, brightness) >= want), None)
+    if target is None or target <= high:
+        return None
+    return channel, low, high, target
+
 
 def _layout(dw, dh, map_center_lon=0.0, sidebar_w=None):
     """Compute the responsive layout for a dw x dh display.
@@ -114,12 +176,14 @@ def lonlat_to_px(lon, lat, layout):
     return x, y, visible
 
 
-def render_map_image(base_padded, darkness, layout, night_brightness, night_tint_color):
+def render_map_image(base_padded, darkness, layout, night_brightness, night_tint_color,
+                     lift=None):
     """Composite the day/night terminator onto the base map and crop/resize
     it to the layout's map area.
 
     base_padded: PIL RGB image from worldmap.render_base_map().
     darkness: (GRID_H, GRID_W) float array in [0, 1] from solar.compute_terminator().
+    lift: night_lift()'s answer for the panel, or None to draw the colours as-is.
     """
     L = layout
 
@@ -129,6 +193,15 @@ def render_map_image(base_padded, darkness, layout, night_brightness, night_tint
     tint = np.array(night_tint_color, dtype=np.float32)
     night = arr * float(night_brightness)
     night = night * (1.0 - NIGHT_TINT_STRENGTH) + tint * NIGHT_TINT_STRENGTH
+
+    if lift is not None:
+        # Monotonic, so coastline blends and twilight keep their order: at or
+        # below low unchanged, high -> target, then back to 255 at the top.
+        channel, low, high, target = lift
+        xp, fp = [low, high, 255.0], [low, float(target), 255.0]
+        if low > 0:
+            xp, fp = [0.0] + xp, [0.0] + fp
+        night[..., channel] = np.interp(night[..., channel], xp, fp)
 
     out = arr * (1.0 - d) + night * d
 

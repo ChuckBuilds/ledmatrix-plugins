@@ -143,6 +143,12 @@ At `0.0` the night side goes black and only the terminator reads. The default
 and only the tint remains, which makes the day/night boundary nearly invisible
 — useful only if you want the map for its own sake.
 
+On a real panel the darkest shades also depend on the display's `pwm_bits` and
+brightness: at 7 bits, or dimmed, night-side land and ocean can round to the
+same LED step. When they would, the plugin lifts night-side land just enough
+to light one step above the ocean, so the countries stay visible. The emulator
+draws the colours unchanged.
+
 ### The graticule
 
 ![The graticule at 15, 30, 45 and 90 degree spacing, and turned
@@ -293,6 +299,11 @@ is nothing to centre.
 **The day/night boundary is hard to see.**
 `night_brightness` may be too high. The default is `0.2`; at `1.0` there is
 effectively no darkening.
+
+**The night side is a solid block with no countries under it.**
+Update to 1.2.1 or later, which keeps land a step above the ocean at any
+`pwm_bits` and brightness. If the night side is still too dark to read, raise
+`night_brightness` (0.3–0.4) or the display's `pwm_bits`.
 
 **City labels do not appear.**
 They are drawn only when the panel has room. The dots are always drawn — on a

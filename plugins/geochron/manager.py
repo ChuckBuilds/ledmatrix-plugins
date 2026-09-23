@@ -70,6 +70,8 @@ class GeochronPlugin(BasePlugin):
         self._subsolar_lat = 0.0
         self._subsolar_lon = 0.0
         self._last_update_utc = None
+        # Night-side lift for the panel's PWM depth and brightness; see _panel_lift().
+        self._lift = None
 
         self._load_config()
         self._render_base_map()
@@ -172,6 +174,36 @@ class GeochronPlugin(BasePlugin):
             self.colors["coastline_color"],
         )
 
+    def _panel_lift(self):
+        """Night-side lift so countries survive the panel's PWM depth.
+
+        The panel shows only the top pwm_bits of the library's 11 bit planes,
+        after luminance correction at the live brightness. At 7 bits and 80%
+        the night side's land and ocean round to the same step and the
+        countries disappear (see gr.night_lift). None when the panel is not
+        real hardware -- the emulator and the render harness draw raw
+        colours, which already separate -- or its settings cannot be read.
+        """
+        if os.getenv("EMULATOR", "false") == "true":
+            return None
+        try:
+            get_brightness = getattr(self.display_manager, "get_brightness", None)
+            brightness = get_brightness() if callable(get_brightness) else -1
+            if not isinstance(brightness, (int, float)) or brightness <= 0:
+                return None
+            config = getattr(self.display_manager, "config", None) or {}
+            hardware = (config.get("display") or {}).get("hardware") or {}
+            # The core's own default when the key is absent (DisplayManager).
+            pwm_bits = int(hardware.get("pwm_bits", 10))
+            return gr.night_lift(
+                self.colors["land_color"], self.colors["ocean_color"],
+                self.night_brightness, self.colors["night_tint_color"],
+                pwm_bits, int(brightness),
+            )
+        except (AttributeError, TypeError, ValueError) as e:
+            self.logger.debug("Panel depth unreadable, night side drawn as-is: %s", e)
+            return None
+
     # ------------------------------------------------------------------
     # BasePlugin hooks
     # ------------------------------------------------------------------
@@ -212,6 +244,8 @@ class GeochronPlugin(BasePlugin):
             self._subsolar_lon = sub_lon
             self._last_update_utc = now_utc
             self._darkness = darkness
+            # Every update, not once: a dim schedule changes brightness at runtime.
+            self._lift = self._panel_lift()
 
             # Whatever sizes have been asked for so far, plus the live panel.
             # Copy first: display() inserts a newly-seen size from the render
@@ -230,7 +264,7 @@ class GeochronPlugin(BasePlugin):
                             sidebar_w=self._sidebar_w)
         image = gr.render_map_image(
             self._base_map, darkness, layout, self.night_brightness,
-            self.colors["night_tint_color"]
+            self.colors["night_tint_color"], lift=self._lift
         )
         self._map_cache[size] = (layout, image)
         # Keep the single-entry attributes pointing at the live panel so
