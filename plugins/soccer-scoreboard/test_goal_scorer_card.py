@@ -16,7 +16,9 @@ Covers:
      the bio, both name spellings, and stat prioritisation.
   4. _prioritise_stats: goals and assists lead, unknown labels keep order.
   5. _fit_segments / _readable_on.
-  6. The arming gate and the display window.
+  6. The arming gate -- opt-in, its own score baseline (so the card works
+     with the celebration switched off), its own favourites scope -- and the
+     display window with and without a takeover.
   7. Render smoke across every harness size.
 
 Run: <core-venv>/bin/python plugins/soccer-scoreboard/test_goal_scorer_card.py
@@ -191,23 +193,31 @@ _CELEBRATION = {
 }
 
 
-def _make_arming_live(show=True, celebration=None, goals=None):
+def _make_arming_live(show=True, celebration=None, config=None,
+                      favorite_teams=None):
     import logging
     live = object.__new__(SoccerLiveManager)
     live.show_goal_scorer = show
     live.active_celebration = celebration
     live._goal_card = None
-    live._goal_card_armed_at = None
+    live._goal_card_baselines = {}
     live._player_bio_cache = {}
-    live.config = {}
+    live.live_games = []
+    live.favorite_teams = favorite_teams or []
+    live.config = config or {}
     live.celebration_duration = 8
     live.logger = logging.getLogger("t")
     live.cache_manager = None
-    if celebration:
-        celebration["game"]["goals"] = goals
     fetched = []
     live._fetch_player_bio_async = lambda pid, goal: fetched.append(pid)
     return live, fetched
+
+
+def _fixture(away=0, home=0, game_id="g1", goals=None):
+    return {"id": game_id, "away_score": str(away), "home_score": str(home),
+            "away_id": "999", "home_id": "364",
+            "away_abbr": "NEW", "home_abbr": "LIV",
+            "goals": goals if goals is not None else extract_goals(_EVENT)}
 
 
 def _run_update(live):
@@ -221,30 +231,85 @@ def _run_update(live):
 
 
 def test_arming_requires_the_opt_in():
-    live, fetched = _make_arming_live(
-        show=False, celebration=dict(_CELEBRATION), goals=extract_goals(_EVENT))
+    live, fetched = _make_arming_live(show=False)
+    live.live_games = [_fixture()]
+    _run_update(live)
+    live.live_games = [_fixture(home=1)]
     _run_update(live)
     assert live._goal_card is None and fetched == []
     print("test_arming_requires_the_opt_in: PASS")
 
 
-def test_arming_resolves_the_scorer_with_no_request():
-    live, fetched = _make_arming_live(
-        celebration=dict(_CELEBRATION), goals=extract_goals(_EVENT))
+def test_card_does_not_need_the_celebration():
+    """The whole point of the two settings being separate: with the takeover
+    off, SportsLive._check_for_goal returns early and never arms a
+    celebration, so a card riding on active_celebration could never appear."""
+    import time as _t
+    real = _t.time
+    try:
+        _t.time = lambda: 1000.0
+        live, fetched = _make_arming_live(celebration=None)
+        live.live_games = [_fixture()]
+        _run_update(live)                       # first sighting: baseline only
+        assert live._goal_card is None
+        live.live_games = [_fixture(home=1)]
+        _run_update(live)
+        card = live._goal_card
+        assert card is not None, "expected a card with no celebration at all"
+        assert card["scorer"]["name"] == "Alexander Isak"
+        # No takeover to wait for -- the card is the only beat.
+        assert card["show_from"] == 1000.0 and card["show_until"] == 1006.0
+        assert fetched == ["235662"]
+    finally:
+        _t.time = real
+    print("test_card_does_not_need_the_celebration: PASS")
+
+
+def test_card_waits_when_a_celebration_is_running():
+    import time as _t
+    real = _t.time
+    try:
+        _t.time = lambda: 1000.0
+        live, fetched = _make_arming_live(celebration=dict(_CELEBRATION))
+        live.live_games = [_fixture()]
+        _run_update(live)
+        live.live_games = [_fixture(home=1)]
+        _run_update(live)
+        card = live._goal_card
+        assert card["show_from"] == 1008.0 and card["show_until"] == 1014.0, card
+        # Resolving the scorer costs no request; only the bio does.
+        assert fetched == ["235662"]
+    finally:
+        _t.time = real
+    print("test_card_waits_when_a_celebration_is_running: PASS")
+
+
+def test_first_sighting_never_fires():
+    live, fetched = _make_arming_live()
+    live.live_games = [_fixture(away=2, home=1)]
     _run_update(live)
-    card = live._goal_card
-    assert card is not None, "expected the card armed from scoreboard data alone"
-    assert card["scorer"]["name"] == "Alexander Isak"
-    assert card["team_abbr"] == "LIV" and card["game_id"] == "g1"
-    assert card["show_from"] == 1008.0 and card["show_until"] == 1014.0
-    # Only the bio is a request, and it is fired separately.
-    assert fetched == ["235662"]
-    print("test_arming_resolves_the_scorer_with_no_request: PASS")
+    assert live._goal_card is None and fetched == []
+    print("test_first_sighting_never_fires: PASS")
+
+
+def test_a_var_disallowed_goal_rebases_silently():
+    live, fetched = _make_arming_live()
+    live.live_games = [_fixture(home=1)]
+    _run_update(live)
+    live.live_games = [_fixture(home=0)]    # ruled out by VAR
+    _run_update(live)
+    assert live._goal_card is None and fetched == []
+    live.live_games = [_fixture(home=1)]    # scored again for real
+    _run_update(live)
+    assert live._goal_card is not None
+    print("test_a_var_disallowed_goal_rebases_silently: PASS")
 
 
 def test_arming_fires_once_per_goal():
-    live, fetched = _make_arming_live(
-        celebration=dict(_CELEBRATION), goals=extract_goals(_EVENT))
+    live, fetched = _make_arming_live()
+    live.live_games = [_fixture()]
+    _run_update(live)
+    live.live_games = [_fixture(home=1)]
     _run_update(live)
     _run_update(live)
     _run_update(live)
@@ -252,21 +317,41 @@ def test_arming_fires_once_per_goal():
     print("test_arming_fires_once_per_goal: PASS")
 
 
+def test_favorites_only_is_the_cards_own_scope():
+    cfg = {"customization": {"goal_scorer": {"favorites_only": True}}}
+    live, fetched = _make_arming_live(config=cfg, favorite_teams=["LIV"])
+    live.live_games = [_fixture()]
+    _run_update(live)
+    live.live_games = [_fixture(away=1)]    # the opponent scored
+    _run_update(live)
+    assert live._goal_card is None, "expected favorites_only to skip an opponent goal"
+    live.live_games = [_fixture(away=1, home=1)]
+    _run_update(live)
+    assert live._goal_card is not None
+    print("test_favorites_only_is_the_cards_own_scope: PASS")
+
+
+def test_baselines_are_pruned_when_a_fixture_ends():
+    live, _ = _make_arming_live()
+    live.live_games = [_fixture(game_id="g1"), _fixture(game_id="g2")]
+    _run_update(live)
+    assert set(live._goal_card_baselines) == {"g1", "g2"}
+    live.live_games = [_fixture(game_id="g1")]
+    _run_update(live)
+    assert set(live._goal_card_baselines) == {"g1"}
+    print("test_baselines_are_pruned_when_a_fixture_ends: PASS")
+
+
 def test_arming_skips_when_nobody_is_named():
     """Some leagues file a goal with no athletesInvolved. No card, rather
     than a card with a blank name."""
-    live, fetched = _make_arming_live(celebration=dict(_CELEBRATION), goals=[])
+    live, fetched = _make_arming_live()
+    live.live_games = [_fixture(goals=[])]
+    _run_update(live)
+    live.live_games = [_fixture(home=1, goals=[])]
     _run_update(live)
     assert live._goal_card is None and fetched == []
     print("test_arming_skips_when_nobody_is_named: PASS")
-
-
-def test_arming_ignores_win_celebrations():
-    live, fetched = _make_arming_live(
-        celebration=dict(_CELEBRATION, kind="win"), goals=extract_goals(_EVENT))
-    _run_update(live)
-    assert live._goal_card is None
-    print("test_arming_ignores_win_celebrations: PASS")
 
 
 def _make_window_live(card):
@@ -392,10 +477,14 @@ if __name__ == "__main__":
         test_fit_segments_drops_whole_fields,
         test_readable_on_flips_with_background_brightness,
         test_arming_requires_the_opt_in,
-        test_arming_resolves_the_scorer_with_no_request,
+        test_card_does_not_need_the_celebration,
+        test_card_waits_when_a_celebration_is_running,
+        test_first_sighting_never_fires,
+        test_a_var_disallowed_goal_rebases_silently,
         test_arming_fires_once_per_goal,
+        test_favorites_only_is_the_cards_own_scope,
+        test_baselines_are_pruned_when_a_fixture_ends,
         test_arming_skips_when_nobody_is_named,
-        test_arming_ignores_win_celebrations,
         test_card_waits_for_the_celebration_then_expires,
         test_render_all_sizes_no_overflow,
         test_render_scoreboard_only_no_crash,

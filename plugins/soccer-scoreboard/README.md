@@ -515,13 +515,20 @@ rather than being cut part-way through one, and a name too wide falls back to
 the short spelling ESPN also provides (`A. Isak`) before anything is
 truncated.
 
-It needs `celebration_enabled`, since the celebration is what arms it.
+**The card and the celebration are independent settings.** You can have the
+card without the takeover, the takeover without the card, both, or neither.
+With both on the card is the second beat, waiting for the takeover to clear;
+with the takeover off the card appears as soon as the goal is seen. The card
+keeps its own score baseline for exactly this reason — the celebration's
+detection stops running when `celebration_enabled` is off, so a card riding on
+it could never appear alone.
 
 Under `customization.goal_scorer`:
 
 | Key | Type | Default | What it does |
 |---|---|---|---|
-| `dwell_seconds` | 2-20 s | `6` | How long the card holds the panel *after* the celebration. |
+| `dwell_seconds` | 2-20 s | `6` | How long the card holds the panel. With the celebration also on it waits for the takeover first, so the combined interruption is `celebration_duration` plus this. |
+| `favorites_only` | boolean | `false` | Only for goals by one of that league's `favorite_teams`. The card's own scope — not tied to the celebration's `celebrate_opponent_goals`. |
 | `show_stats` | boolean | `true` | The season line, reordered to lead with goals and assists. |
 | `show_bio_details` | boolean | `true` | Age, height and weight, and hometown where ESPN has one. |
 | `header_bar` | boolean | `true` | Banner knocked out of a solid club-colour bar (panels 48 rows and taller). |

@@ -13,7 +13,7 @@
   The celebration could never say this on its own: it is armed from a **score
   delta**, which carries the score and never the scorer.
 - **New options under `customization.goal_scorer`:** `dwell_seconds`,
-  `show_stats`, `show_bio_details`, `header_bar`, `use_team_colors`, `font` /
+  `favorites_only`, `show_stats`, `show_bio_details`, `header_bar`, `use_team_colors`, `font` /
   `font_size`, and the `accent_color` / `text_color` / `stat_color` /
   `detail_color` pickers.
 - **`fetch_player_details` on the ESPN data source**, byte-identical to the
@@ -36,7 +36,15 @@
   only stat that fits on a narrow panel. The card reorders it to lead with
   goals and assists; unrecognised labels keep their order behind the known
   ones rather than being dropped.
-- The card also needs `celebration_enabled`, since the celebration arms it.
+- **The card and the celebration are independent settings.** Either, both or
+  neither: the card keeps its own per-game score baseline rather than reading
+  the celebration's, because `SportsLive._check_for_goal` stops running when
+  `celebration_enabled` is off — a card armed off `active_celebration` could
+  never have appeared without the takeover. With both on the card waits for
+  the takeover to clear; with the takeover off it appears as soon as the goal
+  is seen. Its scope is its own too: `favorites_only` under
+  `customization.goal_scorer`, not the celebration's
+  `celebrate_opponent_goals`.
 - An own goal is matched against the team it was *credited to* rather than the
   scorer's own club, and is badged `OG`.
 
