@@ -367,10 +367,17 @@ shows a card for the player who actually scored.
 └──────────┴────────────────────────────────┘
 ```
 
-This exists because the celebration cannot know who scored. It is armed from a
-**score delta** on the scoreboard feed — that feed carries the score and never
-the scorer — so the card is a second request, made while the celebration is
-still on screen and drawn in the seconds after it clears.
+**The card and the celebration are independent settings.** You can have the
+card without the takeover, the takeover without the card, both, or neither.
+With both on the card is the second beat, waiting for the takeover to clear;
+with the takeover off the card appears as soon as the goal is seen. The card
+keeps its own score baseline for exactly this reason — the celebration's
+detection stops running when `celebration_enabled` is off, so a card riding on
+it could never appear alone.
+
+What neither can get from the scoreboard feed is *who* scored — that feed
+carries the score and nothing else — so the card is a second ESPN request,
+fired the moment the goal is spotted.
 
 Everything past the name is optional and degrades on its own. The goal play
 itself carries the scorer, the assists, the headshot and a season goal count,
@@ -383,8 +390,7 @@ name too wide for the panel falls back to the short spelling ESPN also
 provides (`J. Brodzinski`) before anything is truncated.
 
 **NHL only** is a data limit, not a preference: college hockey's ESPN summary
-carries no play data at all, so there is no scorer to read. It also needs
-`celebration_enabled`, since the celebration is what arms it.
+carries no play data at all, so there is no scorer to read.
 
 Cost is one extra ESPN request per goal for the play, plus one for the
 scorer's bio the first time that player is seen — bios are cached for a day.
@@ -399,7 +405,8 @@ Under `customization.goal_scorer`:
 
 | Key | Type | Default | What it does |
 |---|---|---|---|
-| `dwell_seconds` | 2-20 s | `6` | How long the card holds the panel *after* the celebration. |
+| `dwell_seconds` | 2-20 s | `6` | How long the card holds the panel. With the celebration also on it waits for the takeover first, so the combined interruption is `celebration_duration` plus this. |
+| `favorites_only` | boolean | `false` | Only for goals by one of this league's `favorite_teams`. The card's own scope — not tied to the celebration's `celebrate_opponent_goals`. |
 | `show_headshot` | boolean | `true` | The scorer's headshot, framed in the team's colour. Hidden under 96×32. |
 | `show_stats` | boolean | `true` | The season line (G/A/PTS/+−). |
 | `show_assists` | boolean | `true` | The assists row. |
@@ -484,7 +491,7 @@ All **Advanced**.
 | `<league>.display_options.show_odds` | boolean | `false` | Draw betting odds. |
 | `<league>.display_options.show_shots_on_goal` | boolean | `true` / `false` | Draw the shot line on live cards. |
 | `<league>.display_options.show_powerplay` | boolean | `true` / `false` | Mark live games during a power play — see [Power play](#power-play). |
-| `<league>.display_options.show_goal_scorer` | boolean | `false` | **NHL only.** A card for the player who scored, after the celebration — see [Goal scorer card](#goal-scorer-card). |
+| `<league>.display_options.show_goal_scorer` | boolean | `false` | **NHL only.** A card naming the player who scored. Independent of the celebration — see [Goal scorer card](#goal-scorer-card). |
 
 ![show_records on and off](../../docs/assets/hockey-scoreboard/show-records.png)
 

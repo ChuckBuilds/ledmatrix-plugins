@@ -711,7 +711,7 @@
               "x-advanced": true,
               "type": "boolean",
               "default": false,
-              "description": "After a goal celebration, show a card for the player who scored: headshot, name, number and position, their season line, the assists, and their age, height and hometown. NHL only -- college hockey's ESPN summary carries no play data, so there is no scorer to read. Costs one extra ESPN request per goal for the play, and one for the scorer's bio the first time they are seen. Needs celebration_enabled, since the card is armed by the celebration. Configure look and timing under Customization > Goal Scorer Card"
+              "description": "Show a card naming the player who scored, in the seconds after a goal. The card carries their headshot, shirt number and position, their season line (G/A/PTS/+-), the assists, and their age, height and hometown. INDEPENDENT of the goal celebration below: you can have the card without the takeover, the takeover without the card, both, or neither. With both on the card follows the takeover as a second beat; with the takeover off the card appears as soon as the goal is seen. NHL only -- college hockey's ESPN summary carries no play data, so there is no scorer to read. Costs one extra ESPN request per goal for the play, and one for the scorer's bio the first time that player is seen. Configure look, timing and scope under Customization > Goal Scorer Card."
             }
           }
         },
@@ -763,7 +763,7 @@
         "celebration_enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Show a celebratory takeover screen when a favorite team scores a goal or wins a live game"
+          "description": "Show a full-screen celebration takeover when a team scores or wins a live game: a gradient in the scoring team's colours, the goal net framing the score, confetti, and the scoring side's digits glowing. This is the takeover only. Naming the player who scored is a separate setting, Show Goal Scorer above, and neither one requires the other."
         },
         "celebration_duration": {
           "x-advanced": true,
@@ -2559,7 +2559,7 @@
         "goal_scorer": {
           "type": "object",
           "title": "Goal Scorer Card",
-          "description": "A full-screen card for the player who just scored, shown in the seconds after the goal celebration clears: headshot, a \"<TEAM> GOAL\" banner with the period, clock and strength (PP/SH/EN), the scorer's name, number and position, their season line, the assists, and their age, height and hometown. Enable per-league via NHL > Display Options > Show Goal Scorer (NHL only). Rows are dropped least-important-first on panels too small to hold them all.",
+          "description": "A full-screen card for the player who just scored: headshot, a \"<TEAM> GOAL\" banner with the period, clock and strength (PP/SH/EN), the scorer's name, number and position, their season line, the assists, and their age, height and hometown. Enable it per league via NHL > Display Options > Show Goal Scorer (NHL only). It does not require the goal celebration and the celebration does not require it -- with both on the card follows the takeover, with the takeover off the card appears as soon as the goal is seen. Rows are dropped least-important-first on panels too small to hold them all.",
           "properties": {
             "dwell_seconds": {
               "x-advanced": true,
@@ -2567,7 +2567,13 @@
               "default": 6,
               "minimum": 2,
               "maximum": 20,
-              "description": "How many seconds the card stays on screen once the goal celebration has finished. The card follows the celebration rather than replacing it, so the full takeover is celebration_duration plus this"
+              "description": "How many seconds the card stays on screen. With the goal celebration also enabled the card waits for the takeover to finish first, so the combined interruption is celebration_duration plus this; with the celebration off, this is the whole of it."
+            },
+            "favorites_only": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": false,
+              "description": "Only show the card for goals scored by one of this league's favorite_teams. Off by default, so any goal in a game the board is already showing gets a card. This is the card's own scope setting -- it is not tied to the celebration's celebrate_opponent_goals, so the two screens can cover different goals. Has no effect if favorite_teams is empty."
             },
             "show_headshot": {
               "x-advanced": true,

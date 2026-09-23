@@ -277,23 +277,24 @@ class HockeyLive(Hockey, SportsLive):
         sport_key: str,
     ):
         super().__init__(config, display_manager, cache_manager, logger, sport_key)
-        # The goal-scorer card, armed off the celebration and shown once it
-        # ends. Holds the resolved goal for the game that scored, the window
-        # the card owns the panel for, and a per-celebration guard so one
-        # goal triggers exactly one lookup.
+        # The goal-scorer card. Holds the resolved goal for the game that
+        # scored and the window the card owns the panel for.
         self._goal_card: Optional[Dict] = None
-        self._goal_card_armed_at: Optional[float] = None
+        # Per-game {away, home} score baselines, kept independently of the
+        # celebration's so the card works with the takeover switched off.
+        self._goal_card_baselines: Dict[str, Dict[str, int]] = {}
         self._player_bio_cache: Dict[str, Optional[Dict]] = {}
         self._headshot_mgr = None  # lazily created on the render path
 
     # ------------------------------------------------------------------
     # Goal-scorer card
     #
-    # The celebration already knows a goal happened and which team scored --
-    # it is armed from a score delta on the scoreboard feed. What that feed
-    # never carries is *who* scored, so the card is a second request made
-    # while the celebration is on screen, and drawn in the seconds after it
-    # clears.
+    # A goal is spotted the same way the celebration spots one -- a score
+    # delta on the scoreboard feed -- but with its own baseline, so the card
+    # and the takeover are genuinely independent settings: either, both or
+    # neither. What that feed never carries is *who* scored, so the card is a
+    # second request. With the celebration on it is drawn once the takeover
+    # clears; with the celebration off it is drawn straight away.
     # ------------------------------------------------------------------
 
     def _goal_card_cfg(self) -> Dict:
@@ -306,39 +307,91 @@ class HockeyLive(Hockey, SportsLive):
         if not self.espn_summary_sport_league:
             return  # college hockey: no play data to read a scorer from
 
-        celebration = self.active_celebration
-        if not celebration or celebration.get("kind") != "goal":
-            return
-        started_at = celebration.get("started_at")
-        if started_at is None or started_at == self._goal_card_armed_at:
-            return  # already handled this goal
+        cfg = self._goal_card_cfg()
+        favorites_only = cfg.get("favorites_only", False)
+        for game in list(self.live_games or []):
+            scored_side = self._detect_goal_for_card(game)
+            if scored_side is None:
+                continue
+            if favorites_only and self.favorite_teams:
+                if game.get(f"{scored_side}_abbr") not in self.favorite_teams:
+                    continue
+            self._goal_card = None
+            self._resolve_goal_scorer(game, scored_side)
+        self._prune_goal_card_baselines()
 
-        # super().update() is where the score delta was spotted and the
-        # celebration armed, so this runs inside the same cycle -- the lookup
-        # has the whole celebration window to land before the card is due.
-        self._goal_card_armed_at = started_at
-        self._goal_card = None
-        self._resolve_goal_scorer(celebration)
+    def _detect_goal_for_card(self, game: Dict) -> Optional[str]:
+        """Return 'away'/'home' when this game's score just went up, else None.
 
-    def _resolve_goal_scorer(self, celebration: Dict) -> None:
+        The card keeps its own baseline rather than riding on the
+        celebration's. That is the whole point of the two settings being
+        independent: SportsLive._check_for_goal returns early when
+        celebration_enabled is off, so a card armed off active_celebration
+        could never appear without the takeover. Same rules as that method,
+        for the same reasons -- a first sighting never fires, because a game
+        already in progress at boot would otherwise report every goal it
+        already had, and a decrement re-bases silently, because a goal waved
+        off after review is not a goal."""
+        game_id = game.get("id")
+        if not game_id:
+            return None
+        away = self._score_to_int(game.get("away_score"))
+        home = self._score_to_int(game.get("home_score"))
+        if away is None or home is None:
+            return None
+        baseline = self._goal_card_baselines.get(game_id)
+        self._goal_card_baselines[game_id] = {"away": away, "home": home}
+        if baseline is None:
+            return None
+        if away > baseline["away"]:
+            return "away"
+        if home > baseline["home"]:
+            return "home"
+        return None
+
+    def _prune_goal_card_baselines(self) -> None:
+        """Drop baselines for games no longer live, so a board left running
+        through a season does not accumulate one dict per game it ever saw."""
+        live_ids = {g.get("id") for g in (self.live_games or [])}
+        for game_id in [k for k in self._goal_card_baselines if k not in live_ids]:
+            self._goal_card_baselines.pop(game_id, None)
+
+    def _goal_card_window(self, game_id: str) -> Tuple[float, float]:
+        """When the card should appear and disappear.
+
+        With the celebration on, the card is the second beat: it waits for the
+        takeover to finish. With the celebration off it is the only beat, and
+        appears straight away. The two settings are independent, so both
+        orders have to work."""
+        now = time.time()
+        show_from = now
+        celebration = getattr(self, "active_celebration", None)
+        if (
+            celebration
+            and celebration.get("kind") == "goal"
+            and str((celebration.get("game") or {}).get("id") or "") == str(game_id)
+        ):
+            show_from = celebration.get("started_at", now) + float(
+                getattr(self, "celebration_duration", 8) or 8
+            )
+        return show_from, show_from + float(
+            self._goal_card_cfg().get("dwell_seconds", 6)
+        )
+
+    def _resolve_goal_scorer(self, game: Dict, scored_side: str) -> None:
         """Look up who scored, off-thread, and arm the card when it lands.
 
         Fire-and-forget: the render path only ever reads the result, so a slow
         or failed lookup costs the card rather than the display. The bio is
         fetched in the same thread, after the play -- the card is already
         worth drawing from the play alone, and the bio only adds trivia."""
-        game = celebration.get("game") or {}
+        game = dict(game)  # snapshot: survives the game leaving live_games
         game_id = game.get("id")
         if not game_id:
             return
-        scored_side = celebration.get("scored_side")
         team_id = game.get(f"{scored_side}_id") if scored_side else None
         sport, league = self.espn_summary_sport_league
-        show_until = (
-            celebration.get("started_at", time.time())
-            + float(getattr(self, "celebration_duration", 8) or 8)
-            + float(self._goal_card_cfg().get("dwell_seconds", 6))
-        )
+        show_from, show_until = self._goal_card_window(game_id)
 
         import threading
 
@@ -364,9 +417,7 @@ class HockeyLive(Hockey, SportsLive):
                 goal["game_id"] = str(game_id)
                 goal["team_abbr"] = game.get(f"{scored_side}_abbr", "")
                 goal["team_color"] = game.get(f"{scored_side}_team_color")
-                goal["show_from"] = celebration.get("started_at", time.time()) + float(
-                    getattr(self, "celebration_duration", 8) or 8
-                )
+                goal["show_from"] = show_from
                 goal["show_until"] = show_until
                 self._goal_card = goal
             except Exception as e:

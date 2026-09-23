@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-09-22",
+  "last_updated": "2026-09-23",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -356,7 +356,7 @@
       "plugin_path": "plugins/hockey-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-22",
+      "last_updated": "2026-09-23",
       "verified": true,
       "screenshot": "",
       "latest_version": "1.33.0",

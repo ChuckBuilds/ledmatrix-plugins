@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.33.0] - 2026-09-22
+## [1.33.0] - 2026-09-23
 
 ### Added
 - **A goal-scorer card for the NHL, off by default.** Turn on
@@ -17,19 +17,26 @@
   still on screen, so the answer is there by the time the card is due.
 - **New options under `customization.goal_scorer`:** `dwell_seconds`,
   `show_headshot`, `show_stats`, `show_assists`, `show_bio_details`,
-  `header_bar`, `use_team_colors`, `font` / `font_size`, and the
-  `accent_color` / `text_color` / `stat_color` / `detail_color` pickers.
+  `favorites_only`, `header_bar`, `use_team_colors`, `font` / `font_size`, and
+  the `accent_color` / `text_color` / `stat_color` / `detail_color` pickers.
 - **`fetch_game_summary` and `fetch_player_details` on the ESPN data source**,
   for the per-game plays and the scorer's bio. The bio is cached for a day,
   in memory and through the core cache.
 
 ### Notes
+- **The card and the celebration are independent settings.** Either, both or
+  neither: the card keeps its own per-game score baseline rather than reading
+  the celebration's, because `SportsLive._check_for_goal` stops running when
+  `celebration_enabled` is off — a card armed off `active_celebration` could
+  never have appeared without the takeover. With both on the card waits for
+  the takeover to clear; with the takeover off it appears as soon as the goal
+  is seen. Its scope is its own too: `favorites_only` under
+  `customization.goal_scorer`, not the celebration's
+  `celebrate_opponent_goals`.
 - **NHL only, and that is a data limit rather than a preference.** College
   hockey's ESPN summary carries no `plays` array at all, so there is no scorer
   to read. The gate is a league opting in via `espn_summary_sport_league`, not
   a league-name test, so college hockey simply never makes the request.
-- The card also needs `celebration_enabled`, since the celebration is what
-  arms it.
 - Everything past the scorer's name degrades on its own. The goal play carries
   the scorer, the assists, the headshot and a season goal count, so the card
   is worth drawing before the bio lands; a field ESPN did not send is absent

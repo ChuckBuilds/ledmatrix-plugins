@@ -15,7 +15,9 @@ Covers:
      both name spellings offered to the renderer.
   4. _fit_segments / _readable_on: whole fields dropped, banner contrast.
   5. ESPNDataSource._parse_player_details: the hockey bio fields the card uses.
-  6. The arming gate: opt-in, NHL-only, once per celebration.
+  6. The arming gate: opt-in, NHL-only, once per goal, its own score
+     baseline (so the card works with the celebration switched off), its own
+     favourites scope, and the window it claims with and without a takeover.
   7. _maybe_draw_goal_card: the window it owns, and the game it belongs to.
   8. Render smoke across every harness size, plus the headshot-cache bounds
      carried over from the baseball card.
@@ -231,25 +233,27 @@ def test_parse_player_details_hockey_fields():
 
 # --- 6. arming gate ----------------------------------------------------------
 
-def _make_arming_live(show=True, sport_league=("hockey", "nhl"), celebration=None):
+def _make_arming_live(show=True, sport_league=("hockey", "nhl"), celebration=None,
+                      config=None, favorite_teams=None):
     live = object.__new__(_ConcreteHockeyLive)
     live.show_goal_scorer = show
     live.test_mode = False
     live.espn_summary_sport_league = sport_league
     live.active_celebration = celebration
     live._goal_card = None
-    live._goal_card_armed_at = None
-    live.config = {}
+    live._goal_card_baselines = {}
+    live.live_games = []
+    live.favorite_teams = favorite_teams or []
+    live.config = config or {}
     resolved = []
-    live._resolve_goal_scorer = lambda c: resolved.append(c)
-    # Stand in for SportsLive.update(), which is where the score delta is
-    # spotted and the celebration armed.
-    _ConcreteHockeyLive.__mro__  # noqa: B018 -- documents the super() chain
+    live._resolve_goal_scorer = lambda game, side: resolved.append((game, side))
     return live, resolved
 
 
 def _run_update(live):
-    # Call HockeyLive.update() with its super() stubbed out.
+    # Call HockeyLive.update() with its super() stubbed out. SportsLive's
+    # update() is what refreshes live_games and (when enabled) arms the
+    # celebration; the card's own detection runs after it.
     import hockey
     real = hockey.SportsLive.update
     hockey.SportsLive.update = lambda self: None
@@ -263,8 +267,17 @@ _CELEBRATION = {"kind": "goal", "started_at": 1000.0, "scored_side": "home",
                 "game": {"id": "g1", "home_id": "23", "home_abbr": "WSH"}}
 
 
+def _game(away=0, home=0, game_id="g1"):
+    return {"id": game_id, "away_score": str(away), "home_score": str(home),
+            "away_id": "10", "home_id": "23",
+            "away_abbr": "PHI", "home_abbr": "WSH"}
+
+
 def test_arming_requires_the_opt_in():
-    live, resolved = _make_arming_live(show=False, celebration=_CELEBRATION)
+    live, resolved = _make_arming_live(show=False)
+    live.live_games = [_game()]
+    _run_update(live)
+    live.live_games = [_game(home=1)]
     _run_update(live)
     assert resolved == [], "expected no lookup when show_goal_scorer is off"
     print("test_arming_requires_the_opt_in: PASS")
@@ -273,34 +286,147 @@ def test_arming_requires_the_opt_in():
 def test_arming_skips_leagues_with_no_play_data():
     """College hockey's summary has no plays array, so there is nothing to
     read a scorer out of -- and no request worth making."""
-    live, resolved = _make_arming_live(sport_league=None, celebration=_CELEBRATION)
+    live, resolved = _make_arming_live(sport_league=None)
+    live.live_games = [_game()]
+    _run_update(live)
+    live.live_games = [_game(home=1)]
     _run_update(live)
     assert resolved == []
     print("test_arming_skips_leagues_with_no_play_data: PASS")
 
 
+def test_card_does_not_need_the_celebration():
+    """The whole point of the two settings being separate: with the takeover
+    off, SportsLive._check_for_goal returns early and never arms a
+    celebration, so a card that rode on active_celebration could never
+    appear. The card keeps its own baseline."""
+    live, resolved = _make_arming_live(celebration=None)
+    live.live_games = [_game()]
+    _run_update(live)                      # first sighting: baseline only
+    assert resolved == []
+    live.live_games = [_game(home=1)]
+    _run_update(live)
+    assert len(resolved) == 1 and resolved[0][1] == "home", resolved
+    print("test_card_does_not_need_the_celebration: PASS")
+
+
+def test_first_sighting_never_fires():
+    """A game already in progress at boot would otherwise report every goal
+    it had already scored."""
+    live, resolved = _make_arming_live()
+    live.live_games = [_game(away=3, home=2)]
+    _run_update(live)
+    assert resolved == [], "expected the first sighting to only set a baseline"
+    print("test_first_sighting_never_fires: PASS")
+
+
+def test_a_waved_off_goal_rebases_silently():
+    """Hockey disallows goals after review more than most sports. A decrement
+    must re-base rather than arm anything, and must not leave the card
+    primed to fire on the next poll."""
+    live, resolved = _make_arming_live()
+    live.live_games = [_game(home=2)]
+    _run_update(live)
+    live.live_games = [_game(home=1)]      # goal waved off
+    _run_update(live)
+    assert resolved == []
+    live.live_games = [_game(home=1)]      # unchanged
+    _run_update(live)
+    assert resolved == []
+    live.live_games = [_game(home=2)]      # scored again for real
+    _run_update(live)
+    assert len(resolved) == 1
+    print("test_a_waved_off_goal_rebases_silently: PASS")
+
+
 def test_arming_fires_once_per_goal():
-    live, resolved = _make_arming_live(celebration=_CELEBRATION)
+    live, resolved = _make_arming_live()
+    live.live_games = [_game(home=1)]
+    _run_update(live)
+    live.live_games = [_game(home=2)]
     _run_update(live)
     _run_update(live)
     _run_update(live)
     assert len(resolved) == 1, f"expected one lookup per goal, got {len(resolved)}"
-    # A second goal in the same game is a new celebration, so it arms again.
-    live.active_celebration = dict(_CELEBRATION, started_at=1200.0)
+    live.live_games = [_game(home=3)]
     _run_update(live)
     assert len(resolved) == 2
     print("test_arming_fires_once_per_goal: PASS")
 
 
-def test_arming_ignores_win_celebrations():
-    live, resolved = _make_arming_live(
-        celebration=dict(_CELEBRATION, kind="win"))
+def test_every_live_game_is_watched_not_just_the_one_on_screen():
+    live, resolved = _make_arming_live()
+    live.live_games = [_game(game_id="g1"), _game(game_id="g2")]
     _run_update(live)
-    assert resolved == [], "expected only goal celebrations to arm the card"
-    live.active_celebration = None
+    live.live_games = [_game(game_id="g1"), _game(home=1, game_id="g2")]
     _run_update(live)
-    assert resolved == []
-    print("test_arming_ignores_win_celebrations: PASS")
+    assert len(resolved) == 1 and resolved[0][0]["id"] == "g2", resolved
+    print("test_every_live_game_is_watched_not_just_the_one_on_screen: PASS")
+
+
+def test_favorites_only_is_the_cards_own_scope():
+    """Not tied to the celebration's celebrate_opponent_goals: the two
+    screens can cover different goals."""
+    cfg = {"customization": {"goal_scorer": {"favorites_only": True}}}
+    live, resolved = _make_arming_live(config=cfg, favorite_teams=["WSH"])
+    live.live_games = [_game()]
+    _run_update(live)
+    live.live_games = [_game(away=1)]      # the opponent scored
+    _run_update(live)
+    assert resolved == [], "expected favorites_only to skip an opponent's goal"
+    live.live_games = [_game(away=1, home=1)]
+    _run_update(live)
+    assert len(resolved) == 1 and resolved[0][1] == "home"
+    # Off by default: any goal in a game the board is showing gets a card.
+    live, resolved = _make_arming_live(favorite_teams=["WSH"])
+    live.live_games = [_game()]
+    _run_update(live)
+    live.live_games = [_game(away=1)]
+    _run_update(live)
+    assert len(resolved) == 1, "expected any goal to arm when favorites_only is off"
+    print("test_favorites_only_is_the_cards_own_scope: PASS")
+
+
+def test_baselines_are_pruned_when_a_game_ends():
+    live, _ = _make_arming_live()
+    live.live_games = [_game(game_id="g1"), _game(game_id="g2")]
+    _run_update(live)
+    assert set(live._goal_card_baselines) == {"g1", "g2"}
+    live.live_games = [_game(game_id="g1")]
+    _run_update(live)
+    assert set(live._goal_card_baselines) == {"g1"}, live._goal_card_baselines
+    print("test_baselines_are_pruned_when_a_game_ends: PASS")
+
+
+def _make_window_live_for_timing(celebration=None, dwell=6):
+    live = object.__new__(_ConcreteHockeyLive)
+    live.active_celebration = celebration
+    live.celebration_duration = 8
+    live.config = {"customization": {"goal_scorer": {"dwell_seconds": dwell}}}
+    return live
+
+
+def test_window_waits_for_a_celebration_but_does_not_need_one():
+    import time as _t
+    real = _t.time
+    try:
+        _t.time = lambda: 1000.0
+        # Celebration on for this game: the card is the second beat.
+        live = _make_window_live_for_timing(celebration=_CELEBRATION)
+        assert live._goal_card_window("g1") == (1008.0, 1014.0)
+        # Celebration off: the card is the only beat, and starts now.
+        live = _make_window_live_for_timing(celebration=None)
+        assert live._goal_card_window("g1") == (1000.0, 1006.0)
+        # A celebration for a *different* game must not delay this card.
+        live = _make_window_live_for_timing(celebration=_CELEBRATION)
+        assert live._goal_card_window("g2") == (1000.0, 1006.0)
+        # A win celebration is not a goal takeover, so no wait either.
+        live = _make_window_live_for_timing(
+            celebration=dict(_CELEBRATION, kind="win"))
+        assert live._goal_card_window("g1") == (1000.0, 1006.0)
+    finally:
+        _t.time = real
+    print("test_window_waits_for_a_celebration_but_does_not_need_one: PASS")
 
 
 # --- 7. display window -------------------------------------------------------
@@ -501,8 +627,14 @@ if __name__ == "__main__":
         test_parse_player_details_hockey_fields,
         test_arming_requires_the_opt_in,
         test_arming_skips_leagues_with_no_play_data,
+        test_card_does_not_need_the_celebration,
+        test_first_sighting_never_fires,
+        test_a_waved_off_goal_rebases_silently,
         test_arming_fires_once_per_goal,
-        test_arming_ignores_win_celebrations,
+        test_every_live_game_is_watched_not_just_the_one_on_screen,
+        test_favorites_only_is_the_cards_own_scope,
+        test_baselines_are_pruned_when_a_game_ends,
+        test_window_waits_for_a_celebration_but_does_not_need_one,
         test_card_waits_for_the_celebration_then_expires,
         test_card_only_draws_over_its_own_game,
         test_no_card_armed_means_normal_scorebug,
