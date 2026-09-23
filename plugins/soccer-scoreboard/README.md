@@ -461,6 +461,7 @@ See [The selection settings](#the-selection-settings).
 | `<league>.celebrate_opponent_goals` | boolean | `false` |
 | `<league>.celebration_team_colors` | boolean | `true` |
 | `<league>.celebration_confetti` | boolean | `true` |
+| `<league>.show_goal_scorer` | boolean | `false` |
 
 The takeover is drawn in the **scoring team's own colours**, read from that
 team's logo: a team-coloured gradient behind the screen, the opposing crest
@@ -475,6 +476,61 @@ unless a league is in `scroll` mode the core redraws this plugin about once a
 second and any single frame may be the only one anyone sees. When a goal
 arrives while another plugin is on screen the plugin asks the core for its
 high-FPS loop, and the confetti and the glow run smoothly.
+
+### Goal scorer card
+
+**Off by default.** Turn on a league's `show_goal_scorer` and the celebration
+gets a second beat: once the takeover clears, the panel shows a card for the
+player who actually scored.
+
+```
+┌────────────────────────────────┐
+│      LIV GOAL    57'  PEN      │  ← banner, club colour
+│       Alexander Isak           │
+│             #9 F               │
+│   G 4   A 0   SHOT 15          │
+│      Age 27  6' 3"  161 lbs    │
+└────────────────────────────────┘
+```
+
+This is the cheapest of these cards to feed. ESPN puts the goal events
+straight into the scoreboard payload the plugin **already downloads**, so
+identifying the scorer — name, shirt number, position, the clock, and whether
+it was a penalty, an own goal or a shootout kick — costs **no extra request at
+all**. Only the bio behind the season line and the age/height rows is a
+request, and only once per player (cached for a day).
+
+**The card is text only, and that is a data limit rather than a choice.** ESPN
+publishes no headshots for soccer: the athlete record's `headshot` field is
+null, the CDN path 404s, and the scoreboard's athlete entries have no such
+field. So unlike the baseball and hockey cards there is no face, and the rows
+are centred rather than set beside an empty column.
+
+ESPN leads its soccer stat set with appearances (`START (SUB) 5 (0)`), which is
+the least interesting thing on a card about a goal and wide enough to be the
+only stat that fits on a narrow panel — so the card reorders it to lead with
+goals and assists. Rows are dropped least-important-first on panels that
+cannot hold them all, a row built from several fields gives up whole fields
+rather than being cut part-way through one, and a name too wide falls back to
+the short spelling ESPN also provides (`A. Isak`) before anything is
+truncated.
+
+It needs `celebration_enabled`, since the celebration is what arms it.
+
+Under `customization.goal_scorer`:
+
+| Key | Type | Default | What it does |
+|---|---|---|---|
+| `dwell_seconds` | 2-20 s | `6` | How long the card holds the panel *after* the celebration. |
+| `show_stats` | boolean | `true` | The season line, reordered to lead with goals and assists. |
+| `show_bio_details` | boolean | `true` | Age, height and weight, and hometown where ESPN has one. |
+| `header_bar` | boolean | `true` | Banner knocked out of a solid club-colour bar (panels 48 rows and taller). |
+| `use_team_colors` | boolean | `true` | Banner and number/position row in the scoring club's colour. |
+| `font` / `font_size` | string / 6-24 | `9x15.bdf` / `24` | As elsewhere; the cap applies to scalable fonts only. |
+| `accent_color` | RGB | `[255, 200, 0]` | Banner when club colours are off or unavailable. |
+| `text_color` | RGB | `[255, 255, 255]` | The scorer's name. |
+| `stat_color` | RGB | `[0, 220, 255]` | The season stat line. |
+| `detail_color` | RGB | `[170, 170, 170]` | The quieter trivia rows. |
 
 ### Display options
 

@@ -521,6 +521,11 @@
               "default": true,
               "description": "Show a celebratory takeover screen when a favorite team scores or wins a live game"
             },
+            "show_goal_scorer": {
+              "type": "boolean",
+              "default": false,
+              "description": "After a goal celebration, show a card for the player who scored: name, shirt number and position, their season line, and their age and height. Identifying the scorer is free -- ESPN puts goal events in the scoreboard data this plugin already downloads -- and only the bio behind the rest of the card costs a request, once per player. ESPN publishes no headshots for soccer, so the card is text only. Needs celebration_enabled, since the card is armed by the celebration. Configure look and timing under Customization > Goal Scorer Card"
+            },
             "celebration_duration": {
               "type": "integer",
               "default": 8,
@@ -1003,6 +1008,11 @@
               "type": "boolean",
               "default": true,
               "description": "Show a celebratory takeover screen when a favorite team scores or wins a live game"
+            },
+            "show_goal_scorer": {
+              "type": "boolean",
+              "default": false,
+              "description": "After a goal celebration, show a card for the player who scored: name, shirt number and position, their season line, and their age and height. Identifying the scorer is free -- ESPN puts goal events in the scoreboard data this plugin already downloads -- and only the bio behind the rest of the card costs a request, once per player. ESPN publishes no headshots for soccer, so the card is text only. Needs celebration_enabled, since the card is armed by the celebration. Configure look and timing under Customization > Goal Scorer Card"
             },
             "celebration_duration": {
               "type": "integer",
@@ -1487,6 +1497,11 @@
               "default": true,
               "description": "Show a celebratory takeover screen when a favorite team scores or wins a live game"
             },
+            "show_goal_scorer": {
+              "type": "boolean",
+              "default": false,
+              "description": "After a goal celebration, show a card for the player who scored: name, shirt number and position, their season line, and their age and height. Identifying the scorer is free -- ESPN puts goal events in the scoreboard data this plugin already downloads -- and only the bio behind the rest of the card costs a request, once per player. ESPN publishes no headshots for soccer, so the card is text only. Needs celebration_enabled, since the card is armed by the celebration. Configure look and timing under Customization > Goal Scorer Card"
+            },
             "celebration_duration": {
               "type": "integer",
               "default": 8,
@@ -1969,6 +1984,11 @@
               "type": "boolean",
               "default": true,
               "description": "Show a celebratory takeover screen when a favorite team scores or wins a live game"
+            },
+            "show_goal_scorer": {
+              "type": "boolean",
+              "default": false,
+              "description": "After a goal celebration, show a card for the player who scored: name, shirt number and position, their season line, and their age and height. Identifying the scorer is free -- ESPN puts goal events in the scoreboard data this plugin already downloads -- and only the bio behind the rest of the card costs a request, once per player. ESPN publishes no headshots for soccer, so the card is text only. Needs celebration_enabled, since the card is armed by the celebration. Configure look and timing under Customization > Goal Scorer Card"
             },
             "celebration_duration": {
               "type": "integer",
@@ -2453,6 +2473,11 @@
               "default": true,
               "description": "Show a celebratory takeover screen when a favorite team scores or wins a live game"
             },
+            "show_goal_scorer": {
+              "type": "boolean",
+              "default": false,
+              "description": "After a goal celebration, show a card for the player who scored: name, shirt number and position, their season line, and their age and height. Identifying the scorer is free -- ESPN puts goal events in the scoreboard data this plugin already downloads -- and only the bio behind the rest of the card costs a request, once per player. ESPN publishes no headshots for soccer, so the card is text only. Needs celebration_enabled, since the card is armed by the celebration. Configure look and timing under Customization > Goal Scorer Card"
+            },
             "celebration_duration": {
               "type": "integer",
               "default": 8,
@@ -2935,6 +2960,11 @@
               "type": "boolean",
               "default": true,
               "description": "Show a celebratory takeover screen when a favorite team scores or wins a live game"
+            },
+            "show_goal_scorer": {
+              "type": "boolean",
+              "default": false,
+              "description": "After a goal celebration, show a card for the player who scored: name, shirt number and position, their season line, and their age and height. Identifying the scorer is free -- ESPN puts goal events in the scoreboard data this plugin already downloads -- and only the bio behind the rest of the card costs a request, once per player. ESPN publishes no headshots for soccer, so the card is text only. Needs celebration_enabled, since the card is armed by the celebration. Configure look and timing under Customization > Goal Scorer Card"
             },
             "celebration_duration": {
               "type": "integer",
@@ -3419,6 +3449,11 @@
               "default": true,
               "description": "Show a celebratory takeover screen when a favorite team scores or wins a live game"
             },
+            "show_goal_scorer": {
+              "type": "boolean",
+              "default": false,
+              "description": "After a goal celebration, show a card for the player who scored: name, shirt number and position, their season line, and their age and height. Identifying the scorer is free -- ESPN puts goal events in the scoreboard data this plugin already downloads -- and only the bio behind the rest of the card costs a request, once per player. ESPN publishes no headshots for soccer, so the card is text only. Needs celebration_enabled, since the card is armed by the celebration. Configure look and timing under Customization > Goal Scorer Card"
+            },
             "celebration_duration": {
               "type": "integer",
               "default": 8,
@@ -3901,6 +3936,11 @@
               "type": "boolean",
               "default": true,
               "description": "Show a celebratory takeover screen when a favorite team scores or wins a live game"
+            },
+            "show_goal_scorer": {
+              "type": "boolean",
+              "default": false,
+              "description": "After a goal celebration, show a card for the player who scored: name, shirt number and position, their season line, and their age and height. Identifying the scorer is free -- ESPN puts goal events in the scoreboard data this plugin already downloads -- and only the bio behind the rest of the card costs a request, once per player. ESPN publishes no headshots for soccer, so the card is text only. Needs celebration_enabled, since the card is armed by the celebration. Configure look and timing under Customization > Goal Scorer Card"
             },
             "celebration_duration": {
               "type": "integer",
@@ -4385,6 +4425,11 @@
               "default": true,
               "description": "Show a celebratory takeover screen when a favorite team scores or wins a live game"
             },
+            "show_goal_scorer": {
+              "type": "boolean",
+              "default": false,
+              "description": "After a goal celebration, show a card for the player who scored: name, shirt number and position, their season line, and their age and height. Identifying the scorer is free -- ESPN puts goal events in the scoreboard data this plugin already downloads -- and only the bio behind the rest of the card costs a request, once per player. ESPN publishes no headshots for soccer, so the card is text only. Needs celebration_enabled, since the card is armed by the celebration. Configure look and timing under Customization > Goal Scorer Card"
+            },
             "celebration_duration": {
               "type": "integer",
               "default": 8,
@@ -4867,6 +4912,11 @@
               "type": "boolean",
               "default": true,
               "description": "Show a celebratory takeover screen when a favorite team scores or wins a live game"
+            },
+            "show_goal_scorer": {
+              "type": "boolean",
+              "default": false,
+              "description": "After a goal celebration, show a card for the player who scored: name, shirt number and position, their season line, and their age and height. Identifying the scorer is free -- ESPN puts goal events in the scoreboard data this plugin already downloads -- and only the bio behind the rest of the card costs a request, once per player. ESPN publishes no headshots for soccer, so the card is text only. Needs celebration_enabled, since the card is armed by the celebration. Configure look and timing under Customization > Goal Scorer Card"
             },
             "celebration_duration": {
               "type": "integer",
@@ -6275,6 +6325,132 @@
             "tie_color"
           ],
           "additionalProperties": false
+        },
+        "goal_scorer": {
+          "type": "object",
+          "title": "Goal Scorer Card",
+          "description": "A full-screen card for the player who just scored, shown in the seconds after the goal celebration clears: a \"<TEAM> GOAL\" banner with the clock and any PEN/OG/SO badge, the scorer's name, shirt number and position, their season line, and their age and height. Enable per league via that league's Show Goal Scorer setting. ESPN publishes no headshots for soccer, so this card is text only -- rows are centred and dropped least-important-first on panels too small to hold them all.",
+          "properties": {
+            "dwell_seconds": {
+              "x-advanced": true,
+              "type": "number",
+              "default": 6,
+              "minimum": 2,
+              "maximum": 20,
+              "description": "How many seconds the card stays on screen once the goal celebration has finished. The card follows the celebration rather than replacing it, so the full takeover is celebration_duration plus this"
+            },
+            "show_stats": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": true,
+              "description": "Include the scorer's season line. ESPN leads its soccer stat set with appearances, which is the least interesting thing on a card about a goal, so the card reorders it to lead with goals and assists"
+            },
+            "show_bio_details": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": true,
+              "description": "Include the trivia rows -- age, height and weight, and hometown where ESPN has one. These are the first rows a short panel drops anyway"
+            },
+            "header_bar": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": true,
+              "description": "Draw the \"<TEAM> GOAL\" banner as text knocked out of a solid club-colour bar instead of plain coloured text. Only applies on panels 48 pixels tall or more, where the banner row is tall enough to read"
+            },
+            "use_team_colors": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": true,
+              "description": "Colour the banner and the number/position row with the scoring club's real ESPN colour instead of the flat accent_color"
+            },
+            "font": {
+              "x-advanced": true,
+              "type": "string",
+              "default": "9x15.bdf",
+              "description": "Font for the card's text -- a clean bitmap font that auto-fits the largest size the panel and the text allow, stepping down to a smaller same-family sibling rather than losing a row. A fixed-size .bdf font renders at its native pixel size regardless of font_size; use a scalable .ttf if you want font_size to control the size"
+            },
+            "font_size": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 24,
+              "minimum": 6,
+              "maximum": 24,
+              "description": "Maximum font size cap, for scalable .ttf fonts only (ignored by fixed-size .bdf fonts like the default). The card auto-fits, so the default effectively means 'as big as fits'"
+            },
+            "accent_color": {
+              "x-advanced": true,
+              "type": "array",
+              "x-widget": "color-picker",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "default": [
+                255,
+                200,
+                0
+              ],
+              "minItems": 3,
+              "maxItems": 3,
+              "description": "Colour [R, G, B] for the banner and the number/position row when use_team_colors is off or the club's colour is unavailable"
+            },
+            "text_color": {
+              "x-advanced": true,
+              "type": "array",
+              "x-widget": "color-picker",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "default": [
+                255,
+                255,
+                255
+              ],
+              "minItems": 3,
+              "maxItems": 3,
+              "description": "Text colour [R, G, B] for the scorer's name"
+            },
+            "stat_color": {
+              "x-advanced": true,
+              "type": "array",
+              "x-widget": "color-picker",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "default": [
+                0,
+                220,
+                255
+              ],
+              "minItems": 3,
+              "maxItems": 3,
+              "description": "Text colour [R, G, B] for the season stat line"
+            },
+            "detail_color": {
+              "x-advanced": true,
+              "type": "array",
+              "x-widget": "color-picker",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "default": [
+                170,
+                170,
+                170
+              ],
+              "minItems": 3,
+              "maxItems": 3,
+              "description": "Text colour [R, G, B] for the quieter trivia rows -- age, height and weight, hometown"
+            }
+          },
+          "additionalProperties": false
         }
       },
       "x-propertyOrder": [
@@ -6286,7 +6462,8 @@
         "odds_text",
         "rank_text",
         "layout",
-        "favorite_result_colors"
+        "favorite_result_colors",
+        "goal_scorer"
       ],
       "additionalProperties": false
     },

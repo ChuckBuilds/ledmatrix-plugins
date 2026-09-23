@@ -7,11 +7,13 @@ Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Champions League, an
 
 import logging
 import shutil
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, Optional
 import pytz
 
+from soccer_goal_card import SoccerGoalCardMixin, extract_goals, latest_goal
 from sports import SportsCore, SportsLive, SportsRecent, SportsUpcoming
 
 # ESPN API base URL for soccer
@@ -294,6 +296,12 @@ class BaseSoccerManager(SportsCore):
                 "period_text": period_text,
                 "clock": clock,
                 "league": self.league_key,  # Add league field for scroll display
+                # ESPN ships the goal events inside the scoreboard payload we
+                # have already downloaded, so the scorer card costs no extra
+                # request to identify who scored -- only the optional bio
+                # lookup does. Always extracted: it is a cheap list walk, and
+                # the live manager reads it only when the card is enabled.
+                "goals": extract_goals(game_event),
             })
 
             # Basic validation
@@ -309,12 +317,126 @@ class BaseSoccerManager(SportsCore):
             return None
 
 
-class SoccerLiveManager(BaseSoccerManager, SportsLive):
+class SoccerLiveManager(SoccerGoalCardMixin, BaseSoccerManager, SportsLive):
     """Manager for live soccer games."""
 
     def __init__(self, config: Dict[str, Any], display_manager, cache_manager, league_key: str):
         super().__init__(config, display_manager, cache_manager, league_key)
         self.logger = logging.getLogger(f"SoccerLive-{league_key}")
+        # Opt-in: identifying the scorer is free, but the bio behind the rest
+        # of the card is one ESPN request per player. Off unless asked for.
+        self.show_goal_scorer = self.mode_config.get("show_goal_scorer", False)
+        # The card, armed off the celebration and shown once it ends, plus a
+        # per-celebration guard so one goal triggers exactly one lookup.
+        self._goal_card: Optional[Dict] = None
+        self._goal_card_armed_at: Optional[float] = None
+        self._player_bio_cache: Dict[str, Optional[Dict]] = {}
+
+    # ------------------------------------------------------------------
+    # Goal-scorer card
+    #
+    # The celebration is armed from a score delta, so it knows a goal
+    # happened and which side scored but never who. Soccer is the cheapest
+    # sport to answer that in: the scorer is already in the scoreboard
+    # payload, so only the bio is a request, and only for a player this
+    # process has not seen before.
+    # ------------------------------------------------------------------
+
+    def update(self):
+        super().update()
+        if not self.show_goal_scorer:
+            return
+        celebration = getattr(self, "active_celebration", None)
+        if not celebration or celebration.get("kind") != "goal":
+            return
+        started_at = celebration.get("started_at")
+        if started_at is None or started_at == self._goal_card_armed_at:
+            return  # already handled this goal
+        self._goal_card_armed_at = started_at
+        self._goal_card = None
+        self._arm_goal_card(celebration)
+
+    def _arm_goal_card(self, celebration: Dict) -> None:
+        """Resolve the scorer from the scoreboard data already in hand, then
+        enrich with the bio off-thread.
+
+        The card is armed immediately -- the scorer alone is worth drawing --
+        and the bio is merged into it when it lands. A slow or failed bio
+        costs the trivia rows, never the card."""
+        game = celebration.get("game") or {}
+        game_id = game.get("id")
+        if not game_id:
+            return
+        scored_side = celebration.get("scored_side")
+        team_id = game.get(f"{scored_side}_id") if scored_side else None
+        goal = latest_goal(game.get("goals"), team_id)
+        if goal is None:
+            self.logger.debug(
+                f"No named scorer in the scoreboard data for game {game_id}; "
+                "skipping the goal card"
+            )
+            return
+
+        goal = dict(goal)
+        goal["game_id"] = str(game_id)
+        goal["team_abbr"] = game.get(f"{scored_side}_abbr", "")
+        goal["team_color"] = game.get(f"{scored_side}_team_color")
+        started_at = celebration.get("started_at", time.time())
+        goal["show_from"] = started_at + float(
+            getattr(self, "celebration_duration", 8) or 8
+        )
+        goal["show_until"] = goal["show_from"] + float(
+            self._goal_card_cfg().get("dwell_seconds", 6)
+        )
+        self._goal_card = goal
+
+        player_id = (goal.get("scorer") or {}).get("id")
+        if player_id:
+            self._fetch_player_bio_async(player_id, goal)
+
+    def _fetch_player_bio_async(self, player_id: str, goal: Dict) -> None:
+        """Fetch the scorer's bio in a daemon thread and merge it into the
+        armed card. Fire-and-forget: the render path only reads what is
+        there, so a miss simply leaves the extra rows off."""
+        cached = self._player_bio_cache.get(player_id)
+        if player_id in self._player_bio_cache:
+            goal["bio"] = cached
+            return
+
+        import threading
+
+        def resolve():
+            try:
+                bio = None
+                cache_key = f"soccer_player_{player_id}"
+                if self.cache_manager is not None:
+                    try:
+                        stored = self.cache_manager.get(cache_key)
+                        if stored is not None:
+                            bio = stored or None
+                    except Exception as e:
+                        self.logger.debug(f"Player bio cache read failed for {player_id}: {e}")
+                if bio is None and cache_key not in ("",):
+                    bio = self.data_source.fetch_player_details(
+                        "soccer", self.league_key, player_id
+                    )
+                    if self.cache_manager is not None:
+                        try:
+                            self.cache_manager.set(cache_key, bio or {}, ttl=86400)
+                        except Exception as e:
+                            self.logger.debug(
+                                f"Player bio cache write failed for {player_id}: {e}")
+                self._player_bio_cache[player_id] = bio
+                goal["bio"] = bio
+            except Exception as e:
+                self.logger.debug(f"Player bio lookup failed for {player_id}: {e}")
+
+        threading.Thread(target=resolve, daemon=True).start()
+
+    def _draw_scorebug_layout(self, game: Dict, force_clear: bool = False) -> None:
+        if self._maybe_draw_goal_card(game, force_clear):
+            return
+        super()._draw_scorebug_layout(game, force_clear)
         
         # Test mode removed - always use live data
         if False:
