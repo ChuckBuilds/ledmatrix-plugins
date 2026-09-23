@@ -398,34 +398,44 @@ class SoccerLiveManager(SoccerGoalCardMixin, BaseSoccerManager, SportsLive):
         """Fetch the scorer's bio in a daemon thread and merge it into the
         armed card. Fire-and-forget: the render path only reads what is
         there, so a miss simply leaves the extra rows off."""
-        cached = self._player_bio_cache.get(player_id)
         if player_id in self._player_bio_cache:
-            goal["bio"] = cached
+            # Seen this process already, hit or miss -- a player with no ESPN
+            # record is remembered as None so every goal they score does not
+            # re-ask.
+            goal["bio"] = self._player_bio_cache[player_id]
             return
 
         import threading
 
+        cache_key = f"soccer_player_{player_id}"
+
+        def read_durable_cache():
+            """The core cache survives restarts; bios barely change."""
+            if self.cache_manager is None:
+                return None
+            try:
+                stored = self.cache_manager.get(cache_key)
+            except Exception as e:
+                self.logger.debug(f"Player bio cache read failed for {player_id}: {e}")
+                return None
+            return (stored or None) if stored is not None else None
+
+        def write_durable_cache(bio):
+            if self.cache_manager is None:
+                return
+            try:
+                self.cache_manager.set(cache_key, bio or {}, ttl=86400)
+            except Exception as e:
+                self.logger.debug(f"Player bio cache write failed for {player_id}: {e}")
+
         def resolve():
             try:
-                bio = None
-                cache_key = f"soccer_player_{player_id}"
-                if self.cache_manager is not None:
-                    try:
-                        stored = self.cache_manager.get(cache_key)
-                        if stored is not None:
-                            bio = stored or None
-                    except Exception as e:
-                        self.logger.debug(f"Player bio cache read failed for {player_id}: {e}")
-                if bio is None and cache_key not in ("",):
+                bio = read_durable_cache()
+                if bio is None:
                     bio = self.data_source.fetch_player_details(
                         "soccer", self.league_key, player_id
                     )
-                    if self.cache_manager is not None:
-                        try:
-                            self.cache_manager.set(cache_key, bio or {}, ttl=86400)
-                        except Exception as e:
-                            self.logger.debug(
-                                f"Player bio cache write failed for {player_id}: {e}")
+                    write_durable_cache(bio)
                 self._player_bio_cache[player_id] = bio
                 goal["bio"] = bio
             except Exception as e:

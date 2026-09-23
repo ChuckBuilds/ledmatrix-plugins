@@ -22,7 +22,7 @@ could bind another plugin's module (CLAUDE.md non-negotiable #4).
 """
 
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 from PIL import Image, ImageDraw
 
