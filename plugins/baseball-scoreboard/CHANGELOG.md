@@ -1,5 +1,30 @@
 # Changelog
 
+## [1.47.1] - 2026-09-23
+
+### Fixed
+- **`update()` now returns inside the slot the core gives it**, instead of
+  being killed and logged as an error on every cold-cache start. At startup
+  the display controller hands each plugin whatever is left of a shared
+  deadline, so the slot shrinks as it works down the list — measured on a
+  256×64 rig, baseball's slot was 15.4s and 15.96s on two consecutive boots.
+  This plugin waited **25s** on its six parallel managers, a wait it could
+  never finish inside that slot, so the core cut the call and logged
+  `Plugin baseball-scoreboard update() timed out` at ERROR — and this
+  plugin's own timeout branch, the one that names *which* managers are slow,
+  never ran. The wait is now 10s, in a named constant documented against the
+  core's budget.
+
+  Nothing was lost before and nothing is lost now: `shutdown(cancel_futures=True)`
+  only cancels managers that have not started, and all six start immediately,
+  so in-flight fetches run to completion and populate their caches either
+  way. A plugin cut off at startup is also immediately due again. The
+  difference is that returning under its own steam turns a core-level ERROR
+  into a plugin WARNING that names the slow managers.
+
+  The expensive part of a cold start is the NCAA baseball season fetch —
+  5,500 events, ~10s — which the background service already runs off-thread.
+
 ## [1.47.0] - 2026-09-22
 
 ### Added

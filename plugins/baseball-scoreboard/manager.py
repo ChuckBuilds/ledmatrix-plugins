@@ -117,6 +117,32 @@ logger = logging.getLogger(__name__)
 VEGAS_SCROLL_KEY = 'mixed'
 
 
+# How long update() waits on its parallel managers before returning and
+# letting the stragglers finish in the background.
+#
+# This used to be 25s, which the core never allowed. At startup the display
+# controller hands each plugin what is left of a shared deadline
+# (display_controller._update_plugins), so the slot shrinks as it works down
+# the list -- measured on a 256x64 rig, baseball's slot was 15.4s and 15.96s
+# on two consecutive boots. A 25s wait inside a ~15s slot can only ever end
+# one way: the core kills the call and logs "Plugin baseball-scoreboard
+# update() timed out" at ERROR, and this method's own timeout branch -- the
+# one that says *which* managers are slow -- never runs.
+#
+# Nothing was actually lost when that happened, and nothing is lost now:
+# shutdown(cancel_futures=True) only cancels managers that have not started,
+# and all of them start immediately, so the in-flight ones run to completion
+# either way and populate their caches. A plugin cut off at startup is also
+# immediately due again, so the scheduled tick picks it up. The difference is
+# that returning under our own steam turns a core-level ERROR into a plugin
+# WARNING that names the slow managers.
+#
+# 10s leaves headroom under the smallest slot observed while still covering a
+# normal cold-cache update, where the expensive part is the NCAA baseball
+# season fetch (5,500 events, ~10s) that the background service already runs
+# off-thread.
+_MANAGER_UPDATE_WAIT_SECONDS = 10
+
 class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
     """
     Baseball scoreboard plugin using existing manager classes.
@@ -1242,7 +1268,11 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
             self.logger.debug("Favorite team check skipped: %s", exc)
 
     def update(self) -> None:
-        """Update baseball game data using parallel manager updates."""
+        """Update baseball game data using parallel manager updates.
+
+        The wait below is deliberately shorter than the slot the core grants
+        this call -- see _MANAGER_UPDATE_WAIT_SECONDS.
+        """
         if not self.is_enabled:
             return
 
@@ -1286,11 +1316,14 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
                 executor.submit(_safe_update, item): item[0]
                 for item in managers_to_update
             }
-            for future in as_completed(futures, timeout=25):
+            for future in as_completed(futures, timeout=_MANAGER_UPDATE_WAIT_SECONDS):
                 future.result()  # propagate unexpected executor errors
         except TimeoutError:
             still_running = [name for f, name in futures.items() if not f.done()]
-            self.logger.warning(f"Manager update timed out after 25s, still running: {still_running}")
+            self.logger.warning(
+                f"Manager update still running after {_MANAGER_UPDATE_WAIT_SECONDS}s, "
+                f"leaving to finish in the background: {still_running}"
+            )
         except Exception as e:
             self.logger.error(f"Error in parallel manager updates: {e}")
         finally:
