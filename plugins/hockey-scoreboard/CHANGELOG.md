@@ -24,6 +24,18 @@
   in memory and through the core cache.
 
 ### Notes
+- **The card's font ladder includes the proportional Matrix faces.** The X11
+  rungs alone made a poor ladder for a card this text-dense: `6x13`, `6x12`,
+  `6x10` and `6x9` are all six pixels wide, so four consecutive steps get
+  shorter and never narrower — which does nothing when the binding constraint
+  is width, as it usually is here. `MatrixChunky8` is the same row height as
+  `5x8` but proportional, drawing this card's text about a third narrower, and
+  it separates `B` from `8` and `O` from `0` better than the `4x6` face whose
+  confusion kept it off this ladder to begin with. Each Matrix face sits
+  immediately before the X11 rung of its own height, so every choice is either
+  unchanged or swapped for a same-height, narrower one: a 256×64 renders
+  identically to before, while a 64×32 keeps `Jonny Brodzinski` where it used
+  to truncate to `J. Brodzins`.
 - **The card and the celebration are independent settings.** Either, both or
   neither: the card keeps its own per-game score baseline rather than reading
   the celebration's, because `SportsLive._check_for_goal` stops running when

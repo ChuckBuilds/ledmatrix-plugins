@@ -497,15 +497,29 @@ class HockeyLive(Hockey, SportsLive):
             self.current_game["clock"] = f"{minutes:02d}:{seconds:02d}"
             # Always update display in test mode
 
-    # Ordered largest-to-smallest fallback ladder within the same clean X11
-    # bitmap family. BDF fonts are fixed-size bitmaps -- they cannot shrink to
-    # an arbitrary computed size the way a scalable .ttf can -- so when the
-    # configured font's measured row height will not fit the rows the card
-    # needs, step down to the next smaller sibling rather than lose a row off
-    # the bottom.
+    # Ordered largest-to-smallest fallback ladder. BDF fonts are fixed-size
+    # bitmaps -- they cannot shrink to an arbitrary computed size the way a
+    # scalable .ttf can -- so when the configured font's measured row height
+    # will not fit the rows the card needs, step down a rung rather than lose
+    # a row off the bottom.
+    #
+    # The X11 rungs alone were a poor ladder for this card. 6x13, 6x12, 6x10
+    # and 6x9 are all six pixels wide: four consecutive steps that get
+    # shorter and never narrower, which does nothing at all when the binding
+    # constraint is width -- a long name or a four-stat line on a narrow
+    # panel, which is most of the time here. MatrixChunky8 is the same row
+    # height as 5x8 but proportional, so it draws this card's text about a
+    # third narrower, and it separates B from 8 and O from 0 better than the
+    # 4x6 face (the confusion that kept 4x6 off this ladder in the first
+    # place). It is placed immediately before the X11 rung of its own height
+    # so every choice is either unchanged or swapped for a same-height,
+    # narrower face: panels with room to spare render exactly as before,
+    # while a 64x32 keeps a full name where it used to truncate one.
+    # MatrixLight6 closes the ladder for the same reason at 5x7's height.
     _GOAL_CARD_FONT_LADDER: List[str] = [
         "9x15.bdf", "8x13.bdf", "7x13.bdf", "6x13.bdf",
-        "6x12.bdf", "6x10.bdf", "6x9.bdf", "5x8.bdf", "5x7.bdf",
+        "6x12.bdf", "6x10.bdf", "6x9.bdf",
+        "MatrixChunky8.bdf", "5x8.bdf", "5x7.bdf", "MatrixLight6.bdf",
     ]
 
     # Top-to-bottom order the card's rows are drawn in.

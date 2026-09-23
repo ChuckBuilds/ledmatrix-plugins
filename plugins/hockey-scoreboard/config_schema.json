@@ -2615,7 +2615,7 @@
               "x-advanced": true,
               "type": "string",
               "default": "9x15.bdf",
-              "description": "Font for the card's text -- a clean bitmap font that auto-fits the largest size the panel and the text allow, stepping down to a smaller same-family sibling rather than losing a row. A fixed-size .bdf font renders at its native pixel size regardless of font_size; use a scalable .ttf if you want font_size to control the size"
+              "description": "Font for the card's text. The card auto-fits: it measures the text it is actually about to draw and picks the largest font that fits every row, stepping down a fallback ladder rather than losing a row off the bottom. The ladder runs from 9x15 down through the X11 bitmap faces and includes MatrixChunky8 and MatrixLight6, which are proportional and so fit noticeably more text per row at the same height -- that is what keeps a full player name on a 64x32 panel. A fixed-size .bdf font renders at its native pixel size regardless of font_size; use a scalable .ttf (e.g. 'press_start') if you want font_size to control the size directly."
             },
             "font_size": {
               "x-advanced": true,

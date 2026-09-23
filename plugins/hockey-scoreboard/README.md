@@ -413,7 +413,7 @@ Under `customization.goal_scorer`:
 | `show_bio_details` | boolean | `true` | Age, height and weight, hometown. |
 | `header_bar` | boolean | `true` | Banner knocked out of a solid team-colour bar (panels 48 rows and taller). |
 | `use_team_colors` | boolean | `true` | Banner, number/position row and headshot frame in the scoring team's colour. |
-| `font` / `font_size` | string / 6-24 | `9x15.bdf` / `24` | As elsewhere; the cap applies to scalable fonts only. |
+| `font` / `font_size` | string / 6-24 | `9x15.bdf` / `24` | The card auto-fits, stepping down a ladder that includes the proportional `MatrixChunky8` and `MatrixLight6` faces — they fit about a third more text per row at the same height, which is what keeps a full name on a 64×32. The cap applies to scalable fonts only. |
 | `accent_color` | RGB | `[255, 200, 0]` | Banner and frame when team colours are off or unavailable. |
 | `text_color` | RGB | `[255, 255, 255]` | The scorer's name and the assists row. |
 | `stat_color` | RGB | `[0, 220, 255]` | The season stat line. |
