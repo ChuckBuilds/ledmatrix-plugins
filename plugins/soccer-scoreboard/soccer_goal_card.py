@@ -126,9 +126,24 @@ class SoccerGoalCardMixin:
     """Renders the goal-scorer card. Mixed into the live manager, which owns
     the celebration state and the display path."""
 
+    # Largest-to-smallest fallback ladder. BDF fonts are fixed-size bitmaps,
+    # so when the configured face will not fit the rows the card needs, step
+    # down a rung rather than lose a row off the bottom.
+    #
+    # The X11 rungs alone were a poor ladder for a card this text-dense:
+    # 6x13, 6x12, 6x10 and 6x9 are all six pixels wide, four consecutive
+    # steps that get shorter and never narrower, which does nothing when the
+    # binding constraint is width -- and on a text-only card with no headshot
+    # column to share, width is what runs out first. MatrixChunky8 is the
+    # same row height as 5x8 but proportional, drawing this card's text about
+    # a third narrower, and it separates B from 8 better than the 4x6 face.
+    # Each Matrix face sits immediately before the X11 rung of its own
+    # height, so every choice is either unchanged or swapped for a
+    # same-height, narrower one.
     _GOAL_CARD_FONT_LADDER: List[str] = [
         "9x15.bdf", "8x13.bdf", "7x13.bdf", "6x13.bdf",
-        "6x12.bdf", "6x10.bdf", "6x9.bdf", "5x8.bdf", "5x7.bdf",
+        "6x12.bdf", "6x10.bdf", "6x9.bdf",
+        "MatrixChunky8.bdf", "5x8.bdf", "5x7.bdf", "MatrixLight6.bdf",
     ]
     _GOAL_CARD_ROW_ORDER: Tuple[str, ...] = (
         "header", "name", "team", "stats", "vitals", "hometown",

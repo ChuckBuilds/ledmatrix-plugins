@@ -21,6 +21,15 @@
   through the core cache.
 
 ### Notes
+- **The card's font ladder includes the proportional Matrix faces.** The X11
+  rungs alone made a poor ladder for a card this text-dense: `6x13`, `6x12`,
+  `6x10` and `6x9` are all six pixels wide, so four consecutive steps get
+  shorter and never narrower — which does nothing when the binding constraint
+  is width, and on a text-only card with no headshot column to share, width is
+  what runs out first. `MatrixChunky8` is the same row height as `5x8` but
+  proportional, drawing this card's text about a third narrower. Each Matrix
+  face sits immediately before the X11 rung of its own height, so every choice
+  is either unchanged or swapped for a same-height, narrower one.
 - **Identifying the scorer costs no extra request.** ESPN puts goal events
   straight into the scoreboard payload the plugin already downloads
   (`competitions[].details[]`, each carrying `athletesInvolved`), so the name,

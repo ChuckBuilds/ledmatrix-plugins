@@ -431,6 +431,31 @@ def _full_goal():
                 team_color=(35, 79, 135), game_id="g1", bio=_BIO)
 
 
+def test_font_ladder_is_monotone_in_height():
+    """Each rung must be no taller than the one before it, or the ladder can
+    step 'down' into something needing more room. That invariant is also what
+    makes the Matrix faces safe to insert: each sits immediately before the
+    X11 rung of its own height, so a panel with room renders as it did."""
+    import logging
+    live = object.__new__(SoccerLiveManager)
+    live._font_cache = {}
+    live._bdf_native_size_cache = {}
+    live.logger = logging.getLogger("t")
+    heights = []
+    for name in SoccerGoalCardMixin._GOAL_CARD_FONT_LADDER:
+        font = live._load_custom_font_from_element_config({"font": name}, default_size=8)
+        box = font.getbbox("Ay")
+        heights.append((name, box[3] - box[1]))
+    for (prev_name, prev_h), (name, h) in zip(heights, heights[1:]):
+        assert h <= prev_h, f"{name} ({h}px) is taller than {prev_name} ({prev_h}px)"
+    widths = {}
+    for name in ("MatrixChunky8.bdf", "5x8.bdf"):
+        font = live._load_custom_font_from_element_config({"font": name}, default_size=8)
+        widths[name] = font.getbbox("Alexander Isak")[2]
+    assert widths["MatrixChunky8.bdf"] < widths["5x8.bdf"] * 0.85, widths
+    print("test_font_ladder_is_monotone_in_height: PASS")
+
+
 def test_render_all_sizes_no_overflow():
     goal = _full_goal()
     for w, h in _SIZES:
@@ -486,6 +511,7 @@ if __name__ == "__main__":
         test_baselines_are_pruned_when_a_fixture_ends,
         test_arming_skips_when_nobody_is_named,
         test_card_waits_for_the_celebration_then_expires,
+        test_font_ladder_is_monotone_in_height,
         test_render_all_sizes_no_overflow,
         test_render_scoreboard_only_no_crash,
         test_render_toggles_off_still_draws,
