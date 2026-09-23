@@ -7,11 +7,13 @@ Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Champions League, an
 
 import logging
 import shutil
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, Optional
 import pytz
 
+from soccer_goal_card import SoccerGoalCardMixin, extract_goals, latest_goal
 from sports import SportsCore, SportsLive, SportsRecent, SportsUpcoming
 
 # ESPN API base URL for soccer
@@ -294,6 +296,12 @@ class BaseSoccerManager(SportsCore):
                 "period_text": period_text,
                 "clock": clock,
                 "league": self.league_key,  # Add league field for scroll display
+                # ESPN ships the goal events inside the scoreboard payload we
+                # have already downloaded, so the scorer card costs no extra
+                # request to identify who scored -- only the optional bio
+                # lookup does. Always extracted: it is a cheap list walk, and
+                # the live manager reads it only when the card is enabled.
+                "goals": extract_goals(game_event),
             })
 
             # Basic validation
@@ -309,12 +317,193 @@ class BaseSoccerManager(SportsCore):
             return None
 
 
-class SoccerLiveManager(BaseSoccerManager, SportsLive):
+class SoccerLiveManager(SoccerGoalCardMixin, BaseSoccerManager, SportsLive):
     """Manager for live soccer games."""
 
     def __init__(self, config: Dict[str, Any], display_manager, cache_manager, league_key: str):
         super().__init__(config, display_manager, cache_manager, league_key)
         self.logger = logging.getLogger(f"SoccerLive-{league_key}")
+        # Opt-in: identifying the scorer is free, but the bio behind the rest
+        # of the card is one ESPN request per player. Off unless asked for.
+        self.show_goal_scorer = self.mode_config.get("show_goal_scorer", False)
+        # The card: the resolved goal for the fixture that scored, and the
+        # window it owns the panel for.
+        self._goal_card: Optional[Dict] = None
+        # Per-game {away, home} score baselines, kept independently of the
+        # celebration's so the card works with the takeover switched off.
+        self._goal_card_baselines: Dict[str, Dict[str, int]] = {}
+        self._player_bio_cache: Dict[str, Optional[Dict]] = {}
+
+    # ------------------------------------------------------------------
+    # Goal-scorer card
+    #
+    # A goal is spotted the same way the celebration spots one -- a score
+    # delta on the scoreboard feed -- but with its own baseline, so the card
+    # and the takeover are genuinely independent settings: either, both or
+    # neither. Soccer is the cheapest sport to name the scorer in: they are
+    # already in the scoreboard payload, so only the bio is a request, and
+    # only for a player this process has not seen before.
+    # ------------------------------------------------------------------
+
+    def update(self):
+        super().update()
+        if not self.show_goal_scorer:
+            return
+        cfg = self._goal_card_cfg()
+        favorites_only = cfg.get("favorites_only", False)
+        for game in list(self.live_games or []):
+            scored_side = self._detect_goal_for_card(game)
+            if scored_side is None:
+                continue
+            if favorites_only and self.favorite_teams:
+                if game.get(f"{scored_side}_abbr") not in self.favorite_teams:
+                    continue
+            self._goal_card = None
+            self._arm_goal_card(game, scored_side)
+        self._prune_goal_card_baselines()
+
+    def _detect_goal_for_card(self, game: Dict) -> Optional[str]:
+        """Return 'away'/'home' when this game's score just went up, else None.
+
+        The card keeps its own baseline rather than riding on the
+        celebration's. That is the whole point of the two settings being
+        independent: SportsLive._check_for_goal returns early when
+        celebration_enabled is off, so a card armed off active_celebration
+        could never appear without the takeover. Same rules as that method --
+        a first sighting never fires, because a game already in progress at
+        boot would otherwise report every goal it already had, and a
+        decrement re-bases silently, because a goal ruled out by VAR is not a
+        goal."""
+        game_id = game.get("id")
+        if not game_id:
+            return None
+        away = self._score_to_int(game.get("away_score"))
+        home = self._score_to_int(game.get("home_score"))
+        if away is None or home is None:
+            return None
+        baseline = self._goal_card_baselines.get(game_id)
+        self._goal_card_baselines[game_id] = {"away": away, "home": home}
+        if baseline is None:
+            return None
+        if away > baseline["away"]:
+            return "away"
+        if home > baseline["home"]:
+            return "home"
+        return None
+
+    def _prune_goal_card_baselines(self) -> None:
+        """Drop baselines for fixtures no longer live, so a board left running
+        through a season does not accumulate one dict per game it ever saw."""
+        live_ids = {g.get("id") for g in (self.live_games or [])}
+        for game_id in [k for k in self._goal_card_baselines if k not in live_ids]:
+            self._goal_card_baselines.pop(game_id, None)
+
+    def _goal_card_window(self, game_id: str) -> tuple:
+        """When the card should appear and disappear.
+
+        With the celebration on, the card is the second beat and waits for the
+        takeover to finish. With it off the card is the only beat and appears
+        straight away. The two settings are independent, so both orders have
+        to work."""
+        now = time.time()
+        show_from = now
+        celebration = getattr(self, "active_celebration", None)
+        if (
+            celebration
+            and celebration.get("kind") == "goal"
+            and str((celebration.get("game") or {}).get("id") or "") == str(game_id)
+        ):
+            show_from = celebration.get("started_at", now) + float(
+                getattr(self, "celebration_duration", 8) or 8
+            )
+        return show_from, show_from + float(
+            self._goal_card_cfg().get("dwell_seconds", 6)
+        )
+
+    def _arm_goal_card(self, game: Dict, scored_side: str) -> None:
+        """Resolve the scorer from the scoreboard data already in hand, then
+        enrich with the bio off-thread.
+
+        The card is armed immediately -- the scorer alone is worth drawing --
+        and the bio is merged into it when it lands. A slow or failed bio
+        costs the trivia rows, never the card."""
+        game = dict(game)  # snapshot: survives the fixture leaving live_games
+        game_id = game.get("id")
+        if not game_id:
+            return
+        team_id = game.get(f"{scored_side}_id") if scored_side else None
+        goal = latest_goal(game.get("goals"), team_id)
+        if goal is None:
+            self.logger.debug(
+                f"No named scorer in the scoreboard data for game {game_id}; "
+                "skipping the goal card"
+            )
+            return
+
+        goal = dict(goal)
+        goal["game_id"] = str(game_id)
+        goal["team_abbr"] = game.get(f"{scored_side}_abbr", "")
+        goal["team_color"] = game.get(f"{scored_side}_team_color")
+        goal["show_from"], goal["show_until"] = self._goal_card_window(game_id)
+        self._goal_card = goal
+
+        player_id = (goal.get("scorer") or {}).get("id")
+        if player_id:
+            self._fetch_player_bio_async(player_id, goal)
+
+    def _fetch_player_bio_async(self, player_id: str, goal: Dict) -> None:
+        """Fetch the scorer's bio in a daemon thread and merge it into the
+        armed card. Fire-and-forget: the render path only reads what is
+        there, so a miss simply leaves the extra rows off."""
+        if player_id in self._player_bio_cache:
+            # Seen this process already, hit or miss -- a player with no ESPN
+            # record is remembered as None so every goal they score does not
+            # re-ask.
+            goal["bio"] = self._player_bio_cache[player_id]
+            return
+
+        import threading
+
+        cache_key = f"soccer_player_{player_id}"
+
+        def read_durable_cache():
+            """The core cache survives restarts; bios barely change."""
+            if self.cache_manager is None:
+                return None
+            try:
+                stored = self.cache_manager.get(cache_key)
+            except Exception as e:
+                self.logger.debug(f"Player bio cache read failed for {player_id}: {e}")
+                return None
+            return (stored or None) if stored is not None else None
+
+        def write_durable_cache(bio):
+            if self.cache_manager is None:
+                return
+            try:
+                self.cache_manager.set(cache_key, bio or {}, ttl=86400)
+            except Exception as e:
+                self.logger.debug(f"Player bio cache write failed for {player_id}: {e}")
+
+        def resolve():
+            try:
+                bio = read_durable_cache()
+                if bio is None:
+                    bio = self.data_source.fetch_player_details(
+                        "soccer", self.league_key, player_id
+                    )
+                    write_durable_cache(bio)
+                self._player_bio_cache[player_id] = bio
+                goal["bio"] = bio
+            except Exception as e:
+                self.logger.debug(f"Player bio lookup failed for {player_id}: {e}")
+
+        threading.Thread(target=resolve, daemon=True).start()
+
+    def _draw_scorebug_layout(self, game: Dict, force_clear: bool = False) -> None:
+        if self._maybe_draw_goal_card(game, force_clear):
+            return
+        super()._draw_scorebug_layout(game, force_clear)
         
         # Test mode removed - always use live data
         if False:

@@ -555,6 +555,7 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                 # Every league block declares the celebration keys, and none
                 # of them arrived: celebrations were always on, always 8s.
                 "celebration_enabled": league_config.get("celebration_enabled", True),
+                "show_goal_scorer": league_config.get("show_goal_scorer", False),
                 "celebration_duration": league_config.get("celebration_duration", 8),
                 "celebration_team_colors": league_config.get(
                     "celebration_team_colors", True

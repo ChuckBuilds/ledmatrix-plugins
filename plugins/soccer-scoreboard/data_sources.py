@@ -6,7 +6,7 @@ to support different APIs and data providers.
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, List
+from typing import Dict, List, Optional, Tuple
 import requests
 import logging
 from datetime import datetime
@@ -165,6 +165,91 @@ class ESPNDataSource(DataSource):
                 # Non-404 error - log at debug level since standings are optional
                 self.logger.debug(f"Error fetching standings from ESPN for {sport}/{league}: {e}")
                 return {}
+
+
+    # ESPN's athlete bio/stats live on a different host than the scoreboard
+    # (site.web.api vs site.api), under the common/v3 tree.
+    _ATHLETE_BASE = "https://site.web.api.espn.com/apis/common/v3/sports"
+
+    def fetch_player_details(self, sport: str, league: str, player_id: str) -> Optional[Dict]:
+        """Fetch a player's bio + season stats from ESPN's athlete endpoint.
+
+        Returns a parsed dict (display_name, jersey, position, height, weight,
+        age, birthplace, experience, team, headshot_url, stats) or None on any
+        failure. The goal card renders from the scoreboard feed alone when
+        this is unavailable, so a miss costs detail rather than the card."""
+        if not player_id:
+            return None
+        try:
+            url = f"{self._ATHLETE_BASE}/{sport}/{league}/athletes/{player_id}"
+            response = self.session.get(url, headers=self.get_headers(), timeout=10)
+            if response.status_code != 200:
+                self.logger.debug(
+                    f"Player bio HTTP {response.status_code} for "
+                    f"{sport}/{league} {player_id}"
+                )
+                return None
+            return self._parse_player_details(response.json())
+        except Exception as e:
+            self.logger.debug(f"Failed to fetch player details for {player_id}: {e}")
+            return None
+
+    @staticmethod
+    def _parse_player_details(bio_data: Dict) -> Optional[Dict]:
+        """Flatten ESPN's athlete record into the fields the card draws.
+
+        Season stats come from `statsSummary`, which is ESPN's own
+        position-appropriate pick -- goals, assists and shots for an
+        outfield player, saves and clean sheets for a keeper -- already
+        ordered for display. No separate stats request is needed."""
+        try:
+            athlete = bio_data.get("athlete") or bio_data
+            if not isinstance(athlete, dict):
+                return None
+
+            position = athlete.get("position") or {}
+            if isinstance(position, dict):
+                position = (
+                    position.get("abbreviation") or position.get("displayName") or ""
+                )
+
+            stat_pairs: List[Tuple[str, str]] = []
+            summary = athlete.get("statsSummary") or {}
+            for entry in summary.get("statistics") or []:
+                if not isinstance(entry, dict):
+                    continue
+                label = (
+                    entry.get("abbreviation")
+                    or entry.get("shortDisplayName")
+                    or entry.get("name")
+                )
+                value = entry.get("displayValue")
+                if value is None:
+                    value = entry.get("value")
+                if label and value is not None:
+                    stat_pairs.append((str(label), str(value)))
+
+            team = athlete.get("team") or {}
+            if not isinstance(team, dict):
+                team = {}
+
+            return {
+                "player_id": athlete.get("id"),
+                "display_name": athlete.get("displayName"),
+                "jersey": athlete.get("jersey"),
+                "position": position or "",
+                "height": athlete.get("displayHeight") or athlete.get("height"),
+                "weight": athlete.get("displayWeight") or athlete.get("weight"),
+                "age": athlete.get("age"),
+                "birthplace": athlete.get("displayBirthPlace"),
+                "experience": athlete.get("displayExperience"),
+                "headshot_url": (athlete.get("headshot") or {}).get("href"),
+                "team_abbr": team.get("abbreviation"),
+                "stat_pairs": stat_pairs,
+                "stats_title": summary.get("displayName") if stat_pairs else None,
+            }
+        except Exception:
+            return None
 
 
 class MLBAPIDataSource(DataSource):

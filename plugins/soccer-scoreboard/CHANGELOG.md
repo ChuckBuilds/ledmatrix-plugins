@@ -1,5 +1,62 @@
 # Changelog
 
+## [2.32.0] - 2026-09-23
+
+### Added
+- **A goal-scorer card, off by default.** Turn on a league's
+  `show_goal_scorer` and the celebration takeover gets a second beat: once it
+  clears, the panel shows a card for the player who actually scored — a
+  club-coloured `<TEAM> GOAL` banner with the clock and any PEN/OG/SO badge,
+  the scorer's name, shirt number and position, their season line, and their
+  age and height.
+
+  The celebration could never say this on its own: it is armed from a **score
+  delta**, which carries the score and never the scorer.
+- **New options under `customization.goal_scorer`:** `dwell_seconds`,
+  `favorites_only`, `show_stats`, `show_bio_details`, `header_bar`, `use_team_colors`, `font` /
+  `font_size`, and the `accent_color` / `text_color` / `stat_color` /
+  `detail_color` pickers.
+- **`fetch_player_details` on the ESPN data source**, byte-identical to the
+  hockey lineage's, for the scorer's bio. Cached for a day, in memory and
+  through the core cache.
+
+### Notes
+- **The card's font ladder includes the proportional Matrix faces.** The X11
+  rungs alone made a poor ladder for a card this text-dense: `6x13`, `6x12`,
+  `6x10` and `6x9` are all six pixels wide, so four consecutive steps get
+  shorter and never narrower — which does nothing when the binding constraint
+  is width, and on a text-only card with no headshot column to share, width is
+  what runs out first. `MatrixChunky8` is the same row height as `5x8` but
+  proportional, drawing this card's text about a third narrower. Each Matrix
+  face sits immediately before the X11 rung of its own height, so every choice
+  is either unchanged or swapped for a same-height, narrower one.
+- **Identifying the scorer costs no extra request.** ESPN puts goal events
+  straight into the scoreboard payload the plugin already downloads
+  (`competitions[].details[]`, each carrying `athletesInvolved`), so the name,
+  shirt number, position, clock and goal kind are all free. Only the bio
+  behind the season line and the age/height rows is a request, and only once
+  per player.
+- **The card is text only, and that is a data limit rather than a choice.**
+  ESPN publishes no headshots for soccer: the athlete record's `headshot`
+  field is null, the CDN path 404s, and the scoreboard's athlete entries have
+  no such field. Rows are centred rather than set beside an empty column.
+- ESPN leads its soccer stat set with appearances (`START (SUB) 5 (0)`), the
+  least interesting thing on a card about a goal and wide enough to be the
+  only stat that fits on a narrow panel. The card reorders it to lead with
+  goals and assists; unrecognised labels keep their order behind the known
+  ones rather than being dropped.
+- **The card and the celebration are independent settings.** Either, both or
+  neither: the card keeps its own per-game score baseline rather than reading
+  the celebration's, because `SportsLive._check_for_goal` stops running when
+  `celebration_enabled` is off — a card armed off `active_celebration` could
+  never have appeared without the takeover. With both on the card waits for
+  the takeover to clear; with the takeover off it appears as soon as the goal
+  is seen. Its scope is its own too: `favorites_only` under
+  `customization.goal_scorer`, not the celebration's
+  `celebrate_opponent_goals`.
+- An own goal is matched against the team it was *credited to* rather than the
+  scorer's own club, and is badged `OG`.
+
 ## [2.31.0] - 2026-09-20
 
 ### Added
