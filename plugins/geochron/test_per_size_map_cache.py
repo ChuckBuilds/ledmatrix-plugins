@@ -59,6 +59,7 @@ class _Geo:
 
     update = GeochronPlugin.update
     _render_for_size = GeochronPlugin._render_for_size
+    _panel_lift = GeochronPlugin._panel_lift
 
     def __init__(self):
         self.display_manager = _DisplayManager()
@@ -69,6 +70,7 @@ class _Geo:
         self._subsolar_lat = 0.0
         self._subsolar_lon = 0.0
         self._last_update_utc = None
+        self._lift = None
         self._base_map = object()
         self.night_brightness = 0.35
         self.colors = {"night_tint_color": (0, 0, 40)}
@@ -104,7 +106,7 @@ def _install_stubs(geo):
             return {"dw": dw, "dh": dh, "map_x": 0, "map_y": 0, "sidebar_w": 0}
 
         @staticmethod
-        def render_map_image(base, darkness, layout, brightness, tint):
+        def render_map_image(base, darkness, layout, brightness, tint, lift=None):
             geo.render_calls.append((layout["dw"], layout["dh"], darkness))
             return "map-%dx%d-%s" % (layout["dw"], layout["dh"], darkness)
 

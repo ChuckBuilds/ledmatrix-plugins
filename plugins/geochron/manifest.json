@@ -1,7 +1,7 @@
 {
   "id": "geochron",
   "name": "Geochron World Clock",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "author": "ChuckBuilds",
   "description": "High-fidelity world map clock showing the real-time day/night terminator with civil/nautical/astronomical twilight bands, the subsolar point, configurable city markers, and a digital UTC/local clock - a classic Geochron, reimagined for LED matrix panels of any size.",
   "entry_point": "manager.py",
@@ -24,6 +24,12 @@
     ">=3.4.0"
   ],
   "versions": [
+    {
+      "version": "1.2.1",
+      "released": "2026-09-23",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Countries stay visible on the night side at low PWM depth. At pwm_bits 7 (or a dimmed panel) night-side land and ocean rounded to the same LED step and the night side drew as one flat block. The plugin now reads the panel's pwm_bits and brightness and lifts night-side land just enough to light one step above the ocean. Panels that already showed the difference, and the emulator, draw exactly as before."
+    },
     {
       "version": "1.2.0",
       "released": "2026-09-18",
