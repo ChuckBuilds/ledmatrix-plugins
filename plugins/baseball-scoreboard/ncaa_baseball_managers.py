@@ -87,8 +87,8 @@ class BaseNCAABaseballManager(Baseball):
 
     def _fetch_ncaa_baseball_api_data(self, use_cache: bool = True) -> Optional[Dict]:
         """
-        Fetches the full season schedule for NCAA Baseball using date range approach to ensure
-        we get all games, then caches the complete dataset.
+        Fetches the games Recent and Upcoming can show for NCAA Baseball -- the
+        schedule_lookback_days/schedule_lookahead_days window -- and caches them.
 
         This method now uses background threading to prevent blocking the display.
         """
@@ -96,8 +96,9 @@ class BaseNCAABaseballManager(Baseball):
         season_year = now.year
         if now.month < 2:
             season_year = now.year - 1
-        datestring = f"{season_year}0201-{season_year}0701"
-        cache_key = f"ncaa_baseball_schedule_{season_year}"
+        # Only what Recent and Upcoming can show; see _schedule_window.
+        datestring, window = self._schedule_window()
+        cache_key = f"ncaa_baseball_schedule_{window}"
 
         if use_cache:
             cached_data = self.cache_manager.get(cache_key)
@@ -120,7 +121,7 @@ class BaseNCAABaseballManager(Baseball):
                     self.cache_manager.clear_cache(cache_key)
 
         self.logger.info(
-            f"Fetching full {season_year} season schedule from ESPN API..."
+            f"Fetching {season_year} schedule window from ESPN API..."
         )
 
         # Get background service configuration
@@ -144,7 +145,7 @@ class BaseNCAABaseballManager(Baseball):
                 return partial_data
 
             self.logger.info(
-                f"Starting background fetch for {season_year} season schedule..."
+                f"Starting background fetch for {season_year} schedule window..."
             )
 
             def fetch_callback(result):

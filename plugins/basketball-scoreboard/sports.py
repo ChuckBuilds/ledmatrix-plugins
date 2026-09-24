@@ -1951,6 +1951,25 @@ class SportsCore(SportsCoreSharedMixin, ABC):
             )
             return None
 
+    def _schedule_window(self) -> Tuple[str, str]:
+        """The dates Recent and Upcoming can show, as an ESPN range, and a cache-key suffix.
+
+        Recent keeps finished games from the last ``schedule_lookback_days`` and
+        Upcoming fixtures up to ``schedule_lookahead_days`` ahead; nothing outside
+        that window ever reaches the screen. The league managers used to fetch
+        and cache the whole season regardless -- 53MB of JSON for MLB, 18MB for
+        NHL -- and every read of an expired copy parsed all of it with the GIL
+        held, freezing the display for up to two seconds each time. The suffix
+        carries the window's size, so managers configured with different
+        windows never share a cached one too small for either.
+        """
+        now = datetime.now(pytz.utc)
+        lookback = getattr(self, "schedule_lookback_days", _DEFAULT_LOOKBACK_DAYS)
+        lookahead = getattr(self, "schedule_lookahead_days", _DEFAULT_LOOKAHEAD_DAYS)
+        start = (now - timedelta(days=lookback)).strftime("%Y%m%d")
+        end = (now + timedelta(days=lookahead)).strftime("%Y%m%d")
+        return f"{start}-{end}", f"window_{lookback}_{lookahead}"
+
     def _get_weeks_data(self) -> Optional[Dict]:
         """Games in the lookback/lookahead window, shown while the season loads.
 

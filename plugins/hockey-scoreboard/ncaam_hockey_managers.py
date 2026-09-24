@@ -41,15 +41,16 @@ class BaseNCAAMHockeyManager(Hockey): # Renamed class
     
     def _fetch_ncaa_hockey_api_data(self, use_cache: bool = True) -> Optional[Dict]:
         """
-        Fetches the full season schedule for NCAAMH, caches it, and then filters
+        Fetches the NCAAMH schedule window (what Recent and Upcoming can show), caches it, and then filters
         for relevant games based on the current configuration.
         """
         now = datetime.now(pytz.utc)
         season_year = now.year
         if now.month < 8:
             season_year = now.year - 1
-        datestring = f"{season_year}0901-{season_year+1}0501"
-        cache_key = f"ncaa_mens_hockey_schedule_{season_year}"
+        # Only what Recent and Upcoming can show; see _schedule_window.
+        datestring, window = self._schedule_window()
+        cache_key = f"ncaa_mens_hockey_schedule_{window}"
 
         if use_cache:
             cached_data = self.cache_manager.get(cache_key)
@@ -67,7 +68,7 @@ class BaseNCAAMHockeyManager(Hockey): # Renamed class
                     # Clear invalid cache
                     self.cache_manager.clear_cache(cache_key)
         
-        self.logger.info(f"Fetching full {season_year} season schedule from ESPN API...")
+        self.logger.info(f"Fetching {season_year} schedule window from ESPN API...")
 
         # A core from before the ESPN date-range fix would send this range to
         # ESPN as-is and get a 400 (every sport, since 2026-09-15), and a
@@ -81,7 +82,7 @@ class BaseNCAAMHockeyManager(Hockey): # Renamed class
             )
 
         # Start background fetch
-        self.logger.info(f"Starting background fetch for {season_year} season schedule...")
+        self.logger.info(f"Starting background fetch for {season_year} schedule window...")
         
         def fetch_callback(result):
             """Callback when background fetch completes."""

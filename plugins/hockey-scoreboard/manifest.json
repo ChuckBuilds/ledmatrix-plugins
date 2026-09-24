@@ -1,7 +1,7 @@
 {
   "id": "hockey-scoreboard",
   "name": "Hockey Scoreboard",
-  "version": "1.33.0",
+  "version": "1.33.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, and NCAA Women's hockey with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/hockey-scoreboard",
@@ -54,6 +54,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.33.1",
+      "released": "2026-09-24",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "The Recent and Upcoming screens for NHL, NCAA men's and NCAA women's hockey now fetch and cache only the games they can show -- the schedule_lookback_days / schedule_lookahead_days window around today, 14 days back and 7 ahead by default -- instead of the whole season. They never displayed anything outside that window, but the whole season was up to 18MB of JSON for the NHL, and every refresh parsed all of it with the display frozen: measured on a Pi 4, 0.6 to 2.3 seconds of stalled scrolling each time. Nothing on screen changes. The old season cache files are no longer written and the core's cache cleanup removes them."
+    },
     {
       "version": "1.33.0",
       "released": "2026-09-23",

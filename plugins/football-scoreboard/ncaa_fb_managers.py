@@ -52,8 +52,8 @@ class BaseNCAAFBManager(Football):  # Renamed class
 
     def _fetch_ncaa_fb_api_data(self, use_cache: bool = True) -> Optional[Dict]:
         """
-        Fetches the full season schedule for NCAAFB using week-by-week approach to ensure
-        we get all games, then caches the complete dataset.
+        Fetches the games Recent and Upcoming can show for NCAAFB -- the
+        schedule_lookback_days/schedule_lookahead_days window -- and caches them.
 
         This method now uses background threading to prevent blocking the display.
         """
@@ -61,8 +61,9 @@ class BaseNCAAFBManager(Football):  # Renamed class
         season_year = now.year
         if now.month < 8:
             season_year = now.year - 1
-        datestring = f"{season_year}0801-{season_year+1}0201"
-        cache_key = f"ncaafb_schedule_{season_year}"
+        # Only what Recent and Upcoming can show; see _schedule_window.
+        datestring, window = self._schedule_window()
+        cache_key = f"ncaafb_schedule_{window}"
 
         if use_cache:
             cached_data = self.cache_manager.get(cache_key)
@@ -85,12 +86,12 @@ class BaseNCAAFBManager(Football):  # Renamed class
                     self.cache_manager.clear_cache(cache_key)
 
         self.logger.info(
-            f"Fetching full {season_year} season schedule from ESPN API..."
+            f"Fetching {season_year} schedule window from ESPN API..."
         )
 
         # Start background fetch
         self.logger.info(
-            f"Starting background fetch for {season_year} season schedule..."
+            f"Starting background fetch for {season_year} schedule window..."
         )
 
         # Get background service configuration
@@ -106,7 +107,7 @@ class BaseNCAAFBManager(Football):  # Renamed class
             and self._background_fetches_espn_ranges()
         ):
             self.logger.info(
-                f"Starting background fetch for {season_year} season schedule..."
+                f"Starting background fetch for {season_year} schedule window..."
             )
 
             def fetch_callback(result):

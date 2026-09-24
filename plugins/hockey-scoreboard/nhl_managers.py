@@ -56,8 +56,9 @@ class BaseNHLManager(Hockey):
         season_year = now.year
         if now.month < 8:
             season_year = now.year - 1
-        datestring = f"{season_year}0901-{season_year+1}0801"
-        cache_key = f"nhl_schedule_{season_year}"
+        # Only what Recent and Upcoming can show; see _schedule_window.
+        datestring, window = self._schedule_window()
+        cache_key = f"nhl_schedule_{window}"
 
         # Check cache first
         if use_cache:
@@ -85,7 +86,7 @@ class BaseNHLManager(Hockey):
             )
 
         # Start background fetch
-        self.logger.info(f"Starting background fetch for {season_year} season schedule...")
+        self.logger.info(f"Starting background fetch for {season_year} schedule window...")
         
         def fetch_callback(result):
             """Callback when background fetch completes."""
