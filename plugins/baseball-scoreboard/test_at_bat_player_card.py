@@ -19,8 +19,8 @@ Covers:
      bats/throws recovered from the combined display string.
   6. _at_bat_card_style / _wants_player_bios: text style does not pay for the
      athlete lookup.
-  7. _pick_at_bat_card_subject: the dwell is split batter-then-pitcher, and
-     no resolved bio means no card.
+  7. _pick_at_bat_card_subject: each card gets its own dwell, batter then
+     pitcher, and no resolved bio means no card.
   8. _maybe_draw_at_bat_info_screen: routes to the card when a bio is
      available and falls back to the text layout when it is not.
   9. Render smoke test across every harness size: no crash, no margin
@@ -275,7 +275,7 @@ def test_text_style_does_not_pay_for_the_athlete_lookup():
 def _make_pick_live(bios):
     live = object.__new__(_ConcreteBaseballLive)
     live._player_bio_cache = bios
-    live._at_bat_screen_showing_until = 100.0
+    live._at_bat_screen_last_shown = 94.0
     return live
 
 
@@ -283,19 +283,19 @@ _PBP = {"batter_id": "b1", "pitcher_id": "p1",
         "batter_info": {"name": "Batter"}, "pitcher_info": {"name": "Pitcher"}}
 
 
-def test_pick_subject_splits_the_dwell_between_both_players():
+def test_pick_subject_gives_each_player_a_full_dwell():
+    """dwell_seconds is per card: the batter holds the first 4s, the pitcher
+    the next 4s, rather than the two sharing 4s between them."""
     live = _make_pick_live({"b1": {"display_name": "B"}, "p1": {"display_name": "P"}})
-    dwell, cfg = 6.0, {}
-    # now = showing_until - remaining, i.e. elapsed = dwell - remaining.
-    first = live._pick_at_bat_card_subject(_PBP, cfg, 100.0 - 6.0, dwell)
-    mid = live._pick_at_bat_card_subject(_PBP, cfg, 100.0 - 3.5, dwell)
-    late = live._pick_at_bat_card_subject(_PBP, cfg, 100.0 - 0.1, dwell)
-    assert first[0] == "batter", first
-    assert mid[0] == "batter", mid          # 2.5s elapsed, still the first half
-    assert late[0] == "pitcher", late       # 5.9s elapsed, second half
-    # Past the end of the dwell we clamp rather than index off the list.
-    assert live._pick_at_bat_card_subject(_PBP, cfg, 101.0, dwell)[0] == "pitcher"
-    print("test_pick_subject_splits_the_dwell_between_both_players: PASS")
+    dwell, cfg = 4.0, {}
+    # The window opened at _at_bat_screen_last_shown = 94.0.
+    assert live._pick_at_bat_card_subject(_PBP, cfg, 94.0, dwell)[0] == "batter"
+    assert live._pick_at_bat_card_subject(_PBP, cfg, 97.9, dwell)[0] == "batter"
+    assert live._pick_at_bat_card_subject(_PBP, cfg, 98.1, dwell)[0] == "pitcher"
+    assert live._pick_at_bat_card_subject(_PBP, cfg, 101.9, dwell)[0] == "pitcher"
+    # Past the end of the window we clamp rather than index off the list.
+    assert live._pick_at_bat_card_subject(_PBP, cfg, 120.0, dwell)[0] == "pitcher"
+    print("test_pick_subject_gives_each_player_a_full_dwell: PASS")
 
 
 def test_pick_subject_one_player_holds_the_whole_dwell():
@@ -359,6 +359,22 @@ def test_falls_back_to_text_without_a_bio():
     assert live._maybe_draw_at_bat_info_screen({"id": "g1"}) is True
     assert drawn == [("text", None)], drawn
     print("test_falls_back_to_text_without_a_bio: PASS")
+
+
+def test_screen_stays_up_one_dwell_per_card():
+    """Both bios resolved -> the window is two dwells long; one -> one; the
+    text fallback -> one."""
+    for bios, cards in (
+        ({"b1": {"display_name": "B"}, "p1": {"display_name": "P"}}, 2),
+        ({"b1": {"display_name": "B"}}, 1),
+        ({}, 1),
+    ):
+        live, _ = _make_route_live(bios=bios)
+        live.config["customization"]["at_bat_info"]["dwell_seconds"] = 4
+        live._maybe_draw_at_bat_info_screen({"id": "g1"})
+        window = live._at_bat_screen_showing_until - live._at_bat_screen_last_shown
+        assert abs(window - 4 * cards) < 1e-6, (bios, window)
+    print("test_screen_stays_up_one_dwell_per_card: PASS")
 
 
 def test_text_style_never_routes_to_the_card():
@@ -654,11 +670,12 @@ if __name__ == "__main__":
         test_split_bats_throws,
         test_card_style_is_the_default,
         test_text_style_does_not_pay_for_the_athlete_lookup,
-        test_pick_subject_splits_the_dwell_between_both_players,
+        test_pick_subject_gives_each_player_a_full_dwell,
         test_pick_subject_one_player_holds_the_whole_dwell,
         test_pick_subject_respects_show_toggles_and_missing_bios,
         test_routes_to_the_card_when_a_bio_is_available,
         test_falls_back_to_text_without_a_bio,
+        test_screen_stays_up_one_dwell_per_card,
         test_text_style_never_routes_to_the_card,
         test_last_play_only_keeps_the_text_screen,
         test_render_all_sizes_no_overflow,

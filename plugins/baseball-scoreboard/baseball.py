@@ -264,7 +264,7 @@ class Baseball(SportsCore):
         self.show_outs = self.mode_config.get("show_outs", True)
         self.show_bases = self.mode_config.get("show_bases", True)
         self.show_count = self.mode_config.get("show_count", True)
-        self.show_pitcher_batter = self.mode_config.get("show_pitcher_batter", False)
+        self.show_pitcher_batter = self.mode_config.get("show_pitcher_batter", True)
         self.show_last_play = self.mode_config.get("show_last_play", False)
         self.show_player_card = self.mode_config.get("show_player_card", False)
         self.show_traditional_scoreboard = self.mode_config.get("show_traditional_scoreboard", False)
@@ -1515,14 +1515,19 @@ class BaseballLive(Baseball, SportsLive):
             ):
                 return False
 
+        # dwell_seconds is per card: with both the batter and the pitcher
+        # showing, the screen stays up for twice as long, so neither card is
+        # cut to a two-second flash.
         dwell = at_bat_cfg.get("dwell_seconds", 4)
-        interval = at_bat_cfg.get("interval_seconds", 25)
+        interval = at_bat_cfg.get("interval_seconds", 30)
+        use_card = self.show_pitcher_batter and self._at_bat_card_style() == "card"
 
         now = time.time()
         showing = now < self._at_bat_screen_showing_until
         if not showing and now - self._at_bat_screen_last_shown >= interval:
+            cards = len(self._at_bat_card_candidates(pbp, at_bat_cfg)) if use_card else 0
             self._at_bat_screen_last_shown = now
-            self._at_bat_screen_showing_until = now + dwell
+            self._at_bat_screen_showing_until = now + dwell * max(1, cards)
             showing = True
 
         if not showing:
@@ -1532,7 +1537,7 @@ class BaseballLive(Baseball, SportsLive):
         # anything the text layout doesn't. Until one lands -- MiLB, a fresh
         # at-bat, an athlete ESPN has no record for -- fall through to the
         # plain text layout rather than show a card with three empty rows.
-        if self.show_pitcher_batter and self._at_bat_card_style() == "card":
+        if use_card:
             subject = self._pick_at_bat_card_subject(pbp, at_bat_cfg, now, dwell)
             if subject is not None:
                 role, info, bio = subject
@@ -1547,11 +1552,25 @@ class BaseballLive(Baseball, SportsLive):
     ) -> Optional[Tuple[str, Optional[Dict], Dict]]:
         """Pick whose card this frame shows, as (role, roster_info, bio).
 
-        With both players available the dwell is *split* between them --
+        With both players available each gets its own ``dwell`` seconds --
         batter first, then pitcher -- so a single rotation shows both cards
         instead of making the pitcher wait for the screen to come round
         again. Returns None when no bio has resolved yet, which sends the
         caller back to the text layout."""
+        candidates = self._at_bat_card_candidates(pbp, cfg)
+        if not candidates:
+            return None
+
+        elapsed = max(0.0, now - self._at_bat_screen_last_shown)
+        index = int(elapsed / dwell) if dwell > 0 else 0
+        return candidates[min(index, len(candidates) - 1)]
+
+    def _at_bat_card_candidates(
+        self, pbp: Dict, cfg: Dict
+    ) -> List[Tuple[str, Optional[Dict], Dict]]:
+        """The (role, roster_info, bio) cards the at-bat screen can show
+        right now: batter then pitcher, each only when enabled and its bio
+        has resolved."""
         candidates: List[Tuple[str, Optional[Dict], Dict]] = []
         for role, enabled, id_key, info_key in (
             ("batter", cfg.get("show_batter", True), "batter_id", "batter_info"),
@@ -1563,13 +1582,7 @@ class BaseballLive(Baseball, SportsLive):
             bio = self._player_bio_cache.get(player_id) if player_id else None
             if bio:
                 candidates.append((role, pbp.get(info_key), bio))
-        if not candidates:
-            return None
-
-        slot = dwell / len(candidates) if dwell > 0 else 0
-        elapsed = max(0.0, dwell - (self._at_bat_screen_showing_until - now))
-        index = int(elapsed / slot) if slot > 0 else 0
-        return candidates[min(index, len(candidates) - 1)]
+        return candidates
 
     @staticmethod
     def _truncate_to_width(draw, text: str, font, max_width: int) -> str:

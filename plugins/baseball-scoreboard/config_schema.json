@@ -667,10 +667,10 @@
               "description": "Show series summary information"
             },
             "show_pitcher_batter": {
-              "x-advanced": true,
               "type": "boolean",
-              "default": false,
-              "description": "Periodically show a dedicated screen with the current pitcher and batter during a live at-bat (requires an extra per-game data fetch)"
+              "title": "Show Now Batting / Now Pitching",
+              "default": true,
+              "description": "Periodically show a Now Batting / Now Pitching card for whoever is at the plate and on the mound during a live game. Timing and style are under Customization > Pitcher / Batter Player Card. Needs an extra ESPN play-by-play fetch per live game, plus a one-off athlete lookup per player for the card"
             },
             "show_last_play": {
               "x-advanced": true,
@@ -1797,10 +1797,10 @@
               "description": "Show series summary information"
             },
             "show_pitcher_batter": {
-              "x-advanced": true,
               "type": "boolean",
-              "default": false,
-              "description": "Periodically show a dedicated screen with the current pitcher and batter during a live at-bat (requires an extra per-game data fetch)"
+              "title": "Show Now Batting / Now Pitching",
+              "default": true,
+              "description": "Periodically show a Now Batting / Now Pitching card for whoever is at the plate and on the mound during a live game. Timing and style are under Customization > Pitcher / Batter Player Card. Needs an extra ESPN play-by-play fetch per live game, plus a one-off athlete lookup per player for the card"
             },
             "show_last_play": {
               "x-advanced": true,
@@ -2635,10 +2635,11 @@
         "at_bat_info": {
           "type": "object",
           "title": "Pitcher / Batter Player Card",
-          "description": "A dedicated full-screen view (not an overlay on the scorebug -- there is not enough room there) that periodically rotates into the live display for whoever is at the plate and on the mound. By default it is drawn as a baseball card: headshot, a NOW BATTING / NOW PITCHING banner, the player's name, season stats, team and number, age and bat/throw hand, hometown, and height/weight -- with the panel keeping as many of those rows as it has room for. Set style to 'text' for the original plain pitcher/batter line-up. Enable per-league via Display Options > Show Pitcher/Batter and Show Last Play (MLB and NCAA Baseball only).",
+          "description": "A dedicated full-screen view (not an overlay on the scorebug -- there is not enough room there) that periodically rotates into the live display for whoever is at the plate and on the mound. By default it is drawn as a baseball card: headshot, a NOW BATTING / NOW PITCHING banner, the player's name, season stats, team and number, age and bat/throw hand, hometown, and height/weight -- with the panel keeping as many of those rows as it has room for. Set style to 'text' for the original plain pitcher/batter line-up. On by default for MLB and NCAA Baseball; turn it off per league with Display Options > Show Now Batting / Now Pitching (not available for MiLB, which has no ESPN play-by-play).",
           "properties": {
             "style": {
               "type": "string",
+              "title": "Style",
               "enum": [
                 "card",
                 "text"
@@ -2647,16 +2648,16 @@
               "description": "How this screen is drawn. 'card' is a full baseball card for one player at a time -- headshot, banner, name, season stats, team/number/position, age and bat/throw, hometown, height/weight -- dropping the least important rows on panels too small to fit them all. 'text' is the original layout: a 'Pitcher: X' line, a 'Batter: Y' line and the last-play code. Card style needs the extra ESPN athlete lookup and is unavailable for MiLB; when no bio has resolved yet it falls back to the text layout on its own rather than drawing an empty card."
             },
             "show_batter": {
-              "x-advanced": true,
               "type": "boolean",
+              "title": "Show Batter Card",
               "default": true,
               "description": "Card style only. Include a card for the current batter"
             },
             "show_pitcher": {
-              "x-advanced": true,
               "type": "boolean",
+              "title": "Show Pitcher Card",
               "default": true,
-              "description": "Card style only. Include a card for the current pitcher. With both on, the screen's dwell is split between them -- batter first -- so one rotation shows both cards instead of making the pitcher wait for the screen to come round again. Give dwell_seconds a couple of extra seconds when showing both."
+              "description": "Card style only. Include a card for the current pitcher. With both on, each card gets its own dwell_seconds -- batter first -- so one rotation shows both cards instead of making the pitcher wait for the screen to come round again."
             },
             "show_headshot": {
               "x-advanced": true,
@@ -2811,23 +2812,23 @@
               "description": "Card style only. Text colour [R, G, B] for the quieter trivia rows -- age and bat/throw, hometown, height/weight"
             },
             "dwell_seconds": {
-              "x-advanced": true,
               "type": "number",
+              "title": "Seconds Per Card",
               "default": 4,
               "minimum": 2,
               "maximum": 15,
-              "description": "How many seconds to show this screen each time it rotates in. In card style with both players on, this time is split between the two cards"
+              "description": "How many seconds each Now Batting / Now Pitching card stays on screen. In card style with both players on, each card gets this long -- batter first, then pitcher -- so the screen stays up for twice this time. In text style, how long the screen stays each time it rotates in"
             },
             "interval_seconds": {
-              "x-advanced": true,
               "type": "number",
-              "default": 25,
+              "title": "Show Every (Seconds)",
+              "default": 30,
               "minimum": 10,
               "maximum": 120,
-              "description": "How often (in seconds) this screen rotates into the normal live view"
+              "description": "How often (in seconds, counted from when the cards last appeared) the Now Batting / Now Pitching cards rotate into the live view. The default of 30 matches the default live_game_duration, so each live game gets one pass of the cards -- 8 seconds for both cards, then 22 seconds of scoreboard"
             },
             "favorites_only": {
-              "x-advanced": true,
+              "title": "Favorite Teams Only",
               "type": "boolean",
               "default": false,
               "description": "Only rotate this screen in for games involving one of this league's favorite_teams. Useful if show_all_live is on (so every team's live game rotates through) but you only want the pitcher/batter/last-play treatment for your own team -- other teams still get the normal compact scorebug. Has no effect if favorite_teams is empty."

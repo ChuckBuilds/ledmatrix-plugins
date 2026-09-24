@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.48.0] - 2026-09-24
+
+### Changed
+- **The Now Batting / Now Pitching card is on by default** for MLB and NCAA
+  Baseball (`display_options.show_pitcher_batter` now defaults to `true`).
+  MiLB is unaffected -- it has no ESPN play-by-play. A board whose saved
+  config already has `show_pitcher_batter: false` keeps it off.
+- **Each card stays up for 4 seconds.** `customization.at_bat_info.dwell_seconds`
+  used to be split between the batter and the pitcher, so with both on each
+  card flashed for only 2 seconds. It is now per card: the batter gets its 4
+  seconds, then the pitcher gets 4 of its own.
+- **The cards come round every 30 seconds** (`interval_seconds`, was 25). That
+  matches the default `live_game_duration`, so each live game gets one pass
+  of the cards (8 seconds) and then 22 seconds of scoreboard.
+- **The main settings are in the web UI form** rather than hidden under
+  Advanced: *Show Now Batting / Now Pitching* under Display Options, and
+  *Style*, *Show Batter Card*, *Show Pitcher Card*, *Seconds Per Card*,
+  *Show Every (Seconds)* and *Favorite Teams Only* under Customization >
+  Pitcher / Batter Player Card. Fonts and colours stay under Advanced.
+
 ## [1.47.0] - 2026-09-22
 
 ### Added

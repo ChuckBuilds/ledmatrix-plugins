@@ -439,12 +439,13 @@ do not want the line.
 ### The extra baseball screens
 
 Baseball has more to say than most sports mid-at-bat, so the plugin can
-periodically take over with a dedicated screen. All are **off by default** and
-all cost an extra per-game data fetch.
+periodically take over with a dedicated screen. The Now Batting / Now
+Pitching card is **on by default**; the rest are off. All of them cost an extra
+per-game data fetch.
 
 | Option | Default | What it does |
 |--------|---------|--------------|
-| `display_options.show_pitcher_batter` | `false` | A baseball card for the current batter and pitcher: headshot, name, team, number, position, season stats, age, hometown |
+| `display_options.show_pitcher_batter` | `true` | A baseball card for the current batter and pitcher: headshot, name, team, number, position, season stats, age, hometown |
 | `display_options.show_last_play` | `false` | Adds a short code for the last completed play (`1B`, `HR`, `K`, `BB`) to that screen |
 | `display_options.show_player_card` | `false` | A separate card screen on its own slower rotation, for the batter only by default |
 | `display_options.show_traditional_scoreboard` | `false` | A full-screen ballpark scoreboard: inning-by-inning line score, R/H/E, and an at-bat panel |
@@ -515,10 +516,9 @@ bat/throw hand, hometown, and height/weight/seasons played.
 └────────────┴──────────────────────────────────┘
 ```
 
-With both players on, the screen's `dwell_seconds` is **split between them**,
-batter first, so one rotation shows both cards rather than making the pitcher
-wait for the screen to come round again. Give it a couple of extra seconds if
-you turn both on.
+With both players on, **each card gets its own `dwell_seconds`**, batter
+first, so one rotation shows both cards rather than making the pitcher wait
+for the screen to come round again — the screen stays up for twice as long.
 
 There is no panel-size table behind this. The rows are priority-ordered and
 the least useful are given up until what is left fits, so a 128×32 keeps the
@@ -545,8 +545,8 @@ also stops the athlete lookup the card needs.
 | `show_bio_details` | `true` | Card style. Age/bat-throw, hometown, height/weight/seasons |
 | `header_bar` | `true` | Card style. Banner knocked out of a solid team-colour bar (panels 48 rows and taller) |
 | `favorites_only` | `false` | Only rotate in for favourites' games |
-| `dwell_seconds` | `4` | How long it stays — split between the two cards when both are on |
-| `interval_seconds` | `25` | How often it rotates in |
+| `dwell_seconds` | `4` | Seconds each card stays (**Seconds Per Card** in the web UI) — the batter and pitcher each get this long |
+| `interval_seconds` | `30` | How often it rotates in, counted from when the cards last appeared. 30 matches the default `live_game_duration`, so each live game gets one pass of the cards |
 | `font` | `9x15.bdf` | As above |
 | `font_size` | `24` | Cap for scalable fonts only |
 | `use_team_colors` | `true` | Banner, name row and headshot frame in the team's colour — fielding team for the pitcher, batting team for the hitter |

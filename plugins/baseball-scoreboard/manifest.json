@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.47.0",
+  "version": "1.48.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.48.0",
+      "released": "2026-09-24",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "The Now Batting / Now Pitching card is on by default for MLB and NCAA Baseball, and its settings are in the main web UI form instead of under Advanced. Each card now stays up for 4 seconds: dwell_seconds used to be split between the batter and the pitcher, so with both on each card flashed for only 2 seconds. It is now per card -- the batter gets 4 seconds, then the pitcher gets 4 of its own. The cards come round every 30 seconds (was 25), matching the default live_game_duration, so each live game gets one pass of the cards (8 seconds) and then 22 seconds of scoreboard. Shown in the web UI: Show Now Batting / Now Pitching (Display Options), and Style, Show Batter Card, Show Pitcher Card, Seconds Per Card, Show Every (Seconds) and Favorite Teams Only (Customization > Pitcher / Batter Player Card). A board whose saved config already has show_pitcher_batter set to false keeps it off."
+    },
     {
       "version": "1.47.0",
       "released": "2026-09-22",
