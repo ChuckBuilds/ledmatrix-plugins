@@ -113,8 +113,12 @@ class FixedCoreService(OldCoreService):
 
 @pytest.fixture(autouse=True)
 def forget_rejected_ranges(monkeypatch):
-    # The rejected-range memo is process-wide; each test starts clean.
-    monkeypatch.setattr(football_espn_dates, "_ranges_rejected_until", 0.0)
+    # The rejected-range memo is process-wide; each test starts clean. It lives
+    # in whichever helper the plugin runs on: core's when core ships one (as it
+    # does here), else the bundled football_espn_dates.
+    import sports
+    helper = sys.modules[sports.fetch_espn_scoreboard.__module__]
+    monkeypatch.setattr(helper, "_ranges_rejected_until", 0.0)
 
 
 def make_manager(service):
