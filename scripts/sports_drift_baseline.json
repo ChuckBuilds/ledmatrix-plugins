@@ -134,6 +134,7 @@
     "sports.py::SportsCore._get_logo_directory_fallbacks",
     "sports.py::SportsCore._is_favorite_S",
     "sports.py::SportsCore._is_ranked_S",
+    "sports.py::SportsCore._league_has_rankings",
     "sports.py::SportsCore._load_and_resize_logo",
     "sports.py::SportsCore._load_custom_font_from_element_config",
     "sports.py::SportsCore._load_division_S_ids",
