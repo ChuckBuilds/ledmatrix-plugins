@@ -113,8 +113,12 @@ class FixedCoreService(OldCoreService):
 
 @pytest.fixture(autouse=True)
 def forget_rejected_ranges(monkeypatch):
-    # The rejected-range memo is process-wide; each test starts clean.
-    monkeypatch.setattr(football_espn_dates, "_ranges_rejected_until", 0.0)
+    # The rejected-range memo is process-wide; each test starts clean. It lives
+    # in whichever helper the plugin runs on: core's when core ships one (as it
+    # does here), else the bundled football_espn_dates.
+    import sports
+    helper = sys.modules[sports.fetch_espn_scoreboard.__module__]
+    monkeypatch.setattr(helper, "_ranges_rejected_until", 0.0)
 
 
 def make_manager(service):
@@ -141,7 +145,7 @@ def test_the_background_service_is_trusted_only_when_it_says_so():
     assert not make_manager(None)._background_fetches_espn_ranges()
 
 
-def test_on_an_older_core_the_season_is_fetched_here_in_chunks():
+def test_on_an_older_core_the_window_is_fetched_here_in_chunks():
     service = OldCoreService()
     manager = make_manager(service)
 
@@ -150,16 +154,16 @@ def test_on_an_older_core_the_season_is_fetched_here_in_chunks():
     # Never handed to a service that would send the range to ESPN as-is.
     assert service.submitted == []
     sent = [call["dates"] for call in manager.session.calls]
-    start, end = sent[0].split("-")  # {year}0801-{year+1}0301
-    year = int(start[:4])
+    # Only the lookback/lookahead window, never the whole season.
+    expected, _window = manager._schedule_window()
+    assert sent[0] == expected
+    start, end = football_espn_dates.parse_espn_date_range(expected)
+    chunks = football_espn_dates.espn_date_chunks(start, end)
     # The chunks are fetched concurrently, so only the rejected range keeps a
     # fixed position; which chunk answers first is not significant.
-    assert sorted(sent[1:]) == sorted([
-        f"{year}08", f"{year}09", f"{year}10", f"{year}11", f"{year}12",
-        f"{year + 1}01", f"{year + 1}02", end,
-    ])
+    assert sorted(sent[1:]) == sorted(chunks)
     assert all(call["limit"] <= football_espn_dates.ESPN_MAX_LIMIT for call in manager.session.calls)
-    assert len(data["events"]) == 8
+    assert len(data["events"]) == len(chunks)
     cached = [value for key, value in manager.cache_manager.store.items() if "schedule" in key]
     assert cached and cached[0] is data
 

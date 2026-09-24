@@ -100,8 +100,12 @@ class FixedCoreService(OldCoreService):
 
 @pytest.fixture(autouse=True)
 def forget_rejected_ranges(monkeypatch):
-    # The rejected-range memo is process-wide; each test starts clean.
-    monkeypatch.setattr(hockey_espn_dates, "_ranges_rejected_until", 0.0)
+    # The rejected-range memo is process-wide; each test starts clean. It lives
+    # in whichever helper the plugin runs on: core's when core ships one (as it
+    # does here), else the bundled hockey_espn_dates.
+    import sports
+    helper = sys.modules[sports.fetch_espn_scoreboard.__module__]
+    monkeypatch.setattr(helper, "_ranges_rejected_until", 0.0)
 
 
 def make_manager(service):
@@ -123,7 +127,7 @@ def make_manager(service):
 
 
 @pytest.mark.parametrize("service", [OldCoreService(), None], ids=["older core", "no service"])
-def test_the_season_is_fetched_here_when_the_service_cannot_fetch_ranges(service):
+def test_the_window_is_fetched_here_when_the_service_cannot_fetch_ranges(service):
     manager = make_manager(service)
 
     data = manager._fetch_nhl_api_data(use_cache=True)
@@ -131,17 +135,29 @@ def test_the_season_is_fetched_here_when_the_service_cannot_fetch_ranges(service
     if service is not None:
         assert service.submitted == []
     sent = [call["dates"] for call in manager.session.calls]
-    start, end = sent[0].split("-")  # {year}0901-{year+1}0801
-    year = int(start[:4])
+    # Only the lookback/lookahead window is asked for, never the season: the
+    # whole NHL season was 18MB of JSON, parsed with the GIL held on every
+    # read, for games Recent and Upcoming then filtered out.
+    expected, window = manager._schedule_window()
+    assert sent[0] == expected
+    start, end = hockey_espn_dates.parse_espn_date_range(expected)
+    chunks = hockey_espn_dates.espn_date_chunks(start, end)
     # The chunks are fetched concurrently, so only the rejected range keeps a
     # fixed position; which chunk answers first is not significant.
-    assert sorted(sent[1:]) == sorted([
-        f"{year}09", f"{year}10", f"{year}11", f"{year}12",
-        f"{year + 1}01", f"{year + 1}02", f"{year + 1}03", f"{year + 1}04",
-        f"{year + 1}05", f"{year + 1}06", f"{year + 1}07", end,
-    ])
-    assert len(data["events"]) == 12
-    assert manager.cache_manager.store[f"nhl_schedule_{year}"] is data
+    assert sorted(sent[1:]) == sorted(chunks)
+    assert len(data["events"]) == len(chunks)
+    assert manager.cache_manager.store[f"nhl_schedule_{window}"] is data
+
+
+def test_the_window_is_the_configured_lookback_and_lookahead():
+    from datetime import datetime, timedelta, timezone
+    manager = make_manager(None)
+    manager.schedule_lookback_days, manager.schedule_lookahead_days = 14, 7
+    dates, window = manager._schedule_window()
+    now = datetime.now(timezone.utc)
+    assert dates == "%s-%s" % ((now - timedelta(days=14)).strftime("%Y%m%d"),
+                               (now + timedelta(days=7)).strftime("%Y%m%d"))
+    assert window == "window_14_7"
 
 
 def test_on_a_fixed_core_the_season_goes_to_the_background_service():

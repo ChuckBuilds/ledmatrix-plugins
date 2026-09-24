@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Each league's ESPN date window must cover its whole season, postseason included.
+"""No league's ESPN date window may cut off games the screens can show.
 
 WNBA's window was built as:
 
@@ -18,6 +18,13 @@ to reintroduce and only shows up once a year:
   NBA        window opens 1 October, season opens later that month
   NCAA M/W   no date window at all -- ESPN's `season` parameter, keyed to the
              year the season ENDS, flipped on 1 November before the openers
+
+NBA and WNBA no longer build a season range at all: they fetch the
+schedule_lookback_days/schedule_lookahead_days window around today
+(SportsCore._schedule_window), which is all Recent and Upcoming ever show. A
+window centred on today cannot miss a postseason, so the truncation above has
+no season boundary left to happen at; what is checked for them now is that no
+hardcoded season range has come back.
 
 Run: <core-venv>/bin/python plugins/basketball-scoreboard/test_season_windows.py
 """
@@ -54,28 +61,12 @@ def resolve(expr, now, boundary, back_a_year_below=True):
 
 
 def main():
-    print("WNBA covers the postseason, not just the regular season")
-    wnba = window_expr("wnba_managers")
-    check("window ends in November, not September",
-          wnba.endswith("1101"), True)
-    check("window is not truncated at 0930", "0930" in wnba, False)
-
-    for d, expected in [
-        ("2026-08-22", "20260501-20261101"),   # regular season
-        ("2026-09-20", "20260501-20261101"),   # playoffs begin
-        ("2026-10-15", "20260501-20261101"),   # Finals -- was outside the old window
-        ("2026-04-30", "20250501-20251101"),   # pre-season: still last year
-    ]:
-        check("wnba on %s" % d, resolve(wnba, datetime.fromisoformat(d), 5), expected)
-
-    print("\nNBA spans the new year and reaches the June Finals")
-    nba = window_expr("nba_managers")
-    for d, expected in [
-        ("2026-09-30", "20251001-20260630"),   # still last season
-        ("2026-10-01", "20261001-20270630"),   # flips before the opener
-        ("2027-06-10", "20261001-20270630"),   # Finals still inside
-    ]:
-        check("nba on %s" % d, resolve(nba, datetime.fromisoformat(d), 10), expected)
+    print("NBA and WNBA fetch the window around today, not a season range")
+    for module in ("wnba_managers", "nba_managers"):
+        src = (plugin_dir / f"{module}.py").read_text()
+        check("%s builds no season range" % module, window_expr(module), None)
+        check("%s uses the lookback/lookahead window" % module,
+              "datestring, window = self._schedule_window()" in src, True)
 
     print("\nNCAA basketball uses ESPN's season number, keyed to the ending year")
     for module in ("ncaam_basketball_managers", "ncaaw_basketball_managers"):

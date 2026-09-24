@@ -86,7 +86,7 @@ class BaseMLBManager(Baseball):
 
     def _fetch_mlb_api_data(self, use_cache: bool = True) -> Optional[Dict]:
         """
-        Fetches the full season schedule for MLB using background threading.
+        Fetches the MLB games Recent and Upcoming can show, in the background.
         Returns cached data immediately if available, otherwise starts background fetch.
         """
         now = datetime.now(pytz.utc)
@@ -94,8 +94,9 @@ class BaseMLBManager(Baseball):
         # MLB season runs March to November; if before March, use previous year
         if now.month < 3:
             season_year = now.year - 1
-        datestring = f"{season_year}0301-{season_year}1101"
-        cache_key = f"{self.sport_key}_schedule_{season_year}"
+        # Only what Recent and Upcoming can show; see _schedule_window.
+        datestring, window = self._schedule_window()
+        cache_key = f"{self.sport_key}_schedule_{window}"
 
         # Check cache first
         if use_cache:
@@ -133,7 +134,7 @@ class BaseMLBManager(Baseball):
                 return partial_data
 
             self.logger.info(
-                f"Starting background fetch for {season_year} season schedule..."
+                f"Starting background fetch for {season_year} schedule window..."
             )
 
             def fetch_callback(result):

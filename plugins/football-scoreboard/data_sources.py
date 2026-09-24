@@ -10,7 +10,17 @@ from typing import Dict, List
 import requests
 import logging
 from datetime import datetime
-from football_espn_dates import ESPN_MAX_LIMIT, fetch_espn_scoreboard
+# Prefer core's ESPN date-range helper, which core keeps current (orjson
+# parsing, giving way to the Vegas render thread); fall back to the bundled
+# copy on cores that don't ship src.common.espn_dates yet.
+try:
+    from src.common.espn_dates import ESPN_MAX_LIMIT, fetch_espn_scoreboard
+except ModuleNotFoundError as exc:
+    # Fall back only when the CORE module is absent; an import failure from
+    # inside it should surface, not be masked.
+    if exc.name not in {"src", "src.common", "src.common.espn_dates"}:
+        raise
+    from football_espn_dates import ESPN_MAX_LIMIT, fetch_espn_scoreboard
 
 class DataSource(ABC):
     """Abstract base class for data sources."""
