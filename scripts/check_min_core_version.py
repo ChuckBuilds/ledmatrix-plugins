@@ -121,11 +121,19 @@ MODULE_FIRST_VERSION = {
     # on core main, in no tagged release yet. When the next release is
     # tagged, set each None entry here to that tag -- the test's
     # tag-verification section insists on it once the tag is in its list.
+    "src.common.bdf_font": None,  # core #627
     "src.common.espn_dates": None,  # core #591
+    "src.common.json_body": None,  # core #633
     "src.common.sports_helpers": None,  # core #583
     "src.core_config_keys": None,  # core #589
+    "src.deprecation": None,  # core #610
+    "src.device_location": None,  # core #617
+    "src.font_usage": None,  # core #619
     "src.matrix_support": None,  # core #595
     "src.pi5_matrix_support": None,  # core #586
+    "src.plugin_system.plugin_dirs": None,  # core #623
+    "src.plugin_system.repo_urls": None,  # core #635
+    "src.redaction": None,  # core #614
 }
 
 #: Releases whose ``src/__init__.py`` ``__version__`` lags their tag. The
