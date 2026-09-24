@@ -38,6 +38,12 @@
       "notes": "The Now Batting / Now Pitching card is on by default for MLB and NCAA Baseball, and its settings are in the main web UI form instead of under Advanced. Each card now stays up for 4 seconds: dwell_seconds used to be split between the batter and the pitcher, so with both on each card flashed for only 2 seconds. It is now per card -- the batter gets 4 seconds, then the pitcher gets 4 of its own. The cards come round every 30 seconds (was 25), matching the default live_game_duration, so each live game gets one pass of the cards (8 seconds) and then 22 seconds of scoreboard. Shown in the web UI: Show Now Batting / Now Pitching (Display Options), and Style, Show Batter Card, Show Pitcher Card, Seconds Per Card, Show Every (Seconds) and Favorite Teams Only (Customization > Pitcher / Batter Player Card). A board whose saved config already has show_pitcher_batter set to false keeps it off."
     },
     {
+      "version": "1.47.1",
+      "released": "2026-09-24",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "The Recent and Upcoming screens for MLB and NCAA baseball now fetch and cache only the games they can show -- the schedule_lookback_days / schedule_lookahead_days window around today, 14 days back and 7 ahead by default -- instead of the whole season. They never displayed anything outside that window, but the whole season was up to 53MB of JSON for MLB, and every refresh parsed all of it with the display frozen: measured on a Pi 4, 0.6 to 2.3 seconds of stalled scrolling each time. Nothing on screen changes. The old season cache files are no longer written and the core's cache cleanup removes them. Uses LEDMatrix core's ESPN date-range helper (src/common/espn_dates.py) whenever the core ships one, and its bundled copy only on older cores, so a core fix to how ESPN is fetched reaches this plugin without a plugin release. On current cores that means ESPN responses are parsed with orjson, which is quicker and holds up the scrolling display for less time; the bundled copy is brought back in step with core's as well."
+    },
+    {
       "version": "1.47.0",
       "released": "2026-09-22",
       "ledmatrix_min_version": "3.4.0",
