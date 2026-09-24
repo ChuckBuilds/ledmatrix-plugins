@@ -130,6 +130,31 @@
           "description": "Draw the start time on upcoming cards.",
           "default": true
         },
+        "recent_show_date": {
+          "type": "boolean",
+          "title": "Show Date (Recent Cards)",
+          "description": "Draw the date a finished game was played on the scroll and Vegas cards. Off by default because these cards have never drawn one and there is no spare row on a short panel - see Recent Date Position for where it goes. Written in the Date Format chosen above.",
+          "default": false
+        },
+        "recent_date_position": {
+          "type": "string",
+          "title": "Recent Date Position",
+          "enum": [
+            "auto",
+            "own_row",
+            "top_line"
+          ],
+          "description": "Where the recent card's date goes. \"Own row\" puts it in the clear strip between the FINAL line and the score, which needs a tall enough panel. \"Top line\" spends the FINAL line on the date instead - no loss on a card that is already showing a final score, and the only option that fits a 32px panel. \"Auto\" uses its own row where one fits and the top line where it does not.",
+          "default": "auto",
+          "x-advanced": true,
+          "x-options": {
+            "labels": {
+              "auto": "Auto (own row where it fits)",
+              "own_row": "Own row, above the score",
+              "top_line": "Top line, in place of FINAL"
+            }
+          }
+        },
         "switch_show_date": {
           "type": "boolean",
           "title": "Show Date (Full-Screen)",
@@ -140,6 +165,12 @@
           "type": "boolean",
           "title": "Show Time (Full-Screen)",
           "description": "Draw the start time on the full-screen (switch mode) upcoming scoreboard. Show Time above now applies only to the scroll and Vegas cards. Before this release it also hid the full-screen time, so a config that turned it off shows the time here again until this switch is turned off.",
+          "default": true
+        },
+        "switch_recent_show_date": {
+          "type": "boolean",
+          "title": "Show Date (Full-Screen Recent)",
+          "description": "Draw the date along the bottom of the full-screen (switch mode) recent scoreboard. That screen has always drawn it and there was no way to turn it off, so this defaults on and nothing changes until you clear it. It is now written in the Full-Screen Date Format below, which it used to ignore - a panel set to \"Sep 19\" showed \"9/19\" here.",
           "default": true
         },
         "swap_date_time": {
@@ -386,7 +417,8 @@
               "default": 0.01,
               "minimum": 0.001,
               "maximum": 0.1,
-              "description": "Kept so saved configs still load; ignored. Scrolling is paced to the panel's refresh rate, and scroll_speed sets how fast it moves."
+              "description": "Kept so saved configs still load; ignored. Scrolling is paced to the panel's refresh rate, and scroll_speed sets how fast it moves. HIDDEN: nothing reads it; scroll_speed is the only pacing control.",
+              "x-display": "hidden"
             },
             "gap_between_games": {
               "x-advanced": true,
@@ -590,9 +622,10 @@
                 "any",
                 "ranked"
               ],
-              "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots.",
+              "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots. HIDDEN for this league: no national poll exists for it (_league_has_rankings matches college/ncaa leagues only), so \"ranked\" lets every game through and the setting has one meaningful value. Still live under NCAA Baseball.",
               "default": "any",
-              "x-advanced": true
+              "x-advanced": true,
+              "x-display": "hidden"
             },
             "other_games_divisions": {
               "type": "array",
@@ -607,9 +640,10 @@
               },
               "uniqueItems": true,
               "default": [],
-              "description": "Which divisions the NON-favorite games may come from. At least one team has to be in a checked division, so with only FBS checked you still see a ranked FBS team hosting an FCS school, but two FCS teams playing each other are left out. Check FCS or Other to bring those in as well. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted.",
+              "description": "Which divisions the NON-favorite games may come from. At least one team has to be in a checked division, so with only FBS checked you still see a ranked FBS team hosting an FCS school, but two FCS teams playing each other are left out. Check FCS or Other to bring those in as well. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted. HIDDEN: inert in this plugin. ESPN publishes division rosters for college-football alone (sports.py _DIVISION_GROUPS_BY_LEAGUE), so for MLB, MiLB and NCAA Baseball the lookup returns nothing, the filter fails open, and no choice here can change what is shown. Kept declared so saved configs keep validating.",
               "x-widget": "checkbox-group",
-              "x-advanced": true
+              "x-advanced": true,
+              "x-display": "hidden"
             }
           }
         },
@@ -628,7 +662,8 @@
               "x-advanced": true,
               "type": "boolean",
               "default": false,
-              "description": "Show team rankings (when available)"
+              "description": "Show team rankings (when available) HIDDEN for this league: it has no poll, so the rank table is always empty -- and because a rank badge replaces the record outright, turning this on erased the records that Show Records was drawing. Still live under NCAA Baseball.",
+              "x-display": "hidden"
             },
             "show_odds": {
               "x-advanced": true,
@@ -889,6 +924,37 @@
           "maxItems": 120,
           "description": "List of favorite MiLB team abbreviations (e.g., DUR, SWB). Use 2-4 letter codes."
         },
+        "sport_ids": {
+          "type": "array",
+          "title": "MiLB Levels",
+          "description": "Which levels of the minors to fetch. MiLB comes from the MLB Stats API, which identifies each level by a number; leave all four checked for every affiliate, or narrow it to the level your club plays at so the board is not filled with games you do not follow. Clearing every box falls back to all four rather than showing nothing.",
+          "items": {
+            "type": "integer",
+            "enum": [
+              11,
+              12,
+              13,
+              14
+            ]
+          },
+          "uniqueItems": true,
+          "default": [
+            11,
+            12,
+            13,
+            14
+          ],
+          "x-widget": "checkbox-group",
+          "x-options": {
+            "labels": {
+              "11": "Triple-A",
+              "12": "Double-A",
+              "13": "High-A",
+              "14": "Single-A"
+            }
+          },
+          "x-advanced": true
+        },
         "exclude_teams": {
           "x-advanced": true,
           "type": "array",
@@ -971,7 +1037,8 @@
               "default": 0.01,
               "minimum": 0.001,
               "maximum": 0.1,
-              "description": "Kept so saved configs still load; ignored. Scrolling is paced to the panel's refresh rate, and scroll_speed sets how fast it moves."
+              "description": "Kept so saved configs still load; ignored. Scrolling is paced to the panel's refresh rate, and scroll_speed sets how fast it moves. HIDDEN: nothing reads it; scroll_speed is the only pacing control.",
+              "x-display": "hidden"
             },
             "gap_between_games": {
               "x-advanced": true,
@@ -1159,9 +1226,10 @@
                 "any",
                 "ranked"
               ],
-              "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots.",
+              "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots. HIDDEN for this league: no national poll exists for it (_league_has_rankings matches college/ncaa leagues only), so \"ranked\" lets every game through and the setting has one meaningful value. Still live under NCAA Baseball.",
               "default": "any",
-              "x-advanced": true
+              "x-advanced": true,
+              "x-display": "hidden"
             },
             "other_games_divisions": {
               "type": "array",
@@ -1176,9 +1244,10 @@
               },
               "uniqueItems": true,
               "default": [],
-              "description": "Which divisions the NON-favorite games may come from. At least one team has to be in a checked division, so with only FBS checked you still see a ranked FBS team hosting an FCS school, but two FCS teams playing each other are left out. Check FCS or Other to bring those in as well. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted.",
+              "description": "Which divisions the NON-favorite games may come from. At least one team has to be in a checked division, so with only FBS checked you still see a ranked FBS team hosting an FCS school, but two FCS teams playing each other are left out. Check FCS or Other to bring those in as well. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted. HIDDEN: inert in this plugin. ESPN publishes division rosters for college-football alone (sports.py _DIVISION_GROUPS_BY_LEAGUE), so for MLB, MiLB and NCAA Baseball the lookup returns nothing, the filter fails open, and no choice here can change what is shown. Kept declared so saved configs keep validating.",
               "x-widget": "checkbox-group",
-              "x-advanced": true
+              "x-advanced": true,
+              "x-display": "hidden"
             }
           }
         },
@@ -1197,7 +1266,8 @@
               "x-advanced": true,
               "type": "boolean",
               "default": false,
-              "description": "Show team rankings (when available)"
+              "description": "Show team rankings (when available) HIDDEN for this league: it has no poll, so the rank table is always empty -- and because a rank badge replaces the record outright, turning this on erased the records that Show Records was drawing. Still live under NCAA Baseball.",
+              "x-display": "hidden"
             },
             "show_odds": {
               "x-advanced": true,
@@ -1516,7 +1586,8 @@
               "default": 0.01,
               "minimum": 0.001,
               "maximum": 0.1,
-              "description": "Kept so saved configs still load; ignored. Scrolling is paced to the panel's refresh rate, and scroll_speed sets how fast it moves."
+              "description": "Kept so saved configs still load; ignored. Scrolling is paced to the panel's refresh rate, and scroll_speed sets how fast it moves. HIDDEN: nothing reads it; scroll_speed is the only pacing control.",
+              "x-display": "hidden"
             },
             "gap_between_games": {
               "x-advanced": true,
@@ -1720,9 +1791,10 @@
                 "any",
                 "ranked"
               ],
-              "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots.",
-              "default": "ranked",
-              "x-advanced": true
+              "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots. HIDDEN for this league too: measured 2026-09-24, baseball/college-baseball/rankings answers 404 while /scoreboard and /standings on the same slug answer 200 -- the endpoint does not exist, so there is no poll here either. This was left visible in the first pass on the assumption that a college league must have one. Its default moves from \"ranked\" to \"any\", which is what every board was already showing -- \"ranked\" with no poll lets every game through -- and stops the hourly standings request the old default triggered.",
+              "default": "any",
+              "x-advanced": true,
+              "x-display": "hidden"
             },
             "other_games_divisions": {
               "type": "array",
@@ -1737,9 +1809,10 @@
               },
               "uniqueItems": true,
               "default": [],
-              "description": "Which divisions the NON-favorite games may come from. At least one team has to be in a checked division, so with only FBS checked you still see a ranked FBS team hosting an FCS school, but two FCS teams playing each other are left out. Check FCS or Other to bring those in as well. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted.",
+              "description": "Which divisions the NON-favorite games may come from. At least one team has to be in a checked division, so with only FBS checked you still see a ranked FBS team hosting an FCS school, but two FCS teams playing each other are left out. Check FCS or Other to bring those in as well. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted. HIDDEN: inert in this plugin. ESPN publishes division rosters for college-football alone (sports.py _DIVISION_GROUPS_BY_LEAGUE), so for MLB, MiLB and NCAA Baseball the lookup returns nothing, the filter fails open, and no choice here can change what is shown. Kept declared so saved configs keep validating.",
               "x-widget": "checkbox-group",
-              "x-advanced": true
+              "x-advanced": true,
+              "x-display": "hidden"
             }
           }
         },
@@ -1758,7 +1831,8 @@
               "x-advanced": true,
               "type": "boolean",
               "default": false,
-              "description": "Show team rankings (rankings can be important in college baseball)"
+              "description": "Show team rankings (rankings can be important in college baseball) HIDDEN for this league too: measured 2026-09-24, baseball/college-baseball/rankings answers 404 while /scoreboard and /standings on the same slug answer 200 -- the endpoint does not exist, so there is no poll here either. This was left visible in the first pass on the assumption that a college league must have one. As on MLB and MiLB, the badge replaces the record, so turning it on erased the records Show Records was drawing.",
+              "x-display": "hidden"
             },
             "show_odds": {
               "x-advanced": true,
@@ -2297,7 +2371,7 @@
                 }
               },
               "additionalProperties": false,
-              "description": "Moves the win-loss record (or rank badge) in the bottom corners on the recent and upcoming scoreboards. Also accepted as records in a hand-edited config."
+              "description": "Moves the win-loss record (or rank badge) in the bottom corners on the recent and upcoming scoreboards. Also accepted as records in a hand-edited config. These are the only offsets the rank badge has: it is drawn in the record slot, so layout.ranking has no effect."
             },
             "ranking": {
               "type": "object",
@@ -2316,7 +2390,9 @@
                   "description": "Vertical offset from default position (default: 0)"
                 }
               },
-              "additionalProperties": false
+              "additionalProperties": false,
+              "x-display": "hidden",
+              "description": "HIDDEN: no reader. The rank badge shares the records row and is positioned by the Record offsets above."
             },
             "odds": {
               "type": "object",

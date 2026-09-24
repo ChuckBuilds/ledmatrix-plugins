@@ -789,12 +789,17 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
                     "other_rotation_interval_seconds", 1800
                 ),
                 "favorite_rotation_boost": game_limits.get("favorite_rotation_boost", 1),
-                # Only NCAA Baseball has a national poll; for MLB and MiLB
-                # "ranked" lets everything through, so their neutral fallback
-                # says so rather than borrowing college football's default.
+                # No baseball league has a poll, so none of them defaults to
+                # "ranked". NCAA Baseball used to, on the reasonable-sounding
+                # assumption that a college league must have one -- but
+                # baseball/college-baseball/rankings answers 404 (measured
+                # 2026-09-24; /scoreboard and /standings on the same slug
+                # answer 200, so the slug is right and the endpoint is simply
+                # absent). "ranked" there filtered nothing, because the check
+                # fails open on an empty table, and cost an hourly standings
+                # request for a poll that cannot arrive.
                 "other_games_min_quality": game_limits.get(
-                    "other_games_min_quality",
-                    "ranked" if league == "ncaa_baseball" else "any",
+                    "other_games_min_quality", "any",
                 ),
                 # Passed through raw. list() here defeated the coercion in
                 # sports.py twice over: a hand-edited "fcs" became
@@ -808,6 +813,13 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
                     "other_games_divisions", []
                 ),
                 "upcoming_games_to_show": game_limits.get("upcoming_games_to_show", 10),
+                # Which levels of the minors to fetch. BaseMiLBManager has read
+                # mode_config["sport_ids"] since it was written, but this
+                # translation is a whitelist and never carried the key, so the
+                # setting could not be reached from the config at all -- which
+                # is also why the schema had never declared it. Harmless on the
+                # other two leagues, whose managers do not look at it.
+                "sport_ids": league_config.get("sport_ids"),
                 "show_records": display_options.get("show_records", False),
                 "show_ranking": display_options.get("show_ranking", False),
                 "show_odds": display_options.get("show_odds", False),

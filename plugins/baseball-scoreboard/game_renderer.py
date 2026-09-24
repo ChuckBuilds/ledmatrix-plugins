@@ -668,8 +668,24 @@ class GameRenderer(SportsGameRendererMixin):
             # as the full-screen Recent scorebug in sports.py does.
             status_text = self._final_status_text(
                 draw, game, away_logo, away_x, home_logo, home_x)
-            status_width = draw.textlength(status_text, font=self.fonts['time'])
-            self._draw_text_with_outline(draw, status_text, ((self.display_width - status_width) // 2, 1), self.fonts['time'])
+
+            # The date of the finished game, when asked for. Placed before
+            # the top row is drawn because "top_line" spends that row on the
+            # date instead of the status.
+            date_text = self._recent_date_text(game)
+            date_row_top = self._recent_date_row_top()
+            placement = self._recent_date_placement(date_text, date_row_top)
+            top_text = date_text if placement == 'top_line' else status_text
+
+            top_font = (self.fonts.get('detail') or self.fonts['time']) \
+                if placement == 'top_line' else self.fonts['time']
+            top_width = draw.textlength(top_text, font=top_font)
+            top_x = (self.display_width - top_width) // 2
+            top_y = 1
+            if placement == 'top_line':
+                top_x += self._layout_offset('date', 'x_offset')
+                top_y += self._layout_offset('date', 'y_offset')
+            self._draw_text_with_outline(draw, top_text, (top_x, top_y), top_font)
 
             # Score (centered). White, matching the switch-mode recent scorebug
             # and every other scoreboard; this card used to be alone in drawing
@@ -683,6 +699,19 @@ class GameRenderer(SportsGameRendererMixin):
                                         self.fonts['score'],
                                         fill=self._recent_score_color(game, (255, 255, 255)))
 
+            # Date on its own row, in the clear strip between the status and
+            # the score. Drawn after the score so the two are measured from
+            # the same geometry, not before it by eye.
+            if placement == 'own_row':
+                date_font = self.fonts.get('detail') or self.fonts['time']
+                date_width = draw.textlength(date_text, font=date_font)
+                date_x = ((self.display_width - date_width) // 2
+                          + self._layout_offset('date', 'x_offset'))
+                self._draw_text_with_outline(
+                    draw, date_text,
+                    (date_x, date_row_top + self._layout_offset('date', 'y_offset')),
+                    date_font, fill=self._element_color('detail_text'))
+
             # Records at bottom corners
             self._draw_records(draw, game)
 
@@ -690,7 +719,7 @@ class GameRenderer(SportsGameRendererMixin):
             if game.get('odds'):
                 self._draw_dynamic_odds(
                     draw, game['odds'], game=game,
-                    top_span=self._top_row_span(draw, status_text, self.fonts['time']))
+                    top_span=self._top_row_span(draw, top_text, top_font))
 
             main_img = Image.alpha_composite(main_img, overlay)
             return main_img.convert("RGB")
@@ -698,6 +727,74 @@ class GameRenderer(SportsGameRendererMixin):
         except Exception:
             self.logger.exception("Error rendering recent game")
             return self._render_error_card("Display error")
+
+    # ------------------------------------------------------------------
+    # The date of a finished game on the scroll and Vegas card.
+    #
+    # The full-screen Recent scorebug has always drawn one along its bottom
+    # edge; this card never has, in this plugin or any sibling scoreboard.
+    # On a recent card the bottom edge is already the score, so the date has
+    # to go somewhere else, and where depends on the panel: a 64px card has
+    # a clear strip between the status row and the score, a 32px one does
+    # not. ``recent_date_position`` picks, and defaults to deciding by
+    # measurement rather than making the user work out which case they are
+    # in.
+    # ------------------------------------------------------------------
+
+    def _recent_date_text(self, game: Dict) -> str:
+        """The finished game's date, or "" when it is switched off.
+
+        Off by default: this card draws no date today, and a card is a
+        crowded place to start drawing one uninvited.
+
+        Formatted by ``date_format``, the shared scroll/Vegas key -- the
+        full-screen scorebug has its own ``switch_date_format``, and the two
+        disagree on their default for the reason that key documents.
+        """
+        if not self._scroll_card_option("recent_show_date", False):
+            return ""
+        return self._format_game_date(str(game.get('game_date') or ""), game)
+
+    def _recent_date_row_top(self) -> Optional[int]:
+        """Top y for a date row above the score, or None if it will not fit.
+
+        The card's middle column is clear -- the logos sit in the outer
+        slots -- so the only question is vertical: does a line of the detail
+        font fit between the bottom of the status row and the top of the
+        score. Measured from the fonts in use rather than assumed, because
+        both are configurable and a panel running a 10px status face has
+        less room than one running the 8px default.
+        """
+        date_font = self.fonts.get('detail') or self.fonts['time']
+        line_h = (getattr(date_font, 'size', 6) or 6) + 1
+        status_bottom = 1 + (getattr(self.fonts['time'], 'size', 8) or 8)
+        top = (self.display_height - 14) - line_h
+        return top if top >= status_bottom else None
+
+    def _recent_date_placement(self, date_text: str,
+                               date_row_top: Optional[int]) -> str:
+        """Where the date goes: 'own_row', 'top_line' or '' for nowhere.
+
+        'top_line' spends the status row on the date instead. That is a real
+        trade and not a loss: the card already shows a final score, so
+        "Final" is the least informative text on it, while the date is the
+        thing the score cannot tell you.
+
+        'auto' takes 'own_row' when one fits and falls back to 'top_line'
+        when it does not, so the same setting behaves sensibly on a 32px
+        panel and a 64px one. An explicit choice is honoured either way --
+        'own_row' on a panel with no room simply draws nothing rather than
+        overprinting the score, which is why this returns '' for that case.
+        """
+        if not date_text:
+            return ""
+        choice = str(self._scroll_card_option("recent_date_position", "auto")
+                     or "auto").lower()
+        if choice == "top_line":
+            return "top_line"
+        if choice == "own_row":
+            return "own_row" if date_row_top is not None else ""
+        return "own_row" if date_row_top is not None else "top_line"
 
     def _scorebug_element_shown(self, game: Dict, key: str) -> bool:
         """A live-card display_options toggle for this game's league.

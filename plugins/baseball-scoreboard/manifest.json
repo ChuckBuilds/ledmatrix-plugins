@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.47.1",
+  "version": "1.48.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.48.0",
+      "released": "2026-09-24",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Adds the date of a finished game to both Recent displays, and stops drawing five settings that cannot do anything in a baseball league. DATE: the full-screen (switch) Recent scoreboard has drawn a date along its bottom edge since it was written, but it drew game_date raw -- the '9/23' the extractor emits -- so it was the one date on the board that ignored every date-format setting: a panel set to 'Sep 19' read 'Sep 19' on its upcoming screen and '9/23' here. It now goes through switch_date_format like the upcoming screen, which changes nothing on an untouched panel because that key defaults to 'numeric' and numeric returns the raw text. New scroll_card.switch_recent_show_date (default true) is the off switch that did not exist. The scroll and Vegas Recent card drew no date at all -- five of the eight sibling scoreboards (afl, basketball, football, nrl, soccer) already do, so this closes a drift gap, though their placement does not transfer: they centre the recent score and leave the bottom edge free, while this card puts the score at display_height-14, so the free strip is above it. Baseball is now the only lineage where this date is both formatted and optional. scroll_card.recent_show_date (default false) adds one, formatted by the shared date_format, and scroll_card.recent_date_position picks where it goes -- its own row in the clear strip above the score, or the top line in place of 'Final', which is no loss on a card already showing a final score and the only option that fits a short panel. 'auto' measures the fonts and panel rather than assuming a size. Verified across the harness's eight sizes in all three positions; check_plugin's own mlb_recent render is empty (no finished game in its mock slate), so the card was rendered directly instead. HIDDEN SETTINGS: other_games_divisions (FBS/FCS/Other) was offered under MLB, MiLB and NCAA Baseball alike, but ESPN publishes division rosters for college-football only, so every baseball league resolves nothing and the filter fails open -- no combination of boxes could change one game. other_games_min_quality and show_ranking are hidden on all three leagues: no baseball league has a poll, NCAA Baseball included -- measured 2026-09-24, baseball/college-baseball/rankings answers 404 while /scoreboard and /standings on the same slug answer 200, and out of season is not the explanation because men's college lacrosse and hockey are equally out of season and both answer 200 with real poll blocks. show_ranking was worse than inert, because a rank badge replaces the record outright, so ticking it erased the records show_records was drawing. NCAA Baseball's other_games_min_quality also defaulted to 'ranked', which made every enabled rig fetch standings hourly for a poll that cannot arrive while failing open and filtering nothing; the default is now 'any' and _league_has_rankings is narrowed by one measured exception. scroll_delay has described itself as ignored for releases. customization.layout.ranking has no reader -- the rank badge is positioned by layout.record. All five stay declared, so saved configs keep validating. RANKINGS FETCH: _league_has_rankings gated the quality-filter call site but not the two show_ranking ones, so ticking Show Ranking on MLB or MiLB sent two requests an hour to endpoints that cannot answer. The gate moved to the top of _fetch_team_rankings, covering every caller. MILB LEVELS: milb.sport_ids (Triple-A / Double-A / High-A / Single-A) is now declared and forwarded. BaseMiLBManager has read it since it was written, but the config translation is a whitelist that never carried the key, so no value a user could write ever arrived."
+    },
     {
       "version": "1.47.1",
       "released": "2026-09-23",
@@ -520,7 +526,7 @@
     {
       "released": "2026-07-08",
       "version": "1.14.2",
-      "notes": "Shrink the Traditional Scoreboard's ball/strike/out circle indicators further (they were still a bit overpowering) and move the batting-team \u25b2/\u25bc indicator out of the At Bat column into the header row's empty team-column cell, right next to the inning numbers.",
+      "notes": "Shrink the Traditional Scoreboard's ball/strike/out circle indicators further (they were still a bit overpowering) and move the batting-team ▲/▼ indicator out of the At Bat column into the header row's empty team-column cell, right next to the inning numbers.",
       "ledmatrix_min": "2.0.0"
     },
     {
@@ -538,7 +544,7 @@
     {
       "released": "2026-07-07",
       "version": "1.13.1",
-      "notes": "Fix the Traditional Scoreboard's At Bat side panel (added in 1.13.0) clipping its ball/strike/out dots off the right edge of the display -- the fit check compared leftover space against a flush-left grid, but the grid is actually centered, so it was eating into the panel's reserved space from the left too. Also account for the Outs row's extra batting-team \u25b2/\u25bc arrow, which wasn't factored into the width check at all.",
+      "notes": "Fix the Traditional Scoreboard's At Bat side panel (added in 1.13.0) clipping its ball/strike/out dots off the right edge of the display -- the fit check compared leftover space against a flush-left grid, but the grid is actually centered, so it was eating into the panel's reserved space from the left too. Also account for the Outs row's extra batting-team ▲/▼ arrow, which wasn't factored into the width check at all.",
       "ledmatrix_min": "2.0.0"
     },
     {
@@ -580,7 +586,7 @@
     {
       "released": "2026-07-02",
       "version": "1.7.0",
-      "notes": "Add exclude_teams (hide specific teams from live rotation and recent/final scores \u2014 spoiler protection) and filtering.favorite_live_boost (tune how much more often your favorite's live game appears in rotation vs other live games) per league.",
+      "notes": "Add exclude_teams (hide specific teams from live rotation and recent/final scores — spoiler protection) and filtering.favorite_live_boost (tune how much more often your favorite's live game appears in rotation vs other live games) per league.",
       "ledmatrix_min": "2.0.0"
     },
     {
