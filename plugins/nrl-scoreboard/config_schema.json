@@ -279,8 +279,9 @@
           "default": 0.01,
           "minimum": 0.001,
           "maximum": 0.1,
-          "description": "Kept so saved configs still load; ignored. Scrolling is paced to the panel's refresh rate, and scroll_speed sets how fast it moves.",
-          "x-advanced": true
+          "description": "Kept so saved configs still load; ignored. Scrolling is paced to the panel's refresh rate, and scroll_speed sets how fast it moves. HIDDEN: nothing reads it; scroll_speed is the only pacing control.",
+          "x-advanced": true,
+          "x-display": "hidden"
         },
         "gap_between_games": {
           "type": "integer",
@@ -440,9 +441,10 @@
             "any",
             "ranked"
           ],
-          "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots.",
+          "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots. HIDDEN for this league: it publishes no poll (measured 2026-09-24 against ESPN's /rankings endpoint), so \"ranked\" has nothing to rank against, fails open, and lets every game through. Kept declared so saved configs keep validating.",
           "default": "ranked",
-          "x-advanced": true
+          "x-advanced": true,
+          "x-display": "hidden"
         },
         "other_games_divisions": {
           "type": "array",
@@ -459,9 +461,10 @@
           "default": [
             "fbs"
           ],
-          "description": "Which divisions the NON-favorite games may come from. At least one team has to be in a checked division, so with only FBS checked you still see a ranked FBS team hosting an FCS school, but two FCS teams playing each other are left out. Check FCS or Other to bring those in as well. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted.",
+          "description": "Which divisions the NON-favorite games may come from. At least one team has to be in a checked division, so with only FBS checked you still see a ranked FBS team hosting an FCS school, but two FCS teams playing each other are left out. Check FCS or Other to bring those in as well. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted. HIDDEN: inert in this plugin. ESPN publishes FBS/FCS group rosters for college-football alone (sports.py _DIVISION_GROUPS_BY_LEAGUE), so the lookup here returns nothing, the filter fails open, and no choice can change what is shown. Kept declared so saved configs keep validating.",
           "x-widget": "checkbox-group",
-          "x-advanced": true
+          "x-advanced": true,
+          "x-display": "hidden"
         }
       }
     },
@@ -494,8 +497,9 @@
         "show_ranking": {
           "type": "boolean",
           "default": false,
-          "description": "Show team rankings (when available)",
-          "x-advanced": true
+          "description": "Show team rankings (when available) HIDDEN for this league: it publishes no poll (measured 2026-09-24 against ESPN's /rankings endpoint), so the rank table is always empty. Worse than inert: the badge REPLACES the record, so turning this on erased the records Show Records was drawing. Kept declared so saved configs keep validating.",
+          "x-advanced": true,
+          "x-display": "hidden"
         },
         "show_odds": {
           "type": "boolean",
@@ -1501,9 +1505,10 @@
         "any",
         "ranked"
       ],
-      "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots.",
+      "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots. HIDDEN for this league: it publishes no poll (measured 2026-09-24 against ESPN's /rankings endpoint), so \"ranked\" has nothing to rank against, fails open, and lets every game through. Kept declared so saved configs keep validating.",
       "default": "ranked",
-      "x-advanced": true
+      "x-advanced": true,
+      "x-display": "hidden"
     },
     "other_games_divisions": {
       "type": "array",
@@ -1520,9 +1525,10 @@
       "default": [
         "fbs"
       ],
-      "description": "Which divisions the NON-favorite games may come from. At least one team has to be in a checked division, so with only FBS checked you still see a ranked FBS team hosting an FCS school, but two FCS teams playing each other are left out. Check FCS or Other to bring those in as well. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted.",
+      "description": "Which divisions the NON-favorite games may come from. At least one team has to be in a checked division, so with only FBS checked you still see a ranked FBS team hosting an FCS school, but two FCS teams playing each other are left out. Check FCS or Other to bring those in as well. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted. HIDDEN: inert in this plugin. ESPN publishes FBS/FCS group rosters for college-football alone (sports.py _DIVISION_GROUPS_BY_LEAGUE), so the lookup here returns nothing, the filter fails open, and no choice can change what is shown. Kept declared so saved configs keep validating.",
       "x-widget": "checkbox-group",
-      "x-advanced": true
+      "x-advanced": true,
+      "x-display": "hidden"
     }
   },
   "patternProperties": {

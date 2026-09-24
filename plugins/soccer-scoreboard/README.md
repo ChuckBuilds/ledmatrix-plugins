@@ -253,8 +253,8 @@ Per league, under `game_limits`:
 | `other_upcoming_games_to_show` | `1` | The same for scheduled matches. |
 | `other_rotation_interval_seconds` | `1800` | How often the non-favorite slice advances. `0` pins it. |
 | `favorite_rotation_boost` | `1` | Number of turns each favorite team's recent/upcoming game gets for every 1 turn other games get in switch mode. `1` shows each game once. |
-| `other_games_min_quality` | `ranked` | Which non-favorite matches qualify: `any` or `ranked`. |
-| `other_games_divisions` | `["fbs"]` | Which divisions non-favorite matches may come from. |
+| `other_games_min_quality` | `ranked` | Which non-favorite matches qualify: `any` or `ranked`. **Hidden from the config form since 2.32.0 (still declared).** |
+| `other_games_divisions` | `["fbs"]` | Which divisions non-favorite matches may come from. **Hidden from the config form since 2.32.0 (still declared).** |
 
 The same eight keys also exist at the **plugin level**. The web UI saves a value
 into both places, so each copy is only taken as a choice when it differs from its
@@ -339,7 +339,7 @@ Defaults are the schema defaults, which is what the web UI writes.
 | `game_display_duration` | 3–60 s | `15` | **Advanced.** Per-match time within a mode, where the league does not override it. |
 | `live_game_duration` | 10–120 s | `30` | **Advanced.** Per-match time for live matches, where the league does not override it. |
 | `show_records` | boolean | `false` | Draw win-draw-loss records in the bottom corners. |
-| `show_ranking` | boolean | `false` | Draw table positions where available. |
+| `show_ranking` | boolean | `false` | Draw table positions where available. **Hidden from the config form since 2.32.0 (still declared) — the empty rank badge also replaced the record.** |
 | `show_odds` | boolean | `true` | Draw betting odds. |
 | `show_favorite_teams_only` | boolean | `true` | Show only your clubs' matches, where the league does not override it. |
 | `recent_games_to_show` | 1–20 | `1` | Pool size for finished matches, where the league does not override it. |
@@ -348,8 +348,8 @@ Defaults are the schema defaults, which is what the web UI writes.
 | `other_upcoming_games_to_show` | 0–20 | `1` | **Advanced.** The same for scheduled matches. |
 | `other_rotation_interval_seconds` | 0–86400 s | `1800` | **Advanced.** How often the non-favorite slice advances. |
 | `favorite_rotation_boost` | 1–5 | `1` | **Advanced.** Number of turns each favorite team's recent/upcoming game gets for every 1 turn other games get in switch mode. `1` shows each game once. |
-| `other_games_min_quality` | `any` \| `ranked` | `ranked` | **Advanced.** Inert in soccer — see above. |
-| `other_games_divisions` | array | `["fbs"]` | **Advanced.** Inert in soccer — see above. |
+| `other_games_min_quality` | `any` \| `ranked` | `ranked` | **Advanced.** Inert in soccer — see above. **Hidden from the config form since 2.32.0 (still declared).** |
+| `other_games_divisions` | array | `["fbs"]` | **Advanced.** Inert in soccer — see above. **Hidden from the config form since 2.32.0 (still declared).** |
 | `update_interval_seconds` | 30–86400 s | `3600` | **Advanced.** Base data refresh cadence. |
 | `live_update_interval` | 10–300 s | `30` | **Advanced.** Refresh cadence while a match is live. |
 | `recent_update_interval` | 60–86400 s | `3600` | **Advanced.** Refresh cadence for finished matches. |
@@ -430,8 +430,8 @@ See [The selection settings](#the-selection-settings).
 | `<league>.game_limits.other_upcoming_games_to_show` | 0–20 | `1` |
 | `<league>.game_limits.other_rotation_interval_seconds` | 0–86400 s | `1800` |
 | `<league>.game_limits.favorite_rotation_boost` | 1–5 | `1` |
-| `<league>.game_limits.other_games_min_quality` | `any` \| `ranked` | `ranked` |
-| `<league>.game_limits.other_games_divisions` | array | `["fbs"]` |
+| `<league>.game_limits.other_games_min_quality` | `any` \| `ranked` | `ranked`. **Hidden from the config form since 2.32.0 (still declared).** |
+| `<league>.game_limits.other_games_divisions` | array | `["fbs"]`. **Hidden from the config form since 2.32.0 (still declared).** |
 
 ### Durations
 
@@ -481,7 +481,7 @@ high-FPS loop, and the confetti and the glow run smoothly.
 | Key | Type | Default |
 |---|---|---|
 | `<league>.display_options.show_records` | boolean | `false` |
-| `<league>.display_options.show_ranking` | boolean | `false` |
+| `<league>.display_options.show_ranking` | boolean | `false`. **Hidden from the config form since 2.32.0 (still declared) — the empty rank badge also replaced the record.** |
 | `<league>.display_options.show_odds` | boolean | `true` |
 
 > **A value changed here wins over the plugin-level key of the same name**,

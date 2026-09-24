@@ -1,5 +1,92 @@
 # Changelog
 
+## [1.48.0] - 2026-09-24
+
+### Added
+- **The date of a finished game, on both Recent displays.** The full-screen
+  (switch) Recent scoreboard has drawn one along its bottom edge since it was
+  written; the scroll and Vegas Recent card never has. Five of the eight
+  sibling scoreboards (afl, basketball, football, nrl, soccer) already draw one
+  on that card and baseball did not, so this closes a drift gap rather than
+  inventing a feature — though baseball cannot copy their placement, because
+  they centre the recent score vertically and leave the bottom edge free while
+  this card puts the score at `display_height - 14`. Here the free strip is
+  *above* the score. Baseball is now the only lineage where this date is both
+  formatted and optional; the other five draw it raw and unconditionally, the
+  same two problems fixed below for the full-screen screen.
+  - `scroll_card.recent_show_date` (default **false**) draws it on the scroll
+    and Vegas card, written in the `date_format` already chosen there.
+  - `scroll_card.recent_date_position` picks where. That card's bottom edge is
+    already the score, so the date needs somewhere else to go: **own row** in
+    the clear strip between the FINAL line and the score, or **top line** in
+    place of FINAL — no loss on a card that is already showing a final score,
+    and the only option that fits a short panel. **Auto** (the default)
+    measures the fonts and panel in use rather than assuming a size, so it
+    takes its own row where one fits and the top line where it does not. An
+    explicit "own row" on a panel with no room draws nothing rather than
+    overprinting the score.
+  - `scroll_card.switch_recent_show_date` (default **true**) is the off switch
+    the full-screen date never had.
+- **`milb.sport_ids`** — which levels of the minors to fetch (Triple-A,
+  Double-A, High-A, Single-A). `BaseMiLBManager` has read
+  `mode_config["sport_ids"]` since it was written, but `_adapt_config_for_manager`
+  is a whitelist and never carried the key, so no value a user could write ever
+  arrived — which is also why the schema had never declared it. Now forwarded,
+  declared, and coerced: an unset key, every box cleared, or an unusable value
+  falls back to all four levels, since a MiLB board with no levels selected
+  fetches nothing and reads as broken.
+
+### Fixed
+- **The full-screen Recent date ignored every date-format setting.** It drew
+  `game_date` raw — the `9/23` the extractor emits — so a panel configured for
+  "Sep 19" read "Sep 19" on its upcoming screen and "9/23" here. It now goes
+  through `switch_date_format`, the same key the full-screen upcoming screen
+  uses. Nothing changes on an untouched panel: that key defaults to `numeric`,
+  and numeric returns the raw text.
+- **The rankings fetch ran on leagues that have no poll.**
+  `_league_has_rankings` gated the quality-filter call site but not the two
+  `show_ranking` ones, so ticking it on MLB or MiLB sent two requests an hour
+  to endpoints that cannot carry a poll. The gate moved to the top of
+  `_fetch_team_rankings`, where it covers every caller and cannot drift apart
+  again. (A previous fix had already cut this from ~450 requests a day to 24 by
+  caching the empty result; this takes it to zero.)
+- **NCAA Baseball fetched standings hourly by default, for a poll that 404s.**
+  Its `other_games_min_quality` defaulted to `ranked`, which the shared
+  `"college" in league` heuristic treats as fetchable — but college baseball is
+  the one college league with no `/rankings` endpoint. The filter failed open,
+  so it was not even filtering. The default is now `any`, which is what every
+  board was already showing, and `_league_has_rankings` is narrowed by one
+  measured exception (`_NO_POLL_COLLEGE_LEAGUES`) so a config saved with the
+  old default stops requesting too. Reversible: if ESPN publishes one, drop the
+  league from that set.
+
+### Changed
+- **Five settings that cannot do anything here are no longer drawn.** Each
+  stays declared — `"x-display": "hidden"` — so a config that already carries
+  it keeps validating and nothing is lost on upgrade.
+  - `<league>.game_limits.other_games_divisions` (FBS / FCS / Other), under
+    **all three** leagues. ESPN publishes division rosters for
+    `college-football` alone (`_DIVISION_GROUPS_BY_LEAGUE`), so every baseball
+    league resolves nothing, the filter fails open, and no combination of boxes
+    could change one game on the board.
+  - `<league>.game_limits.other_games_min_quality` — "ranked" needs a poll, and
+    **no baseball league has one**, so it lets everything through and the
+    setting has exactly one meaningful value. NCAA Baseball included: measured
+    2026-09-24, `baseball/college-baseball/rankings` answers **404** while
+    `/scoreboard` and `/standings` on the same slug answer 200, so the slug is
+    right and the endpoint is simply absent. Out of season is not the
+    explanation — men's college lacrosse and hockey are equally out of season
+    and both answer 200 with real poll blocks.
+  - `<league>.display_options.show_ranking` — worse than inert. The rank table
+    is always empty, and a rank badge *replaces* the record outright, so
+    ticking it silently erased the records `show_records` was drawing.
+  - `<league>.scroll_settings.scroll_delay` — its own description has read
+    "Kept so saved configs still load; ignored" for releases; it was still an
+    editable number. `scroll_speed` is the only pacing control.
+  - `customization.layout.ranking` — no reader anywhere. The rank badge shares
+    the records row and is positioned by `customization.layout.record`, whose
+    description now says so.
+
 ## [1.47.1] - 2026-09-23
 
 ### Fixed

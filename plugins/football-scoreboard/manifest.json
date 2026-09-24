@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "3.11.0",
+  "version": "3.12.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "3.12.0",
+      "released": "2026-09-24",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Stops drawing 5 config control(s) that cannot affect anything, and stops the rankings fetch on leagues that publish no poll. Hidden: 1 FBS/FCS division checkbox group(s) -- ESPN publishes those rosters for college football alone, so the lookup resolves nothing and the filter fails open; 1 other_games_min_quality control(s) on league(s) with no poll, where 'ranked' lets every game through; 1 show_ranking toggle(s) on league(s) with no poll -- worse than inert, because the rank badge replaces the record, so ticking it erased the records show_records was drawing; 2 scroll_delay field(s), whose own description has read 'ignored' for releases. Each stays declared with \"x-display\": \"hidden\", so a config already carrying it keeps validating and nothing is lost on upgrade; only the form control goes away. Left visible where the league really does publish a poll: ncaa_fb. FETCH: _league_has_rankings gated the quality-filter call site but not the show_ranking ones, so ticking Show Ranking on a pollless league sent two requests an hour to endpoints that cannot answer. The gate moved to the top of _fetch_team_rankings, covering every caller at once. Which leagues have a poll is measured, not assumed: ESPN's /rankings endpoint was probed for every scoreboard league on 2026-09-24. college-football, men's and women's college basketball, college hockey and college lacrosse answer 200 with real poll blocks; every professional league answers 404, and so does college baseball."
+    },
     {
       "version": "3.11.0",
       "released": "2026-09-20",
@@ -562,7 +568,7 @@
       "released": "2026-07-10",
       "version": "2.8.0",
       "ledmatrix_min_version": "2.0.0",
-      "notes": "Adaptive layout (beta, opt-in): set layout_mode: \"adaptive\" to scale fonts/logos/regions to any panel size. Default stays \"classic\" \u2014 rendering is unchanged unless you opt in; switch back to classic in config to revert without reinstalling. Adaptive mode also applies customization.layout x/y offsets in scroll mode (classic scroll never did). User-configured fonts win over adaptive sizing."
+      "notes": "Adaptive layout (beta, opt-in): set layout_mode: \"adaptive\" to scale fonts/logos/regions to any panel size. Default stays \"classic\" — rendering is unchanged unless you opt in; switch back to classic in config to revert without reinstalling. Adaptive mode also applies customization.layout x/y offsets in scroll mode (classic scroll never did). User-configured fonts win over adaptive sizing."
     },
     {
       "released": "2026-07-08",

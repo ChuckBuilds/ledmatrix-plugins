@@ -1,7 +1,7 @@
 {
   "id": "ufc-scoreboard",
   "name": "UFC Scoreboard",
-  "version": "1.14.2",
+  "version": "1.15.0",
   "author": "LegoGuy1000",
   "contributors": [
     {
@@ -32,6 +32,12 @@
   "default_duration": 15,
   "config_schema": "config_schema.json",
   "versions": [
+    {
+      "version": "1.15.0",
+      "released": "2026-09-24",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Stops drawing 1 config control(s) that cannot affect anything, and stops the rankings fetch on leagues that publish no poll. Hidden: 1 scroll_delay field(s), whose own description has read 'ignored' for releases. Each stays declared with \"x-display\": \"hidden\", so a config already carrying it keeps validating and nothing is lost on upgrade; only the form control goes away. FETCH (no behaviour change here): _fetch_team_rankings now consults _league_has_rankings at the top, covering every caller instead of one. This plugin's leagues are unaffected -- ported because sports.py is copied, not shared, and a fix living in eight of nine copies is how the last one gets missed. Which leagues have a poll is measured, not assumed: ESPN's /rankings endpoint was probed for every scoreboard league on 2026-09-24. college-football, men's and women's college basketball, college hockey and college lacrosse answer 200 with real poll blocks; every professional league answers 404, and so does college baseball."
+    },
     {
       "version": "1.14.2",
       "released": "2026-09-20",

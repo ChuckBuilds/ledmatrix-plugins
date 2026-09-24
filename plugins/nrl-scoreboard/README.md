@@ -110,8 +110,8 @@ Which of three regimes you are in depends on `favorite_teams` and
 | `other_recent_games_to_show` | `1` | The same, for finished games. |
 | `other_rotation_interval_seconds` | `1800` | How often the non-favorite slice advances. `0` pins it. |
 | `favorite_rotation_boost` | `1` | Number of turns each favorite team's recent/upcoming game gets for every 1 turn other games get in switch mode. `1` shows each game once. |
-| `other_games_min_quality` | `ranked` | Which non-favorite games qualify. Inert here — see below. |
-| `other_games_divisions` | `["fbs"]` | Which divisions non-favorite games may come from. Inert here — see below. |
+| `other_games_min_quality` | `ranked` | Which non-favorite games qualify. Inert here — see below. **Hidden from the config form since 1.29.0 (still declared).** |
+| `other_games_divisions` | `["fbs"]` | Which divisions non-favorite games may come from. Inert here — see below. **Hidden from the config form since 1.29.0 (still declared).** |
 
 All eight are declared **twice**: at the root of the config and inside
 `game_limits`. Both render in the web UI and both are read. **`game_limits` wins
@@ -253,10 +253,10 @@ number.
 | Key | Type | Default | What it does |
 |---|---|---|---|
 | `show_records` | boolean | `false` | Draw each club's win-loss record in the bottom corners. |
-| `show_ranking` | boolean | `false` | Draw ladder positions where ESPN publishes them. |
+| `show_ranking` | boolean | `false` | Draw ladder positions where ESPN publishes them. **Hidden from the config form since 1.29.0 (still declared) — the empty rank badge also replaced the record.** |
 | `show_odds` | boolean | `true` | Draw betting odds. |
 | `display_options.show_records` | boolean | `false` | **Advanced.** Nested copy; see below for which one wins. |
-| `display_options.show_ranking` | boolean | `false` | **Advanced.** Nested copy. |
+| `display_options.show_ranking` | boolean | `false` | **Advanced.** Nested copy. **Hidden from the config form since 1.29.0 (still declared) — the empty rank badge also replaced the record.** |
 | `display_options.show_odds` | boolean | `true` | **Advanced.** Nested copy. |
 
 The web UI saves a value into both copies, so a copy still at its default says
@@ -361,7 +361,7 @@ Nudge any element in pixels. All default to `0`, all live under
 | Key | Type | Default |
 |---|---|---|
 | `scroll_settings.scroll_speed` | 0.01–200 px/s | `1.0` |
-| `scroll_settings.scroll_delay` | 0.001–0.1 s | `0.01` (ignored; kept so saved configs still load -- scrolling is paced to the panel refresh) |
+| `scroll_settings.scroll_delay` | 0.001–0.1 s | `0.01` (ignored; kept so saved configs still load -- scrolling is paced to the panel refresh). **Hidden from the config form since 1.29.0 (still declared).** |
 | `scroll_settings.gap_between_games` | 8–128 px | `24` |
 | `scroll_settings.show_league_separators` | boolean | `true` |
 | `scroll_settings.dynamic_duration` | boolean | `true` |

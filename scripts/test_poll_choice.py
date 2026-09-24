@@ -241,7 +241,20 @@ def _check_sports(core):
         probe_cls = type("PollProbe", (base,), stubs)
         probe = probe_cls.__new__(probe_cls)
         probe.logger = logging.getLogger("poll_choice_probe")
-        probe.league = pid
+        # A league name that reaches the fetch. This was the plugin id, which
+        # is not a league name any lineage ever sees -- harmless while nothing
+        # consulted it, but baseball-scoreboard now gates _fetch_team_rankings
+        # on _league_has_rankings, so a probe claiming to be in league
+        # "baseball-scoreboard" short-circuits and the badge table comes back
+        # empty. The point of this check is the poll path, so name a league
+        # that has one.
+        #
+        # Deliberately synthetic rather than a real slug: "college-baseball"
+        # would also fail, because baseball narrows the shared heuristic with
+        # a measured exception for it (ESPN publishes no /rankings there).
+        # "ncaa-poll-probe" satisfies the heuristic in every lineage and can
+        # never collide with a real league's exception list.
+        probe.league = "ncaa-poll-probe"
         probe.sport = pid
         _check_chooser(pid, probe._choose_poll)
 
