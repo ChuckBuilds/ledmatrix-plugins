@@ -716,6 +716,12 @@
               "type": "boolean",
               "default": false,
               "description": "Show a card naming the player who scored, in the seconds after a goal. The card carries their headshot, shirt number and position, their season line (G/A/PTS/+-), the assists, and their age, height and hometown. INDEPENDENT of the goal celebration below: you can have the card without the takeover, the takeover without the card, both, or neither. With both on the card follows the takeover as a second beat; with the takeover off the card appears as soon as the goal is seen. NHL only -- college hockey's ESPN summary carries no play data, so there is no scorer to read. Costs one extra ESPN request per goal for the play, and one for the scorer's bio the first time that player is seen. Configure look, timing and scope under Customization > Goal Scorer Card."
+            },
+            "show_game_activity": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": false,
+              "description": "Pop up a one-line banner along the bottom of the live scorebug for the plays between goals -- \"A. Matthews SHOT ON GOAL!  2nd 12:34\" -- fading out after a few seconds, so a scoreless game still shows the action. Only on panels 64 pixels tall or more; smaller panels have no row to spare. NHL only -- college hockey's ESPN summary carries no play data. Costs one extra ESPN request per live update for the game on screen. Choose which plays and the timing under Customization > Game Activity Pop-ups."
             }
           }
         },
@@ -2707,6 +2713,133 @@
             }
           },
           "additionalProperties": false
+        },
+        "game_activity": {
+          "type": "object",
+          "title": "Game Activity Pop-ups",
+          "description": "A banner along the bottom of the live scorebug for each new shot, penalty or other play you pick below: the player, what happened and the game clock, in the acting team's colour. It holds, then fades back to the scorebug. Enable it per league via NHL > Display Options > Show Game Activity (NHL only, panels 64 pixels tall or more). Goals are left to the goal celebration and the goal-scorer card. New plays are read once per live update, so a pop-up can trail the play by up to that interval -- the clock on it says when it happened. A burst of plays keeps the newest three.",
+          "properties": {
+            "event_types": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "shots",
+                  "penalties",
+                  "hits",
+                  "blocked_shots",
+                  "missed_shots"
+                ]
+              },
+              "uniqueItems": true,
+              "default": [
+                "shots",
+                "penalties"
+              ],
+              "description": "Which plays pop up. shots = shots on goal; hits, blocked_shots and missed_shots are far more frequent and will crowd out the rest.",
+              "x-widget": "checkbox-group",
+              "x-options": {
+                "labels": {
+                  "shots": "Shots on goal",
+                  "penalties": "Penalties",
+                  "hits": "Hits",
+                  "blocked_shots": "Blocked shots",
+                  "missed_shots": "Missed shots"
+                }
+              }
+            },
+            "dwell_seconds": {
+              "x-advanced": true,
+              "type": "number",
+              "default": 6,
+              "minimum": 2,
+              "maximum": 20,
+              "description": "How many seconds each pop-up stays on screen, including its fade."
+            },
+            "fade_seconds": {
+              "x-advanced": true,
+              "type": "number",
+              "default": 3,
+              "minimum": 0,
+              "maximum": 10,
+              "description": "How many of those seconds the pop-up spends fading back to the scorebug. 0 disappears at once. A switch-mode board is drawn once a second, so the fade steps down once a second."
+            },
+            "use_team_colors": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": true,
+              "description": "Colour what happened (SHOT ON GOAL!, PENALTY, ...) in the acting team's ESPN colour instead of the flat accent_color"
+            },
+            "accent_color": {
+              "x-advanced": true,
+              "type": "array",
+              "x-widget": "color-picker",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "default": [
+                255,
+                200,
+                0
+              ],
+              "minItems": 3,
+              "maxItems": 3,
+              "description": "Colour [R, G, B] for what happened when use_team_colors is off or the team's colour is unavailable"
+            },
+            "text_color": {
+              "x-advanced": true,
+              "type": "array",
+              "x-widget": "color-picker",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "default": [
+                255,
+                255,
+                255
+              ],
+              "minItems": 3,
+              "maxItems": 3,
+              "description": "Colour [R, G, B] for the player's name"
+            },
+            "time_color": {
+              "x-advanced": true,
+              "type": "array",
+              "x-widget": "color-picker",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "default": [
+                170,
+                170,
+                170
+              ],
+              "minItems": 3,
+              "maxItems": 3,
+              "description": "Colour [R, G, B] for the period and game clock"
+            }
+          },
+          "x-propertyOrder": [
+            "event_types",
+            "dwell_seconds",
+            "fade_seconds",
+            "use_team_colors",
+            "accent_color",
+            "text_color",
+            "time_color"
+          ],
+          "patternProperties": {
+            "^event_types_data$": {
+              "$comment": "Written by the web UI's checkbox-group widget for event_types, not a setting."
+            }
+          },
+          "additionalProperties": false
         }
       },
       "x-propertyOrder": [
@@ -2719,7 +2852,8 @@
         "rank_text",
         "layout",
         "favorite_result_colors",
-        "goal_scorer"
+        "goal_scorer",
+        "game_activity"
       ],
       "additionalProperties": false
     },

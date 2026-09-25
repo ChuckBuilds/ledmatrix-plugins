@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.34.0] - 2026-09-24
+## [1.35.0] - 2026-09-25
 
 ### Changed
 - **8 config control(s) that cannot affect anything are no longer drawn.**
@@ -38,6 +38,47 @@
   teams), men's and women's college basketball (50 each), college hockey (4/5)
   and college lacrosse (28/33) answer 200 with real poll blocks; every
   professional league answers 404, and so does college baseball.
+
+## [1.34.0] - 2026-09-25
+
+### Added
+- **Game-activity pop-ups for the NHL, off by default.** Turn on
+  `nhl.display_options.show_game_activity` and the plays between goals pop
+  up along the bottom of the live scorebug, then fade out. For example,
+  `A. Matthews SHOT ON GOAL!  2nd 12:34`. This gives a scoreless game
+  something to show. The name is white, what happened is in the acting
+  team's colour, and the game clock is grey. Only on panels 64 rows or
+  taller, where the bottom row can be spared.
+- **New options under `customization.game_activity`:** `event_types`
+  (`shots` and `penalties` by default; `hits`, `blocked_shots` and
+  `missed_shots` can be added), `dwell_seconds`, `fade_seconds`,
+  `use_team_colors`, and the `accent_color` / `text_color` / `time_color`
+  pickers.
+
+### Notes
+- The plays come from the ESPN per-game summary that the goal-scorer card
+  reads. It is polled off the render thread for the game on screen, once per
+  live update. That is one extra request per live update, and only while the
+  switch-mode live scorebug is on screen: none while another plugin is
+  showing, in scroll mode, or on a panel under 64 rows. A pop-up can trail its
+  play by up to that interval; its clock says when the play happened. The first poll of a game only notes
+  where the feed is up to, so joining mid-period does not replay its shots.
+- The text fades to black rather than cross-fading into the scorebug. A
+  cross-fade shows the shot line through the pop-up.
+
+## [1.33.2] - 2026-09-24
+
+### Fixed
+- **The goal-scorer card is drawn in the scoring team's colour.** The card
+  read `home_team_color` / `away_team_color` off the game, but nothing in the
+  hockey plugin ever set them, so on a real game `use_team_colors` had no
+  effect: the banner, team row and headshot frame always fell back to the
+  amber `accent_color`. The colours now come from ESPN's `team.color` /
+  `team.alternateColor` on the scoreboard feed. They are clamped into the
+  same brightness band baseball-scoreboard uses, so a navy is lifted and a
+  white is toned down. A team whose primary is black, or has no hue, is
+  drawn in its alternate colour rather than grey. A team with no usable
+  colour keeps the configured `accent_color`.
 
 ## [1.33.0] - 2026-09-23
 
