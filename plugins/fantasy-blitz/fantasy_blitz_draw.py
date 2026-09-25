@@ -15,7 +15,7 @@ LED rules this module encodes, from the user story's art direction:
 
 import math
 import random
-from typing import Dict, Iterable, Optional, Sequence, Tuple
+from typing import Dict, Optional, Sequence, Tuple
 
 from PIL import Image, ImageChops, ImageDraw
 
@@ -371,7 +371,8 @@ def rays(img: Image.Image, x: int, y: int, w: int, h: int, cx: float, cy: float,
 def confetti(img: Image.Image, x: int, y: int, w: int, h: int, t: float,
              colors: Sequence[RGB], count: int = 18, seed: int = 11) -> None:
     """Falling 1-2 px flakes. At most 22: more reads as dead pixels (football's rule)."""
-    rng = random.Random(seed)
+    # Seeded so a frame is reproducible (goldens); decoration, not security.
+    rng = random.Random(seed)  # nosec B311
     count = min(22, count)
     for i in range(count):
         x0 = rng.random() * w

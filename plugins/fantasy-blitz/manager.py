@@ -330,8 +330,10 @@ class FantasyBlitzPlugin(BasePlugin):
         if tz_name and pytz is not None:
             try:
                 return datetime.now(pytz.timezone(tz_name))
-            except Exception:  # noqa: BLE001
-                pass
+            except Exception:  # noqa: BLE001 - an unknown zone name
+                if getattr(self, "_warned_timezone", None) != tz_name:
+                    self._warned_timezone = tz_name
+                    self.logger.warning("Unknown timezone '%s'; using the system clock", tz_name)
         return datetime.now()
 
     # big plays ---------------------------------------------------------
@@ -815,8 +817,8 @@ class FantasyBlitzPlugin(BasePlugin):
         self._frame_cache.clear()
         try:
             self.data.session.close()
-        except Exception:  # noqa: BLE001
-            pass
+        except Exception as exc:  # noqa: BLE001 - closing is best effort
+            self.logger.debug("Could not close the HTTP session: %s", exc)
         super().cleanup()
 
 

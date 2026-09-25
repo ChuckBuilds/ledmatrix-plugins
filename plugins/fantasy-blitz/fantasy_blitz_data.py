@@ -24,7 +24,7 @@ namespaced with the plugin id.
 import json
 import logging
 import time
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, List, Optional
 
 import requests
 
