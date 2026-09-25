@@ -167,7 +167,7 @@ class GameRenderer(SportsGameRendererMixin):
             fonts["score"] = self._load_custom_font(score_config, default_size=10, element_key='score_text')
             fonts["time"] = self._load_custom_font(period_config, default_size=8, element_key='period_text')
             fonts["team"] = self._load_custom_font(team_config, default_size=8, element_key='team_name')
-            fonts["status"] = self._load_custom_font(status_config, default_size=6, element_key='status_text', default_font='PressStart2P-Regular.ttf')
+            fonts["status"] = self._load_custom_font(status_config, default_size=6, element_key='status_text', default_font='4x6-font.ttf')
             fonts["detail"] = self._load_custom_font(detail_config, default_size=6, default_font='4x6-font.ttf', element_key='detail_text')
             fonts["odds"] = self._load_custom_font(odds_config, default_size=6, default_font='4x6-font.ttf', element_key='odds_text')
             fonts["rank"] = self._load_custom_font(rank_config, default_size=10, element_key='rank_text')
@@ -620,7 +620,9 @@ class GameRenderer(SportsGameRendererMixin):
             if has_count_data:
                 cluster_bottom += 2 + 6  # count spacing + detail font height
             bottom_limit = self.display_height - font_height - 2
-            score_y = max(0, min(cluster_bottom + 1, bottom_limit))
+            # A few pixels of air under the bases/count cluster, so the score
+            # reads as its own line rather than part of the count.
+            score_y = max(0, min(cluster_bottom + 7, bottom_limit))
             self._draw_text_with_outline(draw, score_text, (int(score_x), score_y), score_font)
 
             # Odds

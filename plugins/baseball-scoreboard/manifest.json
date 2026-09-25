@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.48.0",
+  "version": "1.48.1",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.48.1",
+      "released": "2026-09-25",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Game cards now default to the same fonts and sizes as the football and hockey scoreboards, so the three look alike in Vegas mode and in rotation: status text is 4x6 at 6 (it was Press Start), and the defaults name the font files rather than aliases for the same fonts. A font or size you have set yourself is unchanged. The live game card's score also sits a few pixels lower, with a gap below the bases and count."
+    },
     {
       "version": "1.48.0",
       "released": "2026-09-24",
