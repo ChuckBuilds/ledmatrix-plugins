@@ -1,6 +1,8 @@
 import logging
+import re
 import time
-from typing import Any, Dict, List, Optional, Tuple
+from collections import deque
+from typing import Any, Deque, Dict, List, Optional, Tuple
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -122,6 +124,88 @@ def _latest_goal(plays: Optional[List[Dict]], team_id: Optional[str] = None) -> 
     return None
 
 
+# Game-activity pop-ups: the non-scoring plays worth a line on the scorebug.
+# Each kind is recognised by the words of the play's ESPN type (text and
+# abbreviation, split on anything but letters). Checked in order, so the
+# specific shot kinds claim "Blocked Shot" and "Missed Shot" before the plain
+# shot kind can.
+_ACTIVITY_KIND_WORDS: Tuple[Tuple[str, str], ...] = (
+    ("penalties", "penalty"),
+    ("blocked_shots", "blocked"),
+    ("missed_shots", "missed"),
+    ("shots", "shot"),
+    ("hits", "hit"),
+)
+DEFAULT_ACTIVITY_KINDS: Tuple[str, ...] = ("shots", "penalties")
+#: What each kind says on the panel, longest first: the banner takes the
+#: longest spelling that fits beside the player's name and the game clock.
+_ACTIVITY_LABELS: Dict[str, Tuple[str, ...]] = {
+    "shots": ("SHOT ON GOAL!", "SHOT!"),
+    "penalties": ("PENALTY", "PEN"),
+    "hits": ("HIT!",),
+    "blocked_shots": ("BLOCKED SHOT", "BLOCKED"),
+    "missed_shots": ("MISSED SHOT", "MISSED"),
+}
+#: Panels shorter than this have no row to spare: the scorebug's bottom row
+#: is the shot line, and on a 32- or 48-row panel the score sits right on it.
+_ACTIVITY_MIN_HEIGHT = 64
+#: At most this many pop-ups wait their turn. A poll can bring a burst; the
+#: newest are kept, since each one's clock says how old it is anyway.
+_ACTIVITY_QUEUE_MAX = 3
+#: Floor on the summary poll, whatever live_update_interval says.
+_ACTIVITY_MIN_POLL_SECONDS = 10
+
+
+def _activity_kind(play_type: Optional[Dict]) -> Optional[str]:
+    """The pop-up kind for an ESPN play type, or None if it has none."""
+    if not isinstance(play_type, dict):
+        return None
+    words = set(re.split(
+        r"[^a-z]+",
+        f"{play_type.get('text') or ''} {play_type.get('abbreviation') or ''}".lower(),
+    ))
+    for kind, word in _ACTIVITY_KIND_WORDS:
+        if word in words:
+            return kind
+    return None
+
+
+def _extract_activity(play: Dict) -> Optional[Dict]:
+    """One ESPN play as a pop-up: its kind, who, which team and when.
+
+    None for goals, which the celebration and the goal card already own, and
+    for play types the pop-ups do not cover. The first named participant is
+    the one the line is about -- the shooter, or the player penalised."""
+    if not isinstance(play, dict) or play.get("scoringPlay"):
+        return None
+    kind = _activity_kind(play.get("type"))
+    if kind is None:
+        return None
+    names: List[str] = []
+    for participant in play.get("participants") or []:
+        athlete = (participant or {}).get("athlete") or {}
+        full = athlete.get("displayName") or ""
+        short = athlete.get("shortName") or full
+        if short:
+            # "A. Matthews", then "Matthews" for a panel too narrow for both.
+            names = [short]
+            last = full.split()[-1] if full else ""
+            if last and last != short:
+                names.append(last)
+            break
+    period = play.get("period") or {}
+    return {
+        "play_id": str(play.get("id", "") or ""),
+        "kind": kind,
+        "names": names,
+        "team_id": str((play.get("team") or {}).get("id", "") or ""),
+        "period": period.get("displayValue") or (
+            str(period.get("number")) if period.get("number") else ""
+        ),
+        "clock": (play.get("clock") or {}).get("displayValue") or "",
+    }
+
+
 # ESPN's team.color / team.alternateColor are brand hex values, chosen for
 # jerseys rather than a black LED panel: a navy primary all but vanishes there
 # and a white one glares. Clamped into the same legible band
@@ -217,6 +301,9 @@ class Hockey(SportsCore):
         # Opt-in: the card costs one extra ESPN summary request per goal, and
         # a second for the scorer's bio. Off unless asked for.
         self.show_goal_scorer = self.mode_config.get("show_goal_scorer", False)
+        # Opt-in for the same reason: one summary request per live poll of
+        # the game on screen, for the pop-ups of its shots and penalties.
+        self.show_game_activity = self.mode_config.get("show_game_activity", False)
 
     def _extract_game_details(self, game_event: Dict) -> Optional[Dict]:
         """Extract relevant game details from ESPN Hockey API response."""
@@ -356,6 +443,17 @@ class HockeyLive(Hockey, SportsLive):
         self._goal_card_baselines: Dict[str, Dict[str, int]] = {}
         self._player_bio_cache: Dict[str, Optional[Dict]] = {}
         self._headshot_mgr = None  # lazily created on the render path
+        # Game-activity pop-ups. The poll thread appends to the queue and the
+        # render thread pops from it; deque's append/popleft are atomic, so
+        # neither side needs a lock. _activity_seen holds each game's newest
+        # play id, so a poll only pops up what happened since the last one.
+        self._activity_queue: Deque[Dict] = deque(maxlen=_ACTIVITY_QUEUE_MAX)
+        self._activity_popup: Optional[Dict] = None
+        self._activity_seen: Dict[str, Optional[str]] = {}
+        self._activity_last_poll = 0.0
+        self._activity_inflight = False
+        # Last time the live scorebug was drawn where a pop-up could show.
+        self._activity_drawn_at = 0.0
 
     # ------------------------------------------------------------------
     # Goal-scorer card
@@ -373,10 +471,12 @@ class HockeyLive(Hockey, SportsLive):
 
     def update(self):
         super().update()
-        if self.test_mode or not self.show_goal_scorer:
-            return
-        if not self.espn_summary_sport_league:
+        if self.test_mode or not self.espn_summary_sport_league:
             return  # college hockey: no play data to read a scorer from
+        if getattr(self, "show_game_activity", False):
+            self._poll_game_activity()
+        if not self.show_goal_scorer:
+            return
 
         cfg = self._goal_card_cfg()
         favorites_only = cfg.get("favorites_only", False)
@@ -909,6 +1009,227 @@ class HockeyLive(Hockey, SportsLive):
         except Exception as e:
             self.logger.error(f"Error drawing goal-scorer card: {e}", exc_info=True)
 
+    # ------------------------------------------------------------------
+    # Game-activity pop-ups
+    #
+    # A one-line banner along the bottom of the live scorebug for the plays
+    # between goals -- "A. Matthews SHOT ON GOAL!  2nd 12:34" -- so a 0-0 game
+    # still shows something happening. The scoreboard feed carries none of
+    # this, so it is the same per-game summary the goal card reads, polled
+    # for the game on screen at the live update interval. Fetched in update()
+    # and off-thread; the render path only reads the queue.
+    # ------------------------------------------------------------------
+
+    def _activity_cfg(self) -> Dict:
+        return self.config.get("customization", {}).get("game_activity", {})
+
+    def _poll_game_activity(self) -> None:
+        """Start a summary fetch for the game on screen, at most once per
+        live update interval and never two at once.
+
+        Only while the scorebug is actually being drawn where a pop-up can
+        show. update() runs whether or not hockey is on screen, and in scroll
+        mode or on a panel too short for the banner it would be spending a
+        request per interval on pop-ups nobody sees. Pausing also forgets
+        where each feed was up to, so coming back starts from a fresh baseline
+        rather than replaying the gap as a run of stale pop-ups."""
+        game = self.current_game
+        if not game or not game.get("id") or self._activity_inflight:
+            return
+        now = time.time()
+        interval = max(_ACTIVITY_MIN_POLL_SECONDS, float(self.update_interval or 0))
+        if now - self._activity_drawn_at > 2 * interval:
+            self._activity_seen.clear()
+            self._activity_queue.clear()
+            return
+        if now - self._activity_last_poll < interval:
+            return
+        self._activity_last_poll = now
+        self._activity_inflight = True
+        live_ids = {str(g.get("id")) for g in (self.live_games or [])}
+        for game_id in [k for k in self._activity_seen if k not in live_ids]:
+            self._activity_seen.pop(game_id, None)
+
+        import threading
+
+        try:
+            threading.Thread(
+                target=self._fetch_game_activity, args=(dict(game),), daemon=True
+            ).start()
+        except RuntimeError as e:  # no thread, no fetch: never a stuck flag
+            self._activity_inflight = False
+            self.logger.debug(f"Game activity poll not started: {e}")
+
+    def _fetch_game_activity(self, game: Dict) -> None:
+        try:
+            sport, league = self.espn_summary_sport_league
+            summary = self.data_source.fetch_game_summary(sport, league, str(game["id"]))
+            if summary:
+                self._queue_game_activity(game, summary.get("plays") or [])
+        except Exception as e:
+            self.logger.debug(f"Game activity poll failed for {game.get('id')}: {e}")
+        finally:
+            self._activity_inflight = False
+
+    def _queue_game_activity(self, game: Dict, plays: List[Dict]) -> None:
+        """Queue a pop-up for each wanted play since this game's last poll.
+
+        The first poll of a game only records where the feed is up to: a game
+        joined mid-period would otherwise replay every shot it has had. So
+        does a poll that cannot find the last play it saw, since ESPN has
+        rewritten the feed and there is no telling which plays are new."""
+        game_id = str(game.get("id"))
+        ids = [str(p.get("id", "") or "") for p in plays]
+        last = self._activity_seen.get(game_id)
+        self._activity_seen[game_id] = ids[-1] if ids and ids[-1] else None
+        if not last or last not in ids:
+            return
+        wanted = self._activity_cfg().get("event_types", DEFAULT_ACTIVITY_KINDS)
+        wanted = {wanted} if isinstance(wanted, str) else set(wanted or ())
+        sides = {str(game.get("home_id")): "home", str(game.get("away_id")): "away"}
+        for play in plays[ids.index(last) + 1:]:
+            activity = _extract_activity(play)
+            if activity is None or activity["kind"] not in wanted:
+                continue
+            side = sides.get(activity["team_id"])
+            activity["game_id"] = game_id
+            activity["team_abbr"] = game.get(f"{side}_abbr", "") if side else ""
+            activity["team_color"] = game.get(f"{side}_team_color") if side else None
+            self._activity_queue.append(activity)
+
+    def _current_activity_popup(self, game: Dict, dwell: float) -> Optional[Dict]:
+        """The pop-up to draw over this game right now, if any. Pop-ups queued
+        for a game the rotation has left are dropped rather than shown late
+        over a different game."""
+        game_id = str(game.get("id") or "")
+        now = time.time()
+        popup = self._activity_popup
+        if popup and popup["game_id"] == game_id and now - popup["shown_at"] < dwell:
+            return popup
+        self._activity_popup = None
+        while self._activity_queue:
+            candidate = self._activity_queue.popleft()
+            if candidate["game_id"] == game_id:
+                self._activity_popup = dict(candidate, shown_at=now)
+                return self._activity_popup
+        return None
+
+    def _layout_activity_banner(self, draw, popup: Dict, cfg: Dict,
+                                width: int, max_row_h: int) -> Optional[Dict]:
+        """Font and text for the banner: the fullest wording that fits the
+        width, in the largest ladder font whose row fits max_row_h.
+
+        Wording beats size -- a smaller font is tried before any word is
+        given up. Then, in order: the initial ("A. Matthews" -> "Matthews"),
+        the long label, the period ordinal, and last of all the clock, which
+        is what says how long ago the play was. A line too wide even then is
+        cut rather than drawn past the edge."""
+        names = popup.get("names") or [popup.get("team_abbr") or ""]
+        labels = _ACTIVITY_LABELS.get(popup["kind"], ("",))
+        stamps = [s for s in (
+            f"{popup.get('period', '')} {popup.get('clock', '')}".strip(),
+            popup.get("clock", ""),
+        ) if s]
+        stamps = list(dict.fromkeys(stamps)) + [""]
+        avail = width - 2
+        fonts = []
+        for font_name in self._GOAL_CARD_FONT_LADDER:
+            font = self._load_custom_font_from_element_config(
+                {"font": font_name}, default_size=8
+            )
+            box = font.getbbox("Ay")
+            row_h = box[3] - box[1] + 2
+            if row_h <= max_row_h:
+                fonts.append((font, row_h))
+        if not fonts:
+            return None
+        for stamp in stamps:
+            for label in labels:
+                for name in names:
+                    for font, row_h in fonts:
+                        text = f"{name} {label}".strip()
+                        gap = draw.textlength("  ", font=font) if stamp else 0
+                        total = (draw.textlength(text, font=font) + gap
+                                 + draw.textlength(stamp, font=font))
+                        if total <= avail:
+                            return {"font": font, "row_h": row_h, "name": name,
+                                    "label": label, "stamp": stamp}
+        font, row_h = fonts[-1]
+        return {"font": font, "row_h": row_h,
+                "name": self._truncate_to_width(draw, names[-1], font, avail),
+                "label": "", "stamp": ""}
+
+    def _with_activity_popup(self, img: Image.Image, game: Dict) -> Image.Image:
+        """The scorebug with the current pop-up banner over its bottom row.
+
+        Each frame is a finished screen: the banner holds at full strength,
+        then its text dims to black over fade_seconds, and the scorebug's own
+        bottom row returns once it has gone. The text fades rather than the
+        banner cross-fading into the scorebug, because a cross-fade shows the
+        shot line through the pop-up -- two lines of text on top of each
+        other. A ramp, so at the 1 FPS a switch-mode board is drawn at it
+        steps down evenly instead of flickering."""
+        if not getattr(self, "show_game_activity", False):
+            return img
+        width, height = img.size
+        if height < _ACTIVITY_MIN_HEIGHT:
+            return img
+        self._activity_drawn_at = time.time()
+        try:
+            cfg = self._activity_cfg()
+            dwell = max(1.0, float(cfg.get("dwell_seconds", 6)))
+            fade = min(max(0.0, float(cfg.get("fade_seconds", 3))), dwell)
+            popup = self._current_activity_popup(game, dwell)
+            if popup is None:
+                return img
+            left = dwell - (time.time() - popup["shown_at"])
+            strength = 1.0 if fade <= 0 or left >= fade else max(0.0, left / fade)
+            if strength <= 0:
+                return img
+
+            # Drawn on a copy, so a failure part-way leaves the scorebug whole.
+            out = img.copy()
+            draw = ImageDraw.Draw(out)
+            layout = popup.get("_layout")
+            if layout is None or layout.get("size") != (width, height):
+                layout = self._layout_activity_banner(
+                    draw, popup, cfg, width, max(9, height // 6)
+                )
+                if layout is None:
+                    return img
+                layout["size"] = (width, height)
+                popup["_layout"] = layout
+
+            font, row_h = layout["font"], layout["row_h"]
+            text_color = tuple(cfg.get("text_color", [255, 255, 255]))
+            time_color = tuple(cfg.get("time_color", [170, 170, 170]))
+            label_color = tuple(cfg.get("accent_color", [255, 200, 0]))
+            if cfg.get("use_team_colors", True) and popup.get("team_color"):
+                label_color = tuple(popup["team_color"])
+
+            def faded(color):
+                return tuple(int(round(c * strength)) for c in color[:3])
+
+            name = layout["name"]
+            label = f" {layout['label']}" if layout["label"] else ""
+            stamp = f"  {layout['stamp']}" if layout["stamp"] else ""
+            segments = [(name, text_color), (label, label_color), (stamp, time_color)]
+
+            top = height - row_h
+            draw.rectangle([0, top, width - 1, height - 1], fill=(0, 0, 0))
+            draw.fontmode = "1"
+            total = sum(draw.textlength(t, font=font) for t, _ in segments)
+            x = max(1, int((width - total) // 2))
+            y = top + 1 - font.getbbox("Ay")[1]
+            for text, color in segments:
+                if text:
+                    draw.text((x, y), text, font=font, fill=faded(color))
+                    x += int(round(draw.textlength(text, font=font)))
+            return out
+        except Exception as e:
+            self.logger.debug(f"Game activity pop-up skipped: {e}")
+            return img
+
     def _draw_scorebug_layout(self, game: Dict, force_clear: bool = False) -> None:
         """Draw the detailed scorebug layout for a live Hockey game."""
         if self._maybe_draw_goal_card(game, force_clear):
@@ -1136,6 +1457,7 @@ class HockeyLive(Hockey, SportsLive):
             # Composite the text overlay onto the main image
             main_img = Image.alpha_composite(main_img, overlay)
             main_img = main_img.convert("RGB")  # Convert for display
+            main_img = self._with_activity_popup(main_img, game)
 
             # Display the final image
             self.display_manager.image.paste(main_img, (0, 0))
