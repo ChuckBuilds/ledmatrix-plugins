@@ -150,6 +150,10 @@ def _make_live(width, height):
     live._maybe_draw_at_bat_info_screen = lambda game, force_clear=False: False
     live._maybe_draw_player_card_screen = lambda game, force_clear=False: False
     live._maybe_draw_traditional_scoreboard_screen = lambda game, force_clear=False: False
+    # The commentary line is off by default and has its own tests; stubbing it
+    # here keeps this about the classic scorebug's own element toggles.
+    live._maybe_draw_game_activity_screen = lambda game, force_clear=False: False
+    live.show_game_activity = False
     live.logger, live._errors = _logger("toggle_probe_live_%dx%d" % (width, height))
     return live
 

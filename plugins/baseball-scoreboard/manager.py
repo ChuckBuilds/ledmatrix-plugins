@@ -835,6 +835,13 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "show_last_play": display_options.get("show_last_play", False),
                 "show_player_card": display_options.get("show_player_card", False),
                 "show_traditional_scoreboard": display_options.get("show_traditional_scoreboard", False),
+                # The pitch-by-pitch commentary line. Needs the ESPN game
+                # summary, which MiLB has no endpoint for -- BaseballLive
+                # guards on espn_summary_sport_league, so forwarding it for
+                # every league here is harmless and keeps this translation
+                # league-agnostic like the rest of the block.
+                "show_game_activity": display_options.get("show_game_activity", False),
+                "game_activity": league_config.get("game_activity", {}),
                 "update_interval_seconds": league_config.get(
                     "update_interval_seconds", 300
                 ),

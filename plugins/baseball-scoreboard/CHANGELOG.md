@@ -1,5 +1,68 @@
 # Changelog
 
+## [1.50.0] - 2026-09-25
+
+### Added
+- **Game Activity — a running pitch-by-pitch commentary line for live games**,
+  for the innings where the score gives the board nothing to say. A 1-0
+  pitchers' duel leaves the scoreboard static for twenty minutes at a time;
+  the count is the only thing moving, and ESPN has plenty to say about it.
+
+  What it says, in three classes you can mute independently:
+
+  | | example |
+  |---|---|
+  | pitches | `J. Walker Foul 0-1` |
+  | at-bat outcomes | `Burleson homered to right center (395 feet).` |
+  | baserunning | `Cruz stole third.` |
+
+  Outcomes and baserunning are ESPN's own sentences, which already name the
+  player. Only pitches are phrased here, because ESPN does not write prose for
+  them.
+
+  **Where it goes** — `game_activity.position`:
+  - **inline** draws it along the bottom of the live scoreboard, in the gap
+    between the two corner scores that share that row;
+  - **screen** gives it its own card in the rotation;
+  - **auto** (default) measures the panel — every 64px-tall board gets the
+    inline line, every 32px one takes the screen.
+
+  The choice is made per **panel**, not per line. Deciding per line would flip
+  a 128px board between inline and its own screen from one pitch to the next —
+  a mode change every few seconds, which reads as a fault. An explicit
+  `inline` with no room draws nothing rather than printing over the count.
+
+  **How much it says** — `game_activity.detail`: `terse` (`Foul`), `normal`
+  (`J. Walker Foul 0-1`), or `rich`, which adds the pitch on a second line
+  (`97 mph Four-seam FB`).
+
+  **Cadence.** The scheduler polls at `live_update_interval` and the summary
+  refresh is gated by `play_by_play_update_interval` — roughly 30s, while a
+  pitch takes about 25s. So a poll returns *several* new plays at once.
+  Showing only the newest would waste them and leave the board static between
+  fetches, which is the opposite of the point; instead they are queued and
+  walked through locally at `dwell_seconds` (4 by default). A slow inning
+  reads as running commentary without asking ESPN for anything more — which
+  matters, since the odds manager already accounts for the bulk of this
+  plugin's ESPN traffic.
+
+  Off by default, and **not offered for MiLB**: that league comes from the MLB
+  Stats API and has no ESPN summary endpoint. `BaseballLive` already guards on
+  `espn_summary_sport_league`, so it is inert there rather than broken.
+
+### Fixed
+Both found by reading real ESPN responses rather than assuming the shape:
+
+- **Baserunning would have stuttered.** ESPN files a steal twice — once typed
+  (`stolen-base`, "Cruz stole third.") and again as a `play-result` carrying
+  the identical sentence. On a board showing one line at a time that reads as
+  a repeat, so a play-result matching the entry before it is dropped.
+- **The count could show a plate appearance that had already ended.** ESPN
+  keeps counting past it, so a called third strike reports `strikes: 3` and a
+  walk `balls: 4`. "1-3" is not a count any scoreboard has ever shown; the
+  count is now blank on the pitch that ended the at-bat, where the outcome
+  line says what happened anyway.
+
 ## [1.49.0] - 2026-09-24
 
 ### Added

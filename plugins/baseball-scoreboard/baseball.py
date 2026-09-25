@@ -6,6 +6,7 @@ with baseball-specific logic for innings, outs, bases, strikes, balls, etc.
 """
 
 import logging
+import re
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -42,6 +43,225 @@ PLAY_RESULT_KEYWORDS: List[Tuple[str, str]] = [
     ("doubled", "2B"),
     ("singled", "1B"),
 ]
+
+# ---------------------------------------------------------------------------
+# Game activity: the pitch-by-pitch feed behind show_game_activity.
+#
+# ESPN's summary carries far more than the at-bat outcomes _map_play_type
+# knows about -- a six-game sample on 2026-09-24 held 3,310 plays across 38
+# distinct `type.type` values, of which balls, fouls and called/swinging
+# strikes alone were 1,377. That is exactly the material a 1-0 pitchers' duel
+# is made of, and none of it reached the board.
+#
+# Two shapes matter, and they are NOT interchangeable:
+#
+#   * A PITCH carries the count and the radar gun but useless prose -- a home
+#     run's own play reads "Pitch 1 : Ball In Play".
+#   * The following `play-result` carries the readable sentence, already
+#     naming the batter: "Burleson homered to right center (395 feet)."
+#
+# They share an atBatId, so an at-bat-ending pitch is folded into its
+# play-result rather than announced twice. Everything here is derived from
+# ESPN's own text where ESPN writes a sentence, and synthesised only for
+# pitches, where it does not.
+# ---------------------------------------------------------------------------
+
+#: Pitches. These are announced in their own right -- they are the heartbeat.
+ACTIVITY_PITCH_TYPES: frozenset = frozenset({
+    "ball", "foul-ball", "strike-looking", "strike-swinging", "bunted-foul",
+    "automatic-ball", "automatic-strike",
+})
+
+#: At-bat outcomes. Not announced directly: the pitch's prose is "Ball In
+#: Play", so the entry is emitted when its `play-result` sentence arrives.
+ACTIVITY_OUTCOME_TYPES: frozenset = frozenset({
+    "single", "double", "triple", "home-run", "ground-rule-double",
+    "bunt-single", "ground-out", "fly-out", "line-out", "pop-out", "foul-out",
+    "sacrifice", "sacrifice-fly", "hit-by-pitch",
+    "batters-fielders-choice", "batter-reached-on-error",
+})
+
+#: Baserunning and oddities. ESPN writes real sentences for these ("Cruz stole
+#: third."), so they are passed through verbatim.
+ACTIVITY_BASERUNNING_TYPES: frozenset = frozenset({
+    "stolen-base", "caught-stealing", "wild-pitch", "pick-off",
+    "pickoff-caught-stealing", "error-on-a-dropped-foul-ball", "balk",
+    "passed-ball", "other-advance", "defensive-indiff",
+})
+
+#: Scaffolding with nothing to say. "end-batterpitcher" literally carries the
+#: string "None".
+ACTIVITY_SKIP_TYPES: frozenset = frozenset({
+    "start-inning", "end-inning", "start-batterpitcher", "end-batterpitcher",
+})
+
+#: "Pitch 4 : Strike 3 Swinging" -> "Strike 3 Swinging". The prefix is a
+#: within-at-bat pitch counter the board already shows as balls/strikes.
+_PITCH_PREFIX = re.compile(r"^\s*Pitch\s+\d+\s*:\s*", re.IGNORECASE)
+
+#: ESPN suffixes replay outcomes onto the type ("strike-looking---overturned",
+#: "ball---confirmed"). The stem is the play; the suffix is worth saying out
+#: loud, because a reversed call is the most interesting thing in an inning.
+_TYPE_QUALIFIERS: Dict[str, str] = {
+    "overturned": "overturned",
+    "confirmed": "confirmed",
+    "ibb": "intentional",
+    "pitch-timer-violation": "pitch clock",
+}
+
+
+def _split_play_type(raw: Optional[str]) -> Tuple[str, str]:
+    """('strike-looking---overturned') -> ('strike-looking', 'overturned')."""
+    text = (raw or "").strip().lower()
+    if "---" not in text:
+        return text, ""
+    stem, _, tail = text.partition("---")
+    return stem, _TYPE_QUALIFIERS.get(tail, tail.replace("-", " "))
+
+
+def _activity_participant(play: Dict, role: str,
+                          names: Optional[Dict[str, str]]) -> str:
+    """The named participant in one role ('batter', 'pitcher'), or ''."""
+    for part in play.get("participants") or []:
+        if (part.get("type") or "") != role:
+            continue
+        athlete_id = str(((part.get("athlete") or {}).get("id")) or "")
+        if athlete_id:
+            return (names or {}).get(athlete_id, "")
+    return ""
+
+
+def _activity_count(play: Dict) -> str:
+    """The balls-strikes count AFTER this pitch, as "1-2", or ''.
+
+    Blank once the pitch ended the at-bat. ESPN keeps counting past the
+    plate appearance, so a called third strike reports strikes=3 and a walk
+    balls=4 -- printing "1-3" on the board is not a count any scoreboard has
+    ever shown, and the outcome line that follows says what happened anyway.
+    """
+    counts = play.get("resultCount") or {}
+    balls, strikes = counts.get("balls"), counts.get("strikes")
+    if balls is None or strikes is None:
+        return ""
+    if balls >= 4 or strikes >= 3:
+        return ""
+    return f"{balls}-{strikes}"
+
+
+#: "Strike 1 Foul" is how ESPN writes it and not how anyone says it.
+_PITCH_PHRASE_REWRITES: Tuple[Tuple[re.Pattern, str], ...] = (
+    (re.compile(r"^Strike\s+\d+\s+Bunted\s+Foul$", re.I), "Bunted foul"),
+    (re.compile(r"^Strike\s+\d+\s+Foul$", re.I), "Foul"),
+    (re.compile(r"^Strike\s+(\d+)\s+Looking$", re.I), r"Strike \1 looking"),
+    (re.compile(r"^Strike\s+(\d+)\s+Swinging$", re.I), r"Strike \1 swinging"),
+)
+
+
+def _activity_pitch_phrase(text: str, stem: str) -> str:
+    """Fan-readable text for one pitch."""
+    phrase = _PITCH_PREFIX.sub("", text).strip()
+    if not phrase:
+        return stem.replace("-", " ").capitalize()
+    for pattern, replacement in _PITCH_PHRASE_REWRITES:
+        if pattern.match(phrase):
+            return pattern.sub(replacement, phrase)
+    return phrase
+
+
+def _activity_pitch_detail(play: Dict) -> str:
+    """"95 mph Four-seam FB", or as much of it as ESPN gave us."""
+    velocity = play.get("pitchVelocity")
+    kind = (play.get("pitchType") or {}).get("text") or ""
+    bits = []
+    if isinstance(velocity, (int, float)) and velocity > 0:
+        bits.append(f"{int(velocity)} mph")
+    if kind:
+        bits.append(str(kind))
+    return " ".join(bits)
+
+
+def _extract_activity_feed(
+    plays: Optional[List[Dict]],
+    names: Optional[Dict[str, str]] = None,
+    limit: int = 12,
+) -> List[Dict[str, Any]]:
+    """The most recent plays worth announcing, oldest first.
+
+    Returns at most `limit` entries shaped
+    ``{"id", "kind", "phrase", "player", "count", "detail", "scoring"}``.
+    `kind` is "pitch", "outcome" or "baserunning", which is what the
+    per-class config toggles filter on.
+
+    Walks forward, not backward, because an outcome needs the pitch that
+    preceded it: the pitch holds the velocity, the play-result holds the
+    prose. Only the tail is kept, so the cost is bounded by `limit` rather
+    than by the 560-play game.
+    """
+    feed: List[Dict[str, Any]] = []
+    pending_pitch: Dict[str, Dict] = {}   # atBatId -> the at-bat-ending pitch
+
+    for play in plays or []:
+        stem, qualifier = _split_play_type((play.get("type") or {}).get("type"))
+        if not stem or stem in ACTIVITY_SKIP_TYPES:
+            continue
+        at_bat = str(play.get("atBatId") or "")
+        text = str(play.get("text") or "").strip()
+
+        if stem in ACTIVITY_OUTCOME_TYPES:
+            # Hold it: its own text is "Ball In Play". The sentence is next.
+            pending_pitch[at_bat] = play
+            continue
+
+        if stem == "play-result":
+            pitch = pending_pitch.pop(at_bat, None)
+            if not text or text.lower() == "none":
+                continue
+            # ESPN files a baserunning event twice -- once typed
+            # ("stolen-base", "Cruz stole third.") and again as a
+            # play-result carrying the identical sentence. Announcing both
+            # reads as a stutter on a board that shows one line at a time.
+            if feed and feed[-1]["phrase"].strip().lower() == text.lower():
+                continue
+            feed.append({
+                "id": str(play.get("id") or play.get("sequenceNumber") or ""),
+                "kind": "outcome",
+                "phrase": text,
+                "player": "",           # the sentence already names them
+                "count": "",
+                "detail": _activity_pitch_detail(pitch) if pitch else "",
+                "scoring": bool(play.get("scoringPlay")),
+            })
+        elif stem in ACTIVITY_PITCH_TYPES:
+            phrase = _activity_pitch_phrase(text, stem)
+            if qualifier:
+                phrase = f"{phrase} ({qualifier})"
+            feed.append({
+                "id": str(play.get("id") or play.get("sequenceNumber") or ""),
+                "kind": "pitch",
+                "phrase": phrase,
+                "player": _activity_participant(play, "batter", names),
+                "count": _activity_count(play),
+                "detail": _activity_pitch_detail(play),
+                "scoring": False,
+            })
+        elif stem in ACTIVITY_BASERUNNING_TYPES:
+            if not text or text.lower() == "none":
+                continue
+            feed.append({
+                "id": str(play.get("id") or play.get("sequenceNumber") or ""),
+                "kind": "baserunning",
+                "phrase": text,
+                "player": "",
+                "count": "",
+                "detail": "",
+                "scoring": bool(play.get("scoringPlay")),
+            })
+        # Anything unrecognised is skipped rather than guessed at: a wrong
+        # caption on the board is worse than a quiet one.
+
+        if len(feed) > limit * 4:
+            del feed[:-limit]
+    return feed[-limit:]
 
 
 def _build_athlete_name_map(rosters: Optional[List[Dict]]) -> Dict[str, str]:
@@ -1049,6 +1269,30 @@ class BaseballLive(Baseball, SportsLive):
         self.play_by_play_update_interval = self.mode_config.get(
             "play_by_play_update_interval", 20
         )
+        # Game activity: the pitch-by-pitch commentary line. Per game id,
+        # {"queue": [unshown entries], "seen": {play ids}, "current", "shown_at"}.
+        self.show_game_activity: bool = self.mode_config.get(
+            "show_game_activity", False)
+        activity_cfg = self.mode_config.get("game_activity") or {}
+        self.game_activity_position: str = str(
+            activity_cfg.get("position", "auto") or "auto").lower()
+        self.game_activity_detail: str = str(
+            activity_cfg.get("detail", "normal") or "normal").lower()
+        try:
+            self.game_activity_dwell: float = max(
+                1.0, float(activity_cfg.get("dwell_seconds", 4)))
+        except (TypeError, ValueError):
+            self.game_activity_dwell = 4.0
+        include_cfg = activity_cfg.get("include") or {}
+        self.game_activity_include: Dict[str, bool] = {
+            "pitch": bool(include_cfg.get("pitches", True)),
+            "outcome": bool(include_cfg.get("outcomes", True)),
+            "baserunning": bool(include_cfg.get("baserunning", True)),
+        }
+        # How many unshown plays to carry. A poll returns a handful; more than
+        # this and the board is narrating history rather than the game.
+        self._activity_feed_limit: int = 12
+        self._activity_state: Dict[str, Dict[str, Any]] = {}
         # Dedicated at-bat-info rotating screen timing state.
         self._at_bat_screen_last_shown = 0.0
         self._at_bat_screen_showing_until = 0.0
@@ -1085,7 +1329,8 @@ class BaseballLive(Baseball, SportsLive):
         super().update()
         if self.test_mode:
             return
-        pbp_wanted = self.show_pitcher_batter or self.show_last_play or self.show_player_card
+        pbp_wanted = (self.show_pitcher_batter or self.show_last_play
+                      or self.show_player_card or self.show_game_activity)
         if not pbp_wanted:
             return
         if not self.espn_summary_sport_league:
@@ -1177,6 +1422,104 @@ class BaseballLive(Baseball, SportsLive):
         self._count_font_face = face
         return face
 
+    # ---- game activity -------------------------------------------------
+    #
+    # The feed is refreshed at most every play_by_play_update_interval, and
+    # the scheduler only calls update() every live_update_interval on top of
+    # that -- roughly 30s in practice. A pitch takes about 25s, so a poll
+    # typically returns SEVERAL new plays at once.
+    #
+    # Showing only the newest would waste them and leave the board static
+    # between fetches, which is the opposite of the point. Instead the new
+    # plays are queued and walked through locally, one per dwell, so a slow
+    # inning reads as a running commentary without asking ESPN for anything
+    # more. When the queue runs dry the most recent entry simply stays up.
+
+    def _merge_activity_feed(self, game_id: str,
+                             incoming: List[Dict[str, Any]]) -> None:
+        """Append plays we have not shown yet, keeping the tail bounded.
+
+        Dedupes on ESPN's play id: consecutive polls re-send the same tail of
+        the game, and re-queueing those would make the board loop over old
+        pitches forever.
+        """
+        if not incoming:
+            return
+        state = self._activity_state.setdefault(
+            game_id, {"queue": [], "seen": set(), "current": None,
+                      "shown_at": 0.0})
+        seen = state["seen"]
+        fresh = [e for e in incoming if e["id"] and e["id"] not in seen]
+        if not fresh:
+            return
+        for entry in fresh:
+            seen.add(entry["id"])
+        state["queue"].extend(fresh)
+        # A board that is behind by more than a few plays is narrating
+        # history; drop the oldest so it catches up rather than lagging.
+        if len(state["queue"]) > self._activity_feed_limit:
+            del state["queue"][:-self._activity_feed_limit]
+        if len(seen) > self._activity_feed_limit * 8:
+            state["seen"] = set(list(seen)[-self._activity_feed_limit * 4:])
+
+    def _current_activity(self, game_id: str) -> Optional[Dict[str, Any]]:
+        """The entry to show right now, advancing the queue when due."""
+        state = self._activity_state.get(game_id)
+        if not state:
+            return None
+        now = time.time()
+        due = now - state["shown_at"] >= max(1, self.game_activity_dwell)
+        if state["current"] is None or due:
+            if state["queue"]:
+                state["current"] = state["queue"].pop(0)
+                state["shown_at"] = now
+            elif state["current"] is None:
+                return None
+        return state["current"]
+
+    def _activity_is_wanted(self, entry: Optional[Dict[str, Any]]) -> bool:
+        """Whether this entry's class is switched on for this league."""
+        if not entry:
+            return False
+        return bool(self.game_activity_include.get(entry.get("kind"), True))
+
+    def _next_wanted_activity(self, game_id: str) -> Optional[Dict[str, Any]]:
+        """`_current_activity`, skipping classes the user muted.
+
+        Bounded by the queue length rather than looping: with every class
+        muted this must return None, not spin.
+        """
+        for _ in range(self._activity_feed_limit + 1):
+            entry = self._current_activity(game_id)
+            if entry is None:
+                return None
+            if self._activity_is_wanted(entry):
+                return entry
+            state = self._activity_state.get(game_id) or {}
+            if not state.get("queue"):
+                return None
+            state["shown_at"] = 0.0   # force the next advance immediately
+        return None
+
+    def _activity_lines(self, entry: Dict[str, Any]) -> List[str]:
+        """The 1-2 lines to draw, per game_activity_detail."""
+        detail = (self.game_activity_detail or "normal").lower()
+        phrase = str(entry.get("phrase") or "").strip()
+        if not phrase:
+            return []
+        if detail == "terse":
+            return [phrase]
+        head = phrase
+        if entry.get("player") and entry.get("count"):
+            head = f"{entry['player']} {phrase} {entry['count']}"
+        elif entry.get("player"):
+            head = f"{entry['player']} {phrase}"
+        elif entry.get("count"):
+            head = f"{phrase} {entry['count']}"
+        if detail == "rich" and entry.get("detail"):
+            return [head, str(entry["detail"])]
+        return [head]
+
     def _prune_stale_play_by_play(self) -> None:
         """Drop cached/attempted entries for games no longer live so this
         doesn't grow unbounded across a long-running session."""
@@ -1184,6 +1527,9 @@ class BaseballLive(Baseball, SportsLive):
         for gid in list(self._play_by_play_cache.keys()):
             if gid not in live_ids:
                 del self._play_by_play_cache[gid]
+        for gid in list(self._activity_state.keys()):
+            if gid not in live_ids:
+                del self._activity_state[gid]
         for gid in list(self._play_by_play_last_attempt.keys()):
             if gid not in live_ids:
                 del self._play_by_play_last_attempt[gid]
@@ -1240,6 +1586,10 @@ class BaseballLive(Baseball, SportsLive):
             # card's season-stats bio is fetched lazily/separately.
             info_map = _build_athlete_info_map(rosters)
             pitcher_id, batter_id = _get_current_pitcher_batter_ids(plays)
+            if self.show_game_activity:
+                self._merge_activity_feed(
+                    game_id, _extract_activity_feed(
+                        plays, athlete_names, limit=self._activity_feed_limit))
             if pitcher or batter or last_play_code:
                 self._play_by_play_cache[game_id] = {
                     "pitcher": pitcher,
@@ -1996,6 +2346,182 @@ class BaseballLive(Baseball, SportsLive):
                 return game.get("away_team_color")
         return None
 
+    # ---- game activity: where the line goes ----------------------------
+
+    def _activity_font(self):
+        """The face the commentary is drawn in -- small, and its own setting.
+
+        Falls back through the fonts this scorebug already loads rather than
+        raising on a panel whose customization block names none of them.
+        """
+        cfg = self.config.get("customization", {}).get("game_activity", {}) or {}
+        element = cfg if cfg.get("font") or cfg.get("font_size") else None
+        if element:
+            try:
+                return self._load_custom_font_from_element_config(
+                    element, default_size=6, element_key="game_activity",
+                    default_font="4x6-font.ttf")
+            except Exception:
+                self.logger.debug("game_activity font fell back", exc_info=True)
+        return (self.fonts.get("detail") or self.fonts.get("status")
+                or self.fonts.get("time"))
+
+    def _activity_placement(self, lines: List[str]) -> str:
+        """'inline', 'screen' or '' -- where this line can actually go.
+
+        "auto" is a measurement, not a panel-size guess. The commentary needs
+        a clear band along the bottom edge wide enough for the text; a 128x32
+        scorebug has the bases cluster and the count there and a 256x64 one
+        does not. Measuring means an unusual font or a wide chain is handled
+        without a table of magic sizes.
+        """
+        choice = (self.game_activity_position or "auto").lower()
+        if choice == "screen":
+            return "screen"
+        fits = self._activity_inline_band(lines) is not None
+        if choice == "inline":
+            return "inline" if fits else ""
+        return "inline" if fits else "screen"
+
+    def _activity_inline_band(self, lines: List[str]) -> Optional[int]:
+        """Top y for an inline commentary band, or None if it will not fit.
+
+        A VERTICAL question only. Width is deliberately not consulted: ESPN's
+        sentences vary from "Foul" to "Simon to second on wild pitch by
+        Stanek, Simon safe at third", so deciding per line would flip a 128px
+        board between inline and its own screen from one pitch to the next --
+        a mode change every few seconds, which reads as a fault. The panel
+        either has a band below the bases/outs/count cluster or it does not;
+        text too wide for it is trimmed by _activity_fit.
+        """
+        if not lines:
+            return None
+        font = self._activity_font()
+        if font is None:
+            return None
+        line_h = (getattr(font, "size", 6) or 6) + 1
+        top = self.display_height - line_h * len(lines)
+        return top if top >= self._scorebug_content_bottom() else None
+
+    def _scorebug_content_bottom(self) -> int:
+        """Lowest y the live scorebug's own elements are expected to reach.
+
+        Derived from the fonts and diamond size in play rather than hardcoded,
+        because every one of them is configurable. Deliberately generous: a
+        commentary line overlapping the count is worse than one that declines
+        to draw and falls back to its own screen.
+        """
+        bases_cfg = self.config.get("customization", {}).get("bases", {}) or {}
+        diamond = int(bases_cfg.get("diamond_size", 7) or 7)
+        inning_h = getattr(self.fonts.get("time"), "size", 8) or 8
+        # inning row + the three-diamond stack + a row for the count
+        return 1 + inning_h + (diamond * 3) + 2
+
+    def _maybe_draw_game_activity_screen(self, game: Dict,
+                                         force_clear: bool = False) -> bool:
+        """Rotate in a full-screen commentary card when it cannot go inline.
+
+        Returns True if it drew. Only reached on panels where
+        `_activity_placement` said "screen" -- a short board, or an explicit
+        setting -- so it does not compete with the inline line.
+        """
+        # getattr, matching `getattr(self, "show_innings", True)` a few lines
+        # down this same draw path: the scorebug is built by several classes
+        # and probed by tests that construct bare instances, and "nobody set
+        # it" means the same as "off" here. The mutable feed state is NOT
+        # defaulted this way -- see _prune_stale_play_by_play, where a
+        # missing dict must fail loudly rather than silently stop pruning.
+        if not getattr(self, "show_game_activity", False):
+            return False
+        entry = self._next_wanted_activity(str(game.get("id") or ""))
+        lines = self._activity_lines(entry) if entry else []
+        if not lines or self._activity_placement(lines) != "screen":
+            return False
+        try:
+            font = self._activity_font()
+            if font is None:
+                return False
+            img = Image.new("RGB", (self.display_width, self.display_height),
+                            (0, 0, 0))
+            draw = ImageDraw.Draw(img)
+            draw.fontmode = "1"
+            colour = self._activity_colour(entry)
+            line_h = (getattr(font, "size", 6) or 6) + 1
+            top = max(0, (self.display_height - line_h * len(lines)) // 2)
+            for i, text in enumerate(lines):
+                text = self._activity_fit(draw, text, font)
+                width = draw.textlength(text, font=font)
+                self._draw_text_with_outline(
+                    draw, text, ((self.display_width - width) // 2,
+                                 top + i * line_h), font, fill=colour)
+            self.display_manager.image.paste(img, (0, 0))
+            self.display_manager.update_display()
+            return True
+        except Exception as e:
+            self.logger.error(f"Error drawing game activity screen: {e}",
+                              exc_info=True)
+            return False
+
+    def _activity_colour(self, entry: Optional[Dict[str, Any]]):
+        """Scoring plays get their own colour; everything else one shade."""
+        cfg = self.config.get("customization", {}).get("game_activity", {}) or {}
+        if entry and entry.get("scoring"):
+            return tuple(cfg.get("scoring_color", [255, 215, 0]))
+        return tuple(cfg.get("text_color", [200, 200, 200]))
+
+    def _activity_fit(self, draw, text: str, font,
+                      max_width: Optional[int] = None) -> str:
+        """Trim to the available width, with an ellipsis rather than a hard cut.
+
+        ESPN's sentences run long ("Simon to second on wild pitch by Stanek,
+        Simon safe at third") and the space between the two bottom-corner
+        scores is narrower than the panel, so the caller passes what it
+        actually has. Truncating mid-word is ugly but honest, and the next
+        play replaces the line within a few seconds anyway.
+        """
+        limit = self.display_width if max_width is None else max_width
+        if draw.textlength(text, font=font) <= limit:
+            return text
+        trimmed = text
+        while trimmed and draw.textlength(trimmed + "…", font=font) > limit:
+            trimmed = trimmed[:-1]
+        return (trimmed.rstrip() + "…") if trimmed else text
+
+    def _draw_activity_inline(self, draw, game: Dict,
+                              clear_left: int = 0,
+                              clear_right: Optional[int] = None) -> None:
+        """Draw the commentary along the bottom of the normal scorebug.
+
+        ``clear_left``/``clear_right`` are the span the caller knows is free.
+        The live scorebug puts "TB: 1" bottom-LEFT and "NY: 0" bottom-RIGHT
+        on this very row, so a line centred across the full panel width would
+        print straight through both. Only the caller knows how wide those ran
+        -- the labels and the score face are independently configurable -- so
+        it measures and passes the gap rather than this guessing at it.
+        """
+        if not getattr(self, "show_game_activity", False):
+            return
+        entry = self._next_wanted_activity(str(game.get("id") or ""))
+        lines = self._activity_lines(entry) if entry else []
+        if not lines or self._activity_placement(lines) != "inline":
+            return
+        top = self._activity_inline_band(lines)
+        if top is None:
+            return
+        font = self._activity_font()
+        colour = self._activity_colour(entry)
+        line_h = (getattr(font, "size", 6) or 6) + 1
+        right = self.display_width if clear_right is None else clear_right
+        span = max(0, right - clear_left)
+        if span < 16:      # nothing usable left between the scores
+            return
+        for i, text in enumerate(lines):
+            text = self._activity_fit(draw, text, font, max_width=span)
+            width = draw.textlength(text, font=font)
+            x = clear_left + max(0, (span - width) // 2)
+            self._draw_text_with_outline(
+                draw, text, (x, top + i * line_h), font, fill=colour)
+
     def _maybe_draw_player_card_screen(self, game: Dict, force_clear: bool = False) -> bool:
         """Rotate in the masters-style player card (headshot + bio + season
         stats) for the current batter/pitcher if it's due. Returns True if it
@@ -2263,6 +2789,11 @@ class BaseballLive(Baseball, SportsLive):
         if self._maybe_draw_at_bat_info_screen(game, force_clear):
             return
         if self._maybe_draw_player_card_screen(game, force_clear):
+            return
+        # Only draws on panels with no room for the inline line; see
+        # _activity_placement. Placed after the cards so it never pre-empts
+        # them, and before the traditional scoreboard for the same reason.
+        if self._maybe_draw_game_activity_screen(game, force_clear):
             return
         if self._maybe_draw_traditional_scoreboard_screen(game, force_clear):
             return
@@ -2641,6 +3172,16 @@ class BaseballLive(Baseball, SportsLive):
                     draw_overlay, game["odds"], self.display_width, self.display_height,
                     top_span=(inning_x, inning_x + inning_width) if inning_drawn else None,
                 )
+
+            # The commentary line, last so it sits above the scorebug's own
+            # elements and can measure what is already there. Draws nothing
+            # unless there is a clear band for it -- see _activity_placement,
+            # which otherwise routes this to its own screen.
+            self._draw_activity_inline(
+                draw_overlay, game,
+                clear_left=away_x + text_width(away_label, label_font)
+                + text_width(away_score_str, score_font) + 2,
+                clear_right=home_x - 2)
 
             # Composite the text overlay onto the main image
             main_img = Image.alpha_composite(main_img, overlay)

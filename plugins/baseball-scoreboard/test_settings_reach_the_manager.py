@@ -62,6 +62,10 @@ NOT_FORWARDED = {
     "scroll_settings": "read by scroll_display.py from the whole plugin config",
     "mode_durations": "read by manager.py _get_mode_duration from self.config",
     "dynamic_duration": "read by manager.py dynamic-duration helpers from self.config",
+    # Forwarded whole rather than leaf by leaf: BaseballLive.__init__ reads
+    # mode_config["game_activity"] and unpacks it there, and one of its keys
+    # ("include") is itself an object, which this probe cannot reach.
+    "game_activity": "forwarded as one dict; BaseballLive unpacks its leaves",
 }
 
 #: Leaf keys inside FORWARDED_BLOCKS consumed somewhere other than the

@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.49.0",
+  "version": "1.50.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.50.0",
+      "released": "2026-09-25",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Adds Game Activity: a running pitch-by-pitch commentary line for live games, for the innings where the score gives the board nothing to say. ESPN's summary carries far more than the at-bat outcomes this plugin already read -- a six-game sample on 2026-09-24 held 3,310 plays across 38 distinct type.type values, of which balls, fouls and called/swinging strikes alone were 1,377 -- and none of it reached the display, because the old mapping knew nine outcomes and returned nothing for everything else. WHAT IT SAYS: pitches as they happen (\"J. Walker Foul 0-1\"), at-bat outcomes in ESPN's own words (\"Burleson homered to right center (395 feet).\"), and baserunning (\"Cruz stole third.\"). Two shapes in the data are not interchangeable and are handled as such: a pitch carries the count and the radar gun but useless prose (a home run's own play reads \"Pitch 1 : Ball In Play\"), while the following play-result carries the sentence. They share an atBatId, so an at-bat-ending pitch is folded into its play-result rather than announced twice, and its velocity is carried across -- \"95 mph Four-seam FB\" in rich detail. Two fixes fall out of reading the data rather than assuming it: ESPN files baserunning twice (typed, then again as a play-result with the same sentence), which would have read as a stutter; and it keeps counting past the plate appearance, so a called third strike reports strikes=3 -- \"1-3\" is not a count any scoreboard has shown, so the count is blank on the pitch that ended the at-bat. WHERE IT GOES: position auto/inline/screen. Inline draws it along the bottom of the live scoreboard, bounded by the two corner scores that share that row -- the caller measures their extents and passes the gap, because the labels and score face are independently configurable. Screen gives it its own card in the rotation. Auto measures the panel: every 64px-tall board gets the inline line, every 32px one takes the screen. The decision is per PANEL, not per line, on purpose -- deciding per line would flip a board between the two from one pitch to the next, which reads as a fault. An explicit \"inline\" with no room draws nothing rather than printing over the count. CADENCE: the scheduler polls at live_update_interval and the summary refresh is gated by play_by_play_update_interval, so roughly 30s -- while a pitch takes about 25s. Rather than showing only the newest play and sitting static between fetches, the new plays are queued and walked through locally at dwell_seconds (4 by default), so a slow inning reads as running commentary without asking ESPN for anything more. Deduped on play id, since consecutive polls re-send the same tail of the game. CONFIG: mlb/ncaa_baseball display_options.show_game_activity (off by default) plus a game_activity block -- position, detail (terse/normal/rich), dwell_seconds, and per-class include toggles for pitches, outcomes and baserunning. Not offered for MiLB, which comes from the MLB Stats API and has no ESPN summary endpoint; BaseballLive already guards on espn_summary_sport_league, so it is inert there rather than broken."
+    },
     {
       "version": "1.49.0",
       "released": "2026-09-25",
