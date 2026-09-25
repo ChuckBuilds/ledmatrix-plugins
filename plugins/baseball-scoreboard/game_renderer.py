@@ -620,7 +620,9 @@ class GameRenderer(SportsGameRendererMixin):
             if has_count_data:
                 cluster_bottom += 2 + 6  # count spacing + detail font height
             bottom_limit = self.display_height - font_height - 2
-            score_y = max(0, min(cluster_bottom + 1, bottom_limit))
+            # A few pixels of air under the bases/count cluster, so the score
+            # reads as its own line rather than part of the count.
+            score_y = max(0, min(cluster_bottom + 4, bottom_limit))
             self._draw_text_with_outline(draw, score_text, (int(score_x), score_y), score_font)
 
             # Odds
