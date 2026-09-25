@@ -622,7 +622,7 @@ class GameRenderer(SportsGameRendererMixin):
             bottom_limit = self.display_height - font_height - 2
             # A few pixels of air under the bases/count cluster, so the score
             # reads as its own line rather than part of the count.
-            score_y = max(0, min(cluster_bottom + 4, bottom_limit))
+            score_y = max(0, min(cluster_bottom + 7, bottom_limit))
             self._draw_text_with_outline(draw, score_text, (int(score_x), score_y), score_font)
 
             # Odds
