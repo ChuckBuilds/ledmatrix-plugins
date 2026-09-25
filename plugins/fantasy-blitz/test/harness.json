@@ -1,0 +1,30 @@
+{
+  "_comment": "Renders every screen from recorded Sleeper/ESPN data (2026 week 2 results, week 3 projections and injuries, trending players, season totals), frozen on the Tuesday after week 2 so the recap screens show. A queued big-play alert, a small made-up league and three synthetic stand-in photos (not real headshots) are seeded so the alert, league and photo paths render too. Photo downloads are off so nothing reaches the network. Animations are off in the base run for final, deterministic frames; the 'animated' variant draws each screen's first animated frame to keep that code path crash-checked.",
+  "config": {
+    "enabled": true,
+    "watchlist": ["Josh Allen", "Davante Adams", "Jaxson Dart"],
+    "league": {
+      "provider": "sleeper",
+      "league_id": "1180000000000000000",
+      "team_name": "Gridiron Ghosts"
+    },
+    "advanced": {
+      "animations": false,
+      "headshot_downloads": false
+    }
+  },
+  "mock_data": "test/fixtures/cache.json",
+  "freeze_time": "2026-09-22 17:00:00",
+  "empty_check": "strict",
+  "variants": [
+    {
+      "name": "animated",
+      "config": {
+        "advanced": {
+          "animations": true,
+          "headshot_downloads": false
+        }
+      }
+    }
+  ]
+}

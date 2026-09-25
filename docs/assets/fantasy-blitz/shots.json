@@ -1,0 +1,196 @@
+{
+  "plugin": "fantasy-blitz",
+  "_comment": "Rendered from the harness fixture: real Sleeper and ESPN data recorded for 2026 week 2 (with week 3 projections, injuries and trending players), frozen on the Tuesday after week 2. The queued big play and the league are seeded, and the league's teams are invented. Photos are off, so the cards show the club-colour silhouette the plugin draws when it has no headshot; on a board they show the player's ESPN photo.",
+  "defaults": {
+    "width": 128,
+    "height": 64,
+    "scale": 5,
+    "freeze_time": "2026-09-22T17:00:00+00:00",
+    "mock_data": "../../../plugins/fantasy-blitz/test/fixtures/cache.json",
+    "config": {
+      "enabled": true,
+      "show_headshots": false,
+      "watchlist": [
+        "Josh Allen",
+        "Davante Adams",
+        "Jaxson Dart"
+      ],
+      "league": {
+        "provider": "sleeper",
+        "league_id": "1180000000000000000",
+        "team_name": "Gridiron Ghosts"
+      },
+      "advanced": {
+        "animations": false,
+        "headshot_downloads": false
+      }
+    }
+  },
+  "shots": [
+    {
+      "name": "hero",
+      "display_mode": "fantasy_player_card"
+    },
+    {
+      "name": "s-player_card",
+      "display_mode": "fantasy_player_card",
+      "standalone": false
+    },
+    {
+      "name": "s-leaderboard",
+      "display_mode": "fantasy_leaderboard",
+      "standalone": false
+    },
+    {
+      "name": "s-live",
+      "display_mode": "fantasy_live",
+      "standalone": false
+    },
+    {
+      "name": "s-dud_alert",
+      "display_mode": "fantasy_dud_alert",
+      "standalone": false
+    },
+    {
+      "name": "s-hot_pickups",
+      "display_mode": "fantasy_hot_pickups",
+      "standalone": false
+    },
+    {
+      "name": "s-position_kings",
+      "display_mode": "fantasy_position_kings",
+      "standalone": false
+    },
+    {
+      "name": "s-injury_report",
+      "display_mode": "fantasy_injury_report",
+      "standalone": false
+    },
+    {
+      "name": "s-watchlist",
+      "display_mode": "fantasy_watchlist",
+      "standalone": false
+    },
+    {
+      "name": "s-weekly_awards",
+      "display_mode": "fantasy_weekly_awards",
+      "standalone": false
+    },
+    {
+      "name": "s-league_matchup",
+      "display_mode": "fantasy_league_matchup",
+      "standalone": false
+    },
+    {
+      "name": "s-season_race",
+      "display_mode": "fantasy_season_race",
+      "standalone": false
+    },
+    {
+      "name": "size-64x32",
+      "display_mode": "fantasy_player_card",
+      "width": 64,
+      "height": 32,
+      "scale": 5,
+      "standalone": false
+    },
+    {
+      "name": "size-128x32",
+      "display_mode": "fantasy_player_card",
+      "width": 128,
+      "height": 32,
+      "scale": 5,
+      "standalone": false
+    },
+    {
+      "name": "size-256x32",
+      "display_mode": "fantasy_player_card",
+      "width": 256,
+      "height": 32,
+      "scale": 4,
+      "standalone": false
+    },
+    {
+      "name": "size-128x64",
+      "display_mode": "fantasy_player_card",
+      "width": 128,
+      "height": 64,
+      "scale": 5,
+      "standalone": false
+    }
+  ],
+  "composites": [
+    {
+      "name": "screens",
+      "columns": 2,
+      "cells": [
+        {
+          "shot": "s-player_card",
+          "label": "player card"
+        },
+        {
+          "shot": "s-leaderboard",
+          "label": "leaderboard"
+        },
+        {
+          "shot": "s-live",
+          "label": "big play"
+        },
+        {
+          "shot": "s-dud_alert",
+          "label": "dud alert"
+        },
+        {
+          "shot": "s-hot_pickups",
+          "label": "hot pickups"
+        },
+        {
+          "shot": "s-position_kings",
+          "label": "position kings"
+        },
+        {
+          "shot": "s-injury_report",
+          "label": "injury report"
+        },
+        {
+          "shot": "s-watchlist",
+          "label": "my players"
+        },
+        {
+          "shot": "s-weekly_awards",
+          "label": "weekly awards"
+        },
+        {
+          "shot": "s-league_matchup",
+          "label": "league matchup"
+        },
+        {
+          "shot": "s-season_race",
+          "label": "season race"
+        }
+      ]
+    },
+    {
+      "name": "panel-sizes",
+      "columns": 1,
+      "cells": [
+        {
+          "shot": "size-64x32",
+          "label": "64x32"
+        },
+        {
+          "shot": "size-128x32",
+          "label": "128x32"
+        },
+        {
+          "shot": "size-256x32",
+          "label": "256x32"
+        },
+        {
+          "shot": "size-128x64",
+          "label": "128x64"
+        }
+      ]
+    }
+  ]
+}

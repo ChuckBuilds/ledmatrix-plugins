@@ -1,0 +1,351 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Fantasy Blitz Configuration",
+  "description": "An arcade-style NFL fantasy football show: top scorers, busts, big plays, waiver pickups, injuries and more. No league login needed.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "enabled"
+  ],
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable Fantasy Blitz"
+    },
+    "scoring_format": {
+      "type": "string",
+      "enum": [
+        "ppr",
+        "half_ppr",
+        "standard"
+      ],
+      "default": "ppr",
+      "description": "How fantasy points are counted. PPR gives 1 point per catch, Half-PPR 0.5, Standard 0. Pick the one your league uses"
+    },
+    "top_n": {
+      "type": "integer",
+      "default": 5,
+      "minimum": 1,
+      "maximum": 10,
+      "description": "How many of the week's top scorers get a player card"
+    },
+    "positions": {
+      "type": "object",
+      "title": "Positions",
+      "description": "Which positions can appear on the screens",
+      "additionalProperties": false,
+      "properties": {
+        "qb": {"type": "boolean", "default": true, "title": "Quarterbacks", "description": "Show quarterbacks"},
+        "rb": {"type": "boolean", "default": true, "title": "Running backs", "description": "Show running backs"},
+        "wr": {"type": "boolean", "default": true, "title": "Wide receivers", "description": "Show wide receivers"},
+        "te": {"type": "boolean", "default": true, "title": "Tight ends", "description": "Show tight ends"},
+        "k": {"type": "boolean", "default": true, "title": "Kickers", "description": "Show kickers"},
+        "def": {"type": "boolean", "default": true, "title": "Team defenses", "description": "Show team defenses"}
+      }
+    },
+    "watchlist": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "maxLength": 40
+      },
+      "maxItems": 20,
+      "default": [],
+      "description": "Players to follow, one name each (e.g. 'Josh Allen'). Add a team if a name is shared ('Josh Allen BUF'). They get their own screen and big-play alerts at a lower threshold"
+    },
+    "show_headshots": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show player photos on the cards. When off, cards show a team-colour silhouette with the jersey number"
+    },
+    "live_priority": {
+      "type": "boolean",
+      "default": true,
+      "description": "Let a big fantasy play interrupt the rotation for a few seconds while games are on"
+    },
+    "spoiler_delay_seconds": {
+      "type": "integer",
+      "default": 0,
+      "minimum": 0,
+      "maximum": 300,
+      "description": "Hold live scores and big-play alerts back this many seconds, for watching on a delayed stream"
+    },
+    "display_duration": {
+      "type": "number",
+      "default": 20,
+      "minimum": 5,
+      "maximum": 300,
+      "description": "Seconds per screen when a screen's own duration is 0 and it has nothing to count"
+    },
+    "screens": {
+      "type": "object",
+      "title": "Screens",
+      "description": "Turn each screen on or off. A duration of 0 means long enough to show everything on it",
+      "additionalProperties": false,
+      "properties": {
+        "player_card": {
+          "type": "object",
+          "title": "Player cards",
+          "description": "This week's top scorers as collectible cards",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {"type": "boolean", "default": true, "description": "Show player cards"},
+            "duration": {"type": "integer", "default": 0, "minimum": 0, "maximum": 300, "description": "Seconds on screen (0 = one card every few seconds until all are shown)"}
+          }
+        },
+        "leaderboard": {
+          "type": "object",
+          "title": "Leaderboard",
+          "description": "The week's top fantasy scorers",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {"type": "boolean", "default": true, "description": "Show the leaderboard"},
+            "duration": {"type": "integer", "default": 0, "minimum": 0, "maximum": 300, "description": "Seconds on screen (0 = automatic)"}
+          }
+        },
+        "big_play": {
+          "type": "object",
+          "title": "Big play alerts",
+          "description": "A celebration when a player gains a lot of points on one play, while games are live",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {"type": "boolean", "default": true, "description": "Show big play alerts"},
+            "duration": {"type": "integer", "default": 8, "minimum": 0, "maximum": 60, "description": "Seconds each alert stays up"}
+          }
+        },
+        "dud_alert": {
+          "type": "object",
+          "title": "Dud alerts",
+          "description": "The players who fell furthest short of their projection, once their game is over",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {"type": "boolean", "default": true, "description": "Show dud alerts"},
+            "duration": {"type": "integer", "default": 0, "minimum": 0, "maximum": 300, "description": "Seconds on screen (0 = automatic)"}
+          }
+        },
+        "hot_pickups": {
+          "type": "object",
+          "title": "Hot pickups",
+          "description": "The free agents fantasy players are adding most (hidden while games are live)",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {"type": "boolean", "default": true, "description": "Show hot pickups"},
+            "show_drops": {"type": "boolean", "default": true, "description": "Also show the players being dropped most"},
+            "duration": {"type": "integer", "default": 0, "minimum": 0, "maximum": 300, "description": "Seconds on screen (0 = automatic)"}
+          }
+        },
+        "position_kings": {
+          "type": "object",
+          "title": "Position kings",
+          "description": "The top scorer at each position on one screen",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {"type": "boolean", "default": true, "description": "Show position kings"},
+            "duration": {"type": "integer", "default": 0, "minimum": 0, "maximum": 300, "description": "Seconds on screen (0 = automatic)"}
+          }
+        },
+        "injury_report": {
+          "type": "object",
+          "title": "Injury report",
+          "description": "Injury tags on the players who matter, before kickoff",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {"type": "boolean", "default": true, "description": "Show the injury report"},
+            "duration": {"type": "integer", "default": 0, "minimum": 0, "maximum": 300, "description": "Seconds on screen (0 = automatic)"}
+          }
+        },
+        "watchlist": {
+          "type": "object",
+          "title": "My players",
+          "description": "Live points for the players in your watchlist",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {"type": "boolean", "default": true, "description": "Show the watchlist screen"},
+            "duration": {"type": "integer", "default": 0, "minimum": 0, "maximum": 300, "description": "Seconds on screen (0 = automatic)"}
+          }
+        },
+        "weekly_awards": {
+          "type": "object",
+          "title": "Weekly awards",
+          "description": "Tuesday and Wednesday trophy screens: MVP, bust, biggest boom and waiver hero",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {"type": "boolean", "default": true, "description": "Show the weekly awards"},
+            "duration": {"type": "integer", "default": 0, "minimum": 0, "maximum": 300, "description": "Seconds on screen (0 = automatic)"}
+          }
+        },
+        "league_matchup": {
+          "type": "object",
+          "title": "League matchups",
+          "description": "Head-to-head scores from your own league (set it up under League)",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {"type": "boolean", "default": true, "description": "Show league matchups when a league is set up"},
+            "duration": {"type": "integer", "default": 0, "minimum": 0, "maximum": 300, "description": "Seconds on screen (0 = automatic)"}
+          }
+        },
+        "season_race": {
+          "type": "object",
+          "title": "Season race",
+          "description": "The season's top fantasy scorers so far",
+          "additionalProperties": false,
+          "properties": {
+            "enabled": {"type": "boolean", "default": true, "description": "Show the season race"},
+            "duration": {"type": "integer", "default": 0, "minimum": 0, "maximum": 300, "description": "Seconds on screen (0 = automatic)"}
+          }
+        }
+      }
+    },
+    "league": {
+      "type": "object",
+      "title": "League",
+      "description": "Optional: show the matchups from your own Sleeper or ESPN league. Yahoo is not supported (it requires an app sign-in a scoreboard cannot do)",
+      "additionalProperties": false,
+      "properties": {
+        "provider": {
+          "type": "string",
+          "enum": [
+            "none",
+            "sleeper",
+            "espn"
+          ],
+          "default": "none",
+          "description": "Where your league lives"
+        },
+        "league_id": {
+          "type": "string",
+          "default": "",
+          "maxLength": 32,
+          "description": "Your league's id: the long number in the league's web address"
+        },
+        "team_name": {
+          "type": "string",
+          "default": "",
+          "maxLength": 60,
+          "description": "Your team name or your username, so your matchup is shown first and marked YOU. Leave empty to show every matchup in turn"
+        },
+        "espn_s2": {
+          "type": "string",
+          "default": "",
+          "x-secret": true,
+          "description": "ESPN private leagues only: the espn_s2 cookie from a browser signed in to ESPN Fantasy"
+        },
+        "swid": {
+          "type": "string",
+          "default": "",
+          "x-secret": true,
+          "description": "ESPN private leagues only: the SWID cookie (it looks like {XXXXXXXX-...})"
+        }
+      }
+    },
+    "advanced": {
+      "type": "object",
+      "title": "Advanced",
+      "description": "Fine-tuning. The defaults suit most boards",
+      "x-advanced": true,
+      "additionalProperties": false,
+      "properties": {
+        "big_play_min_points": {
+          "type": "number",
+          "default": 6.0,
+          "minimum": 1.0,
+          "maximum": 50.0,
+          "x-advanced": true,
+          "description": "Smallest jump in a player's points between two updates that counts as a big play"
+        },
+        "watchlist_min_points": {
+          "type": "number",
+          "default": 3.0,
+          "minimum": 0.5,
+          "maximum": 50.0,
+          "x-advanced": true,
+          "description": "The big-play threshold for watchlist players (usually lower)"
+        },
+        "bust_min_projection": {
+          "type": "number",
+          "default": 12.0,
+          "minimum": 0.0,
+          "maximum": 60.0,
+          "x-advanced": true,
+          "description": "Only players projected for at least this many points can be a dud"
+        },
+        "tier_thresholds": {
+          "type": "object",
+          "title": "Card tiers",
+          "description": "Points a card needs for each rarity colour",
+          "x-advanced": true,
+          "additionalProperties": false,
+          "properties": {
+            "legendary": {"type": "number", "default": 30.0, "minimum": 1.0, "maximum": 100.0, "x-advanced": true, "description": "Gold, with a foil shimmer"},
+            "epic": {"type": "number", "default": 20.0, "minimum": 1.0, "maximum": 100.0, "x-advanced": true, "description": "Purple"},
+            "rare": {"type": "number", "default": 12.0, "minimum": 1.0, "maximum": 100.0, "x-advanced": true, "description": "Blue"}
+          }
+        },
+        "live_poll_seconds": {
+          "type": "integer",
+          "default": 60,
+          "minimum": 30,
+          "maximum": 600,
+          "x-advanced": true,
+          "description": "Seconds between score refreshes while a game is live"
+        },
+        "idle_poll_seconds": {
+          "type": "integer",
+          "default": 900,
+          "minimum": 300,
+          "maximum": 21600,
+          "x-advanced": true,
+          "description": "Seconds between refreshes when no game is on"
+        },
+        "card_seconds": {
+          "type": "integer",
+          "default": 6,
+          "minimum": 3,
+          "maximum": 30,
+          "x-advanced": true,
+          "description": "Seconds each card stays up before the next"
+        },
+        "animations": {
+          "type": "boolean",
+          "default": true,
+          "x-advanced": true,
+          "description": "Animate the screens (count-ups, shimmer, confetti). Off draws each screen once, which is lighter on an older Pi"
+        },
+        "animation_fps": {
+          "type": "integer",
+          "default": 30,
+          "minimum": 5,
+          "maximum": 60,
+          "x-advanced": true,
+          "description": "Frames per second for the animations"
+        },
+        "request_timeout": {
+          "type": "integer",
+          "default": 15,
+          "minimum": 5,
+          "maximum": 60,
+          "x-advanced": true,
+          "description": "Seconds to wait for Sleeper or ESPN before giving up"
+        },
+        "headshot_downloads": {
+          "type": "boolean",
+          "default": true,
+          "x-advanced": true,
+          "description": "Download player photos from ESPN. Off uses only photos already saved"
+        }
+      }
+    },
+    "vegas_mode": {
+      "type": "string",
+      "enum": [
+        "scroll",
+        "fixed",
+        "static"
+      ],
+      "default": "scroll",
+      "x-advanced": true,
+      "description": "How Fantasy Blitz behaves in Vegas mode: scroll its top scorers through the ticker, scroll the whole panel as one block, or pause the ticker and show normally"
+    }
+  }
+}

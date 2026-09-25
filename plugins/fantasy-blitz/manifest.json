@@ -1,0 +1,86 @@
+{
+  "id": "fantasy-blitz",
+  "name": "Fantasy Blitz",
+  "version": "1.0.0",
+  "author": "ChuckBuilds",
+  "description": "An arcade-style NFL fantasy football show with no league login needed: the week's top scorers as collectible player cards with photos, a live leaderboard, big-play celebrations as they happen, dud alerts for the biggest busts, the free agents everyone is adding, injury news, the top scorer at each position, Tuesday awards and the season race. Optionally follows a watchlist and your own Sleeper or ESPN league. Points in PPR, Half-PPR or Standard from Sleeper's public feed, with ESPN for game states and headshots. No API key.",
+  "entry_point": "manager.py",
+  "class_name": "FantasyBlitzPlugin",
+  "category": "sports",
+  "tags": [
+    "nfl",
+    "football",
+    "fantasy",
+    "fantasy-football",
+    "sleeper",
+    "espn",
+    "leaderboard",
+    "live"
+  ],
+  "icon": "fas fa-football",
+  "display_modes": [
+    "fantasy_player_card",
+    "fantasy_leaderboard",
+    "fantasy_live",
+    "fantasy_dud_alert",
+    "fantasy_hot_pickups",
+    "fantasy_position_kings",
+    "fantasy_injury_report",
+    "fantasy_watchlist",
+    "fantasy_weekly_awards",
+    "fantasy_league_matchup",
+    "fantasy_season_race"
+  ],
+  "update_interval": 900,
+  "default_duration": 20,
+  "config_schema": "config_schema.json",
+  "requirements_file": "requirements.txt",
+  "compatible_versions": [
+    ">=3.0.0"
+  ],
+  "versions": [
+    {
+      "version": "1.0.0",
+      "released": "2026-09-24",
+      "ledmatrix_min_version": "3.0.0",
+      "notes": "Initial release. Eleven screens: player cards with ESPN headshots and rarity-tier frames, a live leaderboard, big-play alerts with live priority and a spoiler delay, dud alerts, hot pickups and drops, position kings, an injury report, a watchlist, weekly awards, league matchups (Sleeper, or ESPN with cookies) and the season race. Sleeper's public feed for points and projections, ESPN for game states, scoring plays, headshots and a fallback feed. Adapts to every harness size, with animation at a configurable frame rate."
+    }
+  ],
+  "requires": {
+    "python": ">=3.9",
+    "display_size": {
+      "min_width": 64,
+      "min_height": 32
+    }
+  },
+  "display": {
+    "design_size": {
+      "width": 128,
+      "height": 64
+    }
+  },
+  "api_requirements": [
+    {
+      "name": "Sleeper API",
+      "required": true,
+      "description": "Sleeper's public NFL feed for weekly stats, fantasy points, projections and trending players. No API key or account.",
+      "url": "https://api.sleeper.app/v1/state/nfl"
+    },
+    {
+      "name": "ESPN API",
+      "required": false,
+      "description": "ESPN's public NFL scoreboard, game summaries, player search and headshots, and its fantasy feed as a fallback. No API key.",
+      "url": "https://site.api.espn.com/apis/site/v2/sports/football/nfl/scoreboard"
+    }
+  ],
+  "assets": {
+    "uses_core_assets": true,
+    "nfl_logos": "assets/sports/nfl_logos/"
+  },
+  "stars": 0,
+  "downloads": 0,
+  "verified": true,
+  "screenshot": "",
+  "license": "GPL-3.0",
+  "last_updated": "2026-09-24"
+}

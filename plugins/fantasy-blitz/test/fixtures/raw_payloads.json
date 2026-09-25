@@ -1,0 +1,1529 @@
+{
+ "sleeper_stats": [
+  {
+   "status": null,
+   "date": "2026-09-20",
+   "stats": {
+    "rec_drop": 1.0,
+    "bonus_rec_yd_100": 1.0,
+    "pos_rank_std": 1.0,
+    "gp": 1.0,
+    "rec_0_4": 1.0,
+    "tm_def_snp": 50.0,
+    "first_td": 1.0,
+    "gms_active": 1.0,
+    "rec_td": 3.0,
+    "rec_ypt": 14.09,
+    "pos_rank_half_ppr": 1.0,
+    "bonus_fd_wr": 5.0,
+    "pts_std": 33.5,
+    "rec_lng": 82.0,
+    "tm_st_snp": 23.0,
+    "bonus_rush_rec_yd_100": 1.0,
+    "rec": 9.0,
+    "rec_yar": 52.0,
+    "rec_fd": 5.0,
+    "rec_5_9": 4.0,
+    "bonus_rec_wr": 9.0,
+    "gs": 1.0,
+    "tm_off_snp": 70.0,
+    "pos_rank_ppr": 1.0,
+    "rec_rz_tgt": 3.0,
+    "rec_40p": 1.0,
+    "off_snp": 47.0,
+    "pts_half_ppr": 38.0,
+    "rec_air_yd": 103.0,
+    "rec_ypr": 17.22,
+    "rec_10_19": 3.0,
+    "rec_td_40p": 1.0,
+    "rec_td_lng": 82.0,
+    "rec_td_50p": 1.0,
+    "rush_rec_yd": 155.0,
+    "anytime_tds": 3.0,
+    "rec_tgt": 11.0,
+    "pts_ppr": 42.5,
+    "rec_yd": 155.0
+   },
+   "category": "stat",
+   "last_modified": 1790014109927,
+   "week": 2,
+   "season": "2026",
+   "season_type": "regular",
+   "sport": "nfl",
+   "player": {
+    "fantasy_positions": [
+     "WR"
+    ],
+    "first_name": "Jaxon",
+    "injury_body_part": null,
+    "injury_notes": null,
+    "injury_start_date": null,
+    "injury_status": null,
+    "last_name": "Smith-Njigba",
+    "metadata": {
+     "channel_id": "1113708722657456128",
+     "genius_id": "1398593",
+     "rookie_year": "2023"
+    },
+    "news_updated": 1790010306559,
+    "position": "WR",
+    "team": "SEA",
+    "team_abbr": null,
+    "team_changed_at": null,
+    "years_exp": 3
+   },
+   "team": "SEA",
+   "player_id": "9488",
+   "opponent": "ARI",
+   "updated_at": 1790014109927,
+   "game_id": "202610201",
+   "week_shard": "2_4",
+   "company": "sportradar"
+  },
+  {
+   "status": null,
+   "date": "2026-09-17",
+   "stats": {
+    "rush_lng": 14.0,
+    "rush_td_lng": 2.0,
+    "pass_air_yd": 161.0,
+    "pos_rank_std": 1.0,
+    "gp": 1.0,
+    "tm_def_snp": 65.0,
+    "first_td": 1.0,
+    "gms_active": 1.0,
+    "pass_sack_yds": 5.0,
+    "pos_rank_half_ppr": 1.0,
+    "rush_td": 2.0,
+    "pass_ypc": 12.4,
+    "pass_lng": 43.0,
+    "pass_td_40p": 1.0,
+    "pass_rush_yd": 317.0,
+    "pts_std": 40.82,
+    "tm_st_snp": 29.0,
+    "pass_rtg": 121.4,
+    "rush_fd": 6.0,
+    "pass_att": 31.0,
+    "rush_att": 14.0,
+    "pass_rz_att": 4.0,
+    "rush_ypa": 4.93,
+    "gs": 1.0,
+    "tm_off_snp": 74.0,
+    "pos_rank_ppr": 1.0,
+    "pass_sack": 2.0,
+    "off_snp": 74.0,
+    "pass_cmp": 20.0,
+    "cmp_pct": 64.52,
+    "rush_yac": 14.0,
+    "pts_half_ppr": 40.82,
+    "bonus_rush_td_qb": 2.0,
+    "pass_ypa": 8.0,
+    "pass_cmp_40p": 1.0,
+    "pass_fd": 11.0,
+    "pass_yd": 248.0,
+    "rush_rz_att": 3.0,
+    "rush_rec_yd": 69.0,
+    "pass_td": 3.0,
+    "anytime_tds": 2.0,
+    "bonus_fd_qb": 17.0,
+    "rush_yd": 69.0,
+    "fum": 1.0,
+    "pass_td_lng": 43.0,
+    "pts_ppr": 40.82,
+    "pass_inc": 11.0
+   },
+   "category": "stat",
+   "last_modified": 1789765734855,
+   "week": 2,
+   "season": "2026",
+   "season_type": "regular",
+   "sport": "nfl",
+   "player": {
+    "fantasy_positions": [
+     "QB"
+    ],
+    "first_name": "Josh",
+    "injury_body_part": null,
+    "injury_notes": null,
+    "injury_start_date": null,
+    "injury_status": null,
+    "last_name": "Allen",
+    "metadata": {
+     "channel_id": "1113708755175895040",
+     "genius_id": "1007075",
+     "rookie_year": "2018"
+    },
+    "news_updated": 1789740046406,
+    "position": "QB",
+    "team": "BUF",
+    "team_abbr": null,
+    "team_changed_at": null,
+    "years_exp": 8
+   },
+   "team": "BUF",
+   "player_id": "4984",
+   "opponent": "DET",
+   "updated_at": 1789765734855,
+   "game_id": "202610204",
+   "week_shard": "2_3",
+   "company": "sportradar"
+  },
+  {
+   "status": null,
+   "date": "2026-09-20",
+   "stats": {
+    "rush_lng": 24.0,
+    "rush_td_lng": 24.0,
+    "pos_rank_std": 1.0,
+    "gp": 1.0,
+    "rec_0_4": 1.0,
+    "tm_def_snp": 80.0,
+    "gms_active": 1.0,
+    "penalty": 1.0,
+    "rec_ypt": 10.0,
+    "pos_rank_half_ppr": 1.0,
+    "rush_td": 2.0,
+    "pass_rush_yd": 92.0,
+    "pts_std": 25.2,
+    "rec_lng": 15.0,
+    "tm_st_snp": 33.0,
+    "bonus_rush_rec_yd_100": 1.0,
+    "rush_fd": 4.0,
+    "rec": 4.0,
+    "rec_yar": 41.0,
+    "rec_fd": 3.0,
+    "rush_att": 24.0,
+    "rec_5_9": 1.0,
+    "rush_ypa": 3.83,
+    "gs": 1.0,
+    "tm_off_snp": 65.0,
+    "pos_rank_ppr": 1.0,
+    "penalty_yd": 5.0,
+    "off_snp": 61.0,
+    "rush_tkl_loss_yd": -7.0,
+    "rush_yac": 52.0,
+    "pts_half_ppr": 27.2,
+    "rec_air_yd": -1.0,
+    "rec_ypr": 10.0,
+    "rec_10_19": 2.0,
+    "rush_rz_att": 5.0,
+    "rush_rec_yd": 132.0,
+    "anytime_tds": 2.0,
+    "bonus_rush_att_20": 1.0,
+    "rush_yd": 92.0,
+    "bonus_rec_rb": 4.0,
+    "rec_tgt": 4.0,
+    "pts_ppr": 29.2,
+    "rec_yd": 40.0,
+    "bonus_fd_rb": 7.0,
+    "rush_tkl_loss": 4.0
+   },
+   "category": "stat",
+   "last_modified": 1790028543688,
+   "week": 2,
+   "season": "2026",
+   "season_type": "regular",
+   "sport": "nfl",
+   "player": {
+    "fantasy_positions": [
+     "RB"
+    ],
+    "first_name": "Jonathan",
+    "injury_body_part": null,
+    "injury_notes": null,
+    "injury_start_date": null,
+    "injury_status": null,
+    "last_name": "Taylor",
+    "metadata": {
+     "channel_id": "1113708779398000640",
+     "genius_id": "1017450",
+     "rookie_year": "2020"
+    },
+    "news_updated": 1790007906161,
+    "position": "RB",
+    "team": "IND",
+    "team_abbr": null,
+    "team_changed_at": null,
+    "years_exp": 6
+   },
+   "team": "IND",
+   "player_id": "6813",
+   "opponent": "KC",
+   "updated_at": 1790028543688,
+   "game_id": "202610216",
+   "week_shard": "2_2",
+   "company": "sportradar"
+  },
+  {
+   "status": null,
+   "date": "2026-09-20",
+   "stats": {
+    "sack": 2.0,
+    "qb_hit": 5.0,
+    "def_forced_punts": 3.0,
+    "pos_rank_std": 999.0,
+    "gp": 1.0,
+    "def_pr_yd": 49.0,
+    "penalty": 9.0,
+    "sack_yd": 16.0,
+    "tkl_ast": 28.0,
+    "pos_rank_half_ppr": 999.0,
+    "def_kr_yd": 53.0,
+    "pts_allow": 3.0,
+    "def_4_and_stop": 1.0,
+    "def_pr": 2.0,
+    "fan_pts_allow_k": 3.0,
+    "def_st_tkl_solo": 5.0,
+    "def_pr_ypa": 24.5,
+    "pts_std": 26.0,
+    "int_ret_yd": 72.0,
+    "ff": 1.0,
+    "def_kr_ypa": 26.5,
+    "yds_allow_200_299": 1.0,
+    "def_pr_lng": 36.0,
+    "int": 3.0,
+    "pts_allow_1_6": 1.0,
+    "yds_allow": 286.0,
+    "fan_pts_allow_def": 2.0,
+    "def_kr": 2.0,
+    "pos_rank_ppr": 999.0,
+    "def_kr_lng": 27.0,
+    "penalty_yd": 63.0,
+    "def_3_and_out": 1.0,
+    "fan_pts_allow_qb": 2.4,
+    "fan_pts_allow_wr": 18.3,
+    "tkl_loss": 3.0,
+    "pts_half_ppr": 26.0,
+    "def_pass_def": 9.0,
+    "fum_rec": 2.0,
+    "fan_pts_allow_te": 6.5,
+    "tkl": 64.0,
+    "def_td": 1.0,
+    "tkl_solo": 36.0,
+    "fan_pts_allow": 50.0,
+    "td": 4.0,
+    "pts_ppr": 26.0,
+    "fan_pts_allow_rb": 19.8
+   },
+   "category": "stat",
+   "last_modified": 1789938541721,
+   "week": 2,
+   "season": "2026",
+   "season_type": "regular",
+   "sport": "nfl",
+   "player": {
+    "fantasy_positions": [
+     "DEF"
+    ],
+    "first_name": "Carolina",
+    "injury_body_part": null,
+    "injury_notes": null,
+    "injury_start_date": null,
+    "injury_status": null,
+    "last_name": "Panthers",
+    "metadata": null,
+    "news_updated": null,
+    "position": "DEF",
+    "team": "CAR",
+    "team_abbr": null,
+    "team_changed_at": null,
+    "years_exp": null
+   },
+   "team": "CAR",
+   "player_id": "CAR",
+   "opponent": "ATL",
+   "updated_at": 1789938541721,
+   "game_id": "202610202",
+   "week_shard": "2_2",
+   "company": "sportradar"
+  },
+  {
+   "status": null,
+   "date": "2026-09-20",
+   "stats": {
+    "fga": 4.0,
+    "fgm": 4.0,
+    "fgm_30_39": 2.0,
+    "fgm_40_49": 1.0,
+    "fgm_50_59": 1.0,
+    "fgm_50p": 1.0,
+    "fgm_lng": 59.0,
+    "fgm_pct": 100.0,
+    "fgm_yds": 166.0,
+    "fgm_yds_over_30": 46.0,
+    "gms_active": 1.0,
+    "gp": 1.0,
+    "kick_pts": 13.0,
+    "pos_rank_half_ppr": 999.0,
+    "pos_rank_ppr": 999.0,
+    "pos_rank_std": 999.0,
+    "pts_half_ppr": 16.0,
+    "pts_ppr": 16.0,
+    "pts_std": 16.0,
+    "st_snp": 11.0,
+    "tm_def_snp": 58.0,
+    "tm_off_snp": 65.0,
+    "tm_st_snp": 30.0,
+    "xpa": 1.0,
+    "xpm": 1.0
+   },
+   "category": "stat",
+   "last_modified": 1790003307810,
+   "week": 2,
+   "season": "2026",
+   "season_type": "regular",
+   "sport": "nfl",
+   "player": {
+    "fantasy_positions": [
+     "K"
+    ],
+    "first_name": "Chase",
+    "injury_body_part": null,
+    "injury_notes": null,
+    "injury_start_date": null,
+    "injury_status": null,
+    "last_name": "McLaughlin",
+    "metadata": {
+     "channel_id": "1113708727095029760",
+     "genius_id": "1007848",
+     "rookie_year": "2019"
+    },
+    "news_updated": 1789971302634,
+    "position": "K",
+    "team": "TB",
+    "team_abbr": null,
+    "team_changed_at": null,
+    "years_exp": 7
+   },
+   "team": "TB",
+   "player_id": "6650",
+   "opponent": "CLE",
+   "updated_at": 1790003307810,
+   "game_id": "202610233",
+   "week_shard": "2_4",
+   "company": "sportradar"
+  },
+  {
+   "status": null,
+   "date": "2026-09-21",
+   "stats": {
+    "bonus_fd_qb": 2.0,
+    "cmp_pct": 60.0,
+    "gms_active": 1.0,
+    "gp": 1.0,
+    "gs": 1.0,
+    "off_snp": 7.0,
+    "pass_air_yd": 18.0,
+    "pass_att": 5.0,
+    "pass_cmp": 3.0,
+    "pass_fd": 2.0,
+    "pass_inc": 2.0,
+    "pass_lng": 14.0,
+    "pass_rtg": 68.8,
+    "pass_rush_yd": 20.0,
+    "pass_yd": 20.0,
+    "pass_ypa": 4.0,
+    "pass_ypc": 6.67,
+    "pos_rank_half_ppr": 36.0,
+    "pos_rank_ppr": 36.0,
+    "pos_rank_std": 36.0,
+    "pts_half_ppr": 0.8,
+    "pts_ppr": 0.8,
+    "pts_std": 0.8,
+    "tm_def_snp": 62.0,
+    "tm_off_snp": 58.0,
+    "tm_st_snp": 24.0
+   },
+   "category": "stat",
+   "last_modified": 1790089760476,
+   "week": 2,
+   "season": "2026",
+   "season_type": "regular",
+   "sport": "nfl",
+   "player": {
+    "fantasy_positions": [
+     "QB"
+    ],
+    "first_name": "Jaxson",
+    "injury_body_part": "Knee - Meniscus",
+    "injury_notes": "Surgery",
+    "injury_start_date": null,
+    "injury_status": "IR",
+    "last_name": "Dart",
+    "metadata": {
+     "channel_id": "1221352939122073600",
+     "genius_id": "1496684",
+     "injury_override_regular_2025_10": "Out",
+     "injury_override_regular_2025_11": "Out",
+     "rookie_year": "2025",
+     "source_id": "092d193d-8f4c-41c5-9e14-1475427dd64b"
+    },
+    "news_updated": 1790282720582,
+    "position": "QB",
+    "team": "NYG",
+    "team_abbr": null,
+    "team_changed_at": null,
+    "years_exp": 1
+   },
+   "team": "NYG",
+   "player_id": "12508",
+   "opponent": "LAR",
+   "updated_at": 1790089760476,
+   "game_id": "202610232",
+   "week_shard": "2_2",
+   "company": "sportradar"
+  }
+ ],
+ "sleeper_projections": [
+  {
+   "status": null,
+   "date": "2026-09-17",
+   "stats": {
+    "adp_dd_ppr": 26.0,
+    "bonus_rush_td_qb": 0.62,
+    "cmp_pct": 64.73,
+    "def_fum_td": 0.0,
+    "fum": 0.45,
+    "fum_lost": 0.2,
+    "gp": 1.0,
+    "pass_2pt": 0.1,
+    "pass_att": 30.6,
+    "pass_cmp": 19.81,
+    "pass_cmp_40p": 0.45,
+    "pass_fd": 23.42,
+    "pass_inc": 10.79,
+    "pass_int": 0.45,
+    "pass_int_td": 0.0,
+    "pass_sack": 2.76,
+    "pass_td": 1.67,
+    "pass_yd": 234.25,
+    "pos_adp_dd_ppr": 1.0,
+    "pts_half_ppr": 22.02,
+    "pts_ppr": 22.02,
+    "pts_std": 22.02,
+    "rush_2pt": 0.04,
+    "rush_40p": 0.07,
+    "rush_att": 6.12,
+    "rush_fd": 2.81,
+    "rush_td": 0.62,
+    "rush_yd": 28.08
+   },
+   "category": "proj",
+   "last_modified": 1790049657727,
+   "week": 2,
+   "sport": "nfl",
+   "season_type": "regular",
+   "season": "2026",
+   "player_id": "4984",
+   "player": {
+    "fantasy_positions": [
+     "QB"
+    ],
+    "first_name": "Josh",
+    "injury_body_part": null,
+    "injury_notes": null,
+    "injury_start_date": null,
+    "injury_status": null,
+    "last_name": "Allen",
+    "metadata": {
+     "channel_id": "1113708755175895040",
+     "genius_id": "1007075",
+     "rookie_year": "2018"
+    },
+    "news_updated": 1789740046406,
+    "position": "QB",
+    "team": "BUF",
+    "team_abbr": null,
+    "team_changed_at": null,
+    "years_exp": 8
+   },
+   "team": "BUF",
+   "opponent": "DET",
+   "updated_at": 1790049657727,
+   "game_id": "202610204",
+   "week_shard": "2_3",
+   "company": "rotowire"
+  },
+  {
+   "status": null,
+   "date": "2026-09-20",
+   "stats": {
+    "adp_dd_ppr": 3.0,
+    "bonus_rec_wr": 6.76,
+    "def_fum_td": 0.0,
+    "fum": 0.07,
+    "fum_lost": 0.03,
+    "gp": 1.0,
+    "pos_adp_dd_ppr": 1.0,
+    "pts_half_ppr": 16.17,
+    "pts_ppr": 19.55,
+    "pts_std": 12.8,
+    "rec": 6.76,
+    "rec_0_4": 1.35,
+    "rec_10_19": 2.03,
+    "rec_20_29": 1.35,
+    "rec_2pt": 0.03,
+    "rec_30_39": 0.68,
+    "rec_40p": 0.68,
+    "rec_5_9": 1.35,
+    "rec_fd": 9.57,
+    "rec_td": 0.48,
+    "rec_tgt": 9.13,
+    "rec_yd": 95.7,
+    "rush_2pt": 0.0,
+    "rush_40p": 0.0,
+    "rush_att": 0.48,
+    "rush_fd": 0.24,
+    "rush_td": 0.01,
+    "rush_yd": 2.44
+   },
+   "category": "proj",
+   "last_modified": 1790049658200,
+   "week": 2,
+   "sport": "nfl",
+   "season_type": "regular",
+   "season": "2026",
+   "player_id": "9488",
+   "player": {
+    "fantasy_positions": [
+     "WR"
+    ],
+    "first_name": "Jaxon",
+    "injury_body_part": null,
+    "injury_notes": null,
+    "injury_start_date": null,
+    "injury_status": null,
+    "last_name": "Smith-Njigba",
+    "metadata": {
+     "channel_id": "1113708722657456128",
+     "genius_id": "1398593",
+     "rookie_year": "2023"
+    },
+    "news_updated": 1790010306559,
+    "position": "WR",
+    "team": "SEA",
+    "team_abbr": null,
+    "team_changed_at": null,
+    "years_exp": 3
+   },
+   "team": "SEA",
+   "opponent": "ARI",
+   "updated_at": 1790049658200,
+   "game_id": "202610201",
+   "week_shard": "2_4",
+   "company": "rotowire"
+  },
+  {
+   "status": null,
+   "date": "2026-09-20",
+   "stats": {
+    "adp_dd_ppr": 9.0,
+    "bonus_rec_rb": 2.83,
+    "def_fum_td": 0.0,
+    "fum": 0.19,
+    "fum_lost": 0.09,
+    "gp": 1.0,
+    "pos_adp_dd_ppr": 5.0,
+    "pts_half_ppr": 17.37,
+    "pts_ppr": 18.79,
+    "pts_std": 15.95,
+    "rec": 2.83,
+    "rec_0_4": 0.57,
+    "rec_10_19": 0.85,
+    "rec_20_29": 0.57,
+    "rec_2pt": 0.01,
+    "rec_30_39": 0.28,
+    "rec_40p": 0.28,
+    "rec_5_9": 0.57,
+    "rec_fd": 1.91,
+    "rec_td": 0.1,
+    "rec_tgt": 3.43,
+    "rec_yd": 19.1,
+    "rush_2pt": 0.05,
+    "rush_40p": 0.19,
+    "rush_att": 19.69,
+    "rush_fd": 8.91,
+    "rush_td": 0.77,
+    "rush_yd": 89.12
+   },
+   "category": "proj",
+   "last_modified": 1790049658144,
+   "week": 2,
+   "sport": "nfl",
+   "season_type": "regular",
+   "season": "2026",
+   "player_id": "6813",
+   "player": {
+    "fantasy_positions": [
+     "RB"
+    ],
+    "first_name": "Jonathan",
+    "injury_body_part": null,
+    "injury_notes": null,
+    "injury_start_date": null,
+    "injury_status": null,
+    "last_name": "Taylor",
+    "metadata": {
+     "channel_id": "1113708779398000640",
+     "genius_id": "1017450",
+     "rookie_year": "2020"
+    },
+    "news_updated": 1790007906161,
+    "position": "RB",
+    "team": "IND",
+    "team_abbr": null,
+    "team_changed_at": null,
+    "years_exp": 6
+   },
+   "team": "IND",
+   "opponent": "KC",
+   "updated_at": 1790049658144,
+   "game_id": "202610216",
+   "week_shard": "2_2",
+   "company": "rotowire"
+  },
+  {
+   "status": null,
+   "date": "2026-09-21",
+   "stats": {
+    "adp_dd_ppr": 84.0,
+    "bonus_rush_td_qb": 0.38,
+    "cmp_pct": 62.44,
+    "def_fum_td": 0.0,
+    "fum": 0.39,
+    "fum_lost": 0.17,
+    "gp": 1.0,
+    "pass_2pt": 0.07,
+    "pass_att": 30.27,
+    "pass_cmp": 18.9,
+    "pass_cmp_40p": 0.36,
+    "pass_fd": 20.24,
+    "pass_inc": 11.37,
+    "pass_int": 0.87,
+    "pass_int_td": 0.0,
+    "pass_sack": 2.33,
+    "pass_td": 1.34,
+    "pass_yd": 202.36,
+    "pos_adp_dd_ppr": 10.0,
+    "pts_half_ppr": 18.38,
+    "pts_ppr": 18.38,
+    "pts_std": 18.38,
+    "rush_2pt": 0.02,
+    "rush_40p": 0.06,
+    "rush_att": 6.65,
+    "rush_fd": 3.68,
+    "rush_td": 0.38,
+    "rush_yd": 36.79
+   },
+   "category": "proj",
+   "last_modified": 1790049658205,
+   "week": 2,
+   "sport": "nfl",
+   "season_type": "regular",
+   "season": "2026",
+   "player_id": "12508",
+   "player": {
+    "fantasy_positions": [
+     "QB"
+    ],
+    "first_name": "Jaxson",
+    "injury_body_part": "Knee - Meniscus",
+    "injury_notes": "Surgery",
+    "injury_start_date": null,
+    "injury_status": "IR",
+    "last_name": "Dart",
+    "metadata": {
+     "channel_id": "1221352939122073600",
+     "genius_id": "1496684",
+     "injury_override_regular_2025_10": "Out",
+     "injury_override_regular_2025_11": "Out",
+     "rookie_year": "2025",
+     "source_id": "092d193d-8f4c-41c5-9e14-1475427dd64b"
+    },
+    "news_updated": 1790282720582,
+    "position": "QB",
+    "team": "NYG",
+    "team_abbr": null,
+    "team_changed_at": null,
+    "years_exp": 1
+   },
+   "team": "NYG",
+   "opponent": "LAR",
+   "updated_at": 1790049658205,
+   "game_id": "202610232",
+   "week_shard": "2_2",
+   "company": "rotowire"
+  },
+  {
+   "status": null,
+   "date": "2026-09-20",
+   "stats": {
+    "adp_dd_ppr": 999.0,
+    "fga": 2.27,
+    "fgm": 1.95,
+    "fgm_20_29": 0.32,
+    "fgm_30_39": 0.47,
+    "fgm_40_49": 0.42,
+    "fgm_50p": 0.37,
+    "fgm_yds": 66.75,
+    "fgmiss_30_39": 0.04,
+    "fgmiss_40_49": 0.04,
+    "fgmiss_50p": 0.12,
+    "gp": 1.0,
+    "pos_adp_dd_ppr": 999.0,
+    "pts_half_ppr": 8.37,
+    "pts_ppr": 8.37,
+    "pts_std": 8.37,
+    "xpa": 2.73,
+    "xpm": 2.6,
+    "xpmiss": 0.13
+   },
+   "category": "proj",
+   "last_modified": 1790049657851,
+   "week": 2,
+   "sport": "nfl",
+   "season_type": "regular",
+   "season": "2026",
+   "player_id": "6650",
+   "player": {
+    "fantasy_positions": [
+     "K"
+    ],
+    "first_name": "Chase",
+    "injury_body_part": null,
+    "injury_notes": null,
+    "injury_start_date": null,
+    "injury_status": null,
+    "last_name": "McLaughlin",
+    "metadata": {
+     "channel_id": "1113708727095029760",
+     "genius_id": "1007848",
+     "rookie_year": "2019"
+    },
+    "news_updated": 1789971302634,
+    "position": "K",
+    "team": "TB",
+    "team_abbr": null,
+    "team_changed_at": null,
+    "years_exp": 7
+   },
+   "team": "TB",
+   "opponent": "CLE",
+   "updated_at": 1790049657851,
+   "game_id": "202610233",
+   "week_shard": "2_4",
+   "company": "rotowire"
+  },
+  {
+   "status": null,
+   "date": "2026-09-20",
+   "stats": {
+    "adp_dd_ppr": 999.0,
+    "blk_kick": 0.07,
+    "def_kr_yd": 124.6,
+    "def_pr_td": 0.07,
+    "def_pr_yd": 141.44,
+    "def_td": 0.07,
+    "ff": 0.67,
+    "fum_rec": 0.61,
+    "gp": 1.0,
+    "int": 0.74,
+    "pass_int_td": 0.07,
+    "pos_adp_dd_ppr": 999.0,
+    "pr_td": 0.07,
+    "pr_yd": 16.84,
+    "pts_allow": 20.5,
+    "pts_allow_14_20": 1.0,
+    "pts_half_ppr": 7.94,
+    "pts_ppr": 7.94,
+    "pts_std": 7.94,
+    "sack": 2.63,
+    "st_td": 0.07,
+    "tkl_loss": 4.51,
+    "yds_allow": 316.46,
+    "yds_allow_300_349": 1.0
+   },
+   "category": "proj",
+   "last_modified": 1790049657947,
+   "week": 2,
+   "sport": "nfl",
+   "season_type": "regular",
+   "season": "2026",
+   "player_id": "CAR",
+   "player": {
+    "fantasy_positions": [
+     "DEF"
+    ],
+    "first_name": "Carolina",
+    "injury_body_part": null,
+    "injury_notes": null,
+    "injury_start_date": null,
+    "injury_status": null,
+    "last_name": "Panthers",
+    "metadata": null,
+    "news_updated": null,
+    "position": "DEF",
+    "team": "CAR",
+    "team_abbr": null,
+    "team_changed_at": null,
+    "years_exp": null
+   },
+   "team": "CAR",
+   "opponent": "ATL",
+   "updated_at": 1790049657947,
+   "game_id": "202610202",
+   "week_shard": "2_2",
+   "company": "rotowire"
+  }
+ ],
+ "espn_scoreboard": {
+  "events": [
+   {
+    "id": "401872932",
+    "date": "2026-09-18T00:15Z",
+    "competitions": [
+     {
+      "status": {
+       "type": {
+        "state": "post",
+        "shortDetail": "Final",
+        "completed": true
+       }
+      },
+      "competitors": [
+       {
+        "homeAway": "home",
+        "score": "41",
+        "team": {
+         "abbreviation": "BUF"
+        }
+       },
+       {
+        "homeAway": "away",
+        "score": "31",
+        "team": {
+         "abbreviation": "DET"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "401872933",
+    "date": "2026-09-20T17:00Z",
+    "competitions": [
+     {
+      "status": {
+       "type": {
+        "state": "post",
+        "shortDetail": "Final",
+        "completed": true
+       }
+      },
+      "competitors": [
+       {
+        "homeAway": "home",
+        "score": "3",
+        "team": {
+         "abbreviation": "ATL"
+        }
+       },
+       {
+        "homeAway": "away",
+        "score": "34",
+        "team": {
+         "abbreviation": "CAR"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "401872937",
+    "date": "2026-09-20T17:00Z",
+    "competitions": [
+     {
+      "status": {
+       "type": {
+        "state": "post",
+        "shortDetail": "Final",
+        "completed": true
+       }
+      },
+      "competitors": [
+       {
+        "homeAway": "home",
+        "score": "3",
+        "team": {
+         "abbreviation": "CHI"
+        }
+       },
+       {
+        "homeAway": "away",
+        "score": "9",
+        "team": {
+         "abbreviation": "MIN"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "401872939",
+    "date": "2026-09-20T17:00Z",
+    "competitions": [
+     {
+      "status": {
+       "type": {
+        "state": "post",
+        "shortDetail": "Final",
+        "completed": true
+       }
+      },
+      "competitors": [
+       {
+        "homeAway": "home",
+        "score": "20",
+        "team": {
+         "abbreviation": "TEN"
+        }
+       },
+       {
+        "homeAway": "away",
+        "score": "24",
+        "team": {
+         "abbreviation": "PHI"
+        }
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "espn_summary": {
+  "scoringPlays": [
+   {
+    "id": "401872943178",
+    "type": {
+     "id": "67",
+     "text": "Passing Touchdown",
+     "abbreviation": "TD"
+    },
+    "text": "Jaxon Smith-Njigba 82 Yd pass from Drew Lock (Jason Myers Kick)",
+    "period": {
+     "number": 1
+    },
+    "clock": {
+     "value": 745.0,
+     "displayValue": "12:25"
+    },
+    "team": {
+     "abbreviation": "SEA"
+    }
+   },
+   {
+    "id": "401872943847",
+    "type": {
+     "id": "67",
+     "text": "Passing Touchdown",
+     "abbreviation": "TD"
+    },
+    "text": "Trey McBride 2 Yd pass from Jacoby Brissett (Chad Ryland Kick)",
+    "period": {
+     "number": 2
+    },
+    "clock": {
+     "value": 897.0,
+     "displayValue": "14:57"
+    },
+    "team": {
+     "abbreviation": "ARI"
+    }
+   },
+   {
+    "id": "4018729432310",
+    "type": {
+     "id": "67",
+     "text": "Passing Touchdown",
+     "abbreviation": "TD"
+    },
+    "text": "Jaxon Smith-Njigba 7 Yd pass from Drew Lock (Jason Myers Kick)",
+    "period": {
+     "number": 3
+    },
+    "clock": {
+     "value": 747.0,
+     "displayValue": "12:27"
+    },
+    "team": {
+     "abbreviation": "SEA"
+    }
+   },
+   {
+    "id": "4018729432665",
+    "type": {
+     "id": "59",
+     "text": "Field Goal Good",
+     "abbreviation": "FG"
+    },
+    "text": "Jason Myers 33 Yd Field Goal",
+    "period": {
+     "number": 3
+    },
+    "clock": {
+     "value": 407.0,
+     "displayValue": "6:47"
+    },
+    "team": {
+     "abbreviation": "SEA"
+    }
+   },
+   {
+    "id": "4018729433178",
+    "type": {
+     "id": "67",
+     "text": "Passing Touchdown",
+     "abbreviation": "TD"
+    },
+    "text": "Jaxon Smith-Njigba 12 Yd pass from Drew Lock (Jason Myers Kick)",
+    "period": {
+     "number": 4
+    },
+    "clock": {
+     "value": 760.0,
+     "displayValue": "12:40"
+    },
+    "team": {
+     "abbreviation": "SEA"
+    }
+   },
+   {
+    "id": "4018729433752",
+    "type": {
+     "id": "68",
+     "text": "Rushing Touchdown",
+     "abbreviation": "TD"
+    },
+    "text": "AJ Barner 1 Yd Rush (Jason Myers Kick)",
+    "period": {
+     "number": 4
+    },
+    "clock": {
+     "value": 71.0,
+     "displayValue": "1:11"
+    },
+    "team": {
+     "abbreviation": "SEA"
+    }
+   }
+  ]
+ },
+ "espn_fantasy": {
+  "players": [
+   {
+    "player": {
+     "id": 3918298,
+     "fullName": "Josh Allen",
+     "defaultPositionId": 1,
+     "proTeamId": 2,
+     "injuryStatus": "ACTIVE",
+     "stats": [
+      {
+       "scoringPeriodId": 2,
+       "statSourceId": 0,
+       "appliedTotal": 40.82,
+       "stats": {
+        "0": 31.0,
+        "1": 20.0,
+        "2": 11.0,
+        "3": 248.0,
+        "4": 3.0,
+        "5": 49.0,
+        "6": 24.0,
+        "7": 12.0,
+        "8": 9.0,
+        "9": 4.0,
+        "10": 2.0,
+        "11": 4.0,
+        "12": 2.0,
+        "13": 2.0,
+        "14": 1.0,
+        "15": 1.0,
+        "21": 64.52,
+        "22": 248.0,
+        "23": 14.0,
+        "24": 69.0,
+        "25": 2.0,
+        "27": 13.0,
+        "28": 6.0,
+        "29": 3.0,
+        "30": 2.0,
+        "31": 1.0,
+        "33": 2.0,
+        "34": 1.0,
+        "39": 4.929,
+        "40": 69.0,
+        "64": 2.0,
+        "65": 1.0,
+        "68": 1.0,
+        "155": 1.0,
+        "158": 30.0,
+        "175": 1.0,
+        "176": 1.0,
+        "179": 2.0,
+        "210": 1.0,
+        "211": 14.0,
+        "212": 8.0
+       }
+      },
+      {
+       "scoringPeriodId": 2,
+       "statSourceId": 1,
+       "appliedTotal": 22.65422402,
+       "stats": {
+        "0": 31.74777478,
+        "1": 21.10903155,
+        "2": 10.63874323,
+        "3": 245.1687367,
+        "4": 1.6659,
+        "5": 49.0,
+        "6": 24.0,
+        "7": 12.0,
+        "8": 9.0,
+        "9": 4.0,
+        "10": 2.0,
+        "11": 4.0,
+        "12": 2.0,
+        "15": 0.202983623,
+        "16": 0.132649798,
+        "17": 0.207160954,
+        "18": 0.027982013,
+        "19": 0.092904766,
+        "20": 0.731943025,
+        "21": 0.664897987,
+        "22": 245.1687367,
+        "23": 6.746984637,
+        "24": 32.63700196,
+        "25": 0.774960368,
+        "26": 0.0256,
+        "27": 6.0,
+        "28": 3.0,
+        "29": 1.0,
+        "30": 1.0,
+        "33": 1.0,
+        "35": 0.013145475,
+        "36": 0.0092,
+        "37": 0.0465,
+        "38": 0.00159,
+        "39": 4.837272309,
+        "40": 32.63700196,
+        "62": 0.118518623,
+        "63": 0.00239,
+        "64": 2.15258679,
+        "65": 0.452322988,
+        "66": 0.090023118,
+        "68": 0.542346106,
+        "69": 0.217115034,
+        "70": 0.041410634,
+        "72": 0.258525668,
+        "73": 0.990468693,
+        "210": 1.0,
+        "211": 11.72106632,
+        "212": 2.211515769
+       }
+      }
+     ]
+    }
+   },
+   {
+    "player": {
+     "id": 4430878,
+     "fullName": "Jaxon Smith-Njigba",
+     "defaultPositionId": 3,
+     "proTeamId": 26,
+     "injuryStatus": "ACTIVE",
+     "stats": [
+      {
+       "scoringPeriodId": 2,
+       "statSourceId": 0,
+       "appliedTotal": 42.5,
+       "stats": {
+        "41": 9.0,
+        "42": 155.0,
+        "43": 3.0,
+        "45": 1.0,
+        "46": 1.0,
+        "47": 31.0,
+        "48": 15.0,
+        "49": 7.0,
+        "50": 6.0,
+        "51": 3.0,
+        "52": 1.0,
+        "53": 9.0,
+        "54": 1.0,
+        "56": 1.0,
+        "58": 11.0,
+        "59": 52.0,
+        "60": 17.222,
+        "61": 155.0,
+        "155": 1.0,
+        "158": 18.0,
+        "183": 1.0,
+        "184": 1.0,
+        "210": 1.0,
+        "213": 8.0
+       }
+      },
+      {
+       "scoringPeriodId": 2,
+       "statSourceId": 1,
+       "appliedTotal": 18.49166582,
+       "stats": {
+        "23": 0.281361397,
+        "24": 1.586876572,
+        "25": 0.013401327,
+        "26": 0.000524263,
+        "35": 0.000517333,
+        "36": 0.000362,
+        "37": 9.87e-05,
+        "38": 3.37e-06,
+        "39": 5.639993935,
+        "40": 1.586876572,
+        "42": 83.89232897,
+        "43": 0.566426908,
+        "44": 0.028205416,
+        "45": 0.015265052,
+        "46": 0.009975712,
+        "47": 16.0,
+        "48": 8.0,
+        "49": 4.0,
+        "50": 3.0,
+        "51": 1.0,
+        "53": 6.534213508,
+        "56": 0.329115669,
+        "57": 0.0102,
+        "58": 9.646785729,
+        "60": 12.83893293,
+        "61": 83.89232897,
+        "62": 0.028729679,
+        "63": 0.000514,
+        "66": 0.004826555,
+        "67": 0.112089801,
+        "68": 0.116916356,
+        "70": 0.002220215,
+        "71": 0.062770289,
+        "72": 0.064990504,
+        "73": 0.064990504,
+        "210": 1.0,
+        "212": 0.202547461,
+        "213": 3.966774915
+       }
+      }
+     ]
+    }
+   },
+   {
+    "player": {
+     "id": 3150744,
+     "fullName": "Chase McLaughlin",
+     "defaultPositionId": 5,
+     "proTeamId": 27,
+     "injuryStatus": "ACTIVE",
+     "stats": [
+      {
+       "scoringPeriodId": 2,
+       "statSourceId": 0,
+       "appliedTotal": 16.0,
+       "stats": {
+        "74": 1.0,
+        "75": 1.0,
+        "77": 1.0,
+        "78": 1.0,
+        "80": 2.0,
+        "81": 2.0,
+        "83": 4.0,
+        "84": 4.0,
+        "86": 1.0,
+        "87": 1.0,
+        "156": 1.0,
+        "158": 13.0,
+        "198": 1.0,
+        "199": 1.0,
+        "210": 1.0,
+        "214": 166.0,
+        "216": 166.0,
+        "217": 33.0,
+        "218": 16.0,
+        "219": 8.0,
+        "220": 6.0,
+        "221": 3.0,
+        "222": 1.0,
+        "229": 33.0,
+        "230": 16.0,
+        "231": 8.0,
+        "232": 6.0,
+        "233": 3.0,
+        "234": 1.0
+       }
+      },
+      {
+       "scoringPeriodId": 2,
+       "statSourceId": 1,
+       "appliedTotal": 8.7745228,
+       "stats": {
+        "74": 0.354049407,
+        "75": 0.489835672,
+        "76": 0.135786265,
+        "77": 0.466767047,
+        "78": 0.559812196,
+        "79": 0.093045149,
+        "80": 0.995165344,
+        "81": 1.008485206,
+        "82": 0.013319862,
+        "83": 1.815981799,
+        "84": 2.058133074,
+        "85": 0.242151275,
+        "86": 2.393862822,
+        "87": 2.442717166,
+        "88": 0.048854343,
+        "198": 0.354049407,
+        "199": 0.489835672,
+        "200": 0.135786265,
+        "210": 1.0,
+        "214": 69.97814544,
+        "215": 11.91908584,
+        "216": 81.89723128
+       }
+      }
+     ]
+    }
+   },
+   {
+    "player": {
+     "id": -16029,
+     "fullName": "Panthers D/ST",
+     "defaultPositionId": 16,
+     "proTeamId": 29,
+     "injuryStatus": null,
+     "stats": [
+      {
+       "scoringPeriodId": 2,
+       "statSourceId": 0,
+       "appliedTotal": 24.0,
+       "stats": {
+        "89": 0.0,
+        "90": 1.0,
+        "91": 0.0,
+        "92": 0.0,
+        "94": 1.0,
+        "95": 3.0,
+        "96": 2.0,
+        "99": 2.0,
+        "100": 4.0,
+        "103": 1.0,
+        "105": 1.0,
+        "106": 1.0,
+        "107": 28.0,
+        "108": 41.0,
+        "109": 69.0,
+        "110": 23.0,
+        "111": 13.0,
+        "112": 1.0,
+        "113": 9.0,
+        "114": 53.0,
+        "115": 49.0,
+        "116": 5.0,
+        "117": 2.0,
+        "118": 4.0,
+        "119": 1.0,
+        "120": 3.0,
+        "121": 0.0,
+        "122": 0.0,
+        "123": 0.0,
+        "124": 0.0,
+        "127": 286.0,
+        "128": 0.0,
+        "129": 0.0,
+        "130": 1.0,
+        "131": 0.0,
+        "132": 0.0,
+        "133": 0.0,
+        "134": 0.0,
+        "135": 0.0,
+        "136": 0.0,
+        "155": 1.0,
+        "187": 3.0,
+        "188": 0.0,
+        "189": 1.0,
+        "190": 0.0,
+        "191": 0.0,
+        "192": 0.0,
+        "193": 0.0,
+        "194": 0.0,
+        "195": 0.0,
+        "210": 1.0
+       }
+      },
+      {
+       "scoringPeriodId": 2,
+       "statSourceId": 1,
+       "appliedTotal": 5.60756951,
+       "stats": {
+        "89": 0.014411529,
+        "90": 0.065052042,
+        "91": 0.221176942,
+        "92": 0.192153723,
+        "93": 0.007201829,
+        "94": 0.090315614,
+        "95": 0.827004283,
+        "96": 0.37390146,
+        "97": 0.114732933,
+        "98": 0.015515262,
+        "99": 1.825723888,
+        "100": 3.651447776,
+        "101": 0.010294839,
+        "102": 0.016598118,
+        "103": 0.059664711,
+        "104": 0.030650903,
+        "105": 0.1244104,
+        "106": 0.575233015,
+        "109": 59.09593987,
+        "110": 19.0,
+        "111": 11.0,
+        "112": 2.557544511,
+        "113": 3.84362677,
+        "114": 91.94356158,
+        "115": 16.59811816,
+        "116": 9.0,
+        "117": 3.0,
+        "118": 1.0,
+        "120": 19.7959209,
+        "121": 0.145116093,
+        "122": 0.192153723,
+        "123": 0.121096878,
+        "124": 0.044035228,
+        "125": 0.004803843,
+        "126": 19.7959209,
+        "127": 336.4141379,
+        "129": 0.032524393,
+        "130": 0.270202652,
+        "131": 0.232674506,
+        "132": 0.225168877,
+        "133": 0.142606955,
+        "134": 0.065048787,
+        "135": 0.025018764,
+        "136": 0.006755066,
+        "137": 336.4141379,
+        "210": 1.0
+       }
+      }
+     ]
+    }
+   }
+  ]
+ }
+}
