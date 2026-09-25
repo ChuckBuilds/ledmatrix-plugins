@@ -1,0 +1,2381 @@
+{
+ "plays": [
+  {
+   "id": "4018170630000000059",
+   "sequenceNumber": "1",
+   "atBatId": "4018170630001",
+   "type": {
+    "id": "59",
+    "text": "Start Inning",
+    "type": "start-inning"
+   },
+   "text": "Top of the 1st inning",
+   "resultCount": {
+    "balls": 0,
+    "strikes": 0
+   },
+   "scoringPlay": false,
+   "period": {
+    "type": "Top",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 0,
+   "team": {
+    "id": "24"
+   }
+  },
+  {
+   "id": "4018170630001010001",
+   "sequenceNumber": "1",
+   "atBatId": "4018170630001",
+   "type": {
+    "id": "1",
+    "text": "Start Batter/Pitcher",
+    "alternativeText": "Now at bat",
+    "type": "start-batterpitcher"
+   },
+   "text": "Paul Skenes pitches to JJ Wetherholt",
+   "participants": [
+    {
+     "athlete": {
+      "id": "4719507"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "4941056"
+     },
+     "type": "batter"
+    }
+   ],
+   "resultCount": {
+    "balls": 0,
+    "strikes": 0
+   },
+   "scoringPlay": false,
+   "period": {
+    "type": "Top",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 1,
+   "team": {
+    "id": "24"
+   }
+  },
+  {
+   "id": "4018170630001020005",
+   "sequenceNumber": "2",
+   "atBatId": "4018170630001",
+   "atBatPitchNumber": 1,
+   "type": {
+    "id": "5",
+    "text": "Ball",
+    "abbreviation": "B",
+    "alternativeText": "Walk",
+    "type": "ball"
+   },
+   "text": "Pitch 1 : Ball 1",
+   "participants": [
+    {
+     "athlete": {
+      "id": "4719507"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "4941056"
+     },
+     "type": "batter"
+    }
+   ],
+   "resultCount": {
+    "balls": 1,
+    "strikes": 0
+   },
+   "pitchType": {
+    "id": "17",
+    "text": "Four-seam FB",
+    "abbreviation": "FF"
+   },
+   "pitchVelocity": 94,
+   "scoringPlay": false,
+   "period": {
+    "type": "Top",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 1,
+   "team": {
+    "id": "23"
+   }
+  },
+  {
+   "id": "4018170630001030022",
+   "sequenceNumber": "3",
+   "atBatId": "4018170630001",
+   "atBatPitchNumber": 2,
+   "type": {
+    "id": "22",
+    "text": "Fly Out",
+    "abbreviation": "FLY",
+    "alternativeText": "Fly Out",
+    "type": "fly-out"
+   },
+   "text": "Pitch 2 : Ball In Play",
+   "participants": [
+    {
+     "athlete": {
+      "id": "4719507"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "4941056"
+     },
+     "type": "batter"
+    }
+   ],
+   "resultCount": {
+    "balls": 1,
+    "strikes": 0
+   },
+   "pitchType": {
+    "id": "17",
+    "text": "Four-seam FB",
+    "abbreviation": "FF"
+   },
+   "pitchVelocity": 95,
+   "scoringPlay": false,
+   "period": {
+    "type": "Top",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 1,
+   "team": {
+    "id": "23"
+   }
+  },
+  {
+   "id": "4018170630001990057",
+   "sequenceNumber": "4",
+   "atBatId": "4018170630001",
+   "atBatPitchNumber": 2,
+   "type": {
+    "id": "57",
+    "text": "Play Result",
+    "type": "play-result"
+   },
+   "text": "Wetherholt flied out to center.",
+   "participants": [
+    {
+     "athlete": {
+      "id": "4719507"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "4941056"
+     },
+     "type": "batter"
+    }
+   ],
+   "resultCount": {
+    "balls": 1,
+    "strikes": 0
+   },
+   "scoringPlay": false,
+   "period": {
+    "type": "Top",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 1,
+   "team": {
+    "id": "24"
+   }
+  },
+  {
+   "id": "4018170630001990099",
+   "sequenceNumber": "5",
+   "atBatId": "4018170630001",
+   "atBatPitchNumber": 2,
+   "type": {
+    "id": "99",
+    "text": "End Batter/Pitcher",
+    "type": "end-batterpitcher"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "4719507"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "4941056"
+     },
+     "type": "batter"
+    }
+   ],
+   "resultCount": {
+    "balls": 1,
+    "strikes": 0
+   },
+   "scoringPlay": false,
+   "period": {
+    "type": "Top",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 1,
+   "team": {
+    "id": "24"
+   }
+  },
+  {
+   "id": "4018170630002010001",
+   "sequenceNumber": "1",
+   "atBatId": "4018170630002",
+   "type": {
+    "id": "1",
+    "text": "Start Batter/Pitcher",
+    "alternativeText": "Now at bat",
+    "type": "start-batterpitcher"
+   },
+   "text": "Paul Skenes pitches to Ivan Herrera",
+   "participants": [
+    {
+     "athlete": {
+      "id": "4719507"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "41889"
+     },
+     "type": "batter"
+    }
+   ],
+   "resultCount": {
+    "balls": 0,
+    "strikes": 0
+   },
+   "scoringPlay": false,
+   "period": {
+    "type": "Top",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 2,
+   "team": {
+    "id": "24"
+   }
+  },
+  {
+   "id": "4018170630002020036",
+   "sequenceNumber": "2",
+   "atBatId": "4018170630002",
+   "atBatPitchNumber": 1,
+   "type": {
+    "id": "36",
+    "text": "Strike Looking",
+    "abbreviation": "SL",
+    "alternativeText": "Strikeout",
+    "type": "strike-looking"
+   },
+   "text": "Pitch 1 : Strike 1 Looking",
+   "participants": [
+    {
+     "athlete": {
+      "id": "4719507"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "41889"
+     },
+     "type": "batter"
+    }
+   ],
+   "resultCount": {
+    "balls": 0,
+    "strikes": 1
+   },
+   "pitchType": {
+    "id": "17",
+    "text": "Four-seam FB",
+    "abbreviation": "FF"
+   },
+   "pitchVelocity": 96,
+   "scoringPlay": false,
+   "period": {
+    "type": "Top",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 2,
+   "team": {
+    "id": "23"
+   }
+  },
+  {
+   "id": "4018170630002030005",
+   "sequenceNumber": "3",
+   "atBatId": "4018170630002",
+   "atBatPitchNumber": 2,
+   "type": {
+    "id": "5",
+    "text": "Ball",
+    "abbreviation": "B",
+    "alternativeText": "Walk",
+    "type": "ball"
+   },
+   "text": "Pitch 2 : Ball 1",
+   "participants": [
+    {
+     "athlete": {
+      "id": "4719507"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "41889"
+     },
+     "type": "batter"
+    }
+   ],
+   "resultCount": {
+    "balls": 1,
+    "strikes": 1
+   },
+   "pitchType": {
+    "id": "2",
+    "text": "Sinker",
+    "abbreviation": "SI"
+   },
+   "pitchVelocity": 95,
+   "scoringPlay": false,
+   "period": {
+    "type": "Top",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 2,
+   "team": {
+    "id": "23"
+   }
+  },
+  {
+   "id": "4018170630002040036",
+   "sequenceNumber": "4",
+   "atBatId": "4018170630002",
+   "atBatPitchNumber": 3,
+   "type": {
+    "id": "36",
+    "text": "Strike Looking",
+    "abbreviation": "SL",
+    "alternativeText": "Strikeout",
+    "type": "strike-looking"
+   },
+   "text": "Pitch 3 : Strike 2 Looking",
+   "participants": [
+    {
+     "athlete": {
+      "id": "4719507"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "41889"
+     },
+     "type": "batter"
+    }
+   ],
+   "resultCount": {
+    "balls": 1,
+    "strikes": 2
+   },
+   "pitchType": {
+    "id": "25",
+    "text": "Sweeper",
+    "abbreviation": "ST"
+   },
+   "pitchVelocity": 84,
+   "scoringPlay": false,
+   "period": {
+    "type": "Top",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 2,
+   "team": {
+    "id": "23"
+   }
+  },
+  {
+   "id": "4018170630002050037",
+   "sequenceNumber": "5",
+   "atBatId": "4018170630002",
+   "atBatPitchNumber": 4,
+   "type": {
+    "id": "37",
+    "text": "Strike Swinging",
+    "abbreviation": "SS",
+    "alternativeText": "Strikeout",
+    "type": "strike-swinging"
+   },
+   "text": "Pitch 4 : Strike 3 Swinging",
+   "participants": [
+    {
+     "athlete": {
+      "id": "4719507"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "41889"
+     },
+     "type": "batter"
+    }
+   ],
+   "resultCount": {
+    "balls": 1,
+    "strikes": 3
+   },
+   "pitchType": {
+    "id": "6",
+    "text": "Changeup",
+    "abbreviation": "CH"
+   },
+   "pitchVelocity": 88,
+   "scoringPlay": false,
+   "period": {
+    "type": "Top",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 2,
+   "team": {
+    "id": "23"
+   }
+  },
+  {
+   "id": "4018170630002990057",
+   "sequenceNumber": "6",
+   "atBatId": "4018170630002",
+   "atBatPitchNumber": 4,
+   "type": {
+    "id": "57",
+    "text": "Play Result",
+    "type": "play-result"
+   },
+   "text": "Herrera struck out swinging.",
+   "participants": [
+    {
+     "athlete": {
+      "id": "4719507"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "41889"
+     },
+     "type": "batter"
+    }
+   ],
+   "resultCount": {
+    "balls": 1,
+    "strikes": 3
+   },
+   "scoringPlay": false,
+   "period": {
+    "type": "Top",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 2,
+   "team": {
+    "id": "24"
+   }
+  },
+  {
+   "id": "4018170630002990099",
+   "sequenceNumber": "7",
+   "atBatId": "4018170630002",
+   "atBatPitchNumber": 4,
+   "type": {
+    "id": "99",
+    "text": "End Batter/Pitcher",
+    "type": "end-batterpitcher"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "4719507"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "41889"
+     },
+     "type": "batter"
+    }
+   ],
+   "resultCount": {
+    "balls": 1,
+    "strikes": 3
+   },
+   "scoringPlay": false,
+   "period": {
+    "type": "Top",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 2,
+   "team": {
+    "id": "24"
+   }
+  },
+  {
+   "id": "4018170630003010001",
+   "sequenceNumber": "1",
+   "atBatId": "4018170630003",
+   "type": {
+    "id": "1",
+    "text": "Start Batter/Pitcher",
+    "alternativeText": "Now at bat",
+    "type": "start-batterpitcher"
+   },
+   "text": "Paul Skenes pitches to Alec Burleson",
+   "participants": [
+    {
+     "athlete": {
+      "id": "4719507"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "4345070"
+     },
+     "type": "batter"
+    }
+   ],
+   "resultCount": {
+    "balls": 0,
+    "strikes": 0
+   },
+   "scoringPlay": false,
+   "period": {
+    "type": "Top",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 2,
+   "team": {
+    "id": "24"
+   }
+  },
+  {
+   "id": "4018170630003020028",
+   "sequenceNumber": "2",
+   "atBatId": "4018170630003",
+   "atBatPitchNumber": 1,
+   "type": {
+    "id": "28",
+    "text": "Home Run",
+    "abbreviation": "HR",
+    "alternativeText": "Home Run",
+    "type": "home-run"
+   },
+   "text": "Pitch 1 : Ball In Play",
+   "participants": [
+    {
+     "athlete": {
+      "id": "4719507"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "4345070"
+     },
+     "type": "batter"
+    }
+   ],
+   "resultCount": {
+    "balls": 0,
+    "strikes": 0
+   },
+   "pitchType": {
+    "id": "17",
+    "text": "Four-seam FB",
+    "abbreviation": "FF"
+   },
+   "pitchVelocity": 95,
+   "scoringPlay": false,
+   "period": {
+    "type": "Top",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 2,
+   "team": {
+    "id": "23"
+   }
+  },
+  {
+   "id": "4018170630003990057",
+   "sequenceNumber": "3",
+   "atBatId": "4018170630003",
+   "atBatPitchNumber": 1,
+   "type": {
+    "id": "57",
+    "text": "Play Result",
+    "type": "play-result"
+   },
+   "text": "Burleson homered to right center (395 feet).",
+   "participants": [
+    {
+     "athlete": {
+      "id": "4719507"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "4345070"
+     },
+     "type": "batter"
+    }
+   ],
+   "resultCount": {
+    "balls": 0,
+    "strikes": 0
+   },
+   "scoringPlay": true,
+   "period": {
+    "type": "Top",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 2,
+   "team": {
+    "id": "24"
+   }
+  },
+  {
+   "id": "4018170630003990099",
+   "sequenceNumber": "4",
+   "atBatId": "4018170630003",
+   "atBatPitchNumber": 1,
+   "type": {
+    "id": "99",
+    "text": "End Batter/Pitcher",
+    "type": "end-batterpitcher"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "4719507"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "4345070"
+     },
+     "type": "batter"
+    }
+   ],
+   "resultCount": {
+    "balls": 0,
+    "strikes": 0
+   },
+   "scoringPlay": false,
+   "period": {
+    "type": "Top",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 2,
+   "team": {
+    "id": "24"
+   }
+  },
+  {
+   "id": "4018170630004010001",
+   "sequenceNumber": "1",
+   "atBatId": "4018170630004",
+   "type": {
+    "id": "1",
+    "text": "Start Batter/Pitcher",
+    "alternativeText": "Now at bat",
+    "type": "start-batterpitcher"
+   },
+   "text": "Paul Skenes pitches to Jordan Walker",
+   "participants": [
+    {
+     "athlete": {
+      "id": "4719507"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "4684778"
+     },
+     "type": "batter"
+    }
+   ],
+   "resultCount": {
+    "balls": 0,
+    "strikes": 0
+   },
+   "scoringPlay": false,
+   "period": {
+    "type": "Top",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 3,
+   "team": {
+    "id": "24"
+   }
+  },
+  {
+   "id": "4018170630004020021",
+   "sequenceNumber": "2",
+   "atBatId": "4018170630004",
+   "atBatPitchNumber": 1,
+   "type": {
+    "id": "21",
+    "text": "Foul Ball",
+    "abbreviation": "F",
+    "type": "foul-ball"
+   },
+   "text": "Pitch 1 : Strike 1 Foul",
+   "participants": [
+    {
+     "athlete": {
+      "id": "4719507"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "4684778"
+     },
+     "type": "batter"
+    }
+   ],
+   "resultCount": {
+    "balls": 0,
+    "strikes": 1
+   },
+   "pitchType": {
+    "id": "17",
+    "text": "Four-seam FB",
+    "abbreviation": "FF"
+   },
+   "pitchVelocity": 97,
+   "scoringPlay": false,
+   "period": {
+    "type": "Top",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 3,
+   "team": {
+    "id": "23"
+   }
+  },
+  {
+   "id": "4018170630004030005",
+   "sequenceNumber": "3",
+   "atBatId": "4018170630004",
+   "atBatPitchNumber": 2,
+   "type": {
+    "id": "5",
+    "text": "Ball",
+    "abbreviation": "B",
+    "alternativeText": "Walk",
+    "type": "ball"
+   },
+   "text": "Pitch 2 : Ball 1",
+   "participants": [
+    {
+     "athlete": {
+      "id": "4719507"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "4684778"
+     },
+     "type": "batter"
+    }
+   ],
+   "resultCount": {
+    "balls": 1,
+    "strikes": 1
+   },
+   "pitchType": {
+    "id": "25",
+    "text": "Sweeper",
+    "abbreviation": "ST"
+   },
+   "pitchVelocity": 83,
+   "scoringPlay": false,
+   "period": {
+    "type": "Top",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 3,
+   "team": {
+    "id": "23"
+   }
+  },
+  {
+   "id": "4018170630004040037",
+   "sequenceNumber": "4",
+   "atBatId": "4018170630004",
+   "atBatPitchNumber": 3,
+   "type": {
+    "id": "37",
+    "text": "Strike Swinging",
+    "abbreviation": "SS",
+    "alternativeText": "Strikeout",
+    "type": "strike-swinging"
+   },
+   "text": "Pitch 3 : Strike 2 Swinging",
+   "participants": [
+    {
+     "athlete": {
+      "id": "4719507"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "4684778"
+     },
+     "type": "batter"
+    }
+   ],
+   "resultCount": {
+    "balls": 1,
+    "strikes": 2
+   },
+   "pitchType": {
+    "id": "2",
+    "text": "Sinker",
+    "abbreviation": "SI"
+   },
+   "pitchVelocity": 95,
+   "scoringPlay": false,
+   "period": {
+    "type": "Top",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 3,
+   "team": {
+    "id": "23"
+   }
+  },
+  {
+   "id": "4018170630004050005",
+   "sequenceNumber": "5",
+   "atBatId": "4018170630004",
+   "atBatPitchNumber": 4,
+   "type": {
+    "id": "5",
+    "text": "Ball",
+    "abbreviation": "B",
+    "alternativeText": "Walk",
+    "type": "ball"
+   },
+   "text": "Pitch 4 : Ball 2",
+   "participants": [
+    {
+     "athlete": {
+      "id": "4719507"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "4684778"
+     },
+     "type": "batter"
+    }
+   ],
+   "resultCount": {
+    "balls": 2,
+    "strikes": 2
+   },
+   "pitchType": {
+    "id": "2",
+    "text": "Sinker",
+    "abbreviation": "SI"
+   },
+   "pitchVelocity": 96,
+   "scoringPlay": false,
+   "period": {
+    "type": "Top",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 3,
+   "team": {
+    "id": "23"
+   }
+  },
+  {
+   "id": "4018170630004060037",
+   "sequenceNumber": "6",
+   "atBatId": "4018170630004",
+   "atBatPitchNumber": 5,
+   "type": {
+    "id": "37",
+    "text": "Strike Swinging",
+    "abbreviation": "SS",
+    "alternativeText": "Strikeout",
+    "type": "strike-swinging"
+   },
+   "text": "Pitch 5 : Strike 3 Swinging",
+   "participants": [
+    {
+     "athlete": {
+      "id": "4719507"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "4684778"
+     },
+     "type": "batter"
+    }
+   ],
+   "resultCount": {
+    "balls": 2,
+    "strikes": 3
+   },
+   "pitchType": {
+    "id": "5",
+    "text": "Slider",
+    "abbreviation": "SL"
+   },
+   "pitchVelocity": 85,
+   "scoringPlay": false,
+   "period": {
+    "type": "Top",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 3,
+   "team": {
+    "id": "23"
+   }
+  },
+  {
+   "id": "4018170630004990057",
+   "sequenceNumber": "7",
+   "atBatId": "4018170630004",
+   "atBatPitchNumber": 5,
+   "type": {
+    "id": "57",
+    "text": "Play Result",
+    "type": "play-result"
+   },
+   "text": "Walker struck out swinging.",
+   "participants": [
+    {
+     "athlete": {
+      "id": "4719507"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "4684778"
+     },
+     "type": "batter"
+    }
+   ],
+   "resultCount": {
+    "balls": 2,
+    "strikes": 3
+   },
+   "scoringPlay": false,
+   "period": {
+    "type": "Top",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 3,
+   "team": {
+    "id": "24"
+   }
+  },
+  {
+   "id": "4018170630004990099",
+   "sequenceNumber": "8",
+   "atBatId": "4018170630004",
+   "atBatPitchNumber": 5,
+   "type": {
+    "id": "99",
+    "text": "End Batter/Pitcher",
+    "type": "end-batterpitcher"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "4719507"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "4684778"
+     },
+     "type": "batter"
+    }
+   ],
+   "resultCount": {
+    "balls": 2,
+    "strikes": 3
+   },
+   "scoringPlay": false,
+   "period": {
+    "type": "Top",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 3,
+   "team": {
+    "id": "24"
+   }
+  },
+  {
+   "id": "4018170630099990058",
+   "sequenceNumber": "2",
+   "atBatId": "4018170630004",
+   "type": {
+    "id": "58",
+    "text": "End Inning",
+    "type": "end-inning"
+   },
+   "text": "Middle of the 1st inning",
+   "resultCount": {
+    "balls": 0,
+    "strikes": 0
+   },
+   "scoringPlay": false,
+   "period": {
+    "type": "Mid",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 0,
+   "team": {
+    "id": "24"
+   }
+  },
+  {
+   "id": "4018170630100000059",
+   "sequenceNumber": "1",
+   "atBatId": "4018170630101",
+   "type": {
+    "id": "59",
+    "text": "Start Inning",
+    "type": "start-inning"
+   },
+   "text": "Bottom of the 1st inning",
+   "resultCount": {
+    "balls": 0,
+    "strikes": 0
+   },
+   "scoringPlay": false,
+   "period": {
+    "type": "Bottom",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 0,
+   "team": {
+    "id": "23"
+   }
+  },
+  {
+   "id": "4018170630101010001",
+   "sequenceNumber": "1",
+   "atBatId": "4018170630101",
+   "type": {
+    "id": "1",
+    "text": "Start Batter/Pitcher",
+    "alternativeText": "Now at bat",
+    "type": "start-batterpitcher"
+   },
+   "text": "Kyle Leahy pitches to Oneil Cruz",
+   "participants": [
+    {
+     "athlete": {
+      "id": "5006093"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "39712"
+     },
+     "type": "batter"
+    }
+   ],
+   "resultCount": {
+    "balls": 0,
+    "strikes": 0
+   },
+   "scoringPlay": false,
+   "period": {
+    "type": "Bottom",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 0,
+   "team": {
+    "id": "23"
+   }
+  },
+  {
+   "id": "4018170630101020021",
+   "sequenceNumber": "2",
+   "atBatId": "4018170630101",
+   "atBatPitchNumber": 1,
+   "type": {
+    "id": "21",
+    "text": "Foul Ball",
+    "abbreviation": "F",
+    "type": "foul-ball"
+   },
+   "text": "Pitch 1 : Strike 1 Foul",
+   "participants": [
+    {
+     "athlete": {
+      "id": "5006093"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "39712"
+     },
+     "type": "batter"
+    }
+   ],
+   "resultCount": {
+    "balls": 0,
+    "strikes": 1
+   },
+   "pitchType": {
+    "id": "17",
+    "text": "Four-seam FB",
+    "abbreviation": "FF"
+   },
+   "pitchVelocity": 94,
+   "scoringPlay": false,
+   "period": {
+    "type": "Bottom",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 0,
+   "team": {
+    "id": "24"
+   }
+  },
+  {
+   "id": "4018170630101030005",
+   "sequenceNumber": "3",
+   "atBatId": "4018170630101",
+   "atBatPitchNumber": 2,
+   "type": {
+    "id": "5",
+    "text": "Ball",
+    "abbreviation": "B",
+    "alternativeText": "Walk",
+    "type": "ball"
+   },
+   "text": "Pitch 2 : Ball 1",
+   "participants": [
+    {
+     "athlete": {
+      "id": "5006093"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "39712"
+     },
+     "type": "batter"
+    }
+   ],
+   "resultCount": {
+    "balls": 1,
+    "strikes": 1
+   },
+   "pitchType": {
+    "id": "17",
+    "text": "Four-seam FB",
+    "abbreviation": "FF"
+   },
+   "pitchVelocity": 93,
+   "scoringPlay": false,
+   "period": {
+    "type": "Bottom",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 0,
+   "team": {
+    "id": "24"
+   }
+  },
+  {
+   "id": "4018170630101040003",
+   "sequenceNumber": "4",
+   "atBatId": "4018170630101",
+   "atBatPitchNumber": 3,
+   "type": {
+    "id": "3",
+    "text": "Double",
+    "abbreviation": "2B",
+    "alternativeText": "Double",
+    "type": "double"
+   },
+   "text": "Pitch 3 : Ball In Play",
+   "participants": [
+    {
+     "athlete": {
+      "id": "5006093"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "39712"
+     },
+     "type": "batter"
+    }
+   ],
+   "resultCount": {
+    "balls": 1,
+    "strikes": 1
+   },
+   "pitchType": {
+    "id": "6",
+    "text": "Changeup",
+    "abbreviation": "CH"
+   },
+   "pitchVelocity": 88,
+   "scoringPlay": false,
+   "period": {
+    "type": "Bottom",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 0,
+   "team": {
+    "id": "24"
+   }
+  },
+  {
+   "id": "4018170630101990057",
+   "sequenceNumber": "5",
+   "atBatId": "4018170630101",
+   "atBatPitchNumber": 3,
+   "type": {
+    "id": "57",
+    "text": "Play Result",
+    "type": "play-result"
+   },
+   "text": "Cruz doubled to center.",
+   "participants": [
+    {
+     "athlete": {
+      "id": "5006093"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "39712"
+     },
+     "type": "batter"
+    },
+    {
+     "athlete": {
+      "id": "39712"
+     },
+     "type": "onSecond"
+    }
+   ],
+   "resultCount": {
+    "balls": 1,
+    "strikes": 1
+   },
+   "scoringPlay": false,
+   "period": {
+    "type": "Bottom",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 0,
+   "team": {
+    "id": "23"
+   }
+  },
+  {
+   "id": "4018170630101990099",
+   "sequenceNumber": "6",
+   "atBatId": "4018170630101",
+   "atBatPitchNumber": 3,
+   "type": {
+    "id": "99",
+    "text": "End Batter/Pitcher",
+    "type": "end-batterpitcher"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "5006093"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "39712"
+     },
+     "type": "batter"
+    },
+    {
+     "athlete": {
+      "id": "39712"
+     },
+     "type": "onSecond"
+    }
+   ],
+   "resultCount": {
+    "balls": 1,
+    "strikes": 1
+   },
+   "scoringPlay": false,
+   "period": {
+    "type": "Bottom",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 0,
+   "team": {
+    "id": "23"
+   }
+  },
+  {
+   "id": "4018170630102010001",
+   "sequenceNumber": "1",
+   "atBatId": "4018170630102",
+   "type": {
+    "id": "1",
+    "text": "Start Batter/Pitcher",
+    "alternativeText": "Now at bat",
+    "type": "start-batterpitcher"
+   },
+   "text": "Kyle Leahy pitches to Konnor Griffin",
+   "participants": [
+    {
+     "athlete": {
+      "id": "5006093"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "5218285"
+     },
+     "type": "batter"
+    },
+    {
+     "athlete": {
+      "id": "39712"
+     },
+     "type": "onSecond"
+    }
+   ],
+   "resultCount": {
+    "balls": 0,
+    "strikes": 0
+   },
+   "scoringPlay": false,
+   "period": {
+    "type": "Bottom",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 1,
+   "team": {
+    "id": "23"
+   }
+  },
+  {
+   "id": "4018170630102020005",
+   "sequenceNumber": "2",
+   "atBatId": "4018170630102",
+   "atBatPitchNumber": 1,
+   "type": {
+    "id": "5",
+    "text": "Ball",
+    "abbreviation": "B",
+    "alternativeText": "Walk",
+    "type": "ball"
+   },
+   "text": "Pitch 1 : Ball 1",
+   "participants": [
+    {
+     "athlete": {
+      "id": "5006093"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "5218285"
+     },
+     "type": "batter"
+    },
+    {
+     "athlete": {
+      "id": "39712"
+     },
+     "type": "onSecond"
+    }
+   ],
+   "resultCount": {
+    "balls": 1,
+    "strikes": 0
+   },
+   "pitchType": {
+    "id": "5",
+    "text": "Slider",
+    "abbreviation": "SL"
+   },
+   "pitchVelocity": 90,
+   "scoringPlay": false,
+   "period": {
+    "type": "Bottom",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 1,
+   "team": {
+    "id": "24"
+   }
+  },
+  {
+   "id": "4018170630102030036",
+   "sequenceNumber": "3",
+   "atBatId": "4018170630102",
+   "atBatPitchNumber": 2,
+   "type": {
+    "id": "36",
+    "text": "Strike Looking",
+    "abbreviation": "SL",
+    "alternativeText": "Strikeout",
+    "type": "strike-looking"
+   },
+   "text": "Pitch 2 : Strike 1 Looking",
+   "participants": [
+    {
+     "athlete": {
+      "id": "5006093"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "5218285"
+     },
+     "type": "batter"
+    },
+    {
+     "athlete": {
+      "id": "39712"
+     },
+     "type": "onSecond"
+    }
+   ],
+   "resultCount": {
+    "balls": 1,
+    "strikes": 1
+   },
+   "pitchType": {
+    "id": "2",
+    "text": "Sinker",
+    "abbreviation": "SI"
+   },
+   "pitchVelocity": 94,
+   "scoringPlay": false,
+   "period": {
+    "type": "Bottom",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 1,
+   "team": {
+    "id": "24"
+   }
+  },
+  {
+   "id": "4018170630102040005",
+   "sequenceNumber": "4",
+   "atBatId": "4018170630102",
+   "atBatPitchNumber": 3,
+   "type": {
+    "id": "5",
+    "text": "Ball",
+    "abbreviation": "B",
+    "alternativeText": "Walk",
+    "type": "ball"
+   },
+   "text": "Pitch 3 : Ball 2",
+   "participants": [
+    {
+     "athlete": {
+      "id": "5006093"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "5218285"
+     },
+     "type": "batter"
+    },
+    {
+     "athlete": {
+      "id": "39712"
+     },
+     "type": "onSecond"
+    }
+   ],
+   "resultCount": {
+    "balls": 2,
+    "strikes": 1
+   },
+   "pitchType": {
+    "id": "2",
+    "text": "Sinker",
+    "abbreviation": "SI"
+   },
+   "pitchVelocity": 95,
+   "scoringPlay": false,
+   "period": {
+    "type": "Bottom",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 1,
+   "team": {
+    "id": "24"
+   }
+  },
+  {
+   "id": "4018170630102040252",
+   "sequenceNumber": "5",
+   "atBatId": "4018170630102",
+   "atBatPitchNumber": 3,
+   "type": {
+    "id": "52",
+    "text": "Stolen Base",
+    "abbreviation": "SB",
+    "alternativeText": "Stolen Base",
+    "type": "stolen-base"
+   },
+   "text": "Cruz stole third.",
+   "participants": [
+    {
+     "athlete": {
+      "id": "5006093"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "39712"
+     },
+     "type": "onThird"
+    }
+   ],
+   "resultCount": {
+    "balls": 0,
+    "strikes": 0
+   },
+   "scoringPlay": false,
+   "period": {
+    "type": "Bottom",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 1,
+   "team": {
+    "id": "23"
+   }
+  },
+  {
+   "id": "4018170630102040298",
+   "sequenceNumber": "6",
+   "atBatId": "4018170630102",
+   "atBatPitchNumber": 3,
+   "type": {
+    "id": "57",
+    "text": "Play Result",
+    "type": "play-result"
+   },
+   "text": "Cruz stole third.",
+   "participants": [
+    {
+     "athlete": {
+      "id": "5006093"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "39712"
+     },
+     "type": "onThird"
+    }
+   ],
+   "resultCount": {
+    "balls": 0,
+    "strikes": 0
+   },
+   "scoringPlay": false,
+   "period": {
+    "type": "Bottom",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 1,
+   "team": {
+    "id": "23"
+   }
+  },
+  {
+   "id": "4018170630102050021",
+   "sequenceNumber": "7",
+   "atBatId": "4018170630102",
+   "atBatPitchNumber": 4,
+   "type": {
+    "id": "21",
+    "text": "Foul Ball",
+    "abbreviation": "F",
+    "type": "foul-ball"
+   },
+   "text": "Pitch 4 : Strike 2 Foul",
+   "participants": [
+    {
+     "athlete": {
+      "id": "5006093"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "5218285"
+     },
+     "type": "batter"
+    },
+    {
+     "athlete": {
+      "id": "39712"
+     },
+     "type": "onThird"
+    }
+   ],
+   "resultCount": {
+    "balls": 2,
+    "strikes": 2
+   },
+   "pitchType": {
+    "id": "4",
+    "text": "Curve",
+    "abbreviation": "CU"
+   },
+   "pitchVelocity": 82,
+   "scoringPlay": false,
+   "period": {
+    "type": "Bottom",
+    "number": 1,
+    "displayValue": "1st Inning"
+   },
+   "outs": 1,
+   "team": {
+    "id": "24"
+   }
+  },
+  {
+   "id": "4018170631103990099",
+   "sequenceNumber": "5",
+   "atBatId": "4018170631103",
+   "atBatPitchNumber": 1,
+   "type": {
+    "id": "99",
+    "text": "End Batter/Pitcher",
+    "type": "end-batterpitcher"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "5123582"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "42664"
+     },
+     "type": "batter"
+    },
+    {
+     "athlete": {
+      "id": "4912412"
+     },
+     "type": "onFirst"
+    }
+   ],
+   "resultCount": {
+    "balls": 0,
+    "strikes": 0
+   },
+   "scoringPlay": false,
+   "period": {
+    "type": "Bottom",
+    "number": 6,
+    "displayValue": "6th Inning"
+   },
+   "outs": 2,
+   "team": {
+    "id": "23"
+   }
+  },
+  {
+   "id": "4018170631104010001",
+   "sequenceNumber": "1",
+   "atBatId": "4018170631104",
+   "type": {
+    "id": "1",
+    "text": "Start Batter/Pitcher",
+    "alternativeText": "Now at bat",
+    "type": "start-batterpitcher"
+   },
+   "text": "Gordon Graceffo pitches to Henry Davis",
+   "participants": [
+    {
+     "athlete": {
+      "id": "5123582"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "4418683"
+     },
+     "type": "batter"
+    },
+    {
+     "athlete": {
+      "id": "4912412"
+     },
+     "type": "onFirst"
+    }
+   ],
+   "resultCount": {
+    "balls": 0,
+    "strikes": 0
+   },
+   "scoringPlay": false,
+   "period": {
+    "type": "Bottom",
+    "number": 6,
+    "displayValue": "6th Inning"
+   },
+   "outs": 3,
+   "team": {
+    "id": "23"
+   }
+  },
+  {
+   "id": "4018170631104020036",
+   "sequenceNumber": "2",
+   "atBatId": "4018170631104",
+   "atBatPitchNumber": 1,
+   "type": {
+    "id": "36",
+    "text": "Strike Looking",
+    "abbreviation": "SL",
+    "alternativeText": "Strikeout",
+    "type": "strike-looking"
+   },
+   "text": "Pitch 1 : Strike 1 Looking",
+   "participants": [
+    {
+     "athlete": {
+      "id": "5123582"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "4418683"
+     },
+     "type": "batter"
+    },
+    {
+     "athlete": {
+      "id": "4912412"
+     },
+     "type": "onFirst"
+    }
+   ],
+   "resultCount": {
+    "balls": 0,
+    "strikes": 1
+   },
+   "pitchType": {
+    "id": "5",
+    "text": "Slider",
+    "abbreviation": "SL"
+   },
+   "pitchVelocity": 85,
+   "scoringPlay": false,
+   "period": {
+    "type": "Bottom",
+    "number": 6,
+    "displayValue": "6th Inning"
+   },
+   "outs": 3,
+   "team": {
+    "id": "24"
+   }
+  },
+  {
+   "id": "4018170631104020252",
+   "sequenceNumber": "3",
+   "atBatId": "4018170631104",
+   "atBatPitchNumber": 1,
+   "type": {
+    "id": "52",
+    "text": "Stolen Base",
+    "abbreviation": "SB",
+    "alternativeText": "Stolen Base",
+    "type": "stolen-base"
+   },
+   "text": "Simon stole second.",
+   "participants": [
+    {
+     "athlete": {
+      "id": "5123582"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "4912412"
+     },
+     "type": "onSecond"
+    }
+   ],
+   "resultCount": {
+    "balls": 0,
+    "strikes": 0
+   },
+   "scoringPlay": false,
+   "period": {
+    "type": "Bottom",
+    "number": 6,
+    "displayValue": "6th Inning"
+   },
+   "outs": 3,
+   "team": {
+    "id": "23"
+   }
+  },
+  {
+   "id": "4018170631104020298",
+   "sequenceNumber": "4",
+   "atBatId": "4018170631104",
+   "atBatPitchNumber": 1,
+   "type": {
+    "id": "57",
+    "text": "Play Result",
+    "type": "play-result"
+   },
+   "text": "Simon stole second.",
+   "participants": [
+    {
+     "athlete": {
+      "id": "5123582"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "4912412"
+     },
+     "type": "onSecond"
+    }
+   ],
+   "resultCount": {
+    "balls": 0,
+    "strikes": 0
+   },
+   "scoringPlay": false,
+   "period": {
+    "type": "Bottom",
+    "number": 6,
+    "displayValue": "6th Inning"
+   },
+   "outs": 3,
+   "team": {
+    "id": "23"
+   }
+  },
+  {
+   "id": "4018170631503020036",
+   "sequenceNumber": "2",
+   "atBatId": "4018170631503",
+   "atBatPitchNumber": 1,
+   "type": {
+    "id": "36",
+    "text": "Strike Looking",
+    "abbreviation": "SL",
+    "alternativeText": "Strikeout",
+    "type": "strike-looking"
+   },
+   "text": "Pitch 1 : Strike 1 Looking",
+   "participants": [
+    {
+     "athlete": {
+      "id": "33301"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "4228472"
+     },
+     "type": "batter"
+    },
+    {
+     "athlete": {
+      "id": "4912412"
+     },
+     "type": "onFirst"
+    }
+   ],
+   "resultCount": {
+    "balls": 0,
+    "strikes": 1
+   },
+   "pitchType": {
+    "id": "5",
+    "text": "Slider",
+    "abbreviation": "SL"
+   },
+   "pitchVelocity": 86,
+   "scoringPlay": false,
+   "period": {
+    "type": "Bottom",
+    "number": 8,
+    "displayValue": "8th Inning"
+   },
+   "outs": 2,
+   "team": {
+    "id": "24"
+   }
+  },
+  {
+   "id": "4018170631503030021",
+   "sequenceNumber": "3",
+   "atBatId": "4018170631503",
+   "atBatPitchNumber": 2,
+   "type": {
+    "id": "21",
+    "text": "Foul Ball",
+    "abbreviation": "F",
+    "type": "foul-ball"
+   },
+   "text": "Pitch 2 : Strike 2 Foul",
+   "participants": [
+    {
+     "athlete": {
+      "id": "33301"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "4228472"
+     },
+     "type": "batter"
+    },
+    {
+     "athlete": {
+      "id": "4912412"
+     },
+     "type": "onFirst"
+    }
+   ],
+   "resultCount": {
+    "balls": 0,
+    "strikes": 2
+   },
+   "pitchType": {
+    "id": "17",
+    "text": "Four-seam FB",
+    "abbreviation": "FF"
+   },
+   "pitchVelocity": 97,
+   "scoringPlay": false,
+   "period": {
+    "type": "Bottom",
+    "number": 8,
+    "displayValue": "8th Inning"
+   },
+   "outs": 2,
+   "team": {
+    "id": "24"
+   }
+  },
+  {
+   "id": "4018170631503040005",
+   "sequenceNumber": "4",
+   "atBatId": "4018170631503",
+   "atBatPitchNumber": 3,
+   "type": {
+    "id": "5",
+    "text": "Ball",
+    "abbreviation": "B",
+    "alternativeText": "Walk",
+    "type": "ball"
+   },
+   "text": "Pitch 3 : Ball 1",
+   "participants": [
+    {
+     "athlete": {
+      "id": "33301"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "4228472"
+     },
+     "type": "batter"
+    },
+    {
+     "athlete": {
+      "id": "4912412"
+     },
+     "type": "onFirst"
+    }
+   ],
+   "resultCount": {
+    "balls": 1,
+    "strikes": 2
+   },
+   "pitchType": {
+    "id": "8",
+    "text": "Splitter",
+    "abbreviation": "FS"
+   },
+   "pitchVelocity": 89,
+   "scoringPlay": false,
+   "period": {
+    "type": "Bottom",
+    "number": 8,
+    "displayValue": "8th Inning"
+   },
+   "outs": 2,
+   "team": {
+    "id": "24"
+   }
+  },
+  {
+   "id": "4018170631503040254",
+   "sequenceNumber": "5",
+   "atBatId": "4018170631503",
+   "atBatPitchNumber": 3,
+   "type": {
+    "id": "54",
+    "text": "Wild Pitch",
+    "abbreviation": "WP",
+    "alternativeText": "Wild Pitch",
+    "type": "wild-pitch"
+   },
+   "text": "Simon to second on wild pitch by Stanek, Simon safe at third on throwing error by catcher Herrera.",
+   "participants": [
+    {
+     "athlete": {
+      "id": "33301"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "4912412"
+     },
+     "type": "onSecond"
+    }
+   ],
+   "resultCount": {
+    "balls": 0,
+    "strikes": 0
+   },
+   "scoringPlay": false,
+   "period": {
+    "type": "Bottom",
+    "number": 8,
+    "displayValue": "8th Inning"
+   },
+   "outs": 2,
+   "team": {
+    "id": "23"
+   }
+  },
+  {
+   "id": "4018170631503040298",
+   "sequenceNumber": "6",
+   "atBatId": "4018170631503",
+   "atBatPitchNumber": 3,
+   "type": {
+    "id": "57",
+    "text": "Play Result",
+    "type": "play-result"
+   },
+   "text": "Simon to second on wild pitch by Stanek, Simon safe at third on throwing error by catcher Herrera.",
+   "participants": [
+    {
+     "athlete": {
+      "id": "33301"
+     },
+     "type": "pitcher"
+    },
+    {
+     "athlete": {
+      "id": "4912412"
+     },
+     "type": "onSecond"
+    }
+   ],
+   "resultCount": {
+    "balls": 0,
+    "strikes": 0
+   },
+   "scoringPlay": false,
+   "period": {
+    "type": "Bottom",
+    "number": 8,
+    "displayValue": "8th Inning"
+   },
+   "outs": 2,
+   "team": {
+    "id": "23"
+   }
+  }
+ ],
+ "rosters": [
+  {
+   "roster": [
+    {
+     "athlete": {
+      "id": "39712",
+      "shortName": "O. Cruz",
+      "fullName": "Oneil Cruz"
+     }
+    },
+    {
+     "athlete": {
+      "id": "5218285",
+      "shortName": "K. Griffin",
+      "fullName": "Konnor Griffin"
+     }
+    },
+    {
+     "athlete": {
+      "id": "39961",
+      "shortName": "B. Lowe",
+      "fullName": "Brandon Lowe"
+     }
+    },
+    {
+     "athlete": {
+      "id": "35183",
+      "shortName": "R. O'Hearn",
+      "fullName": "Ryan O'Hearn"
+     }
+    },
+    {
+     "athlete": {
+      "id": "4311634",
+      "shortName": "N. Gonzales",
+      "fullName": "Nick Gonzales"
+     }
+    },
+    {
+     "athlete": {
+      "id": "42933",
+      "shortName": "J. Triolo",
+      "fullName": "Jared Triolo"
+     }
+    },
+    {
+     "athlete": {
+      "id": "4912412",
+      "shortName": "R. Simon",
+      "fullName": "Ronny Simon"
+     }
+    },
+    {
+     "athlete": {
+      "id": "5137038",
+      "shortName": "B. Cook",
+      "fullName": "Billy Cook"
+     }
+    },
+    {
+     "athlete": {
+      "id": "4228472",
+      "shortName": "S. Horwitz",
+      "fullName": "Spencer Horwitz"
+     }
+    },
+    {
+     "athlete": {
+      "id": "42664",
+      "shortName": "J. Mangum",
+      "fullName": "Jake Mangum"
+     }
+    },
+    {
+     "athlete": {
+      "id": "38980",
+      "shortName": "B. Reynolds",
+      "fullName": "Bryan Reynolds"
+     }
+    },
+    {
+     "athlete": {
+      "id": "4418683",
+      "shortName": "H. Davis",
+      "fullName": "Henry Davis"
+     }
+    }
+   ]
+  },
+  {
+   "roster": [
+    {
+     "athlete": {
+      "id": "4941056",
+      "shortName": "J. Wetherholt",
+      "fullName": "JJ Wetherholt"
+     }
+    },
+    {
+     "athlete": {
+      "id": "41889",
+      "shortName": "I. Herrera",
+      "fullName": "Ivan Herrera"
+     }
+    },
+    {
+     "athlete": {
+      "id": "4345070",
+      "shortName": "A. Burleson",
+      "fullName": "Alec Burleson"
+     }
+    },
+    {
+     "athlete": {
+      "id": "4684778",
+      "shortName": "J. Walker",
+      "fullName": "Jordan Walker"
+     }
+    },
+    {
+     "athlete": {
+      "id": "5124076",
+      "shortName": "L. Bernal",
+      "fullName": "Leo Bernal"
+     }
+    },
+    {
+     "athlete": {
+      "id": "5125653",
+      "shortName": "B. Torres",
+      "fullName": "Bryan Torres"
+     }
+    },
+    {
+     "athlete": {
+      "id": "38851",
+      "shortName": "J. Fermin",
+      "fullName": "Jose Fermin"
+     }
+    },
+    {
+     "athlete": {
+      "id": "4999876",
+      "shortName": "T. Saggese",
+      "fullName": "Thomas Saggese"
+     }
+    },
+    {
+     "athlete": {
+      "id": "4843048",
+      "shortName": "N. Church",
+      "fullName": "Nathan Church"
+     }
+    },
+    {
+     "athlete": {
+      "id": "4683365",
+      "shortName": "M. Winn",
+      "fullName": "Masyn Winn"
+     }
+    }
+   ]
+  }
+ ]
+}

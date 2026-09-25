@@ -713,6 +713,13 @@
               "default": false,
               "description": "Show a short code for the most recently completed play (1B, HR, K, BB, etc.) on the pitcher/batter screen"
             },
+            "show_game_activity": {
+              "type": "boolean",
+              "title": "Show Game Activity",
+              "description": "Draw a running pitch-by-pitch commentary line for live games - fouls, strikes, the count, and ESPN's sentence for a hit or a steal. Off by default: it is the busiest thing on the board, and it is meant for the games where nothing else is happening. See the Game Activity section for where it goes and how much it says.",
+              "default": false,
+              "x-advanced": true
+            },
             "show_player_card": {
               "x-advanced": true,
               "type": "boolean",
@@ -726,6 +733,85 @@
               "description": "Periodically show a full-screen traditional ballpark scoreboard: inning-by-inning line score, R/H/E, and an At Bat panel with ball/strike/out indicators"
             }
           }
+        },
+        "game_activity": {
+          "type": "object",
+          "title": "Game Activity",
+          "description": "The pitch-by-pitch commentary line: fouls, called and swinging strikes, the count, and ESPN's own sentence for a hit or a steal (\"Burleson homered to right center (395 feet).\"). Built for a 1-0 pitchers' duel, where the score alone gives the board nothing to say. Needs the ESPN game summary, so it is offered for MLB and NCAA Baseball only - MiLB comes from the MLB Stats API and has no summary endpoint.",
+          "properties": {
+            "position": {
+              "type": "string",
+              "title": "Where it goes",
+              "enum": [
+                "auto",
+                "inline",
+                "screen"
+              ],
+              "description": "\"Inline\" draws it along the bottom of the live scoreboard, which needs a clear band below the bases and count - a wide panel has one, a short one does not. \"Screen\" gives it its own card in the rotation instead. \"Auto\" measures the fonts and panel actually in use and picks; an explicit \"inline\" that cannot fit draws nothing rather than printing over the count.",
+              "default": "auto",
+              "x-options": {
+                "labels": {
+                  "auto": "Auto (inline where it fits)",
+                  "inline": "On the scoreboard",
+                  "screen": "Its own screen"
+                }
+              }
+            },
+            "detail": {
+              "type": "string",
+              "title": "How much to say",
+              "enum": [
+                "terse",
+                "normal",
+                "rich"
+              ],
+              "description": "Terse is the bare event (\"Foul\"). Normal adds the batter and the count (\"J. Walker Foul 0-1\"). Rich adds the pitch on a second line (\"97 mph Four-seam FB\") - the most alive, and the most demanding of panel height.",
+              "default": "normal",
+              "x-options": {
+                "labels": {
+                  "terse": "Terse - Foul",
+                  "normal": "Normal - J. Walker Foul 0-1",
+                  "rich": "Rich - adds 97 mph Four-seam FB"
+                }
+              }
+            },
+            "dwell_seconds": {
+              "type": "number",
+              "title": "Seconds per play",
+              "minimum": 1,
+              "maximum": 30,
+              "description": "How long each play stays up. A poll returns several plays at once - a pitch takes about 25s and the data refreshes roughly every 30s - so these are walked through locally rather than all but the newest being thrown away. Too long and the board falls behind the game.",
+              "default": 4
+            },
+            "include": {
+              "type": "object",
+              "title": "What to announce",
+              "description": "Mute a class of play to quieten the line without turning it off.",
+              "properties": {
+                "pitches": {
+                  "type": "boolean",
+                  "title": "Pitches",
+                  "description": "Balls, fouls, called and swinging strikes - the heartbeat, and the bulk of the feed.",
+                  "default": true
+                },
+                "outcomes": {
+                  "type": "boolean",
+                  "title": "At-bat outcomes",
+                  "description": "Hits, outs and strikeouts, in ESPN's own words.",
+                  "default": true
+                },
+                "baserunning": {
+                  "type": "boolean",
+                  "title": "Baserunning",
+                  "description": "Steals, pickoffs, wild pitches and balks.",
+                  "default": true
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false,
+          "x-advanced": true
         },
         "filtering": {
           "type": "object",
@@ -1882,6 +1968,13 @@
               "default": false,
               "description": "Show a short code for the most recently completed play (1B, HR, K, BB, etc.) on the pitcher/batter screen"
             },
+            "show_game_activity": {
+              "type": "boolean",
+              "title": "Show Game Activity",
+              "description": "Draw a running pitch-by-pitch commentary line for live games - fouls, strikes, the count, and ESPN's sentence for a hit or a steal. Off by default: it is the busiest thing on the board, and it is meant for the games where nothing else is happening. See the Game Activity section for where it goes and how much it says.",
+              "default": false,
+              "x-advanced": true
+            },
             "show_player_card": {
               "x-advanced": true,
               "type": "boolean",
@@ -1895,6 +1988,85 @@
               "description": "Periodically show a full-screen traditional ballpark scoreboard: inning-by-inning line score, R/H/E, and an At Bat panel with ball/strike/out indicators"
             }
           }
+        },
+        "game_activity": {
+          "type": "object",
+          "title": "Game Activity",
+          "description": "The pitch-by-pitch commentary line: fouls, called and swinging strikes, the count, and ESPN's own sentence for a hit or a steal (\"Burleson homered to right center (395 feet).\"). Built for a 1-0 pitchers' duel, where the score alone gives the board nothing to say. Needs the ESPN game summary, so it is offered for MLB and NCAA Baseball only - MiLB comes from the MLB Stats API and has no summary endpoint.",
+          "properties": {
+            "position": {
+              "type": "string",
+              "title": "Where it goes",
+              "enum": [
+                "auto",
+                "inline",
+                "screen"
+              ],
+              "description": "\"Inline\" draws it along the bottom of the live scoreboard, which needs a clear band below the bases and count - a wide panel has one, a short one does not. \"Screen\" gives it its own card in the rotation instead. \"Auto\" measures the fonts and panel actually in use and picks; an explicit \"inline\" that cannot fit draws nothing rather than printing over the count.",
+              "default": "auto",
+              "x-options": {
+                "labels": {
+                  "auto": "Auto (inline where it fits)",
+                  "inline": "On the scoreboard",
+                  "screen": "Its own screen"
+                }
+              }
+            },
+            "detail": {
+              "type": "string",
+              "title": "How much to say",
+              "enum": [
+                "terse",
+                "normal",
+                "rich"
+              ],
+              "description": "Terse is the bare event (\"Foul\"). Normal adds the batter and the count (\"J. Walker Foul 0-1\"). Rich adds the pitch on a second line (\"97 mph Four-seam FB\") - the most alive, and the most demanding of panel height.",
+              "default": "normal",
+              "x-options": {
+                "labels": {
+                  "terse": "Terse - Foul",
+                  "normal": "Normal - J. Walker Foul 0-1",
+                  "rich": "Rich - adds 97 mph Four-seam FB"
+                }
+              }
+            },
+            "dwell_seconds": {
+              "type": "number",
+              "title": "Seconds per play",
+              "minimum": 1,
+              "maximum": 30,
+              "description": "How long each play stays up. A poll returns several plays at once - a pitch takes about 25s and the data refreshes roughly every 30s - so these are walked through locally rather than all but the newest being thrown away. Too long and the board falls behind the game.",
+              "default": 4
+            },
+            "include": {
+              "type": "object",
+              "title": "What to announce",
+              "description": "Mute a class of play to quieten the line without turning it off.",
+              "properties": {
+                "pitches": {
+                  "type": "boolean",
+                  "title": "Pitches",
+                  "description": "Balls, fouls, called and swinging strikes - the heartbeat, and the bulk of the feed.",
+                  "default": true
+                },
+                "outcomes": {
+                  "type": "boolean",
+                  "title": "At-bat outcomes",
+                  "description": "Hits, outs and strikeouts, in ESPN's own words.",
+                  "default": true
+                },
+                "baserunning": {
+                  "type": "boolean",
+                  "title": "Baserunning",
+                  "description": "Steals, pickoffs, wild pitches and balks.",
+                  "default": true
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false,
+          "x-advanced": true
         },
         "filtering": {
           "type": "object",

@@ -453,11 +453,12 @@ per-game data fetch.
 | `display_options.show_last_play` | `false` | Adds a short code for the last completed play (`1B`, `HR`, `K`, `BB`) to that screen |
 | `display_options.show_player_card` | `false` | A separate card screen on its own slower rotation, for the batter only by default |
 | `display_options.show_traditional_scoreboard` | `false` | A full-screen ballpark scoreboard: inning-by-inning line score, R/H/E, and an at-bat panel |
+| `display_options.show_game_activity` | `false` | A running pitch-by-pitch commentary line — see below |
 
 `show_last_play` only does anything with `show_pitcher_batter` on — it adds a
 field to that screen rather than being a screen of its own.
 
-**All four are MLB and NCAA Baseball only.** MiLB's data does not come from
+**All five are MLB and NCAA Baseball only.** MiLB's data does not come from
 ESPN in the same shape, so `milb.display_options` does not offer them. The pitcher/batter and player-card screens are
 additionally **live-games only**, since the current at-bat is the data they are
 built from; only the traditional scoreboard has a `game_scope` option, because
@@ -466,6 +467,55 @@ only it has anything to say about a finished game.
 They also need panel height. The traditional scoreboard wants 64 rows or more
 for a line score; both card screens hide the headshot on panels under 96 wide
 or 32 tall and show whichever rows fit.
+
+#### Game activity: the commentary line
+
+A 1-0 pitchers' duel leaves the scoreboard static for twenty minutes at a time
+— the score does not move, the bases stay empty, and the only thing changing is
+the count. `show_game_activity` narrates it.
+
+| | example |
+|---|---|
+| pitches | `J. Walker Foul 0-1` |
+| at-bat outcomes | `Burleson homered to right center (395 feet).` |
+| baserunning | `Cruz stole third.` |
+
+Outcomes and baserunning are ESPN's own sentences, which already name the
+player; only pitches are phrased by the plugin, because ESPN writes no prose
+for them.
+
+| Option | Default | What it does |
+|--------|---------|--------------|
+| `game_activity.position` | `auto` | `inline` along the bottom of the live scoreboard, `screen` as its own card, or `auto` |
+| `game_activity.detail` | `normal` | `terse` (`Foul`), `normal` (`J. Walker Foul 0-1`), `rich` (adds `97 mph Four-seam FB` on a second line) |
+| `game_activity.dwell_seconds` | `4` | How long each play stays up |
+| `game_activity.include.pitches` | `true` | Balls, fouls, called and swinging strikes — the bulk of the feed |
+| `game_activity.include.outcomes` | `true` | Hits, outs and strikeouts |
+| `game_activity.include.baserunning` | `true` | Steals, pickoffs, wild pitches |
+
+**Where it goes.** `auto` measures the panel: every 64-row board has a clear
+band along the bottom and gets the inline line; every 32-row board does not, and
+takes the screen instead. That choice is made per **panel**, not per line —
+deciding per line would flip a 128px board between the two from one pitch to the
+next, which reads as a fault rather than a feature. An explicit `inline` on a
+panel with no room draws nothing rather than printing over the count.
+
+Inline, the line shares the bottom row with the two corner scores and is
+trimmed to the gap between them, so a long sentence ends in an ellipsis rather
+than running through `NYY: 5`.
+
+**Why it does not simply show the newest play.** The scheduler polls at
+`live_update_interval`, and the summary refresh is gated by
+`play_by_play_update_interval` — about 30s in practice, while a pitch takes
+about 25s. So each poll returns *several* new plays. Showing only the last
+would throw the rest away and leave the board frozen between fetches, which is
+the opposite of the point; they are queued and walked through locally at
+`dwell_seconds`. The board reads as live commentary without asking ESPN for
+anything more.
+
+If you only want the highlights, turn `include.pitches` off: outcomes and
+baserunning alone are a much quieter line that still marks everything that
+actually changed the game.
 
 #### Traditional scoreboard: `customization.traditional_scoreboard`
 

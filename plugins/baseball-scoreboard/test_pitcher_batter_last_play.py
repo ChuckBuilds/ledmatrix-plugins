@@ -134,6 +134,13 @@ def _make_live():
     live = object.__new__(_ConcreteBaseballLive)
     live._play_by_play_cache = {"g1": {"pitcher": "A"}, "g2": {"pitcher": "B"}}
     live._play_by_play_last_attempt = {"g1": 100.0, "g2": 200.0, "g3": 300.0}
+    # The game-activity queue is pruned on the same pass and grows per game,
+    # so it has to be dropped with the rest or a long session accumulates a
+    # feed for every game that was ever live.
+    live._activity_state = {
+        "g1": {"queue": [], "seen": set(), "current": None, "shown_at": 0.0},
+        "g2": {"queue": [], "seen": set(), "current": None, "shown_at": 0.0},
+    }
     live.live_games = [{"id": "g1"}]
     return live
 
@@ -143,6 +150,7 @@ def test_prune_stale_play_by_play():
     live._prune_stale_play_by_play()
     assert list(live._play_by_play_cache.keys()) == ["g1"], live._play_by_play_cache
     assert list(live._play_by_play_last_attempt.keys()) == ["g1"], live._play_by_play_last_attempt
+    assert list(live._activity_state.keys()) == ["g1"], live._activity_state
     print("test_prune_stale_play_by_play: PASS")
 
 
@@ -154,11 +162,16 @@ class _StubDataSource:
         return self._response
 
 
-def _make_live_for_fetch(response):
+def _make_live_for_fetch(response, game_activity=False):
     live = object.__new__(_ConcreteBaseballLive)
     live._play_by_play_cache = {"g1": {"pitcher": "G. Cole", "batter": "J. Soto", "last_play_code": "1B"}}
     live.espn_summary_sport_league = ("baseball", "mlb")
     live.data_source = _StubDataSource(response)
+    # The same response now also feeds the game-activity queue, which the
+    # fetch builds only when the setting is on.
+    live.show_game_activity = game_activity
+    live._activity_feed_limit = 12
+    live._activity_state = {}
     import logging
     live.logger = logging.getLogger("test_fetch_play_by_play")
     return live
@@ -187,6 +200,37 @@ def test_fetch_play_by_play_updates_cache_on_real_data():
     assert live._play_by_play_cache["g1"]["pitcher"] == "Y. Yamamoto"
     assert live._play_by_play_cache["g1"]["batter"] == "F. Freeman"
     print("test_fetch_play_by_play_updates_cache_on_real_data: PASS")
+
+
+def test_fetch_play_by_play_feeds_game_activity_only_when_asked():
+    """The activity queue is built from the same response, but only on demand.
+
+    Building it unconditionally would cost a full pass over every play for
+    boards that never show the line -- and the fetch already runs on a
+    bounded-timeout worker, so it is not free.
+    """
+    names = {"10": "Y. Yamamoto", "20": "F. Freeman"}
+    rosters = [
+        {"roster": [{"athlete": {"id": "10", "shortName": names["10"]}}]},
+        {"roster": [{"athlete": {"id": "20", "shortName": names["20"]}}]},
+    ]
+    plays = [
+        _play(participants=[_participant("pitcher", "10"), _participant("batter", "20")]),
+        {"id": "p-ball", "atBatId": "ab1", "type": {"type": "ball"},
+         "text": "Pitch 1 : Ball 1", "resultCount": {"balls": 1, "strikes": 0},
+         "participants": [_participant("batter", "20")]},
+    ]
+    off = _make_live_for_fetch({"plays": plays, "rosters": rosters})
+    off._fetch_play_by_play("g1")
+    assert off._activity_state == {}, off._activity_state
+
+    on = _make_live_for_fetch({"plays": plays, "rosters": rosters}, game_activity=True)
+    on._fetch_play_by_play("g1")
+    queued = on._activity_state.get("g1", {}).get("queue", [])
+    assert queued, on._activity_state
+    assert any(e["phrase"] == "Ball 1" for e in queued), queued
+    assert any(e["player"] == "F. Freeman" for e in queued), queued
+    print("test_fetch_play_by_play_feeds_game_activity_only_when_asked: PASS")
 
 
 def _make_gate_test_live(favorites_only=None, favorite_teams=None):
@@ -404,6 +448,7 @@ if __name__ == "__main__":
         test_prune_stale_play_by_play,
         test_fetch_play_by_play_keeps_prior_cache_on_empty_response,
         test_fetch_play_by_play_updates_cache_on_real_data,
+        test_fetch_play_by_play_feeds_game_activity_only_when_asked,
         test_at_bat_info_favorites_only_skips_non_favorite_teams,
         test_at_bat_info_favorites_only_has_no_effect_when_favorite_teams_empty,
         test_at_bat_info_text_is_horizontally_centered,
