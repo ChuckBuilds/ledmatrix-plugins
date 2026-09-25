@@ -122,6 +122,74 @@ def _latest_goal(plays: Optional[List[Dict]], team_id: Optional[str] = None) -> 
     return None
 
 
+# ESPN's team.color / team.alternateColor are brand hex values, chosen for
+# jerseys rather than a black LED panel: a navy primary all but vanishes there
+# and a white one glares. Clamped into the same legible band
+# baseball-scoreboard uses (baseball.py, _parse_team_color).
+_MIN_COLOR_BRIGHTNESS = 90
+_MAX_COLOR_BRIGHTNESS = 235
+#: Below this saturation, or with no channel above _TEAM_COLOR_MIN_CHANNEL, a
+#: colour is a black, grey or white. Clamping makes one legible but not
+#: recognisable, so a team that lists black first is drawn in its alternate.
+_TEAM_COLOR_MIN_SATURATION = 0.25
+_TEAM_COLOR_MIN_CHANNEL = 24
+
+
+def _parse_hex_color(hex_str: Optional[str]) -> Optional[Tuple[int, int, int]]:
+    """'be0a14' or '#be0a14' as an (R, G, B) tuple, or None if malformed."""
+    if not isinstance(hex_str, str):
+        return None
+    hex_str = hex_str.strip().lstrip("#")
+    if len(hex_str) != 6:
+        return None
+    try:
+        return tuple(int(hex_str[i:i + 2], 16) for i in (0, 2, 4))
+    except ValueError:
+        return None
+
+
+def _has_hue(rgb: Tuple[int, int, int]) -> bool:
+    high = max(rgb)
+    return (
+        high >= _TEAM_COLOR_MIN_CHANNEL
+        and (high - min(rgb)) / high >= _TEAM_COLOR_MIN_SATURATION
+    )
+
+
+def _clamp_brightness(rgb: Tuple[int, int, int]) -> Tuple[int, int, int]:
+    """Scale a colour into the legible band, keeping its channel ratios."""
+    brightness = sum(rgb) / 3
+    if 0 < brightness < _MIN_COLOR_BRIGHTNESS:
+        scale = _MIN_COLOR_BRIGHTNESS / brightness
+        return tuple(min(255, int(c * scale)) for c in rgb)
+    if brightness > _MAX_COLOR_BRIGHTNESS:
+        scale = _MAX_COLOR_BRIGHTNESS / brightness
+        return tuple(int(c * scale) for c in rgb)
+    return rgb
+
+
+def _team_color(team: Optional[Dict]) -> Optional[Tuple[int, int, int]]:
+    """A team's colour for the goal card, read from an ESPN competitor's
+    ``team`` object and brightness-clamped for a black panel.
+
+    The primary wins unless it has no hue and the alternate does. When neither
+    has one (black and silver) the brighter is used. None when ESPN sent no
+    usable colour, or only pure black, so the card keeps its configured
+    accent."""
+    if not isinstance(team, dict):
+        return None
+    colors = [
+        rgb
+        for rgb in (_parse_hex_color(team.get("color")),
+                    _parse_hex_color(team.get("alternateColor")))
+        if rgb is not None and any(rgb)
+    ]
+    if not colors:
+        return None
+    vivid = [rgb for rgb in colors if _has_hue(rgb)]
+    return _clamp_brightness(vivid[0] if vivid else max(colors, key=sum))
+
+
 class Hockey(SportsCore):
     """Base class for hockey sports with common functionality."""
 
@@ -243,6 +311,9 @@ class Hockey(SportsCore):
                     "penalties": penalties,
                     "home_shots": home_shots,
                     "away_shots": away_shots,
+                    # Read by the goal-scorer card for its banner and accents.
+                    "home_team_color": _team_color(home_team.get("team")),
+                    "away_team_color": _team_color(away_team.get("team")),
                 }
             )
 

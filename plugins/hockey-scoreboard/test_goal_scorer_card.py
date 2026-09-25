@@ -21,6 +21,9 @@ Covers:
   7. _maybe_draw_goal_card: the window it owns, and the game it belongs to.
   8. Render smoke across every harness size, plus the headshot-cache bounds
      carried over from the baseball card.
+  9. Team colour: _team_color's choice and clamping, and the colour carried
+     from a real-shaped ESPN event through _extract_game_details and
+     _resolve_goal_scorer onto the drawn card.
 
 Run: <core-venv>/bin/python plugins/hockey-scoreboard/test_goal_scorer_card.py
 """
@@ -36,7 +39,7 @@ from PIL import Image, ImageDraw, ImageFont  # noqa: E402
 
 from data_sources import ESPNDataSource  # noqa: E402
 from hockey import (  # noqa: E402
-    HockeyLive, _extract_goal, _goal_strength_badge, _latest_goal)
+    HockeyLive, _extract_goal, _goal_strength_badge, _latest_goal, _team_color)
 
 
 class _ConcreteHockeyLive(HockeyLive):
@@ -638,6 +641,119 @@ def test_headshot_cache_is_bounded():
     print("test_headshot_cache_is_bounded: PASS")
 
 
+# --- 9. team colour ----------------------------------------------------------
+
+def test_team_color_choice_and_clamping():
+    # A vivid primary in the legible band is used as-is.
+    assert _team_color({"color": "e31937", "alternateColor": "ffffff"}) == (227, 25, 55)
+    # A navy primary is lifted into the band, keeping its channel ratios.
+    assert _team_color({"color": "0b1f41"}) == (27, 78, 164)
+    # White is brought down so it does not glare. Pure black is never picked.
+    assert _team_color({"color": "ffffff", "alternateColor": "000000"}) == (235, 235, 235)
+    # A black or near-black primary gives way to a coloured alternate...
+    assert _team_color({"color": "000000", "alternateColor": "fcb514"}) == (252, 181, 20)
+    assert _team_color({"color": "0a0a0b", "alternateColor": "fcb514"}) == (252, 181, 20)
+    # ...and to a silver one, which is the team's colour when both are neutral.
+    assert _team_color({"color": "000000", "alternateColor": "a2aaad"}) == (162, 170, 173)
+    # Nothing usable: the card keeps its configured accent.
+    for team in (None, {}, {"color": "000000"}, {"color": "zzzzzz"},
+                 {"color": "fff"}, {"color": 123}):
+        assert _team_color(team) is None, team
+    # The '#' ESPN sometimes omits and sometimes does not.
+    assert _team_color({"color": "#e31937"}) == (227, 25, 55)
+    print("test_team_color_choice_and_clamping: PASS")
+
+
+def _espn_live_event():
+    """A live NHL scoreboard event, shaped like ESPN's, whose competitors
+    carry team.color / team.alternateColor the way the feed does. The home
+    side is team 23, the team _PLAY's goal belongs to."""
+    return {
+        "id": "401879359",
+        "date": "2026-01-14T00:00Z",
+        "competitions": [{
+            "status": {
+                "period": 3, "displayClock": "9:45",
+                "type": {"name": "STATUS_IN_PROGRESS", "state": "in",
+                         "completed": False, "shortDetail": "9:45 - 3rd",
+                         "detail": "9:45 - 3rd"},
+            },
+            "competitors": [
+                {"homeAway": "home", "id": "23", "score": "5",
+                 "team": {"id": "23", "abbreviation": "WSH",
+                          "color": "0b1f41", "alternateColor": "d71830"}},
+                {"homeAway": "away", "id": "5", "score": "2",
+                 "team": {"id": "5", "abbreviation": "PIT",
+                          "color": "000000", "alternateColor": "fcb514"}},
+            ],
+        }],
+    }
+
+
+class _SyncThread:
+    """Runs a thread's target inline, so the resolve is deterministic."""
+
+    def __init__(self, target=None, daemon=None, **_):
+        self._target = target
+
+    def start(self):
+        self._target()
+
+
+def test_card_gets_the_team_color_from_the_espn_feed():
+    """End to end, with no hand-injected colour: the game dict is built by
+    the real NHL extractor, the card is armed by _resolve_goal_scorer, and
+    the drawn card carries the scoring team's colour, not the fallback."""
+    import logging
+    import tempfile
+    import threading
+    from pathlib import Path
+    from nhl_managers import NHLLiveManager
+
+    live = object.__new__(NHLLiveManager)
+    live.logger = logging.getLogger("test_goal_card_team_color")
+    live.favorite_teams = []
+    live.config = {"timezone": "UTC"}
+    live.cache_manager = None
+    with tempfile.TemporaryDirectory() as tmp:
+        live.logo_dir = Path(tmp)
+        game = live._extract_game_details(_espn_live_event())
+    assert game is not None, "expected the ESPN event to parse"
+    assert game["home_team_color"] == (27, 78, 164), game["home_team_color"]
+    assert game["away_team_color"] == (252, 181, 20), game["away_team_color"]
+
+    class _DataSource:
+        def fetch_game_summary(self, sport, league, game_id):
+            return {"plays": [_PLAY]}
+
+        def fetch_player_details(self, sport, league, player_id):
+            return None
+
+    live.data_source = _DataSource()
+    live._goal_card = None
+    live._player_bio_cache = {}
+    live.active_celebration = None
+    live._prefetch_headshot = lambda *a, **k: None  # no network in tests
+    real_thread = threading.Thread
+    threading.Thread = _SyncThread
+    try:
+        live._resolve_goal_scorer(game, "home")
+    finally:
+        threading.Thread = real_thread
+    card = live._goal_card
+    assert card is not None, "expected the card armed"
+    assert card["team_color"] == game["home_team_color"], card.get("team_color")
+
+    fallback = (255, 200, 0)
+    for w, h in ((64, 32), (256, 64)):
+        live = _make_render_live(w, h)
+        live._draw_goal_card(card)
+        colors = {c for _, c in live.display_manager.image.getcolors(w * h)}
+        assert (27, 78, 164) in colors, f"team colour missing at {w}x{h}"
+        assert fallback not in colors, f"fallback accent drawn at {w}x{h}"
+    print("test_card_gets_the_team_color_from_the_espn_feed: PASS")
+
+
 if __name__ == "__main__":
     print("goal-scorer card tests")
     print("=" * 60)
@@ -671,6 +787,8 @@ if __name__ == "__main__":
         test_render_toggles_off_still_draws,
         test_headshot_hidden_on_a_tiny_panel,
         test_headshot_cache_is_bounded,
+        test_team_color_choice_and_clamping,
+        test_card_gets_the_team_color_from_the_espn_feed,
     ]
     failures = 0
     for t in tests:

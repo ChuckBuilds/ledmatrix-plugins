@@ -1,7 +1,7 @@
 {
   "id": "hockey-scoreboard",
   "name": "Hockey Scoreboard",
-  "version": "1.33.1",
+  "version": "1.33.2",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, and NCAA Women's hockey with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/hockey-scoreboard",
@@ -54,6 +54,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.33.2",
+      "released": "2026-09-24",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Fixes the goal-scorer card always drawing in its fallback amber instead of the scoring team's colour. The card read home_team_color / away_team_color off the game, but nothing in the hockey plugin ever set them, so use_team_colors had no effect on a real game. The colours now come from ESPN's team.color / team.alternateColor on the scoreboard feed, brightness-clamped into the same legible band baseball-scoreboard uses so a navy is lifted and a white toned down. A team that lists black first, or whose primary has no hue, is drawn in its alternate colour instead of a grey; with no usable colour at all the card keeps its configured accent_color."
+    },
     {
       "version": "1.33.1",
       "released": "2026-09-24",

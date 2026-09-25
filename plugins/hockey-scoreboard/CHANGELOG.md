@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.33.2] - 2026-09-24
+
+### Fixed
+- **The goal-scorer card is drawn in the scoring team's colour.** The card
+  read `home_team_color` / `away_team_color` off the game, but nothing in the
+  hockey plugin ever set them, so on a real game `use_team_colors` had no
+  effect: the banner, team row and headshot frame always fell back to the
+  amber `accent_color`. The colours now come from ESPN's `team.color` /
+  `team.alternateColor` on the scoreboard feed. They are clamped into the
+  same brightness band baseball-scoreboard uses, so a navy is lifted and a
+  white is toned down. A team whose primary is black, or has no hue, is
+  drawn in its alternate colour rather than grey. A team with no usable
+  colour keeps the configured `accent_color`.
+
 ## [1.33.0] - 2026-09-23
 
 ### Added
