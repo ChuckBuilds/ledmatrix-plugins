@@ -94,6 +94,7 @@ class _Clock:
 
     def __init__(self, now):
         self.now = now
+        self._real = time.time
 
     def __enter__(self):
         self._real = time.time
@@ -131,13 +132,13 @@ def main():
         mgr._load_and_resize_logo = lambda *a, **k: logo
         return mgr, dm
 
-    def render(mgr, dm, popup=None, at=1000.0, shown_at=1000.0, game=GAME):
+    def render(mgr, dm, popup=None, at=1000.0, shown_at=1000.0):
         mgr._activity_queue.clear()
         mgr._activity_popup = None
         if popup is not None:
             mgr._activity_popup = dict(popup, shown_at=shown_at)
         with _Clock(at):
-            mgr._draw_scorebug_layout(dict(game))
+            mgr._draw_scorebug_layout(dict(GAME))
         return dm.image.copy()
 
     shot = dict(_extract_activity(_play("p2", "Shot")), game_id="9",
