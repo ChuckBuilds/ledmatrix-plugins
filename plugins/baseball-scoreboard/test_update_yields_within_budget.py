@@ -61,7 +61,8 @@ def test_the_wait_is_not_hardcoded_at_the_call_site():
 def test_slow_managers_are_left_running_not_cancelled():
     """Returning early must not abandon work: a manager already running keeps
     running and populates its cache, which is why yielding costs nothing."""
-    from concurrent.futures import ThreadPoolExecutor, as_completed, TimeoutError
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    from concurrent.futures import TimeoutError as FuturesTimeout
 
     finished = []
 
@@ -76,7 +77,7 @@ def test_slow_managers_are_left_running_not_cancelled():
             for f in as_completed(futures, timeout=0.1):
                 f.result()
             raise AssertionError("expected the wait to time out")
-        except TimeoutError:
+        except FuturesTimeout:
             pass
         still = [n for f, n in futures.items() if not f.done()]
         assert still == ["slow"], still
