@@ -13,6 +13,13 @@ ESPN_NHL_SCOREBOARD_URL = "https://site.api.espn.com/apis/site/v2/sports/hockey/
 
 class BaseNHLManager(Hockey):
     """Base class for NHL managers with common functionality."""
+
+    # NHL is the one hockey league whose ESPN summary carries a `plays` array,
+    # which is where a goal's scorer and assists live. College hockey's
+    # summary has no play data at all, so the goal-scorer card stays off
+    # there -- the gate is this attribute being set, not a league name test.
+    espn_summary_sport_league = ("hockey", "nhl")
+
     # Class variables for warning tracking
     _no_data_warning_logged = False
     _last_warning_time = 0
@@ -49,8 +56,9 @@ class BaseNHLManager(Hockey):
         season_year = now.year
         if now.month < 8:
             season_year = now.year - 1
-        datestring = f"{season_year}0901-{season_year+1}0801"
-        cache_key = f"nhl_schedule_{season_year}"
+        # Only what Recent and Upcoming can show; see _schedule_window.
+        datestring, window = self._schedule_window()
+        cache_key = f"nhl_schedule_{window}"
 
         # Check cache first
         if use_cache:
@@ -78,7 +86,7 @@ class BaseNHLManager(Hockey):
             )
 
         # Start background fetch
-        self.logger.info(f"Starting background fetch for {season_year} season schedule...")
+        self.logger.info(f"Starting background fetch for {season_year} schedule window...")
         
         def fetch_callback(result):
             """Callback when background fetch completes."""

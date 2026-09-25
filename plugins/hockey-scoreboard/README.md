@@ -106,7 +106,7 @@ college one:
 | `<league>.update_intervals.base` | `60` | `300` |
 | `<league>.update_intervals.live` | `30` | `60` |
 | `<league>.display_options.show_records` | `false` | `true` |
-| `<league>.display_options.show_ranking` | `false` | `true`. **Hidden on the NHL since 1.33.0; still offered on the two NCAA leagues, which have polls.** |
+| `<league>.display_options.show_ranking` | `false` | `true`. **Hidden on the NHL since 1.34.0; still offered on the two NCAA leagues, which have polls.** |
 | `<league>.display_options.show_shots_on_goal` | `true` | `false` |
 | `<league>.display_options.show_powerplay` | `true` | `false` |
 
@@ -170,8 +170,8 @@ Per league, under `filtering`, all **Advanced**:
 | `other_upcoming_games_to_show` | `10` | The same for scheduled games. |
 | `other_rotation_interval_seconds` | `1800` | How often the non-favorite slice advances. `0` pins it. |
 | `favorite_rotation_boost` | `1` | Number of turns each favorite team's recent/upcoming game gets for every 1 turn other games get in switch mode. `1` shows each game once. |
-| `other_games_min_quality` | `ranked` | Which non-favorite games qualify: `any` or `ranked`. **Hidden on the NHL since 1.33.0; still offered on the two NCAA leagues, which have polls.** |
-| `other_games_divisions` | `["fbs"]` | Which divisions non-favorite games may come from. **Hidden from the config form since 1.33.0 — no hockey league has FBS/FCS rosters.** |
+| `other_games_min_quality` | `ranked` | Which non-favorite games qualify: `any` or `ranked`. **Hidden on the NHL since 1.34.0; still offered on the two NCAA leagues, which have polls.** |
+| `other_games_divisions` | `["fbs"]` | Which divisions non-favorite games may come from. **Hidden from the config form since 1.34.0 — no hockey league has FBS/FCS rosters.** |
 
 **Your favorite teams are never filtered by the last two.** Those settings only
 decide what fills the *remaining* slots.
@@ -295,7 +295,7 @@ Fallbacks used when the corresponding per-league setting is absent.
 |---|---|---|---|
 | `defaults.display_duration` | 5–60 s | `15` | Per-game on-screen time. |
 | `defaults.show_records` | boolean | `false` | Draw win-loss records. |
-| `defaults.show_ranking` | boolean | `false` | **Advanced.** Draw poll rank badges. **Hidden on the NHL since 1.33.0; still offered on the two NCAA leagues, which have polls.** |
+| `defaults.show_ranking` | boolean | `false` | **Advanced.** Draw poll rank badges. **Hidden on the NHL since 1.34.0; still offered on the two NCAA leagues, which have polls.** |
 | `defaults.show_odds` | boolean | `false` | **Advanced.** Draw betting odds. |
 | `defaults.show_shots_on_goal` | boolean | `false` | Draw the shot line on live cards. |
 | `defaults.show_powerplay` | boolean | `true` | Mark live games during a power play — see [Power play](#power-play). |
@@ -350,6 +350,75 @@ second and any single frame may be the only one anyone sees. When a goal
 arrives while another plugin is on screen the plugin asks the core for its
 high-FPS loop, and the confetti and the glow run smoothly.
 
+### Goal scorer card
+
+**Off by default, NHL only.** Turn on `nhl.display_options.show_goal_scorer`
+and the celebration gets a second beat: once the takeover clears, the panel
+shows a card for the player who actually scored.
+
+```
+┌──────────┬────────────────────────────────┐
+│          │ WSH GOAL   3rd 9:45   SH       │  ← banner, team colour
+│  ┌────┐  │ Jonny Brodzinski               │
+│  │face│  │ #76 C                          │
+│  └────┘  │ G 6  A 10  PTS 16  +/- -1      │
+│          │ A: M. Fehervary  T. Niederbach │
+│          │ Age 33  6' 0"  211 lbs         │
+└──────────┴────────────────────────────────┘
+```
+
+**The card and the celebration are independent settings.** You can have the
+card without the takeover, the takeover without the card, both, or neither.
+With both on the card is the second beat, waiting for the takeover to clear;
+with the takeover off the card appears as soon as the goal is seen. The card
+keeps its own score baseline for exactly this reason — the celebration's
+detection stops running when `celebration_enabled` is off, so a card riding on
+it could never appear alone.
+
+What neither can get from the scoreboard feed is *who* scored — that feed
+carries the score and nothing else — so the card is a second ESPN request,
+fired the moment the goal is spotted.
+
+Everything past the name is optional and degrades on its own. The goal play
+itself carries the scorer, the assists, the headshot and a season goal count,
+so a card is worth drawing before the bio lookup lands; the bio then fills in
+the number, position, full season line, age, height and hometown. Rows are
+dropped least-important-first on panels that cannot hold them all — a 128×32
+keeps the banner, the name and a stat or two — and a row built from several
+fields gives up whole fields rather than being cut part-way through one. A
+name too wide for the panel falls back to the short spelling ESPN also
+provides (`J. Brodzinski`) before anything is truncated.
+
+**NHL only** is a data limit, not a preference: college hockey's ESPN summary
+carries no play data at all, so there is no scorer to read.
+
+Cost is one extra ESPN request per goal for the play, plus one for the
+scorer's bio the first time that player is seen — bios are cached for a day.
+Headshots are cached in memory and on disk under `assets/headshots/`, which is
+gitignored; each is cropped and downscaled to a 192px square (~40 KB against
+the ~200 KB ESPN serves) and the directory is held to 200 files,
+least-recently-used evicted first, so the cache cannot grow without bound on
+an SD card. They are only ever downloaded in the background, never on the
+render path.
+
+Under `customization.goal_scorer`:
+
+| Key | Type | Default | What it does |
+|---|---|---|---|
+| `dwell_seconds` | 2-20 s | `6` | How long the card holds the panel. With the celebration also on it waits for the takeover first, so the combined interruption is `celebration_duration` plus this. |
+| `favorites_only` | boolean | `false` | Only for goals by one of this league's `favorite_teams`. The card's own scope — not tied to the celebration's `celebrate_opponent_goals`. |
+| `show_headshot` | boolean | `true` | The scorer's headshot, framed in the team's colour. Hidden under 96×32. |
+| `show_stats` | boolean | `true` | The season line (G/A/PTS/+−). |
+| `show_assists` | boolean | `true` | The assists row. |
+| `show_bio_details` | boolean | `true` | Age, height and weight, hometown. |
+| `header_bar` | boolean | `true` | Banner knocked out of a solid team-colour bar (panels 48 rows and taller). |
+| `use_team_colors` | boolean | `true` | Banner, number/position row and headshot frame in the scoring team's colour. |
+| `font` / `font_size` | string / 6-24 | `9x15.bdf` / `24` | The card auto-fits, stepping down a ladder that includes the proportional `MatrixChunky8` and `MatrixLight6` faces — they fit about a third more text per row at the same height, which is what keeps a full name on a 64×32. The cap applies to scalable fonts only. |
+| `accent_color` | RGB | `[255, 200, 0]` | Banner and frame when team colours are off or unavailable. |
+| `text_color` | RGB | `[255, 255, 255]` | The scorer's name and the assists row. |
+| `stat_color` | RGB | `[0, 220, 255]` | The season stat line. |
+| `detail_color` | RGB | `[170, 170, 170]` | The quieter trivia rows. |
+
 ### Display modes
 
 | Key | Type | Default |
@@ -383,8 +452,8 @@ See [The selection settings](#the-selection-settings). All **Advanced**.
 | `<league>.filtering.other_upcoming_games_to_show` | 0–20 | `10` |
 | `<league>.filtering.other_rotation_interval_seconds` | 0–86400 s | `1800` |
 | `<league>.filtering.favorite_rotation_boost` | 1–5 | `1` |
-| `<league>.filtering.other_games_min_quality` | `any` \| `ranked` | `ranked`. **Hidden on the NHL since 1.33.0; still offered on the two NCAA leagues, which have polls.** |
-| `<league>.filtering.other_games_divisions` | array | `["fbs"]`. **Hidden from the config form since 1.33.0 — no hockey league has FBS/FCS rosters.** |
+| `<league>.filtering.other_games_min_quality` | `any` \| `ranked` | `ranked`. **Hidden on the NHL since 1.34.0; still offered on the two NCAA leagues, which have polls.** |
+| `<league>.filtering.other_games_divisions` | array | `["fbs"]`. **Hidden from the config form since 1.34.0 — no hockey league has FBS/FCS rosters.** |
 
 ### Update intervals
 
@@ -418,10 +487,11 @@ All **Advanced**.
 | Key | Type | Default (NHL / NCAA) | What it does |
 |---|---|---|---|
 | `<league>.display_options.show_records` | boolean | `false` / `true` | Draw win-loss records in the bottom corners. |
-| `<league>.display_options.show_ranking` | boolean | `false` / `true` | Draw poll rank badges where available. **Hidden on the NHL since 1.33.0; still offered on the two NCAA leagues, which have polls.** |
+| `<league>.display_options.show_ranking` | boolean | `false` / `true` | Draw poll rank badges where available. **Hidden on the NHL since 1.34.0; still offered on the two NCAA leagues, which have polls.** |
 | `<league>.display_options.show_odds` | boolean | `false` | Draw betting odds. |
 | `<league>.display_options.show_shots_on_goal` | boolean | `true` / `false` | Draw the shot line on live cards. |
 | `<league>.display_options.show_powerplay` | boolean | `true` / `false` | Mark live games during a power play — see [Power play](#power-play). |
+| `<league>.display_options.show_goal_scorer` | boolean | `false` | **NHL only.** A card naming the player who scored. Independent of the celebration — see [Goal scorer card](#goal-scorer-card). |
 
 ![show_records on and off](../../docs/assets/hockey-scoreboard/show-records.png)
 
@@ -460,7 +530,7 @@ All **Advanced**, and per league.
 | Key | Type | Default | What it does |
 |---|---|---|---|
 | `<league>.scroll_settings.scroll_speed` | 1.0–200.0 px/s | `50.0` | Higher scrolls faster. |
-| `<league>.scroll_settings.scroll_delay` | 0.001–0.1 s | `0.01` | Ignored; kept so saved configs still load. Scrolling is paced to the panel refresh; `scroll_speed` sets the speed. **Hidden from the config form since 1.33.0 (still declared).** |
+| `<league>.scroll_settings.scroll_delay` | 0.001–0.1 s | `0.01` | Ignored; kept so saved configs still load. Scrolling is paced to the panel refresh; `scroll_speed` sets the speed. **Hidden from the config form since 1.34.0 (still declared).** |
 | `<league>.scroll_settings.gap_between_games` | 8–128 px | `48` | Gap between game cards. |
 | `<league>.scroll_settings.show_league_separators` | boolean | `true` | Draw the NHL shield or NCAA logos between leagues. |
 | `<league>.scroll_settings.dynamic_duration` | boolean | `true` | Size the scroll duration from the content width. |

@@ -48,7 +48,17 @@ except ModuleNotFoundError as exc:
         raise
     from base_odds_manager import BaseOddsManager
 from data_sources import ESPNDataSource
-from hockey_espn_dates import ESPN_MAX_LIMIT, fetch_espn_scoreboard
+# Prefer core's ESPN date-range helper, which core keeps current (orjson
+# parsing, giving way to the Vegas render thread); fall back to the bundled
+# copy on cores that don't ship src.common.espn_dates yet.
+try:
+    from src.common.espn_dates import ESPN_MAX_LIMIT, fetch_espn_scoreboard
+except ModuleNotFoundError as exc:
+    # Fall back only when the CORE module is absent; an import failure from
+    # inside it should surface, not be masked.
+    if exc.name not in {"src", "src.common", "src.common.espn_dates"}:
+        raise
+    from hockey_espn_dates import ESPN_MAX_LIMIT, fetch_espn_scoreboard
 from hockey_timezone import resolve_timezone
 from src.common.sports_shared import (
     SportsCoreSharedMixin, SportsLiveSharedMixin, SportsRecentSharedMixin)
@@ -1895,6 +1905,25 @@ class SportsCore(SportsCoreSharedMixin, ABC):
                 f"API error fetching todays games for {self.sport} - {self.league}: {e}"
             )
             return None
+
+    def _schedule_window(self) -> Tuple[str, str]:
+        """The dates Recent and Upcoming can show, as an ESPN range, and a cache-key suffix.
+
+        Recent keeps finished games from the last ``schedule_lookback_days`` and
+        Upcoming fixtures up to ``schedule_lookahead_days`` ahead; nothing outside
+        that window ever reaches the screen. The league managers used to fetch
+        and cache the whole season regardless -- 53MB of JSON for MLB, 18MB for
+        NHL -- and every read of an expired copy parsed all of it with the GIL
+        held, freezing the display for up to two seconds each time. The suffix
+        carries the window's size, so managers configured with different
+        windows never share a cached one too small for either.
+        """
+        now = datetime.now(pytz.utc)
+        lookback = getattr(self, "schedule_lookback_days", _DEFAULT_LOOKBACK_DAYS)
+        lookahead = getattr(self, "schedule_lookahead_days", _DEFAULT_LOOKAHEAD_DAYS)
+        start = (now - timedelta(days=lookback)).strftime("%Y%m%d")
+        end = (now + timedelta(days=lookahead)).strftime("%Y%m%d")
+        return f"{start}-{end}", f"window_{lookback}_{lookahead}"
 
     def _get_weeks_data(self) -> Optional[Dict]:
         """Games in the lookback/lookahead window, shown while the season loads.

@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.2.1] - 2026-09-23
+
+### Fixed
+- **Countries stay visible on the night side at low PWM depth.** The LED
+  library lights only the top `pwm_bits` of its 11 luminance-corrected bit
+  planes. At `pwm_bits` 7 and brightness 80, night-side land (9, 17, 22) and
+  ocean (5, 8, 27) both came out as the dimmest blue step, so the night side
+  drew as one flat block; at 8 bits land still had a green step. The plugin
+  now reads `display.hardware.pwm_bits` and the live brightness (so a dim
+  schedule counts) and, only when the panel would merge them, lifts night-side
+  land just enough to light one step above the ocean. Panels that already
+  separated them, the emulator, and the render harness draw as before.
 ## [1.2.0] - 2026-09-18
 
 ### Changed

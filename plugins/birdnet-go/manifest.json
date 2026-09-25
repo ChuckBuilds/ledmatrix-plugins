@@ -1,7 +1,7 @@
 {
   "id": "birdnet-go",
   "name": "BirdNET-Go",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "author": "ChuckBuilds",
   "description": "Show what BirdNET-Go is hearing. One screen cycles a different species each turn \u2014 name, confidence, how many times it has been heard today, and a photo \u2014 and a second shows today's stats: species count, total detections and the most-heard species. Polls the BirdNET-Go REST API, with optional MQTT for instant pop-ups.",
   "category": "integration",
@@ -21,6 +21,12 @@
   "entry_point": "manager.py",
   "class_name": "BirdNetGoPlugin",
   "versions": [
+    {
+      "released": "2026-09-24",
+      "version": "1.2.5",
+      "changelog": "Photo cards use one crisp font size per line on every card: on wide panels the name was 20px (13px on 256x32) and the scientific name 13px, both off PressStart2P's 8px grid, and only names too long to fit stepped down, so cards in the rotation and the Vegas ticker disagreed. Beside the photo each line now snaps down to the grid: 16px name with 8px scientific name and stats on 64-tall panels, 8px on 32-tall.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-09-18",
       "version": "1.2.4",

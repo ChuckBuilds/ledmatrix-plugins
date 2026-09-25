@@ -50,7 +50,7 @@ class BaseNBAManager(Basketball):
 
     def _fetch_nba_api_data(self, use_cache: bool = True) -> Optional[Dict]:
         """
-        Fetches the full season schedule for NBA using background threading.
+        Fetches the NBA games Recent and Upcoming can show, in the background.
         Returns cached data immediately if available, otherwise starts background fetch.
         """
         now = datetime.now(pytz.utc)
@@ -58,8 +58,9 @@ class BaseNBAManager(Basketball):
         # NBA season typically runs from October to June
         if now.month < 10:
             season_year = now.year - 1
-        datestring = f"{season_year}1001-{season_year+1}0630"
-        cache_key = f"{self.sport_key}_schedule_{season_year}"
+        # Only what Recent and Upcoming can show; see _schedule_window.
+        datestring, window = self._schedule_window()
+        cache_key = f"{self.sport_key}_schedule_{window}"
 
         # Check cache first
         if use_cache:
@@ -89,7 +90,7 @@ class BaseNBAManager(Basketball):
             and self._background_fetches_espn_ranges()
         ):
             self.logger.info(
-                f"Starting background fetch for {season_year} season schedule..."
+                f"Starting background fetch for {season_year} schedule window..."
             )
 
             def fetch_callback(result):

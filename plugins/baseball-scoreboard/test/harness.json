@@ -1,5 +1,5 @@
 {
-  "_comment": "Deterministic fixture for the plugin safety harness. Seeds the MLB season-schedule cache (key mlb_schedule_2026) with one final, one in-progress, and one scheduled game so recent/upcoming render real game cards without network access. MLBLiveManager._fetch_data() -> _fetch_todays_games() is a direct network call with no cache read, so the live screen cannot be fed from mock data; instead test_mode (which the baseball adapter passes through to the managers) makes the live manager render its deterministic built-in BOS @ NYY live game with no network access.",
+  "_comment": "Deterministic fixture for the plugin safety harness. Seeds the MLB season-schedule cache (key mlb_schedule_2026) with one final, one in-progress, and one scheduled game so recent/upcoming render real game cards without network access. MLBLiveManager._fetch_data() -> _fetch_todays_games() is a direct network call with no cache read, so the live screen cannot be fed from mock data; instead test_mode (which the baseball adapter passes through to the managers) makes the live manager render its deterministic built-in BOS @ NYY live game with no network access. show_pitcher_batter is pinned off (it defaults on) so the live frame is the scorebug rather than the Now Batting card, which rotates in first and is covered at every size by test_at_bat_player_card.py.",
   "config": {
     "enabled": true,
     "timezone": "UTC",
@@ -18,7 +18,8 @@
       "display_options": {
         "show_records": false,
         "show_ranking": false,
-        "show_odds": false
+        "show_odds": false,
+        "show_pitcher_batter": false
       },
       "filtering": {
         "show_favorite_teams_only": false,

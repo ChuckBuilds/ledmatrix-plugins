@@ -1,7 +1,7 @@
 {
   "id": "hockey-scoreboard",
   "name": "Hockey Scoreboard",
-  "version": "1.33.0",
+  "version": "1.34.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, and NCAA Women's hockey with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/hockey-scoreboard",
@@ -55,10 +55,22 @@
   ],
   "versions": [
     {
-      "version": "1.33.0",
+      "version": "1.34.0",
       "released": "2026-09-24",
       "ledmatrix_min_version": "3.4.0",
       "notes": "Stops drawing 8 config control(s) that cannot affect anything, and stops the rankings fetch on leagues that publish no poll. Hidden: 3 FBS/FCS division checkbox group(s) -- ESPN publishes those rosters for college football alone, so the lookup resolves nothing and the filter fails open; 1 other_games_min_quality control(s) on league(s) with no poll, where 'ranked' lets every game through; 1 show_ranking toggle(s) on league(s) with no poll -- worse than inert, because the rank badge replaces the record, so ticking it erased the records show_records was drawing; 3 scroll_delay field(s), whose own description has read 'ignored' for releases. Each stays declared with \"x-display\": \"hidden\", so a config already carrying it keeps validating and nothing is lost on upgrade; only the form control goes away. Left visible where the league really does publish a poll: ncaa_mens, ncaa_womens. FETCH: _league_has_rankings gated the quality-filter call site but not the show_ranking ones, so ticking Show Ranking on a pollless league sent two requests an hour to endpoints that cannot answer. The gate moved to the top of _fetch_team_rankings, covering every caller at once. Which leagues have a poll is measured, not assumed: ESPN's /rankings endpoint was probed for every scoreboard league on 2026-09-24. college-football, men's and women's college basketball, college hockey and college lacrosse answer 200 with real poll blocks; every professional league answers 404, and so does college baseball."
+    },
+    {
+      "version": "1.33.1",
+      "released": "2026-09-24",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "The Recent and Upcoming screens for NHL, NCAA men's and NCAA women's hockey now fetch and cache only the games they can show -- the schedule_lookback_days / schedule_lookahead_days window around today, 14 days back and 7 ahead by default -- instead of the whole season. They never displayed anything outside that window, but the whole season was up to 18MB of JSON for the NHL, and every refresh parsed all of it with the display frozen: measured on a Pi 4, 0.6 to 2.3 seconds of stalled scrolling each time. Nothing on screen changes. The old season cache files are no longer written and the core's cache cleanup removes them. Uses LEDMatrix core's ESPN date-range helper (src/common/espn_dates.py) whenever the core ships one, and its bundled copy only on older cores, so a core fix to how ESPN is fetched reaches this plugin without a plugin release. On current cores that means ESPN responses are parsed with orjson, which is quicker and holds up the scrolling display for less time; the bundled copy is brought back in step with core's as well."
+    },
+    {
+      "version": "1.33.0",
+      "released": "2026-09-23",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "A goal-scorer card for the NHL, off by default, and independent of the goal celebration -- either, both or neither. Turn on nhl.display_options.show_goal_scorer and the celebration takeover gets a second beat: once it clears, the panel shows a card for the player who actually scored -- headshot framed in the team colour, a '<TEAM> GOAL' banner carrying the period, clock and strength (PP/SH/EN), the scorer's name, number and position, their season line, the assists, and their age, height and hometown. The celebration could never say this on its own: it is armed from a score delta on the scoreboard feed, which carries the score and never the scorer, so the card is a second request made while the celebration is still on screen. Everything past the name degrades on its own -- the goal play itself carries the scorer, the assists, the headshot and a season goal count, so the card is worth drawing before the bio lookup lands. Rows are dropped least-important-first on panels that cannot hold them all, rows built from several fields give up whole fields rather than being cut part-way through one, and a name too wide falls back to the short spelling ESPN also provides before anything is truncated. NHL only, and that is a data limit rather than a preference: college hockey's ESPN summary carries no play data at all. Cost is one request per goal for the play plus one per new scorer for the bio, which is why it is opt-in. Headshots are cached on disk as 192px squares (~40 KB against the ~200 KB ESPN serves) with the directory held to 200 files, least-recently-used evicted first, so the cache cannot grow without bound on an SD card. The card keeps its own per-game score baseline rather than reading the celebration's, because the celebration's detection stops running when celebration_enabled is off: a card armed off it could never have appeared without the takeover. With both on the card waits for the takeover to clear; with the takeover off it appears as soon as the goal is seen. Its scope is its own too -- favorites_only under customization.goal_scorer, not the celebration's celebrate_opponent_goals. The card's font ladder also includes the proportional MatrixChunky8 and MatrixLight6 faces. The X11 rungs alone were a poor ladder for a card this text-dense -- 6x13, 6x12, 6x10 and 6x9 are all six pixels wide, so four consecutive steps get shorter and never narrower, which does nothing when the binding constraint is width. MatrixChunky8 is the same row height as 5x8 but proportional, drawing this card's text about a third narrower, and it separates B from 8 better than the 4x6 face. Each sits immediately before the X11 rung of its own height, so a panel with room renders identically to before while a 64x32 keeps a full player name where it used to truncate one."
     },
     {
       "version": "1.32.0",
@@ -555,7 +567,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-20",
+  "last_updated": "2026-09-23",
   "stars": 0,
   "downloads": 0,
   "verified": true,

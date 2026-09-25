@@ -57,6 +57,13 @@ _MAX_PANEL_IMAGES = 16
 NARROW_FONT_PATH = 'assets/fonts/4x6-font.ttf'
 NARROW_FONT_SIZE = 7
 
+# Pixel fonts render cleanly only at multiples of their grid; off it, 1-bit
+# text drops glyph columns. Fonts not listed here are used at any size.
+_FONT_PIXEL_GRID = {
+    'PressStart2P-Regular.ttf': 8,
+    '4x6-font.ttf': 7,
+}
+
 # Centre zoom applied after the photo is cover-fit to its box.
 _PHOTO_ZOOM = 1.2
 
@@ -226,6 +233,17 @@ class BirdNetGoPlugin(BasePlugin):
                     self.logger.debug("Narrow font load failed: %s", e)
             self._narrow_font_cache = font
         return self._narrow_font_cache or None
+
+    def _crisp_floor(self, size: int) -> int:
+        """Largest size at or below ``size`` the configured font is crisp at.
+
+        Rounds down rather than to the nearest step: rounding a 13px line up
+        to 16 would grow it. Fonts without a known grid keep ``size``.
+        """
+        grid = _FONT_PIXEL_GRID.get(os.path.basename(self.font_path or ''))
+        if not grid:
+            return size
+        return max(grid, size // grid * grid)
 
     def _fit_font(self, text: str, font, max_w: int, max_h: int):
         """Step ``font`` down to a crisp smaller face until ``text`` fits ``max_w``.
@@ -932,7 +950,14 @@ class BirdNetGoPlugin(BasePlugin):
             row_h = min(row_h, h - y)
             if row_h <= 0:
                 break
-            font = self._font_for(max(5, min(int(row_h * 0.78), size_cap)))
+            size = max(5, min(int(row_h * 0.78), size_cap))
+            if img_box_w:
+                # Beside the photo every line sits on the font's grid. The
+                # row-height size (20px name, 13px scientific name on a 64-tall
+                # panel) dropped glyph columns and dwarfed the photo, and only
+                # names too wide to fit ever stepped down, so cards disagreed.
+                size = self._crisp_floor(size)
+            font = self._font_for(size)
             if img_box_w and kind in ('name', 'sci'):
                 # Beside the photo the text column is narrow: shrink long names
                 # so the whole word reads instead of scrolling a few big letters.

@@ -76,7 +76,7 @@
       "last_updated": "2026-09-24",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.48.0"
+      "latest_version": "1.49.0"
     },
     {
       "id": "basketball-scoreboard",
@@ -287,10 +287,10 @@
       "plugin_path": "plugins/geochron",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-18",
+      "last_updated": "2026-09-23",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.0",
+      "latest_version": "1.2.1",
       "icon": "fa-globe"
     },
     {
@@ -359,7 +359,7 @@
       "last_updated": "2026-09-24",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.33.0",
+      "latest_version": "1.34.0",
       "icon": "fas fa-hockey-puck"
     },
     {
@@ -406,10 +406,10 @@
       "plugin_path": "plugins/birdnet-go",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-18",
+      "last_updated": "2026-09-24",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.4"
+      "latest_version": "1.2.5"
     },
     {
       "id": "leaderboard",

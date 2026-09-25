@@ -831,7 +831,7 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "show_bases": display_options.get("show_bases", True),
                 "show_outs": display_options.get("show_outs", True),
                 "show_count": display_options.get("show_count", True),
-                "show_pitcher_batter": display_options.get("show_pitcher_batter", False),
+                "show_pitcher_batter": display_options.get("show_pitcher_batter", True),
                 "show_last_play": display_options.get("show_last_play", False),
                 "show_player_card": display_options.get("show_player_card", False),
                 "show_traditional_scoreboard": display_options.get("show_traditional_scoreboard", False),
