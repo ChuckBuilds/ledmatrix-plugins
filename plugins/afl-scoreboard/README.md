@@ -378,10 +378,10 @@ also driving a panel, and raising the polling rate rarely helps.
 | `other_upcoming_games_to_show` | `1` | **Advanced.** Non-favourite upcoming games, in "favourites first" mode |
 | `other_rotation_interval_seconds` | `1800` | **Advanced.** How often the non-favourite window advances |
 | `favorite_rotation_boost` | `1` | **Advanced.** Number of turns each favorite team's recent/upcoming game gets for every 1 turn other games get in switch mode. `1` shows each game once. |
-| `other_games_min_quality` | `ranked` | **Advanced.** Which non-favourite games earn a slot: `any` or `ranked`. **Inert for AFL** — see below |
-| `other_games_divisions` | `["fbs"]` | **Advanced.** Which divisions non-favourite games may come from. **Inert for AFL** — see below |
+| `other_games_min_quality` | `ranked` | **Advanced.** Which non-favourite games earn a slot: `any` or `ranked`. **Inert for AFL** — see below. **Hidden from the config form since 1.30.0 (still declared).** |
+| `other_games_divisions` | `["fbs"]` | **Advanced.** Which divisions non-favourite games may come from. **Inert for AFL** — see below. **Hidden from the config form since 1.30.0 (still declared).** |
 | `show_records` | `false` | **Advanced.** Draw each team's season record in the bottom corners |
-| `show_ranking` | `false` | **Advanced.** Draw a rank badge. AFL publishes no poll, so this shows nothing |
+| `show_ranking` | `false` | **Advanced.** Draw a rank badge. AFL publishes no poll, so this shows nothing. **Hidden from the config form since 1.30.0 (still declared) — the empty rank badge also replaced the record.** |
 | `show_odds` | `true` | Draw the betting line. **ESPN publishes no odds for AFL** — see [Known Limitations](#known-limitations) |
 | `customization.favorite_result_colors.enabled` | `false` | Colour a finished game's score by whether your favourite won |
 | `customization.favorite_result_colors.win_color` | `[0, 255, 0]` | **Advanced.** Colour for a win |
@@ -437,7 +437,7 @@ Scroll-mode-only settings:
 | Option | Default | What it does |
 |--------|---------|--------------|
 | `scroll_settings.scroll_speed` | `1.0` | **Advanced.** Pixels per step |
-| `scroll_settings.scroll_delay` | `0.01` | **Advanced.** Ignored; kept so saved configs still load. Scrolling is paced to the panel refresh; `scroll_speed` sets the speed. |
+| `scroll_settings.scroll_delay` | `0.01` | **Advanced.** Ignored; kept so saved configs still load. Scrolling is paced to the panel refresh; `scroll_speed` sets the speed. **Hidden from the config form since 1.30.0 (still declared).** |
 | `scroll_settings.gap_between_games` | `24` | **Advanced.** Blank pixels between cards |
 | `scroll_settings.game_card_width` | `128` | **Advanced.** Width of one card |
 | `scroll_settings.show_league_separators` | `true` | **Advanced.** Divider between leagues (single-league here, so rarely visible) |

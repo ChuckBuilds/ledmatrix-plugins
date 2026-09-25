@@ -106,7 +106,7 @@ college one:
 | `<league>.update_intervals.base` | `60` | `300` |
 | `<league>.update_intervals.live` | `30` | `60` |
 | `<league>.display_options.show_records` | `false` | `true` |
-| `<league>.display_options.show_ranking` | `false` | `true` |
+| `<league>.display_options.show_ranking` | `false` | `true`. **Hidden on the NHL since 1.35.0; still offered on the two NCAA leagues, which have polls.** |
 | `<league>.display_options.show_shots_on_goal` | `true` | `false` |
 | `<league>.display_options.show_powerplay` | `true` | `false` |
 
@@ -170,8 +170,8 @@ Per league, under `filtering`, all **Advanced**:
 | `other_upcoming_games_to_show` | `10` | The same for scheduled games. |
 | `other_rotation_interval_seconds` | `1800` | How often the non-favorite slice advances. `0` pins it. |
 | `favorite_rotation_boost` | `1` | Number of turns each favorite team's recent/upcoming game gets for every 1 turn other games get in switch mode. `1` shows each game once. |
-| `other_games_min_quality` | `ranked` | Which non-favorite games qualify: `any` or `ranked`. |
-| `other_games_divisions` | `["fbs"]` | Which divisions non-favorite games may come from. |
+| `other_games_min_quality` | `ranked` | Which non-favorite games qualify: `any` or `ranked`. **Hidden on the NHL since 1.35.0; still offered on the two NCAA leagues, which have polls.** |
+| `other_games_divisions` | `["fbs"]` | Which divisions non-favorite games may come from. **Hidden from the config form since 1.35.0 — no hockey league has FBS/FCS rosters.** |
 
 **Your favorite teams are never filtered by the last two.** Those settings only
 decide what fills the *remaining* slots.
@@ -295,7 +295,7 @@ Fallbacks used when the corresponding per-league setting is absent.
 |---|---|---|---|
 | `defaults.display_duration` | 5–60 s | `15` | Per-game on-screen time. |
 | `defaults.show_records` | boolean | `false` | Draw win-loss records. |
-| `defaults.show_ranking` | boolean | `false` | **Advanced.** Draw poll rank badges. |
+| `defaults.show_ranking` | boolean | `false` | **Advanced.** Draw poll rank badges. **Hidden on the NHL since 1.35.0; still offered on the two NCAA leagues, which have polls.** |
 | `defaults.show_odds` | boolean | `false` | **Advanced.** Draw betting odds. |
 | `defaults.show_shots_on_goal` | boolean | `false` | Draw the shot line on live cards. |
 | `defaults.show_powerplay` | boolean | `true` | Mark live games during a power play — see [Power play](#power-play). |
@@ -510,8 +510,8 @@ See [The selection settings](#the-selection-settings). All **Advanced**.
 | `<league>.filtering.other_upcoming_games_to_show` | 0–20 | `10` |
 | `<league>.filtering.other_rotation_interval_seconds` | 0–86400 s | `1800` |
 | `<league>.filtering.favorite_rotation_boost` | 1–5 | `1` |
-| `<league>.filtering.other_games_min_quality` | `any` \| `ranked` | `ranked` |
-| `<league>.filtering.other_games_divisions` | array | `["fbs"]` |
+| `<league>.filtering.other_games_min_quality` | `any` \| `ranked` | `ranked`. **Hidden on the NHL since 1.35.0; still offered on the two NCAA leagues, which have polls.** |
+| `<league>.filtering.other_games_divisions` | array | `["fbs"]`. **Hidden from the config form since 1.35.0 — no hockey league has FBS/FCS rosters.** |
 
 ### Update intervals
 
@@ -545,7 +545,7 @@ All **Advanced**.
 | Key | Type | Default (NHL / NCAA) | What it does |
 |---|---|---|---|
 | `<league>.display_options.show_records` | boolean | `false` / `true` | Draw win-loss records in the bottom corners. |
-| `<league>.display_options.show_ranking` | boolean | `false` / `true` | Draw poll rank badges where available. |
+| `<league>.display_options.show_ranking` | boolean | `false` / `true` | Draw poll rank badges where available. **Hidden on the NHL since 1.35.0; still offered on the two NCAA leagues, which have polls.** |
 | `<league>.display_options.show_odds` | boolean | `false` | Draw betting odds. |
 | `<league>.display_options.show_shots_on_goal` | boolean | `true` / `false` | Draw the shot line on live cards. |
 | `<league>.display_options.show_powerplay` | boolean | `true` / `false` | Mark live games during a power play — see [Power play](#power-play). |
@@ -589,7 +589,7 @@ All **Advanced**, and per league.
 | Key | Type | Default | What it does |
 |---|---|---|---|
 | `<league>.scroll_settings.scroll_speed` | 1.0–200.0 px/s | `50.0` | Higher scrolls faster. |
-| `<league>.scroll_settings.scroll_delay` | 0.001–0.1 s | `0.01` | Ignored; kept so saved configs still load. Scrolling is paced to the panel refresh; `scroll_speed` sets the speed. |
+| `<league>.scroll_settings.scroll_delay` | 0.001–0.1 s | `0.01` | Ignored; kept so saved configs still load. Scrolling is paced to the panel refresh; `scroll_speed` sets the speed. **Hidden from the config form since 1.35.0 (still declared).** |
 | `<league>.scroll_settings.gap_between_games` | 8–128 px | `48` | Gap between game cards. |
 | `<league>.scroll_settings.show_league_separators` | boolean | `true` | Draw the NHL shield or NCAA logos between leagues. |
 | `<league>.scroll_settings.dynamic_duration` | boolean | `true` | Size the scroll duration from the content width. |

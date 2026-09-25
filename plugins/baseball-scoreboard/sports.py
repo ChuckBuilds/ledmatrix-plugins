@@ -629,6 +629,27 @@ class SportsCore(SportsCoreSharedMixin, ABC):
                      if self._card_option("switch_show_time", True) else "")
         return date_text, time_text
 
+    def _recent_date_text(self, game: Optional[Dict]) -> str:
+        """When a finished game was played, for the full-screen scorebug.
+
+        This screen has drawn the date along its bottom edge since it was
+        written, but it drew ``game_date`` raw -- the "9/23" that
+        _extract_game_details emits -- so it was the one date on the board
+        that ignored every date-format setting. A panel set to "abbrev" read
+        "Sep 23" on its upcoming screen and "9/23" here. Formatting it the
+        way the upcoming scorebug already does makes the two agree, and
+        costs nothing on an untouched panel: switch_date_format defaults to
+        "numeric", which returns the raw text unchanged.
+
+        ``switch_recent_show_date`` defaults on for the same reason
+        switch_show_date does -- the row is already there, and defaulting it
+        off would silently remove a line every existing panel draws. It is
+        the off switch that did not exist before.
+        """
+        if not self._card_option("switch_recent_show_date", True):
+            return ""
+        return self._format_game_date(str((game or {}).get("game_date") or ""), game)
+
     #: Layout element names the draw code uses -> the spelling the schema and
     #: web UI write for the same element. See _get_layout_offset.
     _LAYOUT_ELEMENT_ALIASES: ClassVar[Dict[str, Tuple[str, ...]]] = {
@@ -1354,9 +1375,58 @@ class SportsCore(SportsCoreSharedMixin, ABC):
         return choose_top_division_poll(
             rankings_data, self.logger, getattr(self, "league", "?"))
 
+    #: College leagues that match the shared "college"/"ncaa" heuristic but
+    #: publish no poll. ESPN's generic rule is that college leagues have a
+    #: /rankings endpoint and professional ones do not; college BASEBALL is
+    #: the exception, and the heuristic cannot see it.
+    _NO_POLL_COLLEGE_LEAGUES: ClassVar[frozenset] = frozenset({"college-baseball"})
+
+    def _league_has_rankings(self) -> bool:
+        """Whether this league publishes a poll worth asking for.
+
+        Narrows the shared heuristic (``"college" in league or "ncaa" in
+        league``) by one measured exception. On 2026-09-24
+        ``baseball/college-baseball/rankings`` answered **404** while
+        ``/scoreboard`` and ``/standings`` on the same slug answered 200, so
+        the slug is right and the endpoint simply does not exist. Out of
+        season is not the explanation either: men's college lacrosse and
+        hockey are equally out of season and both answered 200 with real poll
+        blocks.
+
+        Without this, NCAA Baseball's ``other_games_min_quality`` default of
+        "ranked" made every enabled rig fetch standings hourly for a poll that
+        cannot arrive -- and the filter failed open anyway, so it was not even
+        filtering. Both of those settings are now hidden for this league, but
+        a config saved before that still carries them, so the gate is what
+        actually stops the requests.
+
+        Reversible by design: if ESPN publishes one later, drop the league
+        from this set. Everything downstream already fails open, so being
+        wrong here costs a missing rank badge, never a blank board.
+        """
+        if (self.league or "").lower() in self._NO_POLL_COLLEGE_LEAGUES:
+            return False
+        return super()._league_has_rankings()
+
     def _fetch_team_rankings(self) -> Dict[str, int]:
         """Fetch team rankings using the new architecture components."""
         current_time = time.time()
+
+        # No poll, no fetch. _league_has_rankings already gated the
+        # quality-filter call site; the show_ranking call sites (this
+        # method's other two callers, in SportsRecent.update /
+        # SportsUpcoming.update and SportsLive.update) did not, so ticking
+        # "Show Ranking" on MLB or MiLB sent two requests an hour to
+        # endpoints that cannot carry one. Gating here rather than at each
+        # call site covers all three at once and cannot drift apart again.
+        #
+        # This is also the setting's only honest answer on those leagues:
+        # the rank badge replaces the record outright, so an empty table
+        # meant "Show Ranking" quietly erased the records that "Show
+        # Records" was drawing. The schema now hides the toggle for MLB and
+        # MiLB, but a config saved before that still carries it.
+        if not self._league_has_rankings():
+            return self._team_rankings_cache
 
         # Check if we have cached rankings that are still valid
         # Gate on when the last look happened, not on whether it found
@@ -3214,7 +3284,7 @@ class SportsRecent(SportsRecentSharedMixin, SportsCore):
 
             # Game date (Bottom of display, one line above bottom edge, centered) with layout offsets
             # Use same font as upcoming games (time font) for consistency
-            game_date = game.get("game_date", "")
+            game_date = self._recent_date_text(game)
             if game_date:
                 date_width = draw_overlay.textlength(game_date, font=self.fonts["time"])
                 date_x = (display_width - date_width) // 2 + self._get_layout_offset('date', 'x_offset')

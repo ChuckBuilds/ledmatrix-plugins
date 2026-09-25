@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.15.0] - 2026-09-24
+
+### Changed
+- **1 config control(s) that cannot affect anything are no longer drawn.**
+  Each stays declared — `"x-display": "hidden"` — so a config already carrying
+  it keeps validating and nothing is lost on upgrade; only the form control goes
+  away.
+
+  - `scroll_settings.scroll_delay` (×1) — its own description has read "Kept
+    so saved configs still load; ignored" for releases, yet it was still an
+    editable number. `scroll_speed` is the only pacing control.
+
+### Internal
+- **The rankings-fetch gate was ported for lineage consistency.**
+  `_fetch_team_rankings` now consults `_league_has_rankings` at the top,
+  covering every caller instead of one. This plugin serves only college leagues
+  that *do* publish a poll, so nothing about its behaviour changes — it is
+  carried because sports.py is copied, not shared (CLAUDE.md non-negotiable #7),
+  and a fix living in eight of nine copies is how the last one gets missed.
+
+  Which leagues have a poll is **measured, not assumed** — ESPN's `/rankings`
+  was probed for every scoreboard league on 2026-09-24. college-football (125
+  teams), men's and women's college basketball (50 each), college hockey (4/5)
+  and college lacrosse (28/33) answer 200 with real poll blocks; every
+  professional league answers 404, and so does college baseball.
+
 ## [1.14.1] - 2026-09-17
 
 ### Changed

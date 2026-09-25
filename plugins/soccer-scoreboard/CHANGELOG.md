@@ -1,5 +1,38 @@
 # Changelog
 
+## [2.32.0] - 2026-09-24
+
+### Changed
+- **32 config control(s) that cannot affect anything are no longer drawn.**
+  Each stays declared — `"x-display": "hidden"` — so a config already carrying
+  it keeps validating and nothing is lost on upgrade; only the form control goes
+  away.
+
+  - `other_games_divisions` (×11) — the FBS / FCS / Other checkboxes. ESPN
+    publishes those group rosters for **college football and nothing else**
+    (`_DIVISION_GROUPS_BY_LEAGUE`), so here the lookup resolves nothing, the
+    filter fails open, and no combination of boxes could change one game.
+  - `other_games_min_quality` (×11) — "ranked" needs a poll. Without one the
+    rank table stays empty and the check fails open, so the setting has
+    exactly one meaningful value.
+  - `display_options.show_ranking` (×10) — **worse than inert.** The rank
+    table is always empty without a poll, and the badge *replaces* the record
+    — so ticking it silently erased the records `show_records` was drawing.
+
+### Fixed
+- **The rankings fetch ran on leagues that publish no poll.**
+  `_league_has_rankings` gated the quality-filter call site but not the
+  `show_ranking` ones, so ticking Show Ranking on every league it serves sent
+  two requests an hour to endpoints that cannot answer. The gate moved to the
+  top of `_fetch_team_rankings`, where it covers every caller and cannot drift
+  apart again.
+
+  Which leagues have a poll is **measured, not assumed** — ESPN's `/rankings`
+  was probed for every scoreboard league on 2026-09-24. college-football (125
+  teams), men's and women's college basketball (50 each), college hockey (4/5)
+  and college lacrosse (28/33) answer 200 with real poll blocks; every
+  professional league answers 404, and so does college baseball.
+
 ## [2.31.0] - 2026-09-20
 
 ### Added

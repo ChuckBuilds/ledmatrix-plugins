@@ -146,8 +146,8 @@ Per league, under `game_limits`:
 | `other_recent_games_to_show` | `5` / `5` | The same, for finished games. |
 | `other_rotation_interval_seconds` | `1800` | How often the non-favorite slice advances. `0` pins it. |
 | `favorite_rotation_boost` | `1` | Number of turns each favorite team's recent/upcoming game gets for every 1 turn other games get in switch mode. `1` shows each game once. |
-| `other_games_min_quality` | `ranked` | Which non-favorite games qualify: `ranked` or `any`. |
-| `other_games_divisions` | `["fbs"]` | Which divisions non-favorite games may come from: `fbs`, `fcs`, `other`. |
+| `other_games_min_quality` | `ranked` | Which non-favorite games qualify: `ranked` or `any`. **Hidden from the config form on NFL since 3.12.0; still offered on NCAA FB, which has a poll.** |
+| `other_games_divisions` | `["fbs"]` | Which divisions non-favorite games may come from: `fbs`, `fcs`, `other`. **Hidden from the config form on NFL since 3.12.0; still offered on NCAA FB, the one league with FBS/FCS rosters.** |
 
 **Your favorite teams are never filtered by the last two.** Follow a Division II
 school and its games always appear, whatever the quality bar or division boxes
@@ -435,7 +435,7 @@ two leagues** — everything else is identical:
 | `<league>.live_game_duration` | `30` | `20` |
 | `<league>.game_limits.upcoming_games_to_show` | `1` | `5` |
 | `<league>.game_limits.other_upcoming_games_to_show` | `1` | `5` |
-| `<league>.display_options.show_ranking` | `false` | `true` |
+| `<league>.display_options.show_ranking` | `false` | `true`. **Hidden from the config form on NFL since 3.12.0; still offered on NCAA FB, which has a poll.** |
 
 The NCAA defaults are larger because a college Saturday has far more games than
 an NFL Sunday, and `show_ranking` is on there because college football has a
@@ -482,8 +482,8 @@ All **Advanced**. Defaults given as NFL / NCAA where they differ; see
 | `<league>.game_limits.other_upcoming_games_to_show` | 0–20 | `1` / `5` |
 | `<league>.game_limits.other_rotation_interval_seconds` | 0–86400 s | `1800` |
 | `<league>.game_limits.favorite_rotation_boost` | 1–5 | `1` |
-| `<league>.game_limits.other_games_min_quality` | `any` \| `ranked` | `ranked` |
-| `<league>.game_limits.other_games_divisions` | array | `["fbs"]` |
+| `<league>.game_limits.other_games_min_quality` | `any` \| `ranked` | `ranked`. **Hidden from the config form on NFL since 3.12.0; still offered on NCAA FB, which has a poll.** |
+| `<league>.game_limits.other_games_divisions` | array | `["fbs"]`. **Hidden from the config form on NFL since 3.12.0; still offered on NCAA FB, the one league with FBS/FCS rosters.** |
 
 ### Durations
 
@@ -526,7 +526,7 @@ All **Advanced**.
 | Key | Type | Default | What it does |
 |---|---|---|---|
 | `<league>.display_options.show_records` | boolean | `false` | Draw win-loss records in the bottom corners. |
-| `<league>.display_options.show_ranking` | boolean | `false` / `true` | Draw poll rank badges. Unranked teams show no badge, by design. |
+| `<league>.display_options.show_ranking` | boolean | `false` / `true` | Draw poll rank badges. Unranked teams show no badge, by design. **Hidden from the config form on NFL since 3.12.0; still offered on NCAA FB, which has a poll.** |
 | `<league>.display_options.show_odds` | boolean | `true` | Draw betting odds. |
 
 ![show_records on and off](../../docs/assets/football-scoreboard/show-records.png)
@@ -567,7 +567,7 @@ All **Advanced**, and per league.
 | Key | Type | Default | What it does |
 |---|---|---|---|
 | `<league>.scroll_settings.scroll_speed` | 1.0–200.0 px/s | `50.0` | Higher scrolls faster. |
-| `<league>.scroll_settings.scroll_delay` | 0.001–0.1 s | `0.01` | Ignored; kept so saved configs still load. Scrolling is paced to the panel refresh; `scroll_speed` sets the speed. |
+| `<league>.scroll_settings.scroll_delay` | 0.001–0.1 s | `0.01` | Ignored; kept so saved configs still load. Scrolling is paced to the panel refresh; `scroll_speed` sets the speed. **Hidden from the config form since 3.12.0 (still declared).** |
 | `<league>.scroll_settings.gap_between_games` | 8–128 px | `48` | Gap between game cards. |
 | `<league>.scroll_settings.show_league_separators` | boolean | `true` | Draw league icons between leagues. |
 | `<league>.scroll_settings.dynamic_duration` | boolean | `true` | Size the scroll duration from the content width. |

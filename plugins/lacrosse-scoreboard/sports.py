@@ -1351,6 +1351,21 @@ class SportsCore(SportsCoreSharedMixin, ABC):
         """Fetch team rankings using the new architecture components."""
         current_time = time.time()
 
+        # No poll, no fetch. _league_has_rankings already gated the
+        # quality-filter call site; the show_ranking call sites did not, so
+        # ticking "Show Ranking" on a league that publishes no poll sent two
+        # requests an hour to endpoints that cannot answer. Gating here rather
+        # than at each call site covers every caller at once and cannot drift
+        # apart again.
+        #
+        # It is also the setting's only honest answer on those leagues: the
+        # rank badge replaces the record, so an empty table meant "Show
+        # Ranking" quietly erased the records "Show Records" was drawing. The
+        # schema now hides the toggle wherever the league has no poll, but a
+        # config saved before that still carries it.
+        if not self._league_has_rankings():
+            return self._team_rankings_cache
+
         # Check if we have cached rankings that are still valid
         # Gate on when the last look happened, not on whether it found
         # anything. Professional leagues publish no poll, so `rankings`

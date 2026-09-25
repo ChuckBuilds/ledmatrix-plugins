@@ -1,7 +1,7 @@
 {
   "id": "lacrosse-scoreboard",
   "name": "Lacrosse Scoreboard",
-  "version": "1.30.3",
+  "version": "1.31.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NCAA men's and women's lacrosse games with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/lacrosse-scoreboard",
@@ -50,6 +50,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.31.0",
+      "released": "2026-09-24",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Stops drawing 4 config control(s) that cannot affect anything, and stops the rankings fetch on leagues that publish no poll. Hidden: 2 FBS/FCS division checkbox group(s) -- ESPN publishes those rosters for college football alone, so the lookup resolves nothing and the filter fails open; 2 scroll_delay field(s), whose own description has read 'ignored' for releases. Each stays declared with \"x-display\": \"hidden\", so a config already carrying it keeps validating and nothing is lost on upgrade; only the form control goes away. Left visible where the league really does publish a poll: ncaa_mens, ncaa_womens. FETCH (no behaviour change here): _fetch_team_rankings now consults _league_has_rankings at the top, covering every caller instead of one. This plugin's leagues are unaffected -- ported because sports.py is copied, not shared, and a fix living in eight of nine copies is how the last one gets missed. Which leagues have a poll is measured, not assumed: ESPN's /rankings endpoint was probed for every scoreboard league on 2026-09-24. college-football, men's and women's college basketball, college hockey and college lacrosse answer 200 with real poll blocks; every professional league answers 404, and so does college baseball."
+    },
     {
       "version": "1.30.3",
       "released": "2026-09-24",

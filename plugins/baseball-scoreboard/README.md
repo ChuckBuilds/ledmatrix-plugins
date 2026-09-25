@@ -190,8 +190,8 @@ Two settings decide what qualifies, and both have important limits in baseball:
 
 | Option | Values | Reality in this plugin |
 |--------|--------|------------------------|
-| `other_games_min_quality` | `ranked`, `any` | `ranked` needs a national poll. MLB and MiLB publish none, so it lets every game through and no poll is requested. It only bites for NCAA Baseball |
-| `other_games_divisions` | `[]` | Needs ESPN's FBS/FCS group rosters, which exist for **college football and nothing else**. Inert here — no lookup is made |
+| `other_games_min_quality` | `ranked`, `any` | `ranked` needs a national poll, and **no baseball league has one** — NCAA Baseball included (`baseball/college-baseball/rankings` answers 404; measured 2026-09-24). It lets every game through, so it is **hidden from the form** in all three and no longer defaults to `ranked` anywhere |
+| `other_games_divisions` | `[]` | Needs ESPN's FBS/FCS group rosters, which exist for **college football and nothing else**. Inert in every baseball league, so it is **hidden from the form** in all three. Still honoured if present in a saved config — which changes nothing, because no lookup is made |
 
 **Your favourite teams are never filtered by either.** Follow a lower-division
 side and its games always appear; these only decide what fills the *remaining*
@@ -201,8 +201,11 @@ Within the non-favourite pool the better matchup leads and each team appears
 once: it is each team's *next* game, ordered by the best poll position of
 either side, so a top-five matchup sits in the first window rather than
 whichever starts soonest. Ties fall back to start time, and a league with no
-poll — MLB, MiLB — simply stays chronological. Favourites are always ordered by
-when they play; for your own team the next game is the point.
+poll stays chronological — which in this plugin means **every** league, since
+ESPN publishes no `/rankings` for MLB, MiLB or college baseball. The ordering
+code is shared with the scoreboards whose leagues do have a poll; here it is
+always the chronological branch. Favourites are always ordered by when they
+play; for your own team the next game is the point.
 
 Both filters **fail open**. If the data behind them cannot be fetched the game
 is allowed through, and if the filters between them leave nothing at all — your
@@ -281,6 +284,7 @@ Set these inside `mlb`, `milb`, or `ncaa_baseball`.
 | `enabled` | `true` | Whether this league is fetched and displayed at all |
 | `favorite_teams` | `[]` | Team abbreviations, e.g. `["STL", "LAD"]` |
 | `exclude_teams` | `[]` | Teams to always hide, from live *and* finished scores |
+| `sport_ids` | all four | **MiLB only, advanced.** Which levels to fetch: `11` Triple-A, `12` Double-A, `13` High-A, `14` Single-A. Narrow it to the level your affiliate plays at; clearing every box falls back to all four rather than showing nothing |
 | `filtering.show_favorite_teams_only` | `true` | Restrict to games involving `favorite_teams` |
 | `filtering.show_all_live` | `false` | Show every live game, not just favourites' |
 | `filtering.favorite_live_boost` | `2` | **Advanced.** Turns your favourite's live game gets per turn for others |
@@ -314,8 +318,8 @@ cost of size; the `scroll_card` and `scroll_settings` groups only affect it.
 | `game_limits.other_upcoming_games_to_show` | `1` | **Advanced.** Non-favourite scheduled games, same path |
 | `game_limits.other_rotation_interval_seconds` | `1800` | **Advanced.** How often the non-favourite window advances |
 | `game_limits.favorite_rotation_boost` | `1` | **Advanced.** Number of turns each favorite team's recent/upcoming game gets for every 1 turn other games get in switch mode. `1` shows each game once. |
-| `game_limits.other_games_min_quality` | `any` (`ranked` for NCAA Baseball) | **Advanced.** Which non-favourite games earn a slot. Meaningful for NCAA, where a national ranking exists |
-| `game_limits.other_games_divisions` | `[]` | **Advanced.** Divisions non-favourite games may come from. A college football taxonomy, so it has no effect in any baseball league |
+| `game_limits.other_games_min_quality` | `any` | **Hidden.** Which non-favourite games earn a slot. No baseball league has a poll to rank against — ESPN publishes no `/rankings` for college baseball either — so `ranked` filters nothing |
+| `game_limits.other_games_divisions` | `[]` | **Hidden.** Divisions non-favourite games may come from. A college football taxonomy, so it has no effect in any baseball league |
 
 Note the asymmetric defaults: five recent games but one upcoming. That suits
 baseball's daily schedule — yesterday produced a full slate of finals worth
@@ -366,7 +370,7 @@ three league blocks, and all are **Advanced**.
 | Option | Default | What it does |
 |--------|---------|--------------|
 | `<league>.scroll_settings.scroll_speed` | `50.0` | Pixels per second. Higher scrolls faster. |
-| `<league>.scroll_settings.scroll_delay` | `0.01` | Ignored; kept so saved configs still load. Scrolling is paced to the panel refresh; `scroll_speed` sets the speed. |
+| `<league>.scroll_settings.scroll_delay` | `0.01` | **Hidden.** Ignored; kept declared so saved configs still load. Scrolling is paced to the panel refresh; `scroll_speed` sets the speed. |
 | `<league>.scroll_settings.gap_between_games` | `48` | Pixels between game cards. |
 | `<league>.scroll_settings.show_league_separators` | `true` | Draw a league icon between leagues in a mixed ticker. |
 | `<league>.scroll_settings.dynamic_duration` | `true` | Size the mode's duration from how long the scroll actually takes, so a long slate is not cut off mid-scroll. |
@@ -416,7 +420,7 @@ plugin and has no per-league setting.
 |--------|---------|--------------|
 | `display_options.show_records` | `false` | **Advanced.** Each team's win-loss record in the bottom corners |
 | `display_options.show_odds` | `true` | Draw the betting line when ESPN has one |
-| `display_options.show_ranking` | `false` | **Advanced.** Rank badge. Meaningful for NCAA; MLB and MiLB publish no poll |
+| `display_options.show_ranking` | `false` | **Hidden.** Rank badge, in place of the record. No baseball league publishes a poll, so the badge was always empty — and because it *replaces* the record, turning it on erased the record `show_records` was drawing |
 | `display_options.show_series_summary` | `false` | **Advanced.** Where the teams stand in the current series |
 | `display_options.show_innings` | `true` | **Advanced.** The ▲/▼ inning at the top of the live scorebug (and the batting-half arrow on the traditional scoreboard). A finished game's `FINAL` always shows |
 | `display_options.show_bases` | `true` | **Advanced.** The base-runner diamonds on the live scorebug |
@@ -645,12 +649,56 @@ and the full-screen scoreboard.
 | `date_format` | `abbrev` | Scroll and Vegas: `abbrev` (Sep 19), `numeric` (9/19), `day_first` (19 Sep), `numeric_day_first` (19/9), `weekday` (Fri Sep 19) |
 | `switch_date_format` | `numeric` | The same set for the full-screen scoreboard, plus `inherit` |
 | `time_format` | `12h` | `12h` (7:40PM) or `24h` (19:40) |
-| `show_date` / `show_time` | `true` | Drop either line |
+| `show_date` / `show_time` | `true` | Drop either line **on an upcoming card** |
 | `swap_date_time` | `false` | Swap the two lines. Each display starts from its own order, so this flips rather than forces: cards put the time on top, the full-screen stack puts the date on top |
 
 The two `*_date_format` keys have different defaults on purpose: the cards have
 always written `Sep 19` and the full-screen scoreboard `9/19`, so one shared
 default would have restyled one of them.
+
+#### When a finished game was played
+
+The keys above describe an *upcoming* game. A **recent** game can show its date
+too — useful once `schedule_lookback_days` is wide enough that "Final" might
+mean last Tuesday.
+
+| Key | Default | Values |
+|-----|---------|--------|
+| `recent_show_date` | `false` | Draw the date on the scroll and Vegas recent card, written in `date_format` |
+| `recent_date_position` | `auto` | `auto`, `own_row`, `top_line` — see below |
+| `switch_recent_show_date` | `true` | Draw it on the full-screen recent scoreboard, written in `switch_date_format` |
+
+The full-screen scoreboard has always drawn this date; `switch_recent_show_date`
+is the switch that turns it **off**. It used to be drawn raw, ignoring every
+format setting — a panel set to `abbrev` showed `Sep 19` on its upcoming screen
+and `9/19` here. It now follows `switch_date_format`, which defaults to
+`numeric` and so renders identically until you change it.
+
+The scroll and Vegas card is the new part here. Five of the eight sibling
+scoreboards (AFL, basketball, football, NRL, soccer) already draw one on that
+card, but their placement does not transfer: they centre the recent score and
+leave the bottom edge free, while this card puts the score near the bottom. So
+the date is off by default and the free strip is *above* the score:
+
+- **`own_row`** — the clear strip between the FINAL line and the score. Needs
+  a tall enough panel; on a short one, or with a large status font, there is
+  no strip.
+- **`top_line`** — in place of FINAL. No real loss on a card that is already
+  showing a final score, and the only option that fits a 32px panel with a
+  large status font.
+- **`auto`** (default) — measures the fonts and panel in use and takes its own
+  row where one fits, the top line where it does not. An explicit `own_row`
+  with no room draws nothing rather than overprinting the score.
+
+```json
+{
+  "scroll_card": {
+    "recent_show_date": true,
+    "recent_date_position": "auto",
+    "date_format": "abbrev"
+  }
+}
+```
 
 Choosing the separator for the full-screen scoreboard moves the date and time
 out of the middle and onto the top and bottom rows, and the "Next Game" header
@@ -736,7 +784,7 @@ full-screen scoreboard and on the scroll and Vegas cards alike.
 | `team_name` | Team names and abbreviations |
 | `status_text` | Status lines such as "Next Game" |
 | `detail_text` | Small detail lines |
-| `rank_text` | Team rankings |
+| `rank_text` | Team rankings (unused here — no baseball league publishes a poll) |
 
 Colours are `[r, g, b]` or `"#RRGGBB"`, and every default is white:
 

@@ -130,7 +130,8 @@
               "default": 0.01,
               "minimum": 0.001,
               "maximum": 0.1,
-              "description": "Kept so saved configs still load; ignored. Scrolling is paced to the panel's refresh rate, and scroll_speed sets how fast it moves."
+              "description": "Kept so saved configs still load; ignored. Scrolling is paced to the panel's refresh rate, and scroll_speed sets how fast it moves. HIDDEN: nothing reads it; scroll_speed is the only pacing control.",
+              "x-display": "hidden"
             },
             "gap_between_games": {
               "type": "integer",

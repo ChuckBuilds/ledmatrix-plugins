@@ -298,7 +298,7 @@ Every table below exists twice, once under `ncaa_mens` and once under
 | `<league>.filtering.other_rotation_interval_seconds` | 0–86400 s | `1800` | **Advanced.** How often the non-favorite window advances. `0` pins it. |
 | `<league>.filtering.favorite_rotation_boost` | 1–5 | `1` | **Advanced.** Number of turns each favorite team's recent/upcoming game gets for every 1 turn other games get in switch mode. `1` shows each game once. |
 | `<league>.filtering.other_games_min_quality` | `any` \| `ranked` | `ranked` | **Advanced.** Restrict non-favorite games to those involving a poll team. Works in this plugin — lacrosse has a national poll. |
-| `<league>.filtering.other_games_divisions` | array | `["fbs"]` | **Advanced.** Inert here; a college football taxonomy. |
+| `<league>.filtering.other_games_divisions` | array | `["fbs"]` | **Advanced.** Inert here; a college football taxonomy. **Hidden from the config form since 1.31.0 — no lacrosse league has FBS/FCS rosters.** |
 
 ### Update intervals
 
@@ -372,7 +372,7 @@ All **Advanced**, and per league.
 | Key | Type | Default | What it does |
 |---|---|---|---|
 | `<league>.scroll_settings.scroll_speed` | 1.0–200.0 px/s | `50.0` | Higher scrolls faster. |
-| `<league>.scroll_settings.scroll_delay` | 0.001–0.1 s | `0.01` | Ignored; kept so saved configs still load. Scrolling is paced to the panel refresh; `scroll_speed` sets the speed. |
+| `<league>.scroll_settings.scroll_delay` | 0.001–0.1 s | `0.01` | Ignored; kept so saved configs still load. Scrolling is paced to the panel refresh; `scroll_speed` sets the speed. **Hidden from the config form since 1.31.0 (still declared).** |
 | `<league>.scroll_settings.gap_between_games` | 8–128 px | `48` | Gap between game cards. |
 | `<league>.scroll_settings.show_league_separators` | boolean | `true` | Draw NCAA league icons between leagues. |
 | `<league>.scroll_settings.dynamic_duration` | boolean | `true` | Size the scroll duration from the content width. |

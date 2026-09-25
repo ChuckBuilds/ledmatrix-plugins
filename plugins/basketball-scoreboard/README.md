@@ -106,7 +106,7 @@ The blocks are near-identical; only two defaults differ, plus one extra section:
 | Key | NBA | WNBA | NCAA M | NCAA W |
 |---|---|---|---|---|
 | `<league>.enabled` | `true` | `false` | `false` | `false` |
-| `<league>.display_options.show_ranking` | `false` | `false` | `true` | `true` |
+| `<league>.display_options.show_ranking` | `false` | `false` | `true` | `true`. **Hidden on NBA and WNBA since 1.35.0; still offered on NCAAM and NCAAW, which have polls.** |
 
 Rankings default on for the college leagues because, as the schema puts it,
 they matter a great deal there.
@@ -168,8 +168,8 @@ Per league, under `game_limits`, all **Advanced**:
 | `other_upcoming_games_to_show` | `1` | The same for scheduled games. |
 | `other_rotation_interval_seconds` | `1800` | How often the non-favorite slice advances. `0` pins it. |
 | `favorite_rotation_boost` | `1` | Number of turns each favorite team's recent/upcoming game gets for every 1 turn other games get in switch mode. `1` shows each game once. |
-| `other_games_min_quality` | `ranked` | Which non-favorite games qualify: `any` or `ranked`. |
-| `other_games_divisions` | `["fbs"]` | Which divisions non-favorite games may come from. |
+| `other_games_min_quality` | `ranked` | Which non-favorite games qualify: `any` or `ranked`. **Hidden on NBA and WNBA since 1.35.0; still offered on NCAAM and NCAAW, which have polls.** |
+| `other_games_divisions` | `["fbs"]` | Which divisions non-favorite games may come from. **Hidden from the config form since 1.35.0 — no basketball league has FBS/FCS rosters.** |
 
 **Your favorite teams are never filtered by the last two.** Those settings only
 decide what fills the *remaining* slots.
@@ -331,8 +331,8 @@ All **Advanced**. See [The selection settings](#the-selection-settings).
 | `<league>.game_limits.other_upcoming_games_to_show` | 0–20 | `1` |
 | `<league>.game_limits.other_rotation_interval_seconds` | 0–86400 s | `1800` |
 | `<league>.game_limits.favorite_rotation_boost` | 1–5 | `1` |
-| `<league>.game_limits.other_games_min_quality` | `any` \| `ranked` | `ranked` |
-| `<league>.game_limits.other_games_divisions` | array | `["fbs"]` |
+| `<league>.game_limits.other_games_min_quality` | `any` \| `ranked` | `ranked`. **Hidden on NBA and WNBA since 1.35.0; still offered on NCAAM and NCAAW, which have polls.** |
+| `<league>.game_limits.other_games_divisions` | array | `["fbs"]`. **Hidden from the config form since 1.35.0 — no basketball league has FBS/FCS rosters.** |
 
 ### Durations
 
@@ -364,7 +364,7 @@ All **Advanced**.
 | Key | Type | Default | What it does |
 |---|---|---|---|
 | `<league>.display_options.show_records` | boolean | `false` | Draw win-loss records in the bottom corners. |
-| `<league>.display_options.show_ranking` | boolean | `false` NBA/WNBA, `true` college | Draw poll rank badges. Replaced by seeds on tournament cards when `march_madness.show_seeds` is on. |
+| `<league>.display_options.show_ranking` | boolean | `false` NBA/WNBA, `true` college | Draw poll rank badges. Replaced by seeds on tournament cards when `march_madness.show_seeds` is on. **Hidden on NBA and WNBA since 1.35.0; still offered on NCAAM and NCAAW, which have polls.** |
 | `<league>.display_options.show_odds` | boolean | `true` | Draw betting odds. |
 
 ![show_records on and off](../../docs/assets/basketball-scoreboard/show-records.png)
@@ -407,7 +407,7 @@ All **Advanced**, and per league.
 | Key | Type | Default | What it does |
 |---|---|---|---|
 | `<league>.scroll_settings.scroll_speed` | 1.0–200.0 px/s | `50.0` | Higher scrolls faster. |
-| `<league>.scroll_settings.scroll_delay` | 0.001–0.1 s | `0.01` | Ignored; kept so saved configs still load. Scrolling is paced to the panel refresh; `scroll_speed` sets the speed. |
+| `<league>.scroll_settings.scroll_delay` | 0.001–0.1 s | `0.01` | Ignored; kept so saved configs still load. Scrolling is paced to the panel refresh; `scroll_speed` sets the speed. **Hidden from the config form since 1.35.0 (still declared).** |
 | `<league>.scroll_settings.gap_between_games` | 8–128 px | `48` | Gap between game cards. |
 | `<league>.scroll_settings.show_league_separators` | boolean | `true` | Draw league icons between leagues. |
 | `<league>.scroll_settings.dynamic_duration` | boolean | `true` | Size the scroll duration from the content width. |

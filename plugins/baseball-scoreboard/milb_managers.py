@@ -53,8 +53,8 @@ class BaseMiLBManager(Baseball):
         self.upcoming_enabled = display_modes.get("milb_upcoming", False)
 
         # MiLB sport IDs to fetch (configurable)
-        self.milb_sport_ids = self.mode_config.get(
-            "sport_ids", DEFAULT_MILB_SPORT_IDS
+        self.milb_sport_ids = self._normalise_sport_ids(
+            self.mode_config.get("sport_ids")
         )
 
         self.logger.info(
@@ -65,6 +65,36 @@ class BaseMiLBManager(Baseball):
             f"Display modes - Live: {self.live_enabled}, Recent: {self.recent_enabled}, Upcoming: {self.upcoming_enabled}"
         )
         self.league = "minor-league-baseball"
+
+    @staticmethod
+    def _normalise_sport_ids(raw) -> List[int]:
+        """The MiLB levels to fetch, as the Stats API's integer ids.
+
+        Falls back to all four whenever the answer would otherwise be "none":
+        an unset key, every box cleared in the UI, or a hand-edited value that
+        holds nothing usable. A MiLB board with no levels selected fetches no
+        games at all and reads as broken, so "empty" is treated as "unset"
+        rather than honoured literally.
+
+        Coerces digit strings because the web UI posts form values as text,
+        and drops anything that is not one of the four known levels instead of
+        passing it to the API.
+        """
+        if isinstance(raw, (str, int)):
+            raw = [raw]
+        try:
+            items = list(raw or [])
+        except TypeError:
+            items = []
+        wanted = []
+        for item in items:
+            try:
+                value = int(str(item).strip())
+            except (TypeError, ValueError):
+                continue
+            if value in DEFAULT_MILB_SPORT_IDS and value not in wanted:
+                wanted.append(value)
+        return wanted or list(DEFAULT_MILB_SPORT_IDS)
 
     def _fetch_team_rankings(self) -> Dict[str, int]:
         """Share rankings cache across all MiLB manager instances (thread-safe)."""
