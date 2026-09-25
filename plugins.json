@@ -1293,6 +1293,33 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "1.0.0"
+    },
+    {
+      "id": "fantasy-blitz",
+      "name": "Fantasy Blitz",
+      "description": "An arcade-style NFL fantasy football show with no league login needed: the week's top scorers as collectible player cards with photos, a live leaderboard, big-play celebrations as they happen, dud alerts for the biggest busts, the free agents everyone is adding, injury news, the top scorer at each position, Tuesday awards and the season race. Optionally follows a watchlist and your own Sleeper or ESPN league. Points in PPR, Half-PPR or Standard from Sleeper's public feed, with ESPN for game states and headshots. No API key.",
+      "author": "ChuckBuilds",
+      "category": "sports",
+      "tags": [
+        "nfl",
+        "football",
+        "fantasy",
+        "fantasy-football",
+        "sleeper",
+        "espn",
+        "leaderboard",
+        "live"
+      ],
+      "icon": "fas fa-football",
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "branch": "main",
+      "plugin_path": "plugins/fantasy-blitz",
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2026-09-24",
+      "verified": true,
+      "screenshot": "",
+      "latest_version": "1.0.0"
     }
   ]
 }
