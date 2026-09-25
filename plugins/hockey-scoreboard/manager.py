@@ -955,6 +955,7 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
         show_shots_on_goal = resolve_value(["display_options", "show_shots_on_goal"], ["show_shots_on_goal"], False)
         show_powerplay = resolve_value(["display_options", "show_powerplay"], ["show_powerplay"], True)
         show_goal_scorer = resolve_value(["display_options", "show_goal_scorer"], ["show_goal_scorer"], False)
+        show_game_activity = resolve_value(["display_options", "show_game_activity"], ["show_game_activity"], False)
 
         # Create manager config with expected structure
         manager_config = {
@@ -987,6 +988,7 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "show_shots_on_goal": show_shots_on_goal,
                 "show_powerplay": show_powerplay,
                 "show_goal_scorer": show_goal_scorer,
+                "show_game_activity": show_game_activity,
                 "show_favorite_teams_only": favorite_only,
                 "show_all_live": show_all_live,
                 "favorite_live_boost": favorite_live_boost,

@@ -1,7 +1,7 @@
 {
   "id": "hockey-scoreboard",
   "name": "Hockey Scoreboard",
-  "version": "1.34.0",
+  "version": "1.35.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, and NCAA Women's hockey with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/hockey-scoreboard",
@@ -55,10 +55,22 @@
   ],
   "versions": [
     {
-      "version": "1.34.0",
-      "released": "2026-09-24",
+      "version": "1.35.0",
+      "released": "2026-09-25",
       "ledmatrix_min_version": "3.4.0",
       "notes": "Stops drawing 8 config control(s) that cannot affect anything, and stops the rankings fetch on leagues that publish no poll. Hidden: 3 FBS/FCS division checkbox group(s) -- ESPN publishes those rosters for college football alone, so the lookup resolves nothing and the filter fails open; 1 other_games_min_quality control(s) on league(s) with no poll, where 'ranked' lets every game through; 1 show_ranking toggle(s) on league(s) with no poll -- worse than inert, because the rank badge replaces the record, so ticking it erased the records show_records was drawing; 3 scroll_delay field(s), whose own description has read 'ignored' for releases. Each stays declared with \"x-display\": \"hidden\", so a config already carrying it keeps validating and nothing is lost on upgrade; only the form control goes away. Left visible where the league really does publish a poll: ncaa_mens, ncaa_womens. FETCH: _league_has_rankings gated the quality-filter call site but not the show_ranking ones, so ticking Show Ranking on a pollless league sent two requests an hour to endpoints that cannot answer. The gate moved to the top of _fetch_team_rankings, covering every caller at once. Which leagues have a poll is measured, not assumed: ESPN's /rankings endpoint was probed for every scoreboard league on 2026-09-24. college-football, men's and women's college basketball, college hockey and college lacrosse answer 200 with real poll blocks; every professional league answers 404, and so does college baseball."
+    },
+    {
+      "version": "1.34.0",
+      "released": "2026-09-25",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Game-activity pop-ups for the NHL, off by default: turn on nhl.display_options.show_game_activity and the plays between goals pop up along the bottom of the live scorebug -- 'A. Matthews SHOT ON GOAL!  2nd 12:34' -- then fade out, so a scoreless game still shows the action. The player's name is white, what happened is in the acting team's colour and the game clock grey; the text holds, dims to black, and the scorebug's own bottom row comes back. Shots on goal and penalties by default; hits, blocked and missed shots can be added under customization.game_activity.event_types, which also carries dwell_seconds, fade_seconds, use_team_colors and the three colour pickers. Only on panels 64 rows or taller -- below that the score sits on the bottom row. The line fits itself to the panel, keeping the full wording in a smaller font before it gives up the initial, then the long label, then the period ordinal, and only last the clock. Plays come from the ESPN per-game summary the goal card reads, polled for the game on screen once per live update, off the render thread: one extra request per live update, and only while the switch-mode live scorebug is on screen -- none while another plugin shows, in scroll mode, or on a short panel. The first poll of a game only notes where the feed is up to, so joining mid-period does not replay its shots, and a burst keeps the newest three. Goals stay with the celebration and the goal-scorer card. NHL only, because college hockey's summary carries no play data."
+    },
+    {
+      "version": "1.33.2",
+      "released": "2026-09-24",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Fixes the goal-scorer card always drawing in its fallback amber instead of the scoring team's colour. The card read home_team_color / away_team_color off the game, but nothing in the hockey plugin ever set them, so use_team_colors had no effect on a real game. The colours now come from ESPN's team.color / team.alternateColor on the scoreboard feed, brightness-clamped into the same legible band baseball-scoreboard uses so a navy is lifted and a white toned down. A team that lists black first, or whose primary has no hue, is drawn in its alternate colour instead of a grey; with no usable colour at all the card keeps its configured accent_color."
     },
     {
       "version": "1.33.1",

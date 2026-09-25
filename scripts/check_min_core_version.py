@@ -123,7 +123,9 @@ MODULE_FIRST_VERSION = {
     # tag-verification section insists on it once the tag is in its list.
     "src.common.bdf_font": None,  # core #627
     "src.common.espn_dates": None,  # core #591
+    "src.common.frame_timing": None,  # core #629
     "src.common.json_body": None,  # core #633
+    "src.common.render_gate": None,  # core #630
     "src.common.sports_helpers": None,  # core #583
     "src.core_config_keys": None,  # core #589
     "src.deprecation": None,  # core #610
@@ -134,6 +136,7 @@ MODULE_FIRST_VERSION = {
     "src.plugin_system.plugin_dirs": None,  # core #623
     "src.plugin_system.repo_urls": None,  # core #635
     "src.redaction": None,  # core #614
+    "src.scan_order": None,  # core #634
 }
 
 #: Releases whose ``src/__init__.py`` ``__version__`` lags their tag. The
