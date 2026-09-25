@@ -79,7 +79,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 
 ## Available Plugins
 
-### Sports (19)
+### Sports (20)
 
 | Plugin | Description | Preview |
 |--------|-------------|---------|
@@ -100,6 +100,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 | [NFL Draft](./plugins/nfl-draft/) | Projected & live NFL draft picks from ESPN | <a href="./plugins/nfl-draft/"><img src="./docs/assets/nfl-draft/hero.png" width="240" alt="nfl-draft on an LED panel"></a> |
 | [March Madness](./plugins/march-madness/) | NCAA tournament bracket tracker with round branding and live scores | <a href="./plugins/march-madness/"><img src="./docs/assets/march-madness/hero.png" width="240" alt="march-madness on an LED panel"></a> |
 | [NFL Stat Leaders](./plugins/nfl-stat-leaders/) | Scrolling NFL statistical leaderboards: passing, rushing & receiving yards and TDs | <a href="./plugins/nfl-stat-leaders/"><img src="./docs/assets/nfl-stat-leaders/hero.png" width="240" alt="nfl-stat-leaders on an LED panel"></a> |
+| [Fantasy Blitz](./plugins/fantasy-blitz/) | Arcade-style NFL fantasy football: top scorers as player cards, big plays, busts, waiver pickups and injuries | <a href="./plugins/fantasy-blitz/"><img src="./docs/assets/fantasy-blitz/hero.png" width="240" alt="fantasy-blitz on an LED panel"></a> |
 | [Sports Leaderboard](./plugins/ledmatrix-leaderboard/) | League standings, rankings, conference records | <a href="./plugins/ledmatrix-leaderboard/"><img src="./docs/assets/ledmatrix-leaderboard/hero.png" width="240" alt="ledmatrix-leaderboard on an LED panel"></a> |
 | [Olympics Countdown](./plugins/olympics/) | Countdown to next Olympics with live medal counts | <a href="./plugins/olympics/"><img src="./docs/assets/olympics/hero.png" width="240" alt="olympics on an LED panel"></a> |
 

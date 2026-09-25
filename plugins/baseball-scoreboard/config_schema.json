@@ -2091,7 +2091,7 @@
             "font": {
               "x-advanced": true,
               "type": "string",
-              "default": "press_start",
+              "default": "PressStart2P-Regular.ttf",
               "description": "Font family for score text"
             },
             "font_size": {
@@ -2130,13 +2130,13 @@
             "font": {
               "x-advanced": true,
               "type": "string",
-              "default": "press_start",
+              "default": "4x6-font.ttf",
               "description": "Font family for status text"
             },
             "font_size": {
               "x-advanced": true,
               "type": "integer",
-              "default": 8,
+              "default": 6,
               "description": "Font size for status text"
             },
             "text_color": {
@@ -2169,7 +2169,7 @@
             "font": {
               "x-advanced": true,
               "type": "string",
-              "default": "four_by_six",
+              "default": "4x6-font.ttf",
               "description": "Font family for detail text"
             },
             "font_size": {
@@ -2434,7 +2434,7 @@
             "font": {
               "x-advanced": true,
               "type": "string",
-              "default": "press_start",
+              "default": "PressStart2P-Regular.ttf",
               "description": "Font family for period/inning text"
             },
             "font_size": {
@@ -2473,7 +2473,7 @@
             "font": {
               "x-advanced": true,
               "type": "string",
-              "default": "press_start",
+              "default": "PressStart2P-Regular.ttf",
               "description": "Font family for team name text"
             },
             "font_size": {
@@ -2512,7 +2512,7 @@
             "font": {
               "x-advanced": true,
               "type": "string",
-              "default": "press_start",
+              "default": "PressStart2P-Regular.ttf",
               "description": "Font family for ranking text"
             },
             "font_size": {
