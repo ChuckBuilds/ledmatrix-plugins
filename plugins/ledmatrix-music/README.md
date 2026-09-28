@@ -135,7 +135,7 @@ panel a short title otherwise leaves a bar stretched across the display:
    - Go to [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
    - Create a new app
    - Note your Client ID and Client Secret
-   - Set Redirect URI to `http://localhost:8080/callback` (or your preferred URL)
+   - Set Redirect URI to `http://127.0.0.1:8888/callback`, the plugin's default. Another URL works if you set `spotify_redirect_uri` to the same value
 
 2. **Configure Credentials**:
    Add to `config/config_secrets.json`:
@@ -144,7 +144,7 @@ panel a short title otherwise leaves a bar stretched across the display:
      "ledmatrix-music": {
        "spotify_client_id": "your_client_id_here",
        "spotify_client_secret": "your_client_secret_here",
-       "spotify_redirect_uri": "http://localhost:8080/callback"
+       "spotify_redirect_uri": "http://127.0.0.1:8888/callback"
      }
    }
    ```

@@ -814,6 +814,17 @@
               "minimum": 10,
               "maximum": 600,
               "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation). Set to null to use dynamic calculation. When mode cycles back, continues from last game shown (no repetition)."
+            },
+            "live_mode_duration": {
+              "x-advanced": true,
+              "type": [
+                "number",
+                "null"
+              ],
+              "default": null,
+              "minimum": 10,
+              "maximum": 600,
+              "description": "Total seconds the Live mode stays on screen before the next mode. Leave empty to size it from the games (games x per-game time)."
             }
           }
         }
@@ -1353,6 +1364,17 @@
               "minimum": 10,
               "maximum": 600,
               "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation). Set to null to use dynamic calculation. When mode cycles back, continues from last game shown (no repetition)."
+            },
+            "live_mode_duration": {
+              "x-advanced": true,
+              "type": [
+                "number",
+                "null"
+              ],
+              "default": null,
+              "minimum": 10,
+              "maximum": 600,
+              "description": "Total seconds the Live mode stays on screen before the next mode. Leave empty to size it from the games (games x per-game time)."
             }
           }
         }
@@ -1889,6 +1911,17 @@
               "minimum": 10,
               "maximum": 600,
               "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation). Set to null to use dynamic calculation. When mode cycles back, continues from last game shown (no repetition)."
+            },
+            "live_mode_duration": {
+              "x-advanced": true,
+              "type": [
+                "number",
+                "null"
+              ],
+              "default": null,
+              "minimum": 10,
+              "maximum": 600,
+              "description": "Total seconds the Live mode stays on screen before the next mode. Leave empty to size it from the games (games x per-game time)."
             }
           }
         }
@@ -2425,6 +2458,17 @@
               "minimum": 10,
               "maximum": 600,
               "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation). Set to null to use dynamic calculation. When mode cycles back, continues from last game shown (no repetition)."
+            },
+            "live_mode_duration": {
+              "x-advanced": true,
+              "type": [
+                "number",
+                "null"
+              ],
+              "default": null,
+              "minimum": 10,
+              "maximum": 600,
+              "description": "Total seconds the Live mode stays on screen before the next mode. Leave empty to size it from the games (games x per-game time)."
             }
           }
         }

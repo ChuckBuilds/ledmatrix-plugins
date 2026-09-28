@@ -53,6 +53,7 @@ ALLOWLIST = {
     "scroll_settings": "read from the plugin config by scroll_display.py",
     # get_cycle_duration and friends read the plugin config.
     "dynamic_duration": "read from the plugin config by manager.py",
+    "mode_durations": "read from the plugin config by manager.py _get_mode_duration",
 }
 
 #: Plugin-root settings and where they are read, when not by the managers.

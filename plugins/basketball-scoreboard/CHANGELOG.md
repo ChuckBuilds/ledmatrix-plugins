@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.36.0] - 2026-09-28
+
+### Added
+- Declares <league>.mode_durations.live_mode_duration (null by default). The
+  plugin reads <mode>_mode_duration by name, so a live value already worked
+  when hand-edited, but the schema offered only recent and upcoming. The
+  README said live had no such setting and that the core read these keys; both
+  corrected.
+
 ## [1.35.2] - 2026-09-28
 
 ### Fixed

@@ -61,6 +61,11 @@
       "description": "Spotify API Client Secret",
       "x-secret": true
     },
+    "spotify_redirect_uri": {
+      "type": "string",
+      "description": "Redirect URI registered in your Spotify app; the two must match exactly. Blank uses http://127.0.0.1:8888/callback. Read from config_secrets.json.",
+      "x-secret": true
+    },
     "live_priority": {
       "type": "boolean",
       "description": "Enable live priority - music will interrupt normal display rotation when actively playing",

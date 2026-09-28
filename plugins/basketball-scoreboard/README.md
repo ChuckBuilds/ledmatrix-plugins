@@ -371,19 +371,15 @@ All **Advanced**.
 
 ### Mode durations
 
-How long the *whole mode* holds the board before the core rotates on. `null`
-uses the dynamic calculation. Both **Advanced**, and read by the LEDMatrix core
-rather than by this plugin, which is why they do not appear in the plugin's own
-source.
+How long the *whole mode* holds the board before the next mode. `null` sizes it
+from the games (games × per-game time). All **Advanced**; the plugin reads them
+by name, `<mode>_mode_duration` (`manager.py` `_get_mode_duration`).
 
 | Key | Type | Default |
 |---|---|---|
+| `<league>.mode_durations.live_mode_duration` | 10–600 s or `null` | `null` |
 | `<league>.mode_durations.recent_mode_duration` | 10–600 s or `null` | `null` |
 | `<league>.mode_durations.upcoming_mode_duration` | 10–600 s or `null` | `null` |
-
-> There is **no `live_mode_duration`** here, unlike the football, hockey and
-> lacrosse scoreboards. Live mode's total is governed by dynamic duration or by
-> `live_game_duration` per game.
 
 ### Dynamic duration
 

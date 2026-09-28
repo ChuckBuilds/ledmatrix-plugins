@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "3.12.2",
+  "version": "3.13.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "3.13.0",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Declares <league>.mode_durations (live, recent and upcoming, null by default) for NFL and NCAA Football. The plugin has always read these and enforces them on its display path, but the schema did not declare them, so the web UI could not set them. A null value behaves exactly as an absent one did. README documents them."
+    },
     {
       "version": "3.12.2",
       "released": "2026-09-28",

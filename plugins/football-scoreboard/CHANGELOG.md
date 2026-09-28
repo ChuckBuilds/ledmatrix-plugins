@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.13.0] - 2026-09-28
+
+### Added
+- Declares <league>.mode_durations (live, recent and upcoming, null by
+  default) for NFL and NCAA Football. The plugin has always read these and
+  enforces them on its display path, but the schema did not declare them, so
+  the web UI could not set them. A null value behaves exactly as an absent one
+  did. README documents them.
+
 ## [3.12.2] - 2026-09-28
 
 ### Fixed
