@@ -150,7 +150,7 @@
           "default": 3,
           "minimum": 1,
           "maximum": 20,
-          "description": "Number of top finishers to display per race"
+          "description": "Podium places on each race's result card (it has room for 3; higher values change nothing there). Your favorite driver, if they finished below those places, gets a card of their own (from outside the top finishers only with Always Show Favorite on)."
         },
         "always_show_favorite": {
           "x-advanced": true,

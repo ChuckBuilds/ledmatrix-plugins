@@ -758,6 +758,28 @@ def test_config_change_keeps_a_running_session():
     assert p.work_color == (1, 2, 3)
 
 
+
+def test_alert_flash_alternates_at_the_core_frame_rate():
+    # The core draws this plugin about once a second, a little over. The
+    # flash used to invert on even half-seconds, which at that rate held one
+    # state for many frames running.
+    clock = MODULE.time.monotonic
+    now = [1000.0]
+    MODULE.time.monotonic = lambda: now[0]
+    try:
+        p = make_plugin()
+        p.alert_until = now[0] + 60
+        frames = []
+        for i in range(20):
+            now[0] = 1000.0 + i * 1.03
+            p.display()
+            frames.append(p.display_manager.image.tobytes())
+    finally:
+        MODULE.time.monotonic = clock
+    held = [i for i in range(1, len(frames)) if frames[i] == frames[i - 1]]
+    assert not held, "flash held its state at frames %s" % held
+    assert all(frames[i] == frames[i - 2] for i in range(2, len(frames)))
+
 if __name__ == "__main__":
     failures = 0
     for name, fn in sorted(globals().items()):

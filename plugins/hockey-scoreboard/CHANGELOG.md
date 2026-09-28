@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.35.3] - 2026-09-28
+
+### Fixed
+- Scroll and Vegas cards follow each league's Display Options for records
+  and rankings. They read only the shared defaults, so NCAA cards showed
+  neither, whatever the league was set to; on Vegas the NCAA leagues' shots and
+  power-play settings were not read either.
+
 ## [1.35.2] - 2026-09-28
 
 ### Fixed

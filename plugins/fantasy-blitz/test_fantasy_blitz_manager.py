@@ -102,6 +102,19 @@ def test_big_play_takes_live_priority_then_steps_aside(frozen):
     assert not plugin.has_live_content(), "one alert a minute"
 
 
+def test_big_play_duration_sets_how_long_the_alert_stays(frozen):
+    # The alert used to end at 8 s whatever screens.big_play.duration said,
+    # while the mode ran for the setting.
+    plugin, _, _ = make_plugin({"screens": {"big_play": {"duration": 20}}})
+    plugin.update()
+    assert plugin.display(force_clear=True, display_mode="fantasy_live") is True
+    assert plugin.get_display_duration() == 20
+    frozen.tick(12)
+    assert plugin.display(display_mode="fantasy_live") is True, "still up at 12 s of 20"
+    frozen.tick(9)
+    assert plugin.display(display_mode="fantasy_live") is False, "done after 20 s"
+
+
 def test_live_priority_can_be_turned_off(frozen):
     plugin, _, _ = make_plugin({"live_priority": False})
     plugin.update()

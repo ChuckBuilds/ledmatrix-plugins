@@ -1,7 +1,7 @@
 {
   "id": "odds-ticker",
   "name": "Odds Ticker",
-  "version": "1.7.2",
+  "version": "1.7.3",
   "description": "Displays scrolling odds and betting lines for upcoming games across multiple sports leagues including NFL, NBA, MLB, NCAA Football, and more",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -20,6 +20,12 @@
   "branch": "main",
   "plugin_path": "plugins/odds-ticker",
   "versions": [
+    {
+      "version": "1.7.3",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "A game going live between hourly refreshes is noticed within 5 minutes, switching to the live update interval. The check read a cache only this plugin's hourly refresh writes, so it found nothing new; it now asks ESPN from update(), and the render thread no longer reads the cache for it."
+    },
     {
       "version": "1.7.2",
       "released": "2026-09-16",
@@ -191,7 +197,7 @@
   ],
   "stars": 0,
   "downloads": 0,
-  "last_updated": "2026-09-16",
+  "last_updated": "2026-09-28",
   "verified": true,
   "screenshot": "",
   "display_modes": [
