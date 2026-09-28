@@ -1,7 +1,7 @@
 {
   "id": "mqtt-notifications",
   "name": "MQTT Notifications",
-  "version": "1.2.3",
+  "version": "1.2.4",
   "author": "ChuckBuilds",
   "description": "Display text or images from HomeAssistant via MQTT. Supports dynamic MQTT topics with wildcard support for flexible notification handling that interrupts the normal display rotation.",
   "category": "integration",
@@ -18,6 +18,12 @@
   "entry_point": "manager.py",
   "class_name": "MQTTNotificationsPlugin",
   "versions": [
+    {
+      "released": "2026-09-27",
+      "version": "1.2.4",
+      "changelog": "The MQTT connection is supervised the way pomodoro-timer does it, so one client exists at a time. The loop checked for a connection straight after loop_start(), before the broker could answer, so it kept building new clients without stopping the old ones; each kept reconnecting under the same client id, and the broker dropped one to admit another. A refused login retried with no delay. The loop now waits up to 5 s for the broker's answer, tears a failed client down before redialling, and backs off 1, 2, 4 ... 60 s. on_disable and cleanup release the client even if the loop thread has died.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-09-27",
       "version": "1.2.3",
