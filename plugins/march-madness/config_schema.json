@@ -97,7 +97,7 @@
           "default": 30,
           "minimum": 10,
           "maximum": 300,
-          "description": "Minimum display duration in seconds",
+          "description": "Minimum display duration in seconds. With dynamic duration off, every slot lasts exactly this long.",
           "x-advanced": true
         },
         "max_duration": {

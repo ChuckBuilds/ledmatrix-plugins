@@ -87,13 +87,13 @@
     "show_hourly_forecast": {
       "type": "boolean",
       "default": true,
-      "description": "Show hourly forecast for the next 24 hours",
+      "description": "Show the hourly forecast for the next four hours",
       "title": "Show Hourly Forecast"
     },
     "show_daily_forecast": {
       "type": "boolean",
       "default": true,
-      "description": "Show daily forecast for the next 3-7 days",
+      "description": "Show the daily forecast for the next three days",
       "title": "Show Daily Forecast"
     },
     "show_almanac": {
@@ -111,35 +111,36 @@
     "show_alerts": {
       "type": "boolean",
       "default": true,
-      "description": "Show weather alerts/warnings when active (takes priority in display rotation)",
+      "description": "Show weather alerts/warnings when active (takes priority in display rotation) HIDDEN: has no effect from the web UI. It only feeds has_live_content(), which the core consults when live_priority is on, and this schema does not offer live_priority; no screen draws the alerts.",
+      "x-display": "hidden",
       "title": "Show Weather Alerts"
     },
     "show_feels_like": {
       "x-advanced": true,
       "type": "boolean",
       "default": true,
-      "description": "Show feels-like temperature on current conditions (requires display height ≥48px)",
+      "description": "Show feels-like temperature in the current conditions bar",
       "title": "Show Feels Like"
     },
     "show_dew_point": {
       "x-advanced": true,
       "type": "boolean",
       "default": true,
-      "description": "Show dew point on current conditions (requires display height ≥48px)",
+      "description": "Show dew point in the current conditions bar (dropped first when the panel is too narrow to fit every item)",
       "title": "Show Dew Point"
     },
     "show_visibility": {
       "x-advanced": true,
       "type": "boolean",
       "default": true,
-      "description": "Show visibility distance on current conditions (requires display height ≥48px)",
+      "description": "Show visibility distance in the current conditions bar (dropped when the panel is too narrow to fit every item)",
       "title": "Show Visibility"
     },
     "show_pressure": {
       "x-advanced": true,
       "type": "boolean",
       "default": true,
-      "description": "Show barometric pressure on current conditions (requires display height ≥48px)",
+      "description": "Show barometric pressure in the current conditions bar (dropped when the panel is too narrow to fit every item)",
       "title": "Show Pressure"
     },
     "radar_map_style": {

@@ -1,7 +1,7 @@
 {
   "id": "f1-scoreboard",
   "name": "F1 Scoreboard",
-  "version": "1.9.1",
+  "version": "1.9.2",
   "author": "ChuckBuilds",
   "class_name": "F1ScoreboardPlugin",
   "entry_point": "manager.py",
@@ -29,6 +29,12 @@
     "f1_calendar"
   ],
   "versions": [
+    {
+      "version": "1.9.2",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Settings text only. upcoming.show_circuit_info adds its card in the Vegas marquee only (the f1_upcoming screen shows the race card alone), and upcoming.show_session_times controls the one time line on the upcoming card, not extra session times."
+    },
     {
       "version": "1.9.1",
       "released": "2026-09-15",
@@ -316,7 +322,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-15",
+  "last_updated": "2026-09-28",
   "stars": 0,
   "downloads": 0,
   "verified": true,

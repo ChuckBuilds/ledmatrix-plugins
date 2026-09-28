@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.3.1] - 2026-09-28
+
+### Changed
+- Settings text only: leaving every content type unchecked shows all types.
+
 ## [1.3.0] - 2026-09-16
 
 ### Fixed

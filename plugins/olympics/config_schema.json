@@ -56,7 +56,7 @@
         "pattern": "^[A-Z]{3}$"
       },
       "default": [],
-      "description": "Country codes to always show (ISO 3166-1 alpha-3, e.g., ['USA', 'CAN'])"
+      "description": "Countries to add to the Vegas marquee's medal cards when they are outside the top N (ISO 3166-1 alpha-3, e.g. ['USA', 'CAN']). The medals screen shows the top N only."
     },
     "rival_countries": {
       "type": "array",
@@ -73,7 +73,7 @@
         "type": "string"
       },
       "default": [],
-      "description": "Filter events to specific sports (empty = all sports)"
+      "description": "Show upcoming and live events only for these sports (empty = all sports). Results are not filtered."
     },
     "show_medals": {
       "type": "boolean",
@@ -156,7 +156,7 @@
       "minItems": 3,
       "maxItems": 3,
       "default": [255, 255, 255],
-      "description": "RGB color for text [R, G, B] (default: white)"
+      "description": "RGB color [R, G, B] for the countdown screen's text (default: white). Medal and event cards use their own colors."
     }
   },
   "required": ["enabled"],

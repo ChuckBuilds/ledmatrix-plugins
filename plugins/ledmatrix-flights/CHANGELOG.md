@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.14.4] - 2026-09-28
+
+### Changed
+- Hides config controls that nothing reads: the deprecated flat FlightAware
+  keys (the nested FlightAware section always wins), the flat
+  background_service, show_banner (nothing draws a banner), scroll_speed (no
+  view scrolls), and opensky_username/password (only the opensky source reads
+  them, and no setting offers it). units and max_aircraft now say what they
+  do. No behaviour change: hidden keys stay declared, so saved configs still
+  load.
+
 ## [1.14.3] - 2026-09-27
 
 ### Fixed

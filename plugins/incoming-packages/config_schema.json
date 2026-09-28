@@ -14,7 +14,8 @@
       "default": 30,
       "minimum": 1,
       "maximum": 300,
-      "description": "How long to display the plugin in the rotation, in seconds"
+      "description": "How long to display the plugin in the rotation, in seconds HIDDEN: the plugin sets its own slot length from its cards (get_display_duration, 6-90 s), so this value is never read.",
+      "x-display": "hidden"
     },
     "provider": {
       "type": "string",

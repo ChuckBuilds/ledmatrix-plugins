@@ -437,7 +437,7 @@
     "units": {
       "type": "string",
       "title": "Unit System",
-      "description": "Legacy unit system toggle. For finer control use the per-metric options below.",
+      "description": "Distance units. Altitude, speed and vertical rate have their own settings below and do not follow this one.",
       "enum": [
         "imperial",
         "metric"
@@ -574,7 +574,7 @@
       "x-advanced": true,
       "type": "integer",
       "title": "Max Aircraft per Page",
-      "description": "Maximum aircraft to display per page in area mode.",
+      "description": "Maximum number of aircraft the area view cycles through, one per screen.",
       "minimum": 1,
       "maximum": 20,
       "default": 5
@@ -699,7 +699,8 @@
       "x-advanced": true,
       "type": "boolean",
       "title": "Show Title Banner",
-      "description": "Show a 'FLIGHTS' banner for 2 seconds at the start of each display slot.",
+      "description": "Show a 'FLIGHTS' banner for 2 seconds at the start of each display slot. HIDDEN: nothing draws a banner: render_banner() has no caller.",
+      "x-display": "hidden",
       "default": false
     },
     "show_aircraft_icon": {
@@ -713,7 +714,8 @@
       "x-advanced": true,
       "type": "integer",
       "title": "Scroll Speed",
-      "description": "Scroll speed in pixels per frame for long text.",
+      "description": "Scroll speed in pixels per frame for long text. HIDDEN: read into the renderer and never used; no flight tracker view scrolls text.",
+      "x-display": "hidden",
       "minimum": 1,
       "maximum": 10,
       "default": 2
@@ -731,7 +733,8 @@
       "x-advanced": true,
       "type": "string",
       "title": "OpenSky Username (Advanced)",
-      "description": "OpenSky Network username. Only needed if you have manually set enrichment_provider to 'opensky' via direct config edit. Leave blank for the standard free setup.",
+      "description": "OpenSky Network username. Only needed if you have manually set enrichment_provider to 'opensky' via direct config edit. Leave blank for the standard free setup. HIDDEN: only used by the 'opensky' data source and enrichment provider, which data_source and enrichment_provider do not offer.",
+      "x-display": "hidden",
       "x-secret": true,
       "default": ""
     },
@@ -739,7 +742,8 @@
       "x-advanced": true,
       "type": "string",
       "title": "OpenSky Password (Advanced)",
-      "description": "OpenSky Network password. Only needed alongside opensky_username above.",
+      "description": "OpenSky Network password. Only needed alongside opensky_username above. HIDDEN: only used by the 'opensky' data source and enrichment provider, which data_source and enrichment_provider do not offer.",
+      "x-display": "hidden",
       "x-secret": true,
       "default": ""
     },
@@ -863,42 +867,48 @@
       "x-advanced": true,
       "type": "boolean",
       "title": "Enable Flight Plans (deprecated - use FlightAware section)",
-      "description": "Deprecated and not read: paid FlightAware calls are switched on by the FlightAware section's enabled setting.",
+      "description": "Deprecated and not read: paid FlightAware calls are switched on by the FlightAware section's enabled setting. HIDDEN: the nested FlightAware section declares the same setting, and the core fills its default into every config, so this flat copy is never consulted (it is overwritten with the nested value at load).",
+      "x-display": "hidden",
       "default": false
     },
     "max_api_calls_per_hour": {
       "x-advanced": true,
       "type": "integer",
       "title": "Max API Calls/Hour (deprecated)",
-      "description": "Deprecated: moved to FlightAware section.",
+      "description": "Deprecated: moved to FlightAware section. HIDDEN: the nested FlightAware section declares the same setting, and the core fills its default into every config, so this flat copy is never consulted (it is overwritten with the nested value at load).",
+      "x-display": "hidden",
       "default": 25
     },
     "daily_api_budget": {
       "x-advanced": true,
       "type": "integer",
       "title": "Daily API Budget (deprecated)",
-      "description": "Deprecated: moved to FlightAware section.",
+      "description": "Deprecated: moved to FlightAware section. HIDDEN: the nested FlightAware section declares the same setting, and the core fills its default into every config, so this flat copy is never consulted (it is overwritten with the nested value at load).",
+      "x-display": "hidden",
       "default": 60
     },
     "flight_plan_cache_ttl_hours": {
       "x-advanced": true,
       "type": "integer",
       "title": "Cache TTL Hours (deprecated)",
-      "description": "Deprecated: moved to FlightAware section.",
+      "description": "Deprecated: moved to FlightAware section. HIDDEN: the nested FlightAware section declares the same setting, and the core fills its default into every config, so this flat copy is never consulted (it is overwritten with the nested value at load).",
+      "x-display": "hidden",
       "default": 12
     },
     "min_callsign_length": {
       "x-advanced": true,
       "type": "integer",
       "title": "Min Callsign Length (deprecated)",
-      "description": "Deprecated: moved to FlightAware section.",
+      "description": "Deprecated: moved to FlightAware section. HIDDEN: the nested FlightAware section declares the same setting, and the core fills its default into every config, so this flat copy is never consulted (it is overwritten with the nested value at load).",
+      "x-display": "hidden",
       "default": 4
     },
     "airline_callsign_prefixes": {
       "x-advanced": true,
       "type": "array",
       "title": "Airline Prefixes (deprecated)",
-      "description": "Deprecated: moved to FlightAware section.",
+      "description": "Deprecated: moved to FlightAware section. HIDDEN: the nested FlightAware section declares the same setting, and the core fills its default into every config, so this flat copy is never consulted (it is overwritten with the nested value at load).",
+      "x-display": "hidden",
       "items": {
         "type": "string"
       },
@@ -907,7 +917,8 @@
     "background_service": {
       "type": "object",
       "title": "Background Service (deprecated)",
-      "description": "Deprecated: moved to FlightAware section.",
+      "description": "Deprecated: moved to FlightAware section. HIDDEN: the nested FlightAware section declares the same setting, and the core fills its default into every config, so this flat copy is never consulted (it is overwritten with the nested value at load).",
+      "x-display": "hidden",
       "properties": {
         "enabled": {
           "type": "boolean",

@@ -22,7 +22,7 @@
       "default": 30,
       "minimum": 10,
       "maximum": 3600,
-      "description": "How often to fetch new data in seconds (30s during tournament, 3600s off-season)"
+      "description": "How often, in seconds, update() checks for new data. Fetched data is itself cached for 30 s during play and up to an hour at other times, so an interval shorter than that cache does not fetch more often."
     },
     "player_card_duration": {
       "x-advanced": true,
@@ -141,7 +141,7 @@
               "x-advanced": true,
               "type": "boolean",
               "default": true,
-              "description": "Show the vertical divider line between the hole info and map columns. Set to false for a cleaner single-cell look."
+              "description": "Show the vertical divider between the hole info and the hole map. Applies to every hole card: course tour, hole by hole, featured holes and the Vegas hole cards. Set to false for a cleaner single-cell look."
             }
 
           }

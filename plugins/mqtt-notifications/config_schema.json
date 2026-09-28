@@ -14,14 +14,16 @@
       "default": 10,
       "minimum": 1,
       "maximum": 300,
-      "description": "Default display duration in seconds when not specified in message",
+      "description": "Default display duration in seconds when not specified in message HIDDEN: never read: each message's slot is its own duration, else display.default_duration.",
+      "x-display": "hidden",
       "x-advanced": true
     },
     "update_interval": {
       "type": "integer",
       "default": 60,
       "minimum": 1,
-      "description": "How often to check MQTT connection health in seconds",
+      "description": "How often to check MQTT connection health in seconds HIDDEN: update() does nothing (messages arrive on the MQTT thread), so how often it runs changes nothing.",
+      "x-display": "hidden",
       "x-advanced": true
     },
     "mqtt": {

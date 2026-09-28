@@ -164,11 +164,11 @@ under `ledmatrix-flights`. The full schema is
 | `rotation_views` | — | Which views the display rotation cycles through. Each selected view gets its own rotation slot and an empty/no-content slot is skipped. Leave all unchecked to show nothing in the normal rotation — useful for an overhead-only board (pair with Overhead Live Priority). When this field is omitted entirely, the single 'Display Mode' setting is used instead (legacy behavior). The overhead view is not listed here; it is driven by live_priority + proximity_alert. |
 | `layout` | *(blank)* | Force a specific flight detail layout. Leave empty for auto-selection based on display width — one of `""`, `flight_detail_wide`, `flight_detail_condensed`. Advanced. |
 | `widescreen_threshold` | `256` | Minimum canvas width in pixels to use the widescreen flight detail layout (128–1280). Advanced. |
-| `show_banner` | `false` | Show a 'FLIGHTS' banner for 2 seconds at the start of each display slot. Advanced. |
+| `show_banner` | `false` | **Hidden (still declared); has no effect.** Nothing draws the banner. |
 | `show_aircraft_icon` | `true` | Show airline logos in area mode (8×8 pixel sprites next to callsigns). Flight detail layouts always show logos in the logo zone when available (52 airlines included as PNG assets). Advanced. |
 | `show_trails` | `true` | Show aircraft movement trails. Advanced. |
 | `trail_length` | `10` | Number of trail points to display per aircraft (0–50). Advanced. |
-| `scroll_speed` | `2` | Scroll speed in pixels per frame for long text (1–10). Advanced. |
+| `scroll_speed` | `2` | **Hidden (still declared); has no effect.** No flight tracker view scrolls text. |
 | `overhead_alt_interval` | `4` | On the overhead (live-priority) card, the route (e.g. SEA>PHX) and the aircraft model share one text row and alternate. This is how many seconds each stays up before swapping. Set to 0 to disable alternation (route always wins). The model is shown as a friendly name (e.g. 'Boeing 737-900') when the type is known. Advanced. |
 
 ### Units and formatting
@@ -265,9 +265,9 @@ under `ledmatrix-flights`. The full schema is
 
 | Key | Default | Notes |
 |---|---|---|
-| `background_service.enabled` | `true` | . |
-| `background_service.fetch_interval_hours` | `4` | . Advanced. |
-| `background_service.max_calls_per_run` | `10` | . Advanced. |
+| `background_service.enabled` | `true` | **Hidden (still declared); has no effect.** `flightaware.background_service` is used. |
+| `background_service.fetch_interval_hours` | `4` | **Hidden (still declared); has no effect.** `flightaware.background_service` is used. |
+| `background_service.max_calls_per_run` | `10` | **Hidden (still declared); has no effect.** `flightaware.background_service` is used. |
 
 The FlightAware block has its own background-service settings, separate from
 the top-level `background_service`:
@@ -294,16 +294,17 @@ read:
   `min_callsign_length` and `airline_callsign_prefixes` are not read either; set
   them in the FlightAware section. A flat key that holds something other than its
   default and other than the section's value logs a warning naming it, so you
-  know to move it.
+  know to move it. These keys are hidden from the settings page.
 
-`opensky_username` and `opensky_password` have no nested form and are read as
-they are.
+`opensky_username` and `opensky_password` have no nested form. Only the
+`opensky` data source and enrichment provider read them, and neither setting
+offers `opensky`, so both are hidden from the settings page.
 
 
 | Key | Default | Notes |
 |---|---|---|
-| `opensky_username` | *(blank)* | OpenSky Network username. Only needed if you have manually set enrichment_provider to 'opensky' via direct config edit. Leave blank for the standard free setup. Secret, masked in the web UI. Advanced. |
-| `opensky_password` | *(blank)* | OpenSky Network password. Only needed alongside opensky_username above. Secret, masked in the web UI. Advanced. |
+| `opensky_username` | *(blank)* | OpenSky Network username. **Hidden:** only the `opensky` source reads it, and no setting offers that source. Secret. |
+| `opensky_password` | *(blank)* | OpenSky Network password. **Hidden**, as `opensky_username`. Secret. |
 | `flightaware_api_key` | *(blank)* | Deprecated — use the FlightAware section above instead. Still used as the API key when the FlightAware section's key is blank; paid calls also need that section's enabled switch. Secret, masked in the web UI. Advanced. |
 | `flight_plan_enabled` | `false` | Deprecated and not read: paid FlightAware calls are switched on by the FlightAware section's enabled setting. Advanced. |
 | `max_api_calls_per_hour` | `25` | Deprecated: moved to FlightAware section. Advanced. |

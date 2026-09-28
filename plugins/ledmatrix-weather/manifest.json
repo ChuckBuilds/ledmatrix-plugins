@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-weather",
   "name": "Weather Display",
-  "version": "2.7.3",
+  "version": "2.7.4",
   "author": "ChuckBuilds",
   "class_name": "WeatherPlugin",
   "update_interval": 60,
@@ -26,6 +26,12 @@
     "radar"
   ],
   "versions": [
+    {
+      "released": "2026-09-28",
+      "version": "2.7.4",
+      "notes": "Hides show_alerts: it only feeds live priority, which this plugin's settings do not offer, and no screen draws alerts. Settings text now matches the screens: the hourly forecast shows four hours and the daily three days, and the extra current-conditions readings depend on panel width, not a 48 px height. No behaviour change: hidden keys stay declared, so saved configs still load.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-09-27",
       "version": "2.7.3",
@@ -204,7 +210,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-27",
+  "last_updated": "2026-09-28",
   "stars": 0,
   "downloads": 0,
   "verified": true,

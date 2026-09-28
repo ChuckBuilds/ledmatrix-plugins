@@ -55,7 +55,7 @@
           "enum": ["fixed", "change"],
           "default": "fixed",
           "x-widget": "radio",
-          "description": "Price colour: 'fixed' always uses text_color; 'change' colours it price_up_color / price_down_color based on movement since market open"
+          "description": "Price colour: 'fixed' always uses text_color; 'change' colours it price_up_color / price_down_color by the change since the previous close"
         },
         "publisher_font_size": {
           "x-advanced": true,

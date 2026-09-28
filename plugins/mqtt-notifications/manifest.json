@@ -1,7 +1,7 @@
 {
   "id": "mqtt-notifications",
   "name": "MQTT Notifications",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "author": "ChuckBuilds",
   "description": "Display text or images from HomeAssistant via MQTT. Supports dynamic MQTT topics with wildcard support for flexible notification handling that interrupts the normal display rotation.",
   "category": "integration",
@@ -18,6 +18,12 @@
   "entry_point": "manager.py",
   "class_name": "MQTTNotificationsPlugin",
   "versions": [
+    {
+      "released": "2026-09-28",
+      "version": "1.2.5",
+      "changelog": "Hides display_duration (each message sets its own screen time, else display.default_duration) and update_interval (update() does nothing; messages arrive on the MQTT thread). No behaviour change: hidden keys stay declared, so saved configs still load.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-09-27",
       "version": "1.2.4",
@@ -79,7 +85,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-27",
+  "last_updated": "2026-09-28",
   "stars": 0,
   "downloads": 0,
   "verified": true,
