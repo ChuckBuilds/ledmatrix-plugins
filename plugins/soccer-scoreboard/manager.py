@@ -900,12 +900,10 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "show_records": self.config.get("show_records", False),
                 "show_ranking": self.config.get("show_ranking", False),
                 "show_odds": self.config.get("show_odds", True),
-                # 3600 to match the built-in leagues and the schema. This
-                # was 300, and custom_leagues declared no such key, so a
-                # custom league fetched twelve times as often as every
-                # built-in one with nothing in the UI to show it or change
-                # it. The key is declared now, so a user who wants a faster
-                # league can ask for one.
+                # 3600 to match the built-in leagues and the schema. It has
+                # no effect on fetch cadence: every manager replaces it with
+                # its own live/recent/upcoming interval, so the schema hides
+                # it. The per-mode intervals below are the real controls.
                 "update_interval_seconds": custom_league.get("update_interval_seconds", 3600),
                 "live_update_interval": custom_league.get("live_update_interval", 30),
                 "recent_update_interval": custom_league.get("recent_update_interval", 3600),
@@ -2808,9 +2806,9 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
         """Poll at the live interval while a game is in progress, else no opinion.
 
         Without this hook the core scheduler calls update() at the static
-        interval -- the manifest's 60s, or update_interval_seconds from the
-        config where the manifest declares none (3600 by default in the
-        afl/nrl/soccer schemas). During a live game that is far slower than
+        interval -- the manifest's 60s, or the config's update_interval where
+        the manifest declares none (afl/nrl/soccer declare neither, so 60s;
+        update_interval_seconds is never read). During a live game that is far slower than
         live_update_interval, so everything that reads update-cycle data lags:
         the Vegas cards, and any mode that is not on screen to refresh itself.
         Core 3.4.0 consults this hook on every tick (ChuckBuilds/LEDMatrix#555);

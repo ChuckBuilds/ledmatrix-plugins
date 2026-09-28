@@ -267,7 +267,7 @@ Defaults are the schema defaults, which is what the web UI writes.
 | `enabled` | boolean | `true` | Master on/off switch for the whole plugin. |
 | `display_duration` | 5–300 s | `30` | How long the display controller shows this plugin's mode before rotating to the next plugin. |
 | `game_display_duration` | 3–60 s | `15` | **Advanced.** Per-game time within a mode, where the league does not override it. |
-| `update_interval` | 30–86400 s | `3600` | **Advanced.** Base data refresh cadence. |
+| `update_interval` | 30–86400 s | `3600` | **Hidden (still declared); has no effect.** The manifest's `update_interval` (60 s) wins in the core scheduler, and live games are polled at `live_update_interval`. |
 | `timezone` | string | `""` | **Advanced.** IANA zone for tip-off times, e.g. `America/Chicago`. Blank follows the LEDMatrix global timezone, then the host system's, then UTC. |
 | `schedule_lookback_days` | 1–60 | `14` | **Advanced.** How far back to fetch for the Recent screens. |
 | `schedule_lookahead_days` | 1–60 | `7` | **Advanced.** How far ahead to fetch for Upcoming. A game beyond this horizon is never fetched. |
@@ -342,7 +342,7 @@ All **Advanced**.
 |---|---|---|---|
 | `<league>.live_game_duration` | 10–120 s | `20` | Per-game time for live games. Applies to games with a favorite when a non-favorite duration is set. |
 | `<league>.non_favorite_live_game_duration` | 0–120 s | `0` | Shorter turn for live games with no favorite. `0` means use `live_game_duration` for everything. |
-| `<league>.display_durations.base` | 1–120 s | `15` | Fallback per-game time. |
+| `<league>.display_durations.base` | 1–120 s | `15` | **Hidden (still declared); has no effect.** No mode is named `base`. |
 | `<league>.display_durations.live` | 1–120 s | `20` | Per-game time for live games. |
 | `<league>.display_durations.recent` | 1–120 s | `15` | Per-game time on the Recent screen. |
 | `<league>.display_durations.upcoming` | 1–120 s | `15` | Per-game time on the Upcoming screen. |
@@ -353,7 +353,7 @@ All **Advanced**.
 
 | Key | Type | Default | What it does |
 |---|---|---|---|
-| `<league>.update_interval_seconds` | 30–86400 s | `3600` | This league's base fetch cadence. |
+| `<league>.update_interval_seconds` | 30–86400 s | `3600` | **Hidden (still declared); has no effect.** Every manager replaces it with its own live/recent/upcoming interval before anything reads it. |
 | `<league>.live_update_interval` | 5–300 s | `30` | How often live game data refreshes. |
 | `<league>.recent_update_interval` | 60–86400 s | `3600` | How often the finished-games list is rebuilt. This also sets how soon a game that has just ended can appear — lower it if you want results sooner. |
 | `<league>.upcoming_update_interval` | 60–86400 s | `3600` | How often the upcoming-games list is rebuilt. Selection and the non-favorite rotation both run on the display side, so this governs only the fetch. |

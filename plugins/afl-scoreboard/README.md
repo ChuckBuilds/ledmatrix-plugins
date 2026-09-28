@@ -353,7 +353,7 @@ also driving a panel, and raising the polling rate rarely helps.
 
 | Option | Default | What it does |
 |--------|---------|--------------|
-| `update_interval_seconds` | `3600` | Base fetch interval for schedule data |
+| `update_interval_seconds` | `3600` | **Hidden (still declared); has no effect.** Every manager replaces it with its own live/recent/upcoming interval before anything reads it. |
 | `live_update_interval` | `30` | Fetch interval while a game is live |
 | `recent_update_interval` | `3600` | Fetch interval for the recent screen |
 | `upcoming_update_interval` | `3600` | Fetch interval for the upcoming screen |
@@ -381,7 +381,7 @@ also driving a panel, and raising the polling rate rarely helps.
 | `other_games_min_quality` | `ranked` | **Advanced.** Which non-favourite games earn a slot: `any` or `ranked`. **Inert for AFL** — see below. **Hidden from the config form since 1.30.0 (still declared).** |
 | `other_games_divisions` | `["fbs"]` | **Advanced.** Which divisions non-favourite games may come from. **Inert for AFL** — see below. **Hidden from the config form since 1.30.0 (still declared).** |
 | `show_records` | `false` | **Advanced.** Draw each team's season record in the bottom corners |
-| `show_ranking` | `false` | **Advanced.** Draw a rank badge. AFL publishes no poll, so this shows nothing. **Hidden from the config form since 1.30.0 (still declared) — the empty rank badge also replaced the record.** |
+| `show_ranking` | `false` | **Advanced.** Draw a rank badge. AFL publishes no poll, so this shows nothing. **Hidden from the config form since 1.30.1 (still declared) — the empty rank badge also replaced the record.** |
 | `show_odds` | `true` | Draw the betting line. **ESPN publishes no odds for AFL** — see [Known Limitations](#known-limitations) |
 | `customization.favorite_result_colors.enabled` | `false` | Colour a finished game's score by whether your favourite won |
 | `customization.favorite_result_colors.win_color` | `[0, 255, 0]` | **Advanced.** Colour for a win |

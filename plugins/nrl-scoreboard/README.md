@@ -253,7 +253,7 @@ number.
 | Key | Type | Default | What it does |
 |---|---|---|---|
 | `show_records` | boolean | `false` | Draw each club's win-loss record in the bottom corners. |
-| `show_ranking` | boolean | `false` | Draw ladder positions where ESPN publishes them. **Hidden from the config form since 1.29.0 (still declared) — the empty rank badge also replaced the record.** |
+| `show_ranking` | boolean | `false` | Draw ladder positions where ESPN publishes them. **Hidden from the config form since 1.29.1 (still declared) — the empty rank badge also replaced the record.** |
 | `show_odds` | boolean | `true` | Draw betting odds. |
 | `display_options.show_records` | boolean | `false` | **Advanced.** Nested copy; see below for which one wins. |
 | `display_options.show_ranking` | boolean | `false` | **Advanced.** Nested copy. **Hidden from the config form since 1.29.0 (still declared) — the empty rank badge also replaced the record.** |
@@ -297,7 +297,7 @@ full turn before the board moves on.
 
 | Key | Type | Default | What it does |
 |---|---|---|---|
-| `update_interval_seconds` | 30–86400 s | `3600` | **Advanced.** Base data refresh cadence. |
+| `update_interval_seconds` | 30–86400 s | `3600` | **Hidden (still declared); has no effect.** Every manager replaces it with its own live/recent/upcoming interval before anything reads it. |
 | `live_update_interval` | 5–300 s | `30` | **Advanced.** Refresh cadence while a game is live. |
 | `recent_update_interval` | 60–86400 s | `3600` | **Advanced.** Refresh cadence for finished games. |
 | `upcoming_update_interval` | 60–86400 s | `3600` | **Advanced.** Refresh cadence for the schedule. |

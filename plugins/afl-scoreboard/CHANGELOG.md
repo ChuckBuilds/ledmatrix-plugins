@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.30.1] - 2026-09-28
+
+### Changed
+- Hides config controls that do nothing. update_interval_seconds is never
+  read: every manager replaces it with its own live, recent or upcoming
+  interval before anything uses it, and the core scheduler reads
+  update_interval, not this key. The root show_ranking is hidden too: this
+  league publishes no poll, so the badge was always empty and, because it
+  replaces the record, turning it on erased the records Show Records draws.
+  The league-level copy was hidden in the previous release; this copy still
+  reached the switch view. No behaviour change: the keys stay declared, so
+  saved configs still load, and a saved show_ranking keeps its value. README
+  updated to match.
+
 ## [1.30.0] - 2026-09-24
 
 ### Changed

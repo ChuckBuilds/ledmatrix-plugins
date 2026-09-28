@@ -242,8 +242,8 @@ Fallbacks used when the corresponding per-league setting is absent.
 | `defaults.show_ranking` | boolean | `false` | Draw poll rank badges. |
 | `defaults.show_odds` | boolean | `false` | **Advanced.** Draw betting odds. |
 | `defaults.show_shots` | boolean | `false` | **Advanced.** Draw shot totals. See the troubleshooting note — ESPN does not currently publish them. |
-| `defaults.update_interval_seconds` | 30–86400 s | `3600` | **Advanced.** Base data refresh cadence. |
-| `defaults.season_cache_duration_seconds` | 3600–604800 s | `86400` | **Advanced.** How long season data is cached. |
+| `defaults.update_interval_seconds` | 30–86400 s | `3600` | **Hidden (still declared); has no effect.** Every manager replaces it with its own live/recent/upcoming interval before anything reads it. |
+| `defaults.season_cache_duration_seconds` | 3600–604800 s | `86400` | **Hidden (still declared); has no effect.** Nothing reads it. |
 
 > **The per-league copy wins, and its default is different.** Each league's
 > `display_options.show_records` and `show_ranking` default to **`true`** while
@@ -306,7 +306,7 @@ All **Advanced**.
 
 | Key | Type | Default | What it does |
 |---|---|---|---|
-| `<league>.update_intervals.base` | 60–900 s | `300` | Base data refresh. |
+| `<league>.update_intervals.base` | 60–900 s | `300` | **Hidden (still declared); has no effect.** Every manager replaces it with its own live/recent/upcoming interval before anything reads it. |
 | `<league>.update_intervals.live` | 10–300 s | `60` | Refresh while a game is live. |
 | `<league>.update_intervals.recent` | 60–86400 s | `3600` | Refresh for finished games. |
 | `<league>.update_intervals.upcoming` | 60–86400 s | `3600` | Refresh for the schedule. |
@@ -319,7 +319,7 @@ All **Advanced**.
 
 | Key | Type | Default | What it does |
 |---|---|---|---|
-| `<league>.display_durations.base` | 5–60 s | `15` | Fallback per-game time. |
+| `<league>.display_durations.base` | 5–60 s | `15` | **Hidden (still declared); has no effect.** No mode is named `base`. |
 | `<league>.display_durations.live` | 5–120 s | `15` | Per-game time for live games. Applies to games with a favorite when a non-favorite duration is set. |
 | `<league>.display_durations.non_favorite_live` | 0–120 s | `0` | Shorter turn for live games with no favorite. Only applies when favorites are set **and** non-favorite live games are shown. `0` means use the live duration for everything. |
 | `<league>.display_durations.recent` | 5–60 s | `15` | Per-game time on the Recent screen. |

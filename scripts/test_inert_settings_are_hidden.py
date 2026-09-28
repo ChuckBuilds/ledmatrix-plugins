@@ -94,9 +94,40 @@ def leaves(node, path=""):
     return out
 
 
+#: Scoreboards whose schemas this repo owns. The fetch-cadence and
+#: duration rules below were traced through these copies only; ufc-scoreboard
+#: is maintained by its author and keeps its own schema.
+FIRST_PARTY = {
+    "afl-scoreboard", "baseball-scoreboard", "basketball-scoreboard",
+    "football-scoreboard", "hockey-scoreboard", "lacrosse-scoreboard",
+    "nrl-scoreboard", "soccer-scoreboard",
+}
+
+
+def _manifest_declares_update_interval(plugin):
+    with open(os.path.join(PLUGINS_DIR, plugin, "manifest.json"),
+              encoding="utf-8") as handle:
+        return json.load(handle).get("update_interval") is not None
+
+
 def classify(plugin, path):
     """Why this property must be hidden, or None if it may stay visible."""
     block = path.split(".")[0]
+    if plugin in FIRST_PARTY:
+        # Every manager replaces the seeded interval with its own before
+        # anything reads it, and the core scheduler reads update_interval.
+        if path.split(".")[-1] == "update_interval_seconds":
+            return "replaced by each manager's own interval; never read"
+        if path.endswith("update_intervals.base"):
+            return "feeds update_interval_seconds, which is never read"
+        if path.endswith("display_durations.base"):
+            return "no reader; no mode is named 'base'"
+        if path == "defaults.season_cache_duration_seconds":
+            return "no reader"
+        if path == "update_interval" and _manifest_declares_update_interval(plugin):
+            return "the manifest's update_interval wins in the core scheduler"
+        if path == "show_ranking" and plugin not in POLL_LIVE:
+            return "no poll; the badge replaces the record"
     if path.endswith("other_games_divisions"):
         if block in DIV_LIVE.get(plugin, set()):
             return None

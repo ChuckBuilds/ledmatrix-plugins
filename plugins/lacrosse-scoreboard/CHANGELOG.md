@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.31.1] - 2026-09-28
+
+### Changed
+- Hides config controls that do nothing. defaults.update_interval_seconds and
+  each league's update_intervals.base feed update_interval_seconds, which is
+  never read: every manager replaces it with its own live, recent or upcoming
+  interval. defaults.season_cache_duration_seconds and each league's
+  display_durations.base have no reader. No behaviour change: the keys stay
+  declared, so saved configs still load. README updated to match.
+
 ## [1.31.0] - 2026-09-24
 
 ### Changed

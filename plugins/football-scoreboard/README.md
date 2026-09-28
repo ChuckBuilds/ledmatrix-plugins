@@ -415,7 +415,7 @@ Defaults are the schema defaults, which is what the web UI writes.
 | `enabled` | boolean | `true` | Master on/off switch for the whole plugin. |
 | `display_duration` | 5–300 s | `30` | How long the display controller shows this plugin's mode before rotating to the next plugin. |
 | `game_display_duration` | 3–60 s | `15` | **Advanced.** Per-game time within a mode, where the league does not override it. |
-| `update_interval` | 30–86400 s | `3600` | **Advanced.** Base data refresh cadence. |
+| `update_interval` | 30–86400 s | `3600` | **Hidden (still declared); has no effect.** The manifest's `update_interval` (60 s) wins in the core scheduler, and live games are polled at `live_update_interval`. |
 | `layout_mode` | `classic` \| `adaptive` | `classic` | **Advanced.** Layout engine — see [Adaptive layout](#adaptive-layout). |
 | `timezone` | string | `""` | **Advanced.** IANA zone for kickoff times, e.g. `America/Chicago`. Blank follows the LEDMatrix global timezone, then the host system's, then UTC. |
 | `schedule_lookback_days` | 1–60 | `14` | **Advanced.** How far back to fetch for the Recent screens. |

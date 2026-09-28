@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.49.1] - 2026-09-28
+
+### Changed
+- Hides config controls that do nothing. The root update_interval does
+  nothing: the manifest declares update_interval (60 s), which the core
+  scheduler prefers, and live games are polled at live_update_interval. Each
+  league's update_interval_seconds is never read: every manager replaces it
+  with its own live, recent or upcoming interval before anything uses it, and
+  the core scheduler reads update_interval, not this key. No behaviour change:
+  the keys stay declared, so saved configs still load. README updated to
+  match.
+
 ## [1.49.0] - 2026-09-24
 
 ### Added
