@@ -89,9 +89,9 @@ for kind in ("live", "recent", "upcoming"):
     mgr = getattr(plugin, f"ufc_{kind}", None)
     check(f"the {kind} manager was built", mgr is not None)
     if mgr is not None:
-        check(f"  its dynamic_resolver is None", mgr.dynamic_resolver is None,
+        check("  its dynamic_resolver is None", mgr.dynamic_resolver is None,
               type(mgr.dynamic_resolver).__name__)
-        check(f"  its favorite_teams are the configured list, untouched",
+        check("  its favorite_teams are the configured list, untouched",
               mgr.favorite_teams == mgr.mode_config.get("favorite_teams", []),
               mgr.favorite_teams)
 
