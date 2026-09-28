@@ -72,7 +72,7 @@ level is **rejected**, not ignored. The full schema is
 
 | Key | Default | Notes |
 |---|---|---|
-| `data_settings.update_interval` | `3600` | How often to fetch new odds data in seconds when there are no live games (300–86400). |
+| `data_settings.update_interval` | `3600` | How often to fetch new odds data in seconds when there are no live games (300–86400). A game going live in between is noticed within 5 minutes. |
 | `data_settings.live_game_update_interval` | `60` | How often to fetch new odds data in seconds when there are live games being displayed (30–300). |
 | `data_settings.future_fetch_days` | `7` | Days ahead to fetch upcoming games (1–90). |
 | `data_settings.request_timeout` | `30` | Request timeout in seconds for API calls (5–120). |

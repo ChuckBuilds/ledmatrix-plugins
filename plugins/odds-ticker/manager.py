@@ -2650,7 +2650,9 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         if not self.is_enabled:
             logger.debug("Odds ticker is disabled, skipping update")
             return
-            
+
+        self._probe_live_scoreboards()
+
         # Check if we're currently scrolling and defer the update if so
         if hasattr(self.display_manager, 'is_currently_scrolling') and self.display_manager.is_currently_scrolling():
             logger.debug("Odds ticker is currently scrolling, deferring update")
@@ -2661,66 +2663,63 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         self._perform_update()
 
     def _has_live_games(self) -> bool:
-        """Check live status via games_data first, then an independently-refreshed
-        scoreboard snapshot rate-limited by _live_check_interval (not cache TTL).
+        """Is a game live? games_data first, then the last scoreboard probe.
 
-        Previously this method used cache_manager.get(key, max_age=300), meaning
-        once the 5-minute scoreboard cache expired (between hourly _perform_update
-        calls) it returned False and the update interval stayed at 3600s — causing
-        up to a ~55-minute blind spot when a game went live. The new approach uses
-        a plain timestamp to refresh independently of cache TTL.
+        Attribute reads only: display() asks this through the update-interval
+        memo, so it runs on the render thread. The probe that answers between
+        full refreshes is _probe_live_scoreboards(), called from update().
         """
-        # Fast path: current games_data already knows about a live game
         if self.games_data:
             if any(game.get('status_state') == 'in' for game in self.games_data):
                 return True
-
-        # Slow path: independently check scoreboard every _live_check_interval seconds.
-        current_time = time.time()
-        if current_time - self._scoreboard_last_checked >= self._live_check_interval:
-            self._scoreboard_last_checked = current_time  # set before loop to avoid tight retry on error
-            found_live = False
-            try:
-                now = datetime.now(timezone.utc)
-                today_str = now.strftime("%Y%m%d")
-
-                for league_key, league_cfg in self.league_configs.items():
-                    if league_key not in self.enabled_leagues:
-                        continue
-
-                    sport = league_cfg.get('sport')
-                    # Soccer uses 'leagues' (plural list) instead of a single 'league' string,
-                    # so get('league') returns None and the guard below skips it intentionally.
-                    # Soccer scoreboards use per-league cache keys that don't map to the single
-                    # scoreboard_data_{sport}_{league}_{date} pattern used here.
-                    league = league_cfg.get('league')
-                    if not sport or not league:
-                        continue
-
-                    # No max_age restriction — freshness is managed by _scoreboard_last_checked
-                    # above; we always read whatever the scoreboard plugin last stored.
-                    cache_key = f"scoreboard_data_{sport}_{league}_{today_str}"
-                    cached_data = self.cache_manager.get(cache_key)
-
-                    if cached_data:
-                        events = cached_data.get('events', [])
-                        for event in events:
-                            status = event.get('status', {})
-                            status_type = status.get('type', {})
-                            if status_type.get('state') == 'in':
-                                found_live = True
-                                break
-                    if found_live:
-                        break
-
-            except Exception as e:
-                logger.debug(f"Error checking scoreboard for live games: {e}")
-
-            self._last_scoreboard_live_status = found_live
-            if found_live:
-                logger.info("Live game detected via independent scoreboard check")
-
         return self._last_scoreboard_live_status
+
+    def _probe_live_scoreboards(self) -> None:
+        """Ask ESPN whether any enabled league has a game in progress.
+
+        At most every _live_check_interval seconds, from update() -- network
+        is allowed there, since the core runs update() off the render thread.
+        With no game known to be live, a full refresh waits
+        base_update_interval (an hour by default), so this is what notices a
+        game starting in between.
+
+        This used to read the scoreboard_data_* cache instead, but only this
+        plugin's full refresh writes those keys, the read took the default
+        5-minute max_age, and the date in the key was UTC: it was a miss for
+        most of the hour, and a hit only repeated what games_data knew.
+        """
+        now = time.time()
+        if now - self._scoreboard_last_checked < self._live_check_interval:
+            return
+        self._scoreboard_last_checked = now  # before the requests: no tight retry on error
+        found_live = False
+        for league_key, league_cfg in self.league_configs.items():
+            if league_key not in self.enabled_leagues:
+                continue
+            sport = league_cfg.get('sport')
+            # Soccer configs carry 'leagues' (a list), not 'league'; skipped
+            # here as before. MiLB has no working endpoint (see
+            # _fetch_league_games).
+            league = league_cfg.get('league')
+            if not sport or not league or league == 'milb':
+                continue
+            # No dates parameter: ESPN answers with its current day, which
+            # follows US time rather than the UTC date.
+            url = f"https://site.api.espn.com/apis/site/v2/sports/{sport}/{league}/scoreboard"
+            try:
+                response = requests.get(url, timeout=min(self.request_timeout, 10))
+                response.raise_for_status()
+                events = response.json().get('events', [])
+            except (requests.RequestException, ValueError) as e:
+                logger.debug("Live check for %s failed: %s", league_key, e)
+                continue
+            if any(((event.get('status') or {}).get('type') or {}).get('state') == 'in'
+                   for event in events):
+                found_live = True
+                break
+        if found_live and not self._last_scoreboard_live_status:
+            logger.info("Live game detected by the scoreboard check")
+        self._last_scoreboard_live_status = found_live
 
     def _has_games_starting_soon(self) -> bool:
         """Check if any games are starting within the next 5 minutes."""
@@ -2738,12 +2737,18 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         return False
 
     #: How long a computed update interval is reused for. display() asks every
-    #: frame, and the slow path below reads the scoreboard cache from disk and
-    #: parses JSON per enabled league -- on the render thread. That produced a
-    #: single ~15ms frame every few minutes, visible as a hitch mid-scroll.
-    #: 15s keeps live detection responsive; the scoreboard re-check underneath
-    #: is rate limited to _live_check_interval (300s) regardless.
+    #: frame, on the render thread; 15s keeps live detection responsive.
     _INTERVAL_CACHE_SECONDS = 15.0
+
+    def get_update_interval(self) -> float:
+        """How often the core calls update(): at least once a minute.
+
+        update() gates its own full refresh on the adaptive interval, but it
+        also runs the live-game probe, which a legacy root update_interval
+        (3600) would otherwise slow to hourly. Attribute reads only, as the
+        core requires of this hook.
+        """
+        return float(min(self.live_game_update_interval, 60))
 
     def _get_current_update_interval(self) -> int:
         """The current update interval, memoised off the render path."""
