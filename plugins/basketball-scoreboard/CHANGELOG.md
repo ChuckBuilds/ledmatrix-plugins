@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.35.2] - 2026-09-28
+
+### Fixed
+- Upcoming games now stay up for the configured per-game time. SportsUpcoming
+  set game_display_duration = 15, so every upcoming game got 15 s whatever the
+  setting said; it now reads upcoming_game_duration, as football, baseball and
+  ufc do. The adapter now forwards display_durations.recent and .upcoming to
+  the managers as recent_game_duration / upcoming_game_duration; they were
+  never passed, so Recent and Upcoming games also got 15 s each.
+  display_durations.live is hidden: it duplicated live_game_duration, which is
+  the one read. Only boards with a non-default value change: the default is 15
+  s, the value the code used.
+- The league's 'Enable dynamic duration' switch now works.
+  supports_dynamic_duration returned the per-mode switch whenever it was
+  present, and the core fills its default (off) into every config, so the
+  league switch was never read. The league switch now turns dynamic duration
+  on for every mode; a mode switch still turns on just that mode.
+
 ## [1.35.1] - 2026-09-28
 
 ### Changed

@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "3.12.1",
+  "version": "3.12.2",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "3.12.2",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "The league's 'Enable dynamic duration' switch now works. supports_dynamic_duration returned the per-mode switch whenever it was present, and the core fills its default (off) into every config, so the league switch was never read. The league switch now turns dynamic duration on for every mode; a mode switch still turns on just that mode. Only boards with the league switch on change."
+    },
     {
       "version": "3.12.1",
       "released": "2026-09-28",

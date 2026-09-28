@@ -2812,7 +2812,7 @@ class SportsUpcoming(SportsCore):
         self.last_warning_time = 0
         self.warning_cooldown = 300
         self.last_game_switch = 0
-        self.game_display_duration = 15  # Display each upcoming game for 15 seconds
+        self.game_display_duration = self.mode_config.get("upcoming_game_duration", 15)
 
 
     def _select_games_for_display(

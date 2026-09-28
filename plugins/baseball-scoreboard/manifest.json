@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.49.1",
+  "version": "1.49.2",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.49.2",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "The league's 'Enable dynamic duration' switch now works. supports_dynamic_duration returned the per-mode switch whenever it was present, and the core fills its default (off) into every config, so the league switch was never read. The league switch now turns dynamic duration on for every mode; a mode switch still turns on just that mode. Only boards with the league switch on change."
+    },
     {
       "version": "1.49.1",
       "released": "2026-09-28",

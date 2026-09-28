@@ -3038,12 +3038,12 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
         league_dynamic = league_config.get("dynamic_duration", {})
         league_modes = league_dynamic.get("modes", {})
         mode_config = league_modes.get(mode_type, {})
-        if "enabled" in mode_config:
-            return bool(mode_config.get("enabled", False))
-
-        # Check per-league setting
-        if "enabled" in league_dynamic:
-            return bool(league_dynamic.get("enabled", False))
+        # The league switch turns every mode on; a mode switch turns on just
+        # that mode. Both default to off and the core fills every default into
+        # the config, so returning the mode switch whenever it was present (as
+        # this did) meant the league switch was never read.
+        if mode_config.get("enabled", False) or league_dynamic.get("enabled", False):
+            return True
 
         # No global fallback - return False
         return False
