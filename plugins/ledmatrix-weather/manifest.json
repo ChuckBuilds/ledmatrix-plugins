@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-weather",
   "name": "Weather Display",
-  "version": "2.7.6",
+  "version": "2.7.7",
   "author": "ChuckBuilds",
   "class_name": "WeatherPlugin",
   "update_interval": 60,
@@ -26,6 +26,12 @@
     "radar"
   ],
   "versions": [
+    {
+      "released": "2026-09-28",
+      "version": "2.7.7",
+      "notes": "Narrow panels: the hourly and daily forecasts show as many columns as their labels fit (on 64x32, two), the metrics bar drops trailing items or spaces them by width instead of overprinting, and a long condition drops leading words instead of starting off the left edge. Panels where everything already fit look the same.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-09-28",
       "version": "2.7.6",
