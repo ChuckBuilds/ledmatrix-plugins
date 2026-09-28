@@ -79,8 +79,12 @@ if getattr(m, "GOOGLE_AVAILABLE", True) is False:
 cls = next(o for o in vars(m).values() if isinstance(o, type)
            and o.__module__ == "manager" and hasattr(o, "display"))
 config = dict({"enabled": True}, **base)
-plugin = cls(plugin_dir.replace("\\", "/").rsplit("/", 1)[-1], config,
-             MockDisplayManager(), MockCacheManager(), MockPluginManager())
+try:
+    plugin = cls(plugin_dir.replace("\\", "/").rsplit("/", 1)[-1], config,
+                 MockDisplayManager(), MockCacheManager(), MockPluginManager())
+except ImportError as exc:  # a plugin that checks for its library at start-up
+    print(json.dumps("SKIP: %s" % exc))
+    raise SystemExit
 import functools
 read = lambda: functools.reduce(
     lambda obj, name: obj.get(name) if isinstance(obj, dict) else getattr(obj, name),
