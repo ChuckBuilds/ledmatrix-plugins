@@ -44,7 +44,7 @@ def check(case, passed):
 
 p = object.__new__(IncomingPackagesPlugin)
 p.provider_name = "homeassistant"
-p.config = {"ha_token": "secret-token", "ha_base_url": "http://homeassistant.local:8123"}
+p.config = {"ha_token": "secret-token", "ha_base_url": "http://homeassistant.local:8123"}  # nosec B105 - test fixture
 
 auth = {"Authorization": "Bearer secret-token"}
 check("a Home Assistant camera URL gets the token",
@@ -57,7 +57,7 @@ check("the same host on another port gets no token",
       p._image_headers("http://homeassistant.local:9999/x.gif") == {})
 check("https where Home Assistant is http gets no token",
       p._image_headers("https://homeassistant.local:8123/x.gif") == {})
-p.config = {"ha_token": "secret-token", "ha_base_url": ""}
+p.config = {"ha_token": "secret-token", "ha_base_url": ""}  # nosec B105 - test fixture
 check("with no base URL nothing gets the token", p._image_headers("http://anything/x") == {})
 p.provider_name = "aftership"
 check("other providers never send it", p._image_headers("http://homeassistant.local:8123/x") == {})

@@ -652,7 +652,7 @@ class StaticImagePlugin(BasePlugin):
         """Initialize rotation based on mode"""
         # A generator of our own: random.seed() reseeded the one every plugin
         # in the process shares. Seeded, it gives the same repeatable order.
-        self._rng = random.Random(self.rotation_settings.get('random_seed'))
+        self._rng = random.Random(self.rotation_settings.get('random_seed'))  # nosec B311 - picks an image, not a secret
         
         # Sort images by display_order if available
         if self.images_list:
@@ -781,7 +781,7 @@ class StaticImagePlugin(BasePlugin):
             return image
         
         elif self.rotation_mode == 'random':
-            rng = getattr(self, '_rng', None) or random.Random()
+            rng = getattr(self, '_rng', None) or random.Random()  # nosec B311 - picks an image, not a secret
             return rng.choice(available_images)
         
         elif self.rotation_mode == 'time_based':

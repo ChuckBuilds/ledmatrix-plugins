@@ -56,11 +56,11 @@ def plugin(seed):
 
 
 random.seed(12345)
-expected = [random.random() for _ in range(3)]
+expected = [random.random() for _ in range(3)]  # nosec B311 - the shared generator under test
 random.seed(12345)
 plugin(7)
 check("seeding the rotation leaves the shared generator alone",
-      [random.random() for _ in range(3)] == expected)
+      [random.random() for _ in range(3)] == expected)  # nosec B311
 
 images = [{"id": i} for i in range(20)]
 a, b = plugin(7), plugin(7)
