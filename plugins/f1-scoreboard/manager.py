@@ -192,6 +192,22 @@ class F1ScoreboardPlugin(BasePlugin):
 
     # ─── Update ────────────────────────────────────────────────────────
 
+    def get_update_interval(self) -> Optional[float]:
+        """Ask for update() every live-check interval on a race weekend.
+
+        update() raises its own refresh rate on a race weekend (600 s) and
+        during a live session (300 s), and checks for a live session every
+        _live_check_interval -- but only when the core calls it, and without
+        this hook the core called it at the static update_interval (an hour),
+        so none of that ever ran faster than hourly. The throttles inside
+        update() still decide what is fetched. None outside a race weekend:
+        the static interval applies, as before. Attribute reads only; the
+        core calls this on every scheduling tick.
+        """
+        if self._is_live or self._is_race_weekend:
+            return float(self._live_check_interval)
+        return None
+
     def update(self):
         """Fetch and update all F1 data from APIs."""
         now = time.time()
@@ -368,6 +384,12 @@ class F1ScoreboardPlugin(BasePlugin):
             "FP3": "Practice 3",
         }
 
+        # A session taken out of sessions_to_show used to stay on screen
+        # until a restart: this dict was only ever added to.
+        for fp_key in list(self._practice_results):
+            if fp_key not in sessions:
+                del self._practice_results[fp_key]
+
         for fp_key in sessions:
             session_name = session_name_map.get(fp_key)
             if not session_name:
@@ -428,6 +450,10 @@ class F1ScoreboardPlugin(BasePlugin):
         if events:
             held = [e for e in events if not self._is_cancelled_event(e)]
             self._season_rounds = len(held) or None
+        # Stored here, in update(), for _prepare_scroll_content: display()
+        # calls that too, and looking the round up there could fetch.
+        self._latest_round = self.data_source.get_latest_round(
+            datetime.now(timezone.utc).year)
 
     @staticmethod
     def _is_cancelled_event(event: Dict) -> bool:
@@ -543,7 +569,9 @@ class F1ScoreboardPlugin(BasePlugin):
 
         # Round / season info (used by headers and battle card)
         season = datetime.now(timezone.utc).year
-        round_num = self.data_source.get_latest_round(season)
+        round_num = getattr(self, "_latest_round", None)
+        if round_num is None:  # before the first update(); never fetch here
+            round_num = self.data_source.cached_latest_round(season)
         # Before the schedule has loaded, fall back to a typical season length,
         # never below the round already reached.
         total_rounds = max(self._season_rounds or 24, round_num)
