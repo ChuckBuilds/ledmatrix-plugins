@@ -18,7 +18,7 @@ Exit 0 pass, 1 fail, 2 skip (no core checkout).
 """
 import json
 import os
-import subprocess
+import subprocess  # nosec B404
 import sys
 from pathlib import Path
 
@@ -94,7 +94,8 @@ def main():
     failed = 0
     for plugin, (path, _mode) in CASES.items():
         league_key = path[-1] if path else plugin.split("-")[0]
-        proc = subprocess.run(
+        # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
+        proc = subprocess.run(  # nosec B603 - list argv, no shell: this interpreter and repo paths
             [sys.executable, "-c", PROBE, str(PLUGINS / plugin),
              json.dumps([path, league_key, cases])],
             capture_output=True, text=True, cwd=str(core), env=env)

@@ -17,7 +17,7 @@ Exit 0 pass, 1 fail, 2 skip (no core checkout).
 """
 import json
 import os
-import subprocess
+import subprocess  # nosec B404
 import sys
 from pathlib import Path
 
@@ -94,7 +94,8 @@ def main():
     env = dict(os.environ, PYTHONPATH=str(core), EMULATOR="true")
     failed = 0
     for plugin, key in PLUGINS_UNDER_TEST.items():
-        proc = subprocess.run(
+        # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
+        proc = subprocess.run(  # nosec B603 - list argv, no shell: this interpreter and repo paths
             [sys.executable, "-c", PROBE, str(PLUGINS / plugin), key,
              json.dumps([(saved, want_key) for _l, saved, want_key, _w in CASES])],
             capture_output=True, text=True, cwd=str(core), env=env)
