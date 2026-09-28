@@ -222,10 +222,6 @@ def _logo_needs_refresh(logo_file) -> bool:
         return False
 
 
-#: The two full-screen upcoming date/time switches. See SportsCore._card_option.
-_SWITCH_DATE_TIME_KEYS: Tuple[str, ...] = ("switch_show_date", "switch_show_time")
-
-
 class SportsCore(SportsCoreSharedMixin, ABC):
     #: Absolute path of this plugin, handed to the shared mixin. It cannot
     #: deduce it: __file__ there is src/common/, and inferring the directory
@@ -629,9 +625,10 @@ class SportsCore(SportsCoreSharedMixin, ABC):
         # The mixin named outright, not super(): tests lift this method onto
         # stand-in classes that are not SportsCore subclasses.
         base = SportsCoreSharedMixin._card_option
+        keys = ("switch_show_date", "switch_show_time")
         value = base(self, key, default)
-        if (key in _SWITCH_DATE_TIME_KEYS and not value
-                and not any(base(self, k, True) for k in _SWITCH_DATE_TIME_KEYS)
+        if (key in keys and not value
+                and not any(base(self, k, True) for k in keys)
                 and SportsCoreSharedMixin._switch_upcoming_center(self) == "date_time"):
             return True
         return value
