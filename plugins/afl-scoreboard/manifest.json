@@ -1,7 +1,7 @@
 {
   "id": "afl-scoreboard",
   "name": "AFL Scoreboard",
-  "version": "1.30.4",
+  "version": "1.30.5",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming AFL (Australian Football League) games with real-time scores and game status.",
   "category": "sports",
@@ -18,6 +18,12 @@
     "afl_upcoming"
   ],
   "versions": [
+    {
+      "version": "1.30.5",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Removes the bundled base_odds_manager.py fallback. It could never run: core has shipped src.base_odds_manager since v3.0.0, below this plugin's 3.4.0 floor, and odds already came from core's BaseOddsManager. No behaviour change."
+    },
     {
       "version": "1.30.4",
       "released": "2026-09-28",

@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.33.2",
+  "version": "2.33.3",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -53,6 +53,12 @@
     "soccer_usa.1_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.33.3",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Removes the bundled base_odds_manager.py fallback. It could never run: core has shipped src.base_odds_manager since v3.0.0, below this plugin's 3.4.0 floor, and odds already came from core's BaseOddsManager. Also deletes the unused MLBAPIDataSource and SoccerAPIDataSource data source classes, which nothing referenced. No behaviour change."
+    },
     {
       "version": "2.33.2",
       "released": "2026-09-28",

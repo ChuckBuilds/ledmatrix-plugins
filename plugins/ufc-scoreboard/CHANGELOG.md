@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.15.1] - 2026-09-28
+
+### Fixed
+- The UFC managers no longer fail when another scoreboard is loaded.
+  `sports.py` imported a `dynamic_team_resolver` this plugin does not ship, so
+  it bound another plugin's copy off `sys.path` and called it with
+  `cache_manager=`, which hockey's (and most others') constructor rejects:
+  after a live re-enable with hockey running, all three managers failed with
+  `TypeError` and the plugin showed nothing. UFC has no teams to resolve
+  (favourites are fighters), so the import is gone and the configured list is
+  used as given.
+- The scorebug's status, detail and record text use the configured fonts
+  (tom-thumb and 4x6 by default). The schema's repo-relative paths were joined
+  onto `assets/fonts` a second time, which logged
+  `Font file not found: assets/fonts/assets/fonts/tom-thumb.bdf` and fell back
+  to PressStart2P; at 64x32 the two fighters' records ran into each other.
+- A 404 from ESPN's odds endpoint, which is how it answers for a bout with no
+  line, is logged at DEBUG and cached as "no odds" like an empty response,
+  instead of an ERROR on every update. Other HTTP errors still log ERROR.
+
 ## [1.15.0] - 2026-09-24
 
 ### Changed

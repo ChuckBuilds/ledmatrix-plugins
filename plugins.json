@@ -76,7 +76,7 @@
       "last_updated": "2026-09-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.49.3"
+      "latest_version": "1.49.4"
     },
     {
       "id": "basketball-scoreboard",
@@ -101,7 +101,7 @@
       "last_updated": "2026-09-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.36.3"
+      "latest_version": "1.36.4"
     },
     {
       "id": "calendar",
@@ -264,7 +264,7 @@
       "last_updated": "2026-09-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "3.13.1"
+      "latest_version": "3.13.2"
     },
     {
       "id": "geochron",
@@ -359,7 +359,7 @@
       "last_updated": "2026-09-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.35.4",
+      "latest_version": "1.35.5",
       "icon": "fas fa-hockey-puck"
     },
     {
@@ -383,7 +383,7 @@
       "last_updated": "2026-09-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.31.4",
+      "latest_version": "1.31.5",
       "icon": "fas fa-baseball-ball"
     },
     {
@@ -784,7 +784,7 @@
       "last_updated": "2026-09-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.33.2"
+      "latest_version": "2.33.3"
     },
     {
       "id": "static-image",
@@ -926,10 +926,10 @@
       "plugin_path": "plugins/ufc-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-24",
+      "last_updated": "2026-09-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.15.0",
+      "latest_version": "1.15.1",
       "icon": "fas fa-fist-raised"
     },
     {
@@ -1072,7 +1072,7 @@
       "downloads": 0,
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.30.4",
+      "latest_version": "1.30.5",
       "last_updated": "2026-09-28"
     },
     {
@@ -1119,7 +1119,7 @@
       "last_updated": "2026-09-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.29.5"
+      "latest_version": "1.29.6"
     },
     {
       "id": "jellyfin-now-playing",

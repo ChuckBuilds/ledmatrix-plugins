@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.49.4] - 2026-09-28
+
+### Removed
+- Deleted the bundled `base_odds_manager.py` fallback. It could never run:
+  core has shipped `src.base_odds_manager` since v3.0.0, below this plugin's
+  3.4.0 floor, so odds already came from core's `BaseOddsManager`. The
+  import is now plain.
+
+No behaviour change.
+
 ## [1.49.3] - 2026-09-28
 
 ### Fixed

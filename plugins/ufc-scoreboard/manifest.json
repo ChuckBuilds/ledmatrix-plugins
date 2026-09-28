@@ -1,7 +1,7 @@
 {
   "id": "ufc-scoreboard",
   "name": "UFC Scoreboard",
-  "version": "1.15.0",
+  "version": "1.15.1",
   "author": "LegoGuy1000",
   "contributors": [
     {
@@ -32,6 +32,12 @@
   "default_duration": 15,
   "config_schema": "config_schema.json",
   "versions": [
+    {
+      "version": "1.15.1",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "The UFC managers no longer fail when another scoreboard is loaded: sports.py imported a dynamic_team_resolver ufc does not ship, so it bound another plugin's copy, whose constructor rejected cache_manager, and all three managers failed with TypeError (seen with hockey after a live re-enable). UFC has no teams to resolve, so the import is gone. The scorebug's status, detail and record fonts load the configured faces (tom-thumb, 4x6): the schema's repo-relative paths were joined onto assets/fonts a second time, logging 'Font file not found: assets/fonts/assets/fonts/...' and falling back to PressStart2P, which at 64x32 ran the two records into each other. A 404 from ESPN's odds endpoint (no line for the bout) is logged at DEBUG and cached as no odds instead of an ERROR on every update."
+    },
     {
       "version": "1.15.0",
       "released": "2026-09-24",
@@ -319,7 +325,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-20",
+  "last_updated": "2026-09-28",
   "stars": 0,
   "downloads": 0,
   "verified": true,
