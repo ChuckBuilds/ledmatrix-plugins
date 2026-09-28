@@ -17,6 +17,7 @@ API Version: 1.0.0
 import datetime
 import logging
 import os
+import random
 import time
 import uuid
 from typing import Dict, Any, Tuple, Optional, List
@@ -649,11 +650,9 @@ class StaticImagePlugin(BasePlugin):
     
     def _setup_rotation(self) -> None:
         """Initialize rotation based on mode"""
-        if self.rotation_mode == 'random':
-            import random
-            seed = self.rotation_settings.get('random_seed')
-            if seed is not None:
-                random.seed(seed)
+        # A generator of our own: random.seed() reseeded the one every plugin
+        # in the process shares. Seeded, it gives the same repeatable order.
+        self._rng = random.Random(self.rotation_settings.get('random_seed'))
         
         # Sort images by display_order if available
         if self.images_list:
@@ -782,8 +781,8 @@ class StaticImagePlugin(BasePlugin):
             return image
         
         elif self.rotation_mode == 'random':
-            import random
-            return random.choice(available_images)
+            rng = getattr(self, '_rng', None) or random.Random()
+            return rng.choice(available_images)
         
         elif self.rotation_mode == 'time_based':
             time_intervals = self.rotation_settings.get('time_intervals', {})

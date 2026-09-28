@@ -26,6 +26,7 @@ import time
 from io import BytesIO
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+from urllib.parse import urlsplit
 
 import requests
 from PIL import Image, ImageDraw, ImageFont, ImageSequence
@@ -388,12 +389,23 @@ class IncomingPackagesPlugin(BasePlugin):
                 else:
                     self._images.pop(slot, None)
 
-    def _image_headers(self) -> Dict[str, str]:
-        if self.provider_name == "homeassistant":
-            token = (self.config.get("ha_token") or "").strip()
-            if token:
-                return {"Authorization": f"Bearer {token}"}
-        return {}
+    def _image_headers(self, url: str) -> Dict[str, str]:
+        """The Home Assistant token, only for a URL on the Home Assistant host.
+
+        Camera snapshots are served by Home Assistant and need it. The USPS
+        image_url sensor can point anywhere, and the token used to go with
+        that request too -- to whichever host the sensor named.
+        """
+        if self.provider_name != "homeassistant":
+            return {}
+        token = (self.config.get("ha_token") or "").strip()
+        base = urlsplit((self.config.get("ha_base_url") or "").strip())
+        target = urlsplit(url)
+        if not token or not base.netloc:
+            return {}
+        if (target.scheme, target.netloc.lower()) != (base.scheme, base.netloc.lower()):
+            return {}
+        return {"Authorization": f"Bearer {token}"}
 
     def _fetch_frames(self, url: str, box: Tuple[int, int]) -> List[Image.Image]:
         """Fetch an image and return every frame fitted to `box`. The USPS
@@ -401,7 +413,7 @@ class IncomingPackagesPlugin(BasePlugin):
         mail piece; a static image yields a single frame. Capped to keep memory
         and the animation length sane."""
         try:
-            resp = requests.get(url, headers=self._image_headers(), timeout=8)
+            resp = requests.get(url, headers=self._image_headers(url), timeout=8)
             resp.raise_for_status()
             src = Image.open(BytesIO(resp.content))
             frames: List[Image.Image] = []
