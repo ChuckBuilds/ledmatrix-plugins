@@ -50,8 +50,9 @@ REQUIRED = {
 }
 
 # Keys a plugin's sports.py copy mentions but that plugin never runs, so they
-# are deliberately NOT declared. ufc-scoreboard's sports.py carries the shared
-# favourites-then-others selection, but MMARecent and MMAUpcoming override
+# are deliberately NOT declared. ufc-scoreboard's SportsCore has the shared
+# favourites-then-others selection (inherited from core's SportsCoreSharedMixin
+# since 1.16.0), but MMARecent and MMAUpcoming override
 # update() and never call _favorites_first, so no other-games slice is ever
 # built or rotated. The keys were offered in its schema and did nothing, and
 # were removed in ufc-scoreboard 1.12.1. Wire the selection into mma.py first,

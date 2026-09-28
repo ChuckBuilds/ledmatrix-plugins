@@ -6,20 +6,22 @@ filename. The scoreboards locate logos by scanning filename variations, so
 without a placeholder check they load the grey stub and never consult the
 downloader again -- one transient failure costs that team its logo forever.
 
-The check lives in `_logo_needs_refresh`, which is a *copied* helper: the
-sports engine is duplicated per scoreboard lineage rather than shared. These
-tests pin the behaviour and hold every copy byte-identical, so a fix to one
-cannot silently skip the others. Core 3.5.0 ships it as
-`src.common.sports_helpers.logo_needs_refresh`; a scoreboard that floors on
-3.5.0 may import that under the private name instead of carrying a copy
-(ufc-scoreboard does).
+The check lives in `_logo_needs_refresh`. Core 3.5.0 ships it as
+`src.common.sports_helpers.logo_needs_refresh`; the scoreboards that floor on
+3.5.0 -- all nine, since ufc's 1.16.0 -- import it under the private name
+rather than carry a *copied* helper. These tests pin the behaviour -- of any
+copy that remains and, when a core checkout is found (LEDMATRIX_CORE, or
+../LEDMatrix), of core's -- and hold every copy byte-identical, so a fix to
+one cannot silently skip the others. A loader must either define the helper or import core's.
 
 Run from the repo root:
 
     python scripts/test_logo_placeholder_refresh.py
 """
 
+import ast
 import importlib.util
+import os
 import re
 import shutil
 import sys
@@ -35,6 +37,34 @@ HELPER_RE = re.compile(r"def _logo_needs_refresh\(.*?\n(?=\n\nclass )", re.S)
 ADOPTED_RE = re.compile(
     r"^from src\.common\.sports_helpers import \([^)]*"
     r"\blogo_needs_refresh as _logo_needs_refresh\b", re.M)
+
+
+def core_checkout():
+    for candidate in (os.environ.get("LEDMATRIX_CORE", ""),
+                      str(REPO_ROOT.parent / "LEDMatrix")):
+        path = Path(candidate) / "src" / "common" / "sports_helpers.py" if candidate else None
+        if path and path.is_file():
+            return path
+    return None
+
+
+def helper_sources():
+    """(label, source defining _logo_needs_refresh) for every body under test."""
+    sources = []
+    for path in copies():
+        match = HELPER_RE.search(path.read_text(encoding="utf-8"))
+        if match:
+            sources.append((path.relative_to(REPO_ROOT).as_posix(), match.group(0)))
+            break  # the copies are pinned identical below; one stands for all
+    core = core_checkout()
+    if core is not None:
+        text = core.read_text(encoding="utf-8")
+        node = next(n for n in ast.parse(text).body
+                    if isinstance(n, ast.FunctionDef) and n.name == "logo_needs_refresh")
+        body = ast.get_source_segment(text, node).replace(
+            "def logo_needs_refresh(", "def _logo_needs_refresh(", 1)
+        sources.append(("core src/common/sports_helpers.py", body + "\n"))
+    return sources
 
 
 def copies():
@@ -54,6 +84,13 @@ class HelperCopiesAgree(unittest.TestCase):
                    if "_logo_needs_refresh" not in p.read_text(encoding="utf-8")]
         self.assertEqual(missing, [], "logo loaders without a placeholder check")
 
+    def test_every_loader_defines_the_helper_or_imports_cores(self):
+        neither = [p.relative_to(REPO_ROOT).as_posix() for p in copies()
+                   if not HELPER_RE.search(p.read_text(encoding="utf-8"))
+                   and not ADOPTED_RE.search(p.read_text(encoding="utf-8"))]
+        self.assertEqual(neither, [], "loaders whose _logo_needs_refresh is "
+                         "neither a copy here nor core's sports_helpers one")
+
     def test_all_copies_are_byte_identical(self):
         bodies = {}
         for path in copies():
@@ -65,7 +102,7 @@ class HelperCopiesAgree(unittest.TestCase):
                 match, f"{path.relative_to(REPO_ROOT)}: no _logo_needs_refresh")
             bodies.setdefault(match.group(0), []).append(
                 path.relative_to(REPO_ROOT).as_posix())
-        self.assertEqual(
+        self.assertLessEqual(
             len(bodies), 1,
             "copies of _logo_needs_refresh have diverged:\n"
             + "\n".join(f"  variant {i}: {ps}"
@@ -100,9 +137,17 @@ class HelperCopiesAgree(unittest.TestCase):
 
 
 class HelperBehaviour(unittest.TestCase):
-    """Exercise a copy of the helper against stub core modules."""
+    """Exercise the helper -- a plugin copy and core's -- against stub core modules."""
 
-    def _load_helper(self, downloader_module):
+    def _helpers(self, downloader_module):
+        """One loaded helper per body under test, each labelled for subTest."""
+        sources = helper_sources()
+        if not sources:
+            self.skipTest("no plugin copy of _logo_needs_refresh and no core checkout")
+        return [(label, self._load_helper(downloader_module, source))
+                for label, source in sources]
+
+    def _load_helper(self, downloader_module, source):
         """Import the helper as a real module, extracted from a plugin copy.
 
         Written to a temp file and imported through importlib rather than
@@ -110,9 +155,6 @@ class HelperBehaviour(unittest.TestCase):
         normal import keeps this a module with a filename that tracebacks and
         coverage can point at.
         """
-        source = HELPER_RE.search(
-            (PLUGINS / "afl-scoreboard" / "sports.py").read_text(encoding="utf-8")
-        ).group(0)
         tmpdir = tempfile.mkdtemp(prefix="logo-helper-")
         self.addCleanup(shutil.rmtree, tmpdir, True)
         module_path = Path(tmpdir) / "logo_helper_under_test.py"
@@ -153,26 +195,31 @@ class HelperBehaviour(unittest.TestCase):
         return module
 
     def test_real_logo_is_never_refreshed(self):
-        helper = self._load_helper(self._downloader(False, None))
-        self.assertFalse(helper(Path("REAL.png")))
+        for label, helper in self._helpers(self._downloader(False, None)):
+            with self.subTest(helper=label):
+                self.assertFalse(helper(Path("REAL.png")))
 
     def test_stale_placeholder_is_refreshed(self):
-        helper = self._load_helper(self._downloader(True, 7 * 60 * 60))
-        self.assertTrue(helper(Path("COLL.png")))
+        for label, helper in self._helpers(self._downloader(True, 7 * 60 * 60)):
+            with self.subTest(helper=label):
+                self.assertTrue(helper(Path("COLL.png")))
 
     def test_fresh_placeholder_is_not_refreshed(self):
         """Rate limiting: otherwise this trades a grey box for a request per frame."""
-        helper = self._load_helper(self._downloader(True, 60))
-        self.assertFalse(helper(Path("COLL.png")))
+        for label, helper in self._helpers(self._downloader(True, 60)):
+            with self.subTest(helper=label):
+                self.assertFalse(helper(Path("COLL.png")))
 
     def test_unknown_age_is_refreshed(self):
-        helper = self._load_helper(self._downloader(True, None))
-        self.assertTrue(helper(Path("COLL.png")))
+        for label, helper in self._helpers(self._downloader(True, None)):
+            with self.subTest(helper=label):
+                self.assertTrue(helper(Path("COLL.png")))
 
     def test_older_core_without_the_marker_keeps_old_behaviour(self):
         """The core may predate placeholder marking; degrade, do not crash."""
-        helper = self._load_helper(None)
-        self.assertFalse(helper(Path("COLL.png")))
+        for label, helper in self._helpers(None):
+            with self.subTest(helper=label):
+                self.assertFalse(helper(Path("COLL.png")))
 
     def test_a_raising_core_does_not_break_logo_loading(self):
         import types
@@ -180,8 +227,9 @@ class HelperBehaviour(unittest.TestCase):
         module.PLACEHOLDER_RETRY_SECONDS = 100
         module.is_placeholder_logo = lambda _p: (_ for _ in ()).throw(OSError("boom"))
         module.placeholder_age_seconds = lambda _p: None
-        helper = self._load_helper(module)
-        self.assertFalse(helper(Path("COLL.png")))
+        for label, helper in self._helpers(module):
+            with self.subTest(helper=label):
+                self.assertFalse(helper(Path("COLL.png")))
 
 
 if __name__ == "__main__":
