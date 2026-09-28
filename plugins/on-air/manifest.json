@@ -1,7 +1,7 @@
 {
   "id": "on-air",
   "name": "On Air Light",
-  "version": "1.2.11",
+  "version": "1.2.12",
   "author": "ChuckBuilds",
   "description": "Retro broadcast ON AIR tally light. Activate remotely via MQTT or Home Assistant to signal you're on a call, recording, or live \u00e2\u20ac\u201d stays on until you turn it off.",
   "entry_point": "manager.py",
@@ -22,6 +22,12 @@
     ">=2.0.0"
   ],
   "versions": [
+    {
+      "version": "1.2.12",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Home Assistant now sees the sign go offline on a clean shutdown or settings save. The offline availability was published after the client had disconnected, so it never left, and a clean disconnect does not trigger the last will; it is now published, and delivery awaited, before disconnecting."
+    },
     {
       "version": "1.2.11",
       "released": "2026-09-28",

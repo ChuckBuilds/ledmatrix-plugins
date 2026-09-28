@@ -457,12 +457,23 @@ class OnAirPlugin(BasePlugin):
             except Exception as e:
                 self.logger.debug("Discovery removal failed for %s: %s", topic, e)
 
-    def _publish_availability(self, online: bool) -> None:
-        if not self.mqtt_client:
+    def _publish_availability(self, online: bool, wait: bool = False) -> None:
+        """Publish the availability state.
+
+        Pass wait=True when shutting down: the publish has to reach the broker
+        before the client disconnects, or it dies in paho's outbound queue and
+        Home Assistant keeps showing the sign as available. (A clean
+        disconnect does not trigger the last-will "offline" either.)
+        """
+        client = self.mqtt_client
+        if not client:
             return
         try:
-            self.mqtt_client.publish(
-                self.availability_topic, "online" if online else "offline", retain=True)
+            info = client.publish(
+                self.availability_topic, "online" if online else "offline",
+                qos=1, retain=True)
+            if wait and info is not None and hasattr(info, "wait_for_publish"):
+                info.wait_for_publish(timeout=2.0)
         except Exception as e:
             self.logger.debug("Availability publish failed: %s", e)
 
@@ -687,6 +698,10 @@ class OnAirPlugin(BasePlugin):
 
     def _graceful_shutdown(self) -> None:
         """Stop the supervisor thread and release the client. Safe to call twice."""
+        # Say goodbye while the socket is still up; the loop's own offline
+        # publish runs after the teardown below and has nothing to send on.
+        if self.mqtt_connected:
+            self._publish_availability(False, wait=True)
         self.mqtt_stop_event.set()
         if self.mqtt_thread and self.mqtt_thread.is_alive():
             self._teardown_client()   # wakes the loop instead of waiting it out

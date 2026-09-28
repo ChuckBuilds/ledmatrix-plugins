@@ -61,6 +61,15 @@ class CalendarPlugin(BasePlugin):
         """Initialize the calendar plugin."""
         super().__init__(plugin_id, config, display_manager, cache_manager, plugin_manager)
         
+        # State that update(), display() and get_info() read, set before the
+        # early return below: without the Google libraries they used to
+        # raise AttributeError on every call.
+        self.service = None
+        self.events = []
+        self.current_event_index = 0
+        self.last_rotation = time.time()
+        self._read_settings(config)
+
         if not GOOGLE_AVAILABLE:
             self.logger.error("Google Calendar libraries not available. Install: google-auth-oauthlib google-auth-httplib2 google-api-python-client")
             self.enabled = False
@@ -70,14 +79,7 @@ class CalendarPlugin(BasePlugin):
         plugin_dir = os.path.dirname(os.path.abspath(__file__))
         self.credentials_file = os.path.join(plugin_dir, config.get('credentials_file', 'credentials.json'))
         self.token_file = os.path.join(plugin_dir, config.get('token_file', 'token.pickle'))
-        self._read_settings(config)
 
-        # State
-        self.service = None
-        self.events = []
-        self.current_event_index = 0
-        self.last_rotation = time.time()
-        
         # Colors
         self.text_color = (255, 255, 255)
         self.time_color = (255, 200, 100)
