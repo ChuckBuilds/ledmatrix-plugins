@@ -1,7 +1,7 @@
 {
   "id": "f1-scoreboard",
   "name": "F1 Scoreboard",
-  "version": "1.9.3",
+  "version": "1.9.4",
   "author": "ChuckBuilds",
   "class_name": "F1ScoreboardPlugin",
   "entry_point": "manager.py",
@@ -29,6 +29,12 @@
     "f1_calendar"
   ],
   "versions": [
+    {
+      "version": "1.9.4",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Top Finishers works at every value. Below 3, a favorite driver finishing outside the top places took a podium column; above 3, a favorite in P5 or lower never got their card. Its description now says the result card has room for three."
+    },
     {
       "version": "1.9.3",
       "released": "2026-09-28",

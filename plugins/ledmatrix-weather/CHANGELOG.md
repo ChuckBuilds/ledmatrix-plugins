@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.7.6] - 2026-09-28
+
+### Changed
+- Docs: State/Province is for reference; the place lookup matches city and
+  country only. Set latitude and longitude for a city name shared by two
+  places.
+
 ## [2.7.5] - 2026-09-28
 
 ### Fixed

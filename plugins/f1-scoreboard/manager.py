@@ -769,13 +769,18 @@ class F1ScoreboardPlugin(BasePlugin):
         """
         r = self._scroll_renderer
         rr_cfg = self.config.get("recent_races", {})
-        cards = [r.render_race_result(race)]
-
-        # If favorite outside podium: results[3] is the appended favorite
+        # results = the top_finishers, then the favorite appended when they
+        # finished outside them. The podium card has room for three and drew
+        # results[:3], so with top_finishers below 3 the appended favorite
+        # took a podium column; the favorite card looked only at results[3],
+        # so above 3 a favorite in P5 or lower never got it.
         results = race.get("results", [])
-        if self.favorite_driver and len(results) > 3:
-            fav = results[3]
-            if fav.get("code", "").upper() == self.favorite_driver:
+        podium = min(3, max(1, int(rr_cfg.get("top_finishers", 3) or 3)))
+        cards = [r.render_race_result(dict(race, results=results[:podium]))]
+        if self.favorite_driver:
+            fav = next((e for e in results[podium:]
+                        if e.get("code", "").upper() == self.favorite_driver), None)
+            if fav is not None:
                 cards.append(r.render_favorite_race_card(race, fav))
 
         # Gap chart bar visualization (skip if no result data available)

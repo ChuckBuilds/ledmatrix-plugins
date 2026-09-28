@@ -85,7 +85,7 @@ Each mode section has an `enabled` toggle and mode-specific options:
 | `constructor_standings` | `always_show_favorite` | `true` | Keep favorite team visible |
 | `constructor_standings` | `show_driver_split` | `true` | Show individual driver point contributions on each constructor card |
 | `recent_races` | `number_of_races` | `3` | Past races to cycle through (1–10) |
-| `recent_races` | `top_finishers` | `3` | Podium depth per race (1–20) |
+| `recent_races` | `top_finishers` | `3` | Podium places on the result card (1–3; higher changes nothing there). A favorite driver below them gets a card of their own |
 | `recent_races` | `always_show_favorite` | `true` | Append favorite driver even outside top N |
 | `recent_races` | `show_position_delta` | `true` | Show `+N`/`-N` positions gained/lost vs grid in green/red |
 | `recent_races` | `show_dnf_status` | `true` | Show `RET` or `+NL` for retirements and lapped finishers |
