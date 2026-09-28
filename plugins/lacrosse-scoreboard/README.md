@@ -264,7 +264,7 @@ Every table below exists twice, once under `ncaa_mens` and once under
 | Key | Type | Default | What it does |
 |---|---|---|---|
 | `<league>.enabled` | boolean | `true` for `ncaa_mens`, `false` for `ncaa_womens` | Build this league's managers at all. The only setting that differs between the two. |
-| `<league>.live_priority` | boolean | `false` | Let this league's live games interrupt the rotation and display immediately. |
+| `<league>.live_priority` | boolean | `true` | Let this league's live games interrupt the rotation and display immediately. |
 
 ### Display modes
 
@@ -428,6 +428,7 @@ These settings are plugin-wide, not per league, and apply to every display mode.
 | Full-Screen Date Format | `scroll_card.switch_date_format` | `numeric` | **Advanced.** The same for the full-screen scoreboard, plus `inherit`. It has its own default because the two displays disagree about what is normal. |
 | Time Format | `scroll_card.time_format` | `12h` | 12- or 24-hour clock. |
 | Show Date / Show Time | `scroll_card.show_date`, `scroll_card.show_time` | `true` | Drop either line. |
+| Full-Screen Recent Date | `scroll_card.switch_recent_show_date` | `true` | Draw the date a finished game was played along the bottom of the full-screen recent scoreboard, written in the Full-Screen Date Format. |
 | Swap Date and Time | `scroll_card.swap_date_time` | `false` | Flip the two lines. Each display starts from its own order, so this flips rather than forces. |
 
 The centre-gap settings size the scroll and Vegas card's middle strip only — the

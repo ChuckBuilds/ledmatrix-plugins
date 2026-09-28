@@ -438,6 +438,10 @@ def _logo_needs_refresh(logo_file) -> bool:
         return False
 
 
+#: The two full-screen upcoming date/time switches. See SportsCore._card_option.
+_SWITCH_DATE_TIME_KEYS: Tuple[str, ...] = ("switch_show_date", "switch_show_time")
+
+
 class SportsCore(SportsCoreSharedMixin, ABC):
     #: Absolute path of this plugin, handed to the shared mixin. It cannot
     #: deduce it: __file__ there is src/common/, and inferring the directory
@@ -958,6 +962,42 @@ class SportsCore(SportsCoreSharedMixin, ABC):
     _WEEKDAY_ABBR: ClassVar[Tuple[str, ...]] = (
         "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun",
     )
+
+    def _card_option(self, key: str, default: Any = None) -> Any:
+        """Read one scroll_card key, never blanking the upcoming scorebug.
+
+        With the middle set to "date and time" and both of those lines
+        switched off, the full-screen upcoming scorebug is two logos and
+        "Next Game" with nothing to say when the game is. Nobody picks that
+        on purpose -- "vs" and "none" are the settings for a card without the
+        stack -- yet a whole cohort of boards has it: switch_show_date/_time
+        shipped while the core's settings form still drew keys missing from
+        the saved config as unchecked boxes, so the next Save wrote both as
+        false (fixed in LEDMatrix #597). That one combination therefore reads
+        as both on. Hiding either line alone, or both under "vs" or "none",
+        is still honoured.
+        """
+        # The mixin named outright, not super(): tests lift this method onto
+        # stand-in classes that are not SportsCore subclasses.
+        base = SportsCoreSharedMixin._card_option
+        value = base(self, key, default)
+        if (key in _SWITCH_DATE_TIME_KEYS and not value
+                and not any(base(self, k, True) for k in _SWITCH_DATE_TIME_KEYS)
+                and SportsCoreSharedMixin._switch_upcoming_center(self) == "date_time"):
+            return True
+        return value
+
+    def _recent_date_text(self, game: Optional[Dict]) -> str:
+        """When a finished game was played, for the full-screen scorebug.
+
+        Formatted by switch_date_format, like the upcoming scorebug, so the
+        two dates on this display agree; its "numeric" default returns the
+        extractor's "9/23" unchanged. ``switch_recent_show_date`` (default
+        true) is the off switch. Same as baseball-scoreboard's copy.
+        """
+        if not self._card_option("switch_recent_show_date", True):
+            return ""
+        return self._format_game_date(str((game or {}).get("game_date") or ""), game)
 
     def _upcoming_date_and_time_text(self, game_date: str, game_time: str,
                                      game: Optional[Dict] = None) -> Tuple[str, str]:
@@ -3697,7 +3737,7 @@ class SportsRecent(SportsRecentSharedMixin, SportsCore):
 
             # Game date (bottom center, one line above the edge) — when the game was
             # played. Matches the baseball recent layout.
-            game_date = game.get("game_date", "")
+            game_date = self._recent_date_text(game)
             if game_date:
                 date_width = draw_overlay.textlength(game_date, font=self.fonts["time"])
                 date_x = (display_width - date_width) // 2 + self._get_layout_offset('date', 'x_offset')

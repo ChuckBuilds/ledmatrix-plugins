@@ -127,12 +127,12 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
         self.logger.info(f"League enabled states - NHL: {self.nhl_enabled}, NCAA Men's: {self.ncaa_mens_enabled}, NCAA Women's: {self.ncaa_womens_enabled}")
 
         # Live priority settings
-        self.nhl_live_priority = self.config.get("nhl", {}).get("live_priority", False)
+        self.nhl_live_priority = self.config.get("nhl", {}).get("live_priority", True)
         self.ncaa_mens_live_priority = self.config.get("ncaa_mens", {}).get(
-            "live_priority", False
+            "live_priority", True
         )
         self.ncaa_womens_live_priority = self.config.get("ncaa_womens", {}).get(
-            "live_priority", False
+            "live_priority", True
         )
 
         # Global settings - read from defaults section with fallback
@@ -285,9 +285,9 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
         self.nhl_enabled = self.config.get("nhl", {}).get("enabled", False)
         self.ncaa_mens_enabled = self.config.get("ncaa_mens", {}).get("enabled", False)
         self.ncaa_womens_enabled = self.config.get("ncaa_womens", {}).get("enabled", False)
-        self.nhl_live_priority = self.config.get("nhl", {}).get("live_priority", False)
-        self.ncaa_mens_live_priority = self.config.get("ncaa_mens", {}).get("live_priority", False)
-        self.ncaa_womens_live_priority = self.config.get("ncaa_womens", {}).get("live_priority", False)
+        self.nhl_live_priority = self.config.get("nhl", {}).get("live_priority", True)
+        self.ncaa_mens_live_priority = self.config.get("ncaa_mens", {}).get("live_priority", True)
+        self.ncaa_womens_live_priority = self.config.get("ncaa_womens", {}).get("live_priority", True)
         # Same precedence as __init__: the defaults section, then the root key.
         defaults = self.config.get("defaults", {})
         self.display_duration = float(defaults.get("display_duration", self.config.get("display_duration", 30)))
@@ -992,7 +992,7 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "show_favorite_teams_only": favorite_only,
                 "show_all_live": show_all_live,
                 "favorite_live_boost": favorite_live_boost,
-                "live_priority": league_config.get("live_priority", False),
+                "live_priority": league_config.get("live_priority", True),
                 "celebration_enabled": league_config.get("celebration_enabled", True),
                 "celebration_duration": league_config.get("celebration_duration", 8),
                 "celebrate_opponent_goals": league_config.get(
@@ -1690,7 +1690,7 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
             # Only include managers with live_priority enabled AND actual live games
             for league_id in enabled_leagues:
                 league_data = self._league_registry.get(league_id, {})
-                live_priority = league_data.get('live_priority', False)
+                live_priority = league_data.get('live_priority', True)
                 
                 manager = self._get_league_manager_for_mode(league_id, 'live')
                 if not manager:

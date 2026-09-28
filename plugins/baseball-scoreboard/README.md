@@ -234,7 +234,7 @@ The live screen has its own selection. By default it shows only live games
 involving your favourites; `filtering.show_all_live: true` includes every live
 game. `filtering.favorite_live_boost` (default `2`) gives your team's game that
 many turns per one turn for other live games, and queues it first when the
-rotation refreshes. `live_priority` (default `false` here) lets a live game
+rotation refreshes. `live_priority` (default `true`) lets a live game
 interrupt the normal mode rotation.
 
 `stale_game_timeout` (default `300`) drops a live game that has gone that long
@@ -334,7 +334,7 @@ care about.
 | `non_favorite_live_game_duration` | `0` | **Advanced.** Separate, usually shorter duration for live games with no favourite in them. `0` means "use `live_game_duration` for everything" |
 | `recent_game_duration` | `15` | **Advanced.** Seconds per finished game |
 | `upcoming_game_duration` | `15` | **Advanced.** Seconds per scheduled game |
-| `live_priority` | `false` | Let a live game in this league interrupt the normal rotation |
+| `live_priority` | `true` | Let a live game in this league interrupt the normal rotation |
 | `mode_durations.*` | `null` | **Advanced.** Fixed total duration for a whole mode, overriding the per-game maths |
 | `dynamic_duration.enabled` | `false` | **Advanced.** Size a mode's duration from how many games it actually has |
 

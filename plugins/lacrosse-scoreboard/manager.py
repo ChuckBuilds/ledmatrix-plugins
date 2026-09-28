@@ -140,10 +140,10 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         # Live priority settings
         self.ncaa_mens_live_priority = self.config.get("ncaa_mens", {}).get(
-            "live_priority", False
+            "live_priority", True
         )
         self.ncaa_womens_live_priority = self.config.get("ncaa_womens", {}).get(
-            "live_priority", False
+            "live_priority", True
         )
 
         # Global settings - read from defaults section with fallback
@@ -298,8 +298,8 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
         self.is_enabled = self.config.get("enabled", getattr(self, "is_enabled", True))
         self.ncaa_mens_enabled = self.config.get("ncaa_mens", {}).get("enabled", False)
         self.ncaa_womens_enabled = self.config.get("ncaa_womens", {}).get("enabled", False)
-        self.ncaa_mens_live_priority = self.config.get("ncaa_mens", {}).get("live_priority", False)
-        self.ncaa_womens_live_priority = self.config.get("ncaa_womens", {}).get("live_priority", False)
+        self.ncaa_mens_live_priority = self.config.get("ncaa_mens", {}).get("live_priority", True)
+        self.ncaa_womens_live_priority = self.config.get("ncaa_womens", {}).get("live_priority", True)
         # Same precedence and fallbacks as __init__ (which mirror the schema).
         defaults = self.config.get("defaults", {})
         self.display_duration = float(defaults.get("display_duration", self.config.get("display_duration", 15)))
@@ -970,7 +970,7 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "show_all_live": show_all_live,
                 "exclude_teams": exclude_teams,
                 "favorite_live_boost": favorite_live_boost,
-                "live_priority": league_config.get("live_priority", False),
+                "live_priority": league_config.get("live_priority", True),
                 "update_interval_seconds": update_interval_seconds,
                 "live_update_interval": live_update_interval,
                 "recent_update_interval": recent_update_interval,
@@ -1608,7 +1608,7 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
             # Only include managers with live_priority enabled AND actual live games
             for league_id in enabled_leagues:
                 league_data = self._league_registry.get(league_id, {})
-                live_priority = league_data.get('live_priority', False)
+                live_priority = league_data.get('live_priority', True)
                 
                 manager = self._get_league_manager_for_mode(league_id, 'live')
                 if not manager:

@@ -454,7 +454,7 @@
         "live_priority": {
           "x-advanced": true,
           "type": "boolean",
-          "default": false,
+          "default": true,
           "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available."
         },
         "live_game_duration": {
@@ -1075,7 +1075,7 @@
         "live_priority": {
           "x-advanced": true,
           "type": "boolean",
-          "default": false,
+          "default": true,
           "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available."
         },
         "live_game_duration": {
