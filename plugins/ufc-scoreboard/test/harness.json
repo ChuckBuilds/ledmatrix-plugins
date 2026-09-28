@@ -1,0 +1,37 @@
+{
+  "_comment": "Deterministic fixture for the plugin safety harness. Written before the core 3.5.0 mixin adoption as its byte-for-byte baseline. Seeds the season cache (key ufc_scoreboard_schedule_2026, read by BaseUFCManager._fetch_ufc_api_data before any fetch) with four cards around the frozen 2026-03-10 18:00 UTC: two finals and a postponed bout on 2026-03-07 (Recent; the postponed one must not appear), a final outside the 14-day lookback, two scheduled bouts on 2026-03-14 (Upcoming) and one outside the 7-day lookahead. Every bout has a seeded odds entry -- a moneyline for Costa vs O'Brien, a no-odds marker for the rest -- so show_odds stays on without an odds request. display.use_short_date_format is on because the long form goes through the harness display manager's format_date_with_ordinal, whose %-d is a glibc extension: on Windows it raises and every bout fails to parse. Fighters carry no ESPN id, so no headshot is requested and the cards render without headshots, as they do for a fighter ESPN has none for. Live is not rendered: UFCLiveManager._fetch_data() -> _fetch_todays_games() is a direct ESPN call with no cache read, and the live manager is built and updated whatever show_live says. test_mode plus the huge live_update_interval keeps that update from fetching (under freeze_time, now - last_update stays below the interval); test_mode's built-in fight is only held, never drawn, because show_live is off; its two headshots are the one request a harness run still makes (BaseUFCManager.update prefetches them, and ESPN answers 404), and nothing rendered depends on it.",
+  "config": {
+    "enabled": true,
+    "timezone": "UTC",
+    "display": {
+      "use_short_date_format": true
+    },
+    "ufc": {
+      "enabled": true,
+      "test_mode": true,
+      "live_update_interval": 9999999999,
+      "favorite_fighters": [],
+      "favorite_weight_classes": [],
+      "display_modes": {
+        "show_live": false,
+        "show_recent": true,
+        "show_upcoming": true,
+        "live_display_mode": "switch",
+        "recent_display_mode": "switch",
+        "upcoming_display_mode": "switch"
+      },
+      "display_options": {
+        "show_records": true,
+        "show_odds": true,
+        "show_fighter_names": true,
+        "show_fight_class": true
+      },
+      "filtering": {
+        "show_favorite_fighters_only": false,
+        "show_all_live": true
+      }
+    }
+  },
+  "mock_data": "test/fixtures/mock.json",
+  "freeze_time": "2026-03-10 18:00:00"
+}
