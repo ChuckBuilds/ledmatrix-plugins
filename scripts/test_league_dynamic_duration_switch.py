@@ -94,8 +94,8 @@ def main():
     failed = 0
     for plugin, (path, _mode) in CASES.items():
         league_key = path[-1] if path else plugin.split("-")[0]
-        # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
-        proc = subprocess.run(  # nosec B603 - list argv, no shell: this interpreter and repo paths
+        # List argv, no shell: this interpreter and paths inside the repo.
+        proc = subprocess.run(  # nosec B603  # nosemgrep
             [sys.executable, "-c", PROBE, str(PLUGINS / plugin),
              json.dumps([path, league_key, cases])],
             capture_output=True, text=True, cwd=str(core), env=env)
