@@ -1,5 +1,5 @@
 {
-  "_comment": "Deterministic fixture for the plugin safety harness. Seeds the NBA season-schedule cache (key nba_schedule_2025, consumed by the recent/upcoming managers) and the live scoreboard cache (key nba_scoreboard_current, consumed by NBALiveManager._fetch_todays_games) with one final, one in-progress, and one scheduled game so all three modes render real game cards without network access.",
+  "_comment": "Deterministic fixture for the plugin safety harness. Seeds the NBA schedule-window cache (key nba_schedule_window_14_7: _schedule_window()'s suffix for the default 14-day lookback and 7-day lookahead, consumed by the recent/upcoming managers; a stale key silently falls through to a live ESPN fetch of the frozen window, whose games are all final by now, so Upcoming renders blank) and the live scoreboard cache (key nba_scoreboard_current, consumed by NBALiveManager._fetch_todays_games) with one final, one in-progress, and one scheduled game so all three modes render real game cards without network access.",
   "config": {
     "enabled": true,
     "timezone": "UTC",

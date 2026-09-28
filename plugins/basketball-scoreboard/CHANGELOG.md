@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.36.1] - 2026-09-28
+
+### Fixed
+- Test fixture only, no runtime change. The harness fixture still seeded
+  nba_schedule_2025, a key the managers stopped reading when the schedule
+  cache moved to per-window keys, so every Recent/Upcoming render fetched the
+  frozen January 2026 window from ESPN. Those games are all final now, so
+  Upcoming drew nothing at any size (flagged only at the five sizes the fill
+  check covers). The fixture now seeds nba_schedule_window_14_7.
+
 ## [1.36.0] - 2026-09-28
 
 ### Added
