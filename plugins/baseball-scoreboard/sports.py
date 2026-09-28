@@ -610,6 +610,31 @@ class SportsCore(SportsCoreSharedMixin, ABC):
         "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun",
     )
 
+    def _card_option(self, key: str, default: Any = None) -> Any:
+        """Read one scroll_card key, never blanking the upcoming scorebug.
+
+        With the middle set to "date and time" and both of those lines
+        switched off, the full-screen upcoming scorebug is two logos and
+        "Next Game" with nothing to say when the game is. Nobody picks that
+        on purpose -- "vs" and "none" are the settings for a card without the
+        stack -- yet a whole cohort of boards has it: switch_show_date/_time
+        shipped while the core's settings form still drew keys missing from
+        the saved config as unchecked boxes, so the next Save wrote both as
+        false (fixed in LEDMatrix #597). That one combination therefore reads
+        as both on. Hiding either line alone, or both under "vs" or "none",
+        is still honoured.
+        """
+        # The mixin named outright, not super(): tests lift this method onto
+        # stand-in classes that are not SportsCore subclasses.
+        base = SportsCoreSharedMixin._card_option
+        keys = ("switch_show_date", "switch_show_time")
+        value = base(self, key, default)
+        if (key in keys and not value
+                and not any(base(self, k, True) for k in keys)
+                and SportsCoreSharedMixin._switch_upcoming_center(self) == "date_time"):
+            return True
+        return value
+
     def _upcoming_date_and_time_text(self, game_date: str, game_time: str,
                                      game: Optional[Dict] = None) -> Tuple[str, str]:
         """The formatted (date, time) pair, blanked by switch_show_date/_time.
