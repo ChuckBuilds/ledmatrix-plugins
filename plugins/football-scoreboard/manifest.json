@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "3.13.0",
+  "version": "3.13.1",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "3.13.1",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Each league's scroll settings apply to that league's scrolling strip: speed, gap, separators and card width all came from the NFL settings whichever league was shown."
+    },
     {
       "version": "3.13.0",
       "released": "2026-09-28",

@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.36.2] - 2026-09-28
+
+### Fixed
+- Each league's scroll settings apply to that league's scrolling strip: speed,
+  gap, separators and card width all came from the NBA settings whichever
+  league was shown.
+
 ## [1.36.1] - 2026-09-28
 
 ### Fixed
