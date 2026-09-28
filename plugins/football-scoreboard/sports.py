@@ -23,17 +23,11 @@ from urllib3.util.retry import Retry
 # Import simplified dependencies for plugin use
 from dynamic_team_resolver import DynamicTeamResolver
 
-# The core's logo_downloader, not the vendored copy: only the core marks the
-# placeholder it saves for a failed download (is_placeholder_logo), which is
-# what lets _logo_needs_refresh retry it. The vendored copy's unmarked
-# placeholder turned one transient failure into a permanent grey logo. The
-# copy stays only as the fallback for a core that ships no src.logo_downloader.
-try:
-    from src.logo_downloader import LogoDownloader, download_missing_logo
-except ModuleNotFoundError as _exc:
-    if _exc.name not in {"src", "src.logo_downloader"}:
-        raise
-    from logo_downloader import LogoDownloader, download_missing_logo
+# The core's logo_downloader: only the core marks the placeholder it saves for
+# a failed download (is_placeholder_logo), which is what lets
+# _logo_needs_refresh retry it. Core has shipped src.logo_downloader since
+# v3.0.0, below this plugin's floor, so the vendored fallback copy is gone.
+from src.logo_downloader import LogoDownloader, download_missing_logo
 # Core has shipped src.base_odds_manager since v3.0.0, below this plugin's
 # ledmatrix_min_version, so the bundled fallback copy was unreachable and is gone.
 from src.base_odds_manager import BaseOddsManager

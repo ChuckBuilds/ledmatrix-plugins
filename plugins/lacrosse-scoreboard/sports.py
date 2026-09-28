@@ -24,18 +24,11 @@ except AttributeError:
 
 # Import simplified dependencies for plugin use
 from dynamic_team_resolver import DynamicTeamResolver
-# The core's logo downloader, not the bundled copy. The bundled one writes no
-# placeholder marker, so _logo_needs_refresh() can never tell its grey box from
-# a real logo and one failed download pinned a team to it for good; it also
-# saved whatever body a 200 returned, HTML error pages included. The bundled
-# copy is only the fallback for a core without src.logo_downloader, and the
-# name check keeps a failure raised INSIDE a present core module visible.
-try:
-    from src.logo_downloader import LogoDownloader, download_missing_logo
-except ModuleNotFoundError as exc:
-    if exc.name not in {"src", "src.logo_downloader"}:
-        raise
-    from logo_downloader import LogoDownloader, download_missing_logo
+# The core's logo downloader: it marks the placeholder it saves for a failed
+# download, so _logo_needs_refresh() can tell the grey box from a real logo.
+# Core has shipped src.logo_downloader since v3.0.0, below this plugin's
+# floor, so the bundled fallback copy is gone.
+from src.logo_downloader import LogoDownloader, download_missing_logo
 # Core has shipped src.base_odds_manager since v3.0.0, below this plugin's
 # ledmatrix_min_version, so the bundled fallback copy was unreachable and is gone.
 from src.base_odds_manager import BaseOddsManager

@@ -6,10 +6,12 @@
   * get_vegas_content rebuilds when the game slate changes, reads only the
     dedicated 'mixed' display, and never calls update() on the render path.
   * sports.py uses the core logo downloader (whose placeholders carry the
-    refresh marker), and the bundled fallback refuses to save a non-image body.
+    refresh marker).
 
-The no-odds-marker check went with the bundled base_odds_manager.py it
-exercised: sports.py imports core's src.base_odds_manager, so that copy never ran.
+The no-odds-marker check and the bundled-logo-downloader body checks went with
+the bundled base_odds_manager.py and logo_downloader.py they exercised:
+sports.py imports core's src.base_odds_manager and src.logo_downloader, so
+those copies never ran.
 
 Run: <core-venv>/bin/python plugins/lacrosse-scoreboard/test_data_path_drift_fixes.py
 Exit 0 pass, 2 skip, anything else fail.
@@ -34,7 +36,6 @@ else:
     sys.exit(2)
 
 import dynamic_team_resolver  # noqa: E402
-import logo_downloader  # noqa: E402
 import manager as m  # noqa: E402
 import sports  # noqa: E402
 
@@ -129,14 +130,6 @@ def test_logo_downloader_choice():
         return
     check("sports.py uses the core LogoDownloader",
           sports.LogoDownloader is core_ld.LogoDownloader)
-    check("bundled downloader rejects an HTML body",
-          not logo_downloader._is_image_body(b"<html>503</html>"))
-    import io
-    from PIL import Image
-    buf = io.BytesIO()
-    Image.new("RGBA", (4, 4)).save(buf, format="PNG")
-    check("bundled downloader accepts a PNG body",
-          logo_downloader._is_image_body(buf.getvalue()))
 
 
 if __name__ == "__main__":

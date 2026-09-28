@@ -31,8 +31,6 @@
     "game_renderer.py::SRenderer._upcoming_center_mode",
     "game_renderer.py::SRenderer.preload_logos",
     "game_renderer.py::SRenderer.render_S_card",
-    "logo_downloader.py::create_placeholder_logo",
-    "logo_downloader.py::download_missing_logo",
     "manager.py::SScoreboardPlugin.__init__",
     "manager.py::SScoreboardPlugin._adapt_config_for_manager",
     "manager.py::SScoreboardPlugin._build_vegas_scroll_content",
