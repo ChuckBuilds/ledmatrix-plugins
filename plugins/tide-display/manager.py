@@ -353,7 +353,9 @@ class TidePlugin(BasePlugin):
         # stored inside the payload and drives the daily refresh.
         hilo_key    = f"{self.plugin_id}:hilo:{self.station_id}"
         hourly_key  = f"{self.plugin_id}:hourly:{self.station_id}"
-        live_key    = f"{self.plugin_id}:live:{self.station_id}"
+        # The live reading is a single value in the configured units, so the
+        # units are part of its key; the daily payloads carry theirs inside.
+        live_key    = f"{self.plugin_id}:live:{self.station_id}:{u}"
 
         self.hilo   = self._load_daily(hilo_key,   today, 'hilo',   self._fetch_hilo,   u) or []
         self.hourly = self._load_daily(hourly_key, today, 'hourly', self._fetch_hourly, u) or []
@@ -372,16 +374,21 @@ class TidePlugin(BasePlugin):
         perpetual 'Loading' during a transient NOAA outage.
         """
         cached = self.cache_manager.get(key)  # any age
-        if isinstance(cached, dict) and cached.get('date') == today and cached.get('data'):
+        # Heights are stored in the units they were fetched in. An entry in
+        # other units is never served: after switching imperial -> metric the
+        # cached feet were drawn with an "m" label until the next day.
+        if not (isinstance(cached, dict) and cached.get('units') == u):
+            cached = None
+        if cached and cached.get('date') == today and cached.get('data'):
             return cached['data']
 
         fresh = fetch(u)
         if fresh:
-            self.cache_manager.set(key, {'date': today, 'data': fresh})
+            self.cache_manager.set(key, {'date': today, 'units': u, 'data': fresh})
             return fresh
 
         # Fetch failed (network error or NOAA error payload) — serve recent stale data.
-        if isinstance(cached, dict) and cached.get('data'):
+        if cached and cached.get('data'):
             age = self._days_old(cached.get('date'))
             if age <= self.STALE_MAX_DAYS:
                 self.logger.warning("%s: NOAA fetch failed; serving cache from %s (%dd old)",

@@ -436,20 +436,18 @@ class StockNewsTickerPlugin(BasePlugin):
             symbol = unseen[0]
             max_h = self._get_symbol_max_headlines(symbol)
             items = self._fetch_stock_news(symbol, max_h)
-            self._symbol_data[symbol] = items
+            fetched = self._store_items(symbol, items)
             self._fetch_index = (stock_symbols.index(symbol) + 1) % len(stock_symbols)
             self._last_symbol_fetch = now
-            fetched = True
         # Fetch exactly one symbol per call (rotating)
         elif stock_symbols and (now - self._last_symbol_fetch) >= per_sym:
             idx = self._fetch_index % len(stock_symbols)
             symbol = stock_symbols[idx]
             max_h = self._get_symbol_max_headlines(symbol)
             items = self._fetch_stock_news(symbol, max_h)
-            self._symbol_data[symbol] = items
+            fetched = self._store_items(symbol, items)
             self._fetch_index = (self._fetch_index + 1) % len(stock_symbols)
             self._last_symbol_fetch = now
-            fetched = True
 
         # Custom feeds: one at a time, each at full update_interval
         for feed_name, feed_url in custom_feeds.items():
@@ -457,9 +455,8 @@ class StockNewsTickerPlugin(BasePlugin):
             if now - last >= self.update_interval:
                 items = self._fetch_rss_feed(feed_name, feed_url,
                                              max_items=self.headlines_per_rotation)
-                self._symbol_data[f"_feed_{feed_name}"] = items
+                fetched = self._store_items(f"_feed_{feed_name}", items) or fetched
                 self._feed_last_fetch[feed_name] = now
-                fetched = True
                 break  # one feed per update() call
 
         if fetched:
@@ -477,7 +474,22 @@ class StockNewsTickerPlugin(BasePlugin):
         if self._download_missing_logos():
             self._vegas_cache = None
             if self.scroll_helper.cached_image is not None:
-                self._logo_rebuild_pending = True
+                self._strip_rebuild_pending = True
+
+    def _store_items(self, key: str, items: List[Dict]) -> bool:
+        """Keep what a fetch returned; True when it returned headlines.
+
+        Every failure path (network error, request budget spent, empty RSS
+        fallback) returns []. Storing that replaced the symbol's last
+        headlines, so an outage emptied the ticker one symbol at a time, and
+        the rebuild that followed reset the "stale" clock, so the dimming
+        meant to flag old data never came on. An empty result now keeps the
+        previous headlines; it is still recorded the first time, so the
+        eager fill moves on to the next symbol instead of retrying this one.
+        """
+        if items or key not in self._symbol_data:
+            self._symbol_data[key] = items
+        return bool(items)
 
     def _get_stocks_plugin_symbols(self) -> List[str]:
         """Return equity symbols from the ledmatrix-stocks plugin when sync is enabled."""
@@ -523,8 +535,11 @@ class StockNewsTickerPlugin(BasePlugin):
             random.shuffle(self.all_news_items)
 
         self.last_update = time.time()
-        self.scroll_helper.clear_cache()
-        self.scroll_helper.reset_scroll()
+        # A new strip is built between passes, not now: this runs after every
+        # fetch, one symbol at a time, and rebuilding immediately restarted
+        # the ticker from its first headline mid-pass each time.
+        if self.scroll_helper.cached_image is not None:
+            self._strip_rebuild_pending = True
         self._vegas_cache = None
         self._rotation_count = 0
         self._items_rotated = 0
@@ -888,9 +903,10 @@ class StockNewsTickerPlugin(BasePlugin):
                     self.scroll_helper.clear_cache()
                     self.scroll_helper.reset_scroll()
                     return
-            if getattr(self, '_logo_rebuild_pending', False):
-                # Logos fetched during this pass: rebuild between passes.
-                self._logo_rebuild_pending = False
+            if getattr(self, '_strip_rebuild_pending', False):
+                # Headlines or logos arrived during this pass: rebuild
+                # between passes.
+                self._strip_rebuild_pending = False
                 self.scroll_helper.clear_cache()
                 self.scroll_helper.reset_scroll()
                 return
@@ -913,7 +929,7 @@ class StockNewsTickerPlugin(BasePlugin):
             self.scroll_helper.create_scrolling_image(item_images, item_gap=self.item_gap)
             self._cycle_complete = False
             # Any build reads every logo already on disk.
-            self._logo_rebuild_pending = False
+            self._strip_rebuild_pending = False
             self.logger.info("[Stock News] Ticker: %d items, %dpx wide, gap=%dpx",
                              len(item_images), self.scroll_helper.total_scroll_width, self.item_gap)
         except Exception as e:

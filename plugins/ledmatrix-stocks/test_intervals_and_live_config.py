@@ -127,10 +127,13 @@ def test_intervals():
 
     plugin.data_fetcher.fetch_stock_data("AAPL", is_crypto=False)
     plugin.data_fetcher.fetch_stock_data("BTC-USD", is_crypto=True)
-    check(cache.max_ages.get("stock_data_AAPL") == 900,
-          f"stock quotes are cached for update_interval (max_age {cache.max_ages.get('stock_data_AAPL')})")
-    check(cache.max_ages.get("stock_data_BTC") == 120,
-          f"crypto quotes are cached for crypto.update_interval (max_age {cache.max_ages.get('stock_data_BTC')})")
+    # Half of each interval: an entry is written partway through an update,
+    # so the full interval kept it fresh past the next scheduled update and
+    # quotes refreshed only every other time. Crypto has its own key prefix.
+    check(cache.max_ages.get("stock_data_AAPL") == 450,
+          f"stock quotes are reused for half of update_interval (max_age {cache.max_ages.get('stock_data_AAPL')})")
+    check(cache.max_ages.get("crypto_data_BTC") == 60,
+          f"crypto quotes for half of crypto.update_interval (max_age {cache.max_ages.get('crypto_data_BTC')})")
 
 
 @_fail_loudly

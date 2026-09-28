@@ -181,6 +181,7 @@ class NewsTickerPlugin(BasePlugin):
         self.current_headlines = []
         # Headline set the current scroll strip was rendered from
         self._headlines_signature = None
+        self._last_good_headlines = {}  # feed -> its last non-empty fetch; see update()
         self.last_update = 0
         self.rotation_count = 0
         self._cycle_complete = False
@@ -919,17 +920,29 @@ class NewsTickerPlugin(BasePlugin):
             self.current_headlines = []
             feed_stats = {'success': 0, 'failed': 0, 'total': 0}
 
+            # Each feed's last good headlines. A feed that fails now shows
+            # what it showed before, rather than dropping out of the ticker;
+            # with every feed down the panel keeps its headlines instead of
+            # switching to "No Headlines Available".
+            if getattr(self, '_last_good_headlines', None) is None:
+                self._last_good_headlines = {}
+            last_good = self._last_good_headlines
+
+            def take(key, headlines):
+                if headlines:
+                    last_good[key] = headlines
+                    feed_stats['success'] += 1
+                    return headlines
+                feed_stats['failed'] += 1
+                return last_good.get(key, [])
+
             # Fetch from enabled predefined feeds
             enabled_feeds = self.feeds_config.get('enabled_feeds', [])
             for feed_name in enabled_feeds:
                 if feed_name in self.DEFAULT_FEEDS:
                     feed_stats['total'] += 1
                     headlines = self._fetch_feed_headlines(feed_name, self.DEFAULT_FEEDS[feed_name])
-                    if headlines:
-                        self.current_headlines.extend(headlines)
-                        feed_stats['success'] += 1
-                    else:
-                        feed_stats['failed'] += 1
+                    self.current_headlines.extend(take(('default', feed_name), headlines))
 
             # Fetch from custom feeds (use array order)
             custom_feeds = self.feeds_config.get('custom_feeds', [])
@@ -953,11 +966,7 @@ class NewsTickerPlugin(BasePlugin):
                     continue
                 feed_stats['total'] += 1
                 headlines = self._fetch_feed_headlines(feed_name, feed_url)
-                if headlines:
-                    self.current_headlines.extend(headlines)
-                    feed_stats['success'] += 1
-                else:
-                    feed_stats['failed'] += 1
+                self.current_headlines.extend(take(('custom', feed_name, feed_url), headlines))
 
             # Log feed status summary
             if feed_stats['total'] > 0:
