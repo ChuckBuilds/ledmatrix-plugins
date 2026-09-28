@@ -4,8 +4,10 @@
 Since 2026-09-15 ESPN answers scoreboard ``dates=YYYYMMDD-YYYYMMDD`` queries
 with ``400 Bad Request`` for every sport, and ``limit`` above 500 silently
 truncates. The fix lives in LEDMatrix core as ``src/common/espn_dates.py``;
-each of the nine scoreboards bundles a copy as ``<sport>_espn_dates.py`` so it
-works on cores released before that module existed.
+the scoreboards bundle a copy as ``<sport>_espn_dates.py`` so they work on
+cores released before that module existed. Core v3.5.0 ships it, so a
+scoreboard floored there deletes its copy; ``SUNSET_PLUGINS`` lists those, and
+for them the copy must stay deleted and nothing may import a bundled one.
 
 Two things decay without a check, so this guard checks both:
 
@@ -49,6 +51,14 @@ REPO = Path(__file__).resolve().parent.parent
 PLUGINS = REPO / "plugins"
 SPORTS = ("afl", "baseball", "basketball", "football", "hockey",
           "lacrosse", "nrl", "soccer", "ufc")
+#: Scoreboards that completed the espn_dates sunset: bundled copy deleted,
+#: src.common.espn_dates imported plainly, manifest floored at 3.5.0 (the first
+#: core release that ships the module). Listed, not inferred: adding an id is
+#: the moment somebody states the sunset holds for it. Each must keep its copy
+#: deleted and never import one by bare name; its fetches are still scanned.
+SUNSET_PLUGINS = frozenset({
+    "ufc-scoreboard",
+})
 HEADER_LINES = 3
 
 
@@ -261,6 +271,19 @@ def main() -> int:
     copies = {}
     for sport in SPORTS:
         path = PLUGINS / f"{sport}-scoreboard" / f"{sport}_espn_dates.py"
+        if f"{sport}-scoreboard" in SUNSET_PLUGINS:
+            if path.exists():
+                failures.append(f"{path.relative_to(REPO)} is back; the sunset deleted it and "
+                                "the manifest floor guarantees core ships src/common/espn_dates.py")
+            for module in (PLUGINS / f"{sport}-scoreboard").glob("*.py"):
+                tree = ast.parse(module.read_text(encoding="utf-8"), filename=str(module))
+                if any(isinstance(n, ast.ImportFrom) and (n.module or "").endswith("_espn_dates")
+                       or isinstance(n, ast.Import)
+                       and any(a.name.endswith("_espn_dates") for a in n.names)
+                       for n in ast.walk(tree)):
+                    failures.append(f"{module.relative_to(REPO)} imports a bundled *_espn_dates; "
+                                    "import src.common.espn_dates")
+            continue
         if not path.is_file():
             failures.append(f"missing {path.relative_to(REPO)}")
             continue
