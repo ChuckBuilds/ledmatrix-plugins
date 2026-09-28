@@ -6,6 +6,7 @@ and customizable colors.
 """
 
 from pathlib import Path
+import time
 from typing import Dict, Any, Optional, Tuple
 from datetime import datetime
 import pytz
@@ -50,6 +51,9 @@ class SevenSegmentClockPlugin(BasePlugin):
         self.current_time: Optional[datetime] = None
         self.last_displayed_time_str: Optional[str] = None
         self.first_display: bool = True
+        # Flashing separator: its state on the last frame, and when that was.
+        self._separator_on: bool = True
+        self._last_frame_at: Optional[float] = None
 
         # Image dimensions (from loaded images)
         self.digit_width = 13
@@ -188,6 +192,24 @@ class SevenSegmentClockPlugin(BasePlugin):
             separator_visible = (dt.second % 2) == 0
 
         return f"{hour_str}:{minute_str}", separator_visible
+
+    def _next_separator_state(self, even_second: bool) -> bool:
+        """Whether the flashing separator is lit on this frame.
+
+        The core calls display() about once a second, a little over (a sleep
+        of 1 s plus the work), so reading the colon off the second's parity
+        sampled a 2 s blink right on its edges: now and then a second was
+        skipped and the colon held for two frames. Flip it every frame
+        instead, and start from the parity on the first frame after a gap
+        (mode entry), so a single render still shows the even-second state.
+        """
+        now = time.monotonic()
+        if self._last_frame_at is None or now - self._last_frame_at > 1.5:
+            self._separator_on = even_second
+        else:
+            self._separator_on = not self._separator_on
+        self._last_frame_at = now
+        return self._separator_on
 
     def _colorize(
         self, base_image: Image.Image, color: Tuple[int, int, int], scale: float = 1.0
@@ -349,23 +371,23 @@ class SevenSegmentClockPlugin(BasePlugin):
 
             # Format time string
             time_str, separator_visible = self._format_time(self.current_time)
+            if self.has_flashing_separator:
+                separator_visible = self._next_separator_state(separator_visible)
             
-            # Check if time has changed (only compare HH:MM, not seconds)
-            time_changed = (time_str != self.last_displayed_time_str)
-            
-            # Clear display on first display, force_clear, or when time changes
-            should_clear = self.first_display or force_clear or time_changed
-            
-            if should_clear:
-                self.display_manager.clear()
-                if self.first_display:
-                    self.first_display = False
-                if time_changed:
-                    self.last_displayed_time_str = time_str
-
             # Get display dimensions
             display_width = self.display_manager.width
             display_height = self.display_manager.height
+
+            # Every frame starts from a black buffer. A full clear() only on
+            # entry: it also blanks the lit panel, so calling it when the
+            # minute changed flashed the clock black once a minute.
+            if self.first_display or force_clear:
+                self.display_manager.clear()
+                self.first_display = False
+            else:
+                self.display_manager.image.paste(
+                    (0, 0, 0), (0, 0) + self.display_manager.image.size)
+            self.last_displayed_time_str = time_str
 
             # Calculate total width of time display
             # Always include separator position to ensure we can clear it when hidden
