@@ -13,10 +13,10 @@ family of shared-shape modules:
 | `game_renderer.py` | 8 | |
 | `dynamic_team_resolver.py` | 8 | true forks — different constructor signatures |
 | `logo_downloader.py` | 0 | every scoreboard imports core's `src.logo_downloader` (f1-scoreboard's same-named file is an unrelated `F1LogoLoader`) |
-| `<sport>_espn_dates.py` | 9 | every scoreboard; a copy of core's `src/common/espn_dates.py` under a three-line header. **Identical by rule:** `scripts/test_espn_dates_copies.py` fails if any copy differs from the others or from core's, and on a fetch that sends ESPN `dates` without it. Fix it in core, then copy to all nine |
+| `<sport>_espn_dates.py` | 1 | ufc only; a copy of core's `src/common/espn_dates.py` under a three-line header. The eight team scoreboards floor on core 3.5.0 and import `src.common.espn_dates` plainly (sunset). `scripts/test_espn_dates_copies.py` fails if a sunset plugin grows its copy or a guarded import back, if ufc's copy behaves differently from core's (compared with type annotations ignored), and on a fetch that sends ESPN `dates` without the helper. Fix it in core, then copy to ufc |
 | `<sport>_favorite_check.py` | 7 | afl, baseball, basketball, football, hockey, lacrosse, nrl. Byte-identical today, but **no check keeps them so** — edit all seven together |
 
-Apart from the two sport-prefixed helpers, none of these copies are identical. **Any fix to a shared-shape file must be
+Apart from the sport-prefixed helpers, none of these copies are identical. **Any fix to a shared-shape file must be
 applied to every lineage member in the same PR** — the cautionary example is
 commit `8d33894` (the UTC start-time fix), which required touching **75 files**
 because one logical change had to be replicated across ten plugins.
@@ -55,32 +55,46 @@ the core actually ships:
   scoreboard imports `src.logo_downloader`, and the eight non-UFC scoreboards
   import `src.base_odds_manager`, plainly); `odds-ticker` uses `src.*` for
   everything and ships no local copies — it is the model citizen. Core has
-  shipped both modules since v3.0.0, and every scoreboard floors at 3.4.0 and
-  already imports `src.common.sports_shared` (3.3.0) unguarded, so the bundled
-  fallbacks they used to carry could never run and were deleted. (Core's
-  `BaseOddsManager` still lacks the `no_odds` cache-hit fix the old bundled
-  copies had; that is a core change.)
+  shipped both modules since v3.0.0, and every scoreboard floors at 3.4.0 or
+  above and already imports `src.common.sports_shared` (3.3.0) unguarded, so
+  the bundled fallbacks they used to carry could never run and were deleted.
+  (Core's `BaseOddsManager` still lacks the `no_odds` cache-hit fix the old
+  bundled copies had; that is a core change.)
+- **Converged at 3.5.0 (the eight team scoreboards):** `src.common.espn_dates`
+  and `src.common.sports_helpers`. afl, baseball, basketball, football,
+  hockey, lacrosse, nrl and soccer floor on 3.5.0, the first release that
+  ships both; each deleted its `<sport>_espn_dates.py`, its private helper
+  copies in `sports.py`, and its `SportsCore._get_weeks_data` override (the
+  3.5.0 `SportsCoreSharedMixin` fetches that window through
+  `fetch_espn_scoreboard` itself). They keep `_background_fetches_espn_ranges`
+  and `_fetch_season_directly`, which serve the path with no background
+  service. ufc has not adopted yet and still carries all of it.
 - **Not converging (documented forks):** `dynamic_team_resolver` (plugin copies
   take `cache_manager` in the constructor; the core's does not — different
   API), ufc's `base_odds_manager` (MMA athlete-odds fork), and — until the core
   ships a unified version — `sports.py` / `scroll_display.py` / 
   `game_renderer.py` themselves.
 
-### Helper copies guarded against core's `sports_helpers`
+### Sports helpers: core's `sports_helpers`
 
-Core's `src/common/sports_helpers.py` (ChuckBuilds/LEDMatrix#583) promotes the
-helpers every `sports.py` carries verbatim (`_clamp_window`, `_clamp_seconds`,
-`_logo_needs_refresh`, the window constants, and the `SportsCore` methods
-`_mode_customization`, `_setting_int`, `_reset_dwell_on_reentry`,
-`_next_switch_index`, `_spread_weighted_order`, `_odds_color`,
-`_upcoming_date_and_time_text`). `scripts/check_sports_helpers_parity.py`
-compares each plugin copy with core's as a docstring-stripped AST and fails on
-any difference, so a fix to one side has to land on both. It skips (exit 2)
-only against a core checkout predating that module; CI runs it against core
-main, where it is present, and its guard test fails rather than skips if it
-ever goes missing. A copy that is absent is fine: once a plugin
-floors `ledmatrix_min_version` on the release that ships `sports_helpers`, it
-may delete its copies and inherit `SportsHelpersMixin` (the sunset rule below).
+Core's `src/common/sports_helpers.py` (ChuckBuilds/LEDMatrix#583, released in
+3.5.0) promotes the helpers every `sports.py` carried verbatim
+(`_clamp_window`, `_clamp_seconds`, `_logo_needs_refresh`, the window
+constants, and the `SportsCore` methods `_mode_customization`, `_setting_int`,
+`_reset_dwell_on_reentry`, `_next_switch_index`, `_spread_weighted_order`,
+`_odds_color`, `_upcoming_date_and_time_text`). The eight team scoreboards
+have adopted it: `class SportsCore(SportsCoreSharedMixin, SportsHelpersMixin,
+ABC)`, with the module-level helpers imported under their old private names
+(`from src.common.sports_helpers import clamp_window as _clamp_window, ...`)
+so callers and tests of `sports._clamp_window` are unchanged.
+
+`scripts/check_sports_helpers_parity.py` compares each remaining plugin copy
+(ufc's) with core's as a docstring-stripped AST and fails on any difference,
+so a fix to one side has to land on both. An absent copy in a plugin that
+imports the core module counts as adoption; its guard test asserts the eight
+team scoreboards do. It skips (exit 2) only against a core checkout predating
+that module; CI runs it against core main, where it is present, and its guard
+test fails rather than skips if it ever goes missing.
 
 ## Device-wide settings: read them from the core, not a copy
 
@@ -121,7 +135,10 @@ are true:
 **Condition 3 now holds for `src.common.sports_scroll`, and B6 has run.** All
 eight scoreboards have deleted their bundled `scroll_display_legacy.py`, their
 imports are plain, and their floors are at 3.2.0 — the release that ships the
-module.
+module. **Stage 1 of the sports consolidation did the same for
+`src.common.espn_dates` and `src.common.sports_helpers`** in the same eight
+plugins, flooring them on 3.5.0; `scripts/test_espn_dates_copies.py` keeps
+its own `SUNSET_PLUGINS` set for the ESPN helper.
 
 The history matters, because conditions 1 and 2 were written as if declaring a
 floor protected anyone, and for a long time it did not:
