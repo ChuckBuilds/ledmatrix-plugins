@@ -6,7 +6,7 @@ Uses Open-Meteo API (free, no API key required) with RainViewer for precipitatio
 
 Features:
 - Current weather conditions with temperature, humidity, wind speed
-- Hourly forecast (next 24-48 hours)
+- Hourly forecast (next four hours)
 - Daily forecast (next 7 days)
 - Weather icons matching conditions
 - UV index display

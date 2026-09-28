@@ -61,7 +61,8 @@
       "type": "integer",
       "minimum": 8,
       "maximum": 64,
-      "description": "Size of the Christmas tree logo in pixels. If not specified, size is auto-calculated based on display height.",
+      "description": "Size of the Christmas tree logo in pixels. If not specified, size is auto-calculated based on display height. HIDDEN: read and validated, but nothing uses it: the tree is sized from the panel height.",
+      "x-display": "hidden",
       "x-advanced": true
     }
   },

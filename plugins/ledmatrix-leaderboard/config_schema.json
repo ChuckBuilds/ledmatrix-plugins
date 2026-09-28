@@ -223,7 +223,7 @@
           "x-advanced": true,
           "type": "boolean",
           "default": false,
-          "description": "Continuously loop the leaderboard"
+          "description": "Loop the leaderboard continuously. On, this overrides scroll_mode 'one_shot'; scroll_mode 'continuous' loops whatever this is set to."
         },
         "appearance": {
           "type": "object",

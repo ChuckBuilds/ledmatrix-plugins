@@ -1,7 +1,7 @@
 {
   "id": "olympics",
   "name": "Olympics",
-  "version": "3.1.0",
+  "version": "3.1.1",
   "author": "ChuckBuilds",
   "description": "Enhanced Olympics plugin with live medal counts, upcoming events, results, and countdown. Supports Vegas scroll mode and regular display mode.",
   "category": "sports",
@@ -37,6 +37,12 @@
     "country_tracking": true
   },
   "versions": [
+    {
+      "version": "3.1.1",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Settings text only: text_color colours the countdown screen, additional_countries adds cards to the Vegas marquee only, and sport_filters filters upcoming and live events, not results."
+    },
     {
       "version": "3.1.0",
       "released": "2026-09-15",
@@ -84,7 +90,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-07",
+  "last_updated": "2026-09-28",
   "stars": 0,
   "downloads": 0,
   "verified": true,

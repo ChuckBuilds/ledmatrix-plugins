@@ -36,6 +36,7 @@ import statistics
 import sys
 import threading
 import time
+import types
 from pathlib import Path
 
 plugin_dir = Path(__file__).resolve().parent
@@ -178,6 +179,14 @@ def _display_manager(clock, matrix=True):
     dm._last_pushed_digest = None
     dm._double_sided = None
     dm._frame_hold = 1
+    # Attributes core 3.6's update_display() reads (#629 frame timing, #634
+    # scan-order compensation). __new__ skips __init__, so without them
+    # update_display() raised inside its own try on every frame and never
+    # reached SwapOnVSync: every check here failed for a missing attribute,
+    # not for the pacing under test. Inert values; harmless on older cores.
+    dm.render_gate = None
+    dm.frame_timing = types.SimpleNamespace(record=lambda *a, **k: None)
+    dm._scan_lag_bands = None
     dm._scrolling_state = {
         "is_scrolling": False,
         "last_scroll_activity": 0,

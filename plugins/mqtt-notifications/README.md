@@ -124,8 +124,8 @@ The plugin passes the render-safety harness on every supported size.
 | `mqtt.keepalive` | `60` | Keepalive interval in seconds. |
 | `mqtt.topics` | `["homeassistant/ledmatrix/+"]` | Topics to subscribe to. `+` matches one level, `#` matches the rest. |
 | `display.default_duration` | `10` | How long a message holds the screen when its payload does not set `duration`. |
-| `display_duration` | `10` | **Inert in this plugin.** The core reads this as a plugin's screen time, but this plugin overrides that accessor and returns `display.default_duration` instead, so setting the root key alone changes nothing. Set `display.default_duration`. |
-| `update_interval` | `60` | How often the core calls the plugin's `update()`, which checks connection health. The MQTT client itself runs on its own thread, so this does not affect how quickly a message appears. |
+| `display_duration` | `10` | **Inert in this plugin, and hidden.** The core reads this as a plugin's screen time, but this plugin overrides that accessor and returns `display.default_duration` instead, so setting the root key alone changes nothing. Set `display.default_duration`. |
+| `update_interval` | `60` | **Hidden (still declared); has no effect.** `update()` does nothing: the MQTT client runs on its own thread, and messages arrive there. |
 
 `mqtt`, `display`, `text`, `customization` and `customization.message_text` all
 set `additionalProperties: false`, so a misspelled key is rejected rather than

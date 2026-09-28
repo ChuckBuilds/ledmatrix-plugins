@@ -92,7 +92,7 @@ source, not guessed:
 
 | Option | Schema promises | Reality |
 |--------|-----------------|---------|
-| `tree_size` | "Size of the Christmas tree logo in pixels" | Read and *validated* — a value ≤ 0 is rejected with a warning — but never applied. The tree is always fitted to the left half minus a 2px margin |
+| `tree_size` | "Size of the Christmas tree logo in pixels" | Read and *validated* — a value ≤ 0 is rejected with a warning — but never applied. The tree is always fitted to the left half minus a 2px margin. Hidden from the settings page |
 
 `tree_size` is particularly misleading, because rejecting a bad value
 is fair evidence to anyone testing that the setting is live.

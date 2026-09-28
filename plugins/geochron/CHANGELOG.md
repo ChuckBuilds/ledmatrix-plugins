@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.2] - 2026-09-28
+
+### Changed
+- Hides show_seconds, which has had no reader since 1.2.0. No behaviour
+  change: hidden keys stay declared, so saved configs still load.
+
 ## [1.2.1] - 2026-09-23
 
 ### Fixed

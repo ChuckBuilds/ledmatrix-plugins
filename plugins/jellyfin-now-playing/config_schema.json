@@ -50,7 +50,7 @@
         "Episode",
         "Audio"
       ],
-      "description": "Which media types to show",
+      "description": "Which media types to show. Leave all unchecked to show every type.",
       "x-widget": "checkbox-group"
     },
     "progress_bar_match_text": {

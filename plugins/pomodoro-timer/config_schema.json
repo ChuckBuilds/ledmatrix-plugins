@@ -381,7 +381,7 @@
       "minimum": 0,
       "maximum": 64,
       "title": "Font Size (px)",
-      "description": "Fix the countdown font height in pixels. Leave at 0 to size the countdown automatically to the panel.",
+      "description": "Font height in pixels for the phase label and, with digit_style 'pixel', the countdown. Leave at 0 to size them to the panel. The seven_segment countdown ignores it, and a label taller than its row is not drawn.",
       "x-advanced": true
     },
     "pin_while_running": {

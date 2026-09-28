@@ -142,7 +142,7 @@ under `incoming-packages`. The full schema is
 
 | Key | Default | Notes |
 |---|---|---|
-| `display_duration` | `30` | Seconds the plugin holds the screen per turn in the rotation (1–300) |
+| `display_duration` | `30` | **Hidden (still declared); has no effect.** The plugin sets its own screen time from its cards (6–90 s) |
 | `rotation_interval` | `6` | Seconds each card is shown before the next (1–60). Advanced |
 | `max_cards` | `8` | Cap on how many cards are in the rotation (1–20). Advanced |
 | `image_frame_seconds` | `1.5` | Seconds per frame when animating the USPS mail image (0.2–10). Advanced |

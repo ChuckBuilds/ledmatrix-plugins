@@ -189,7 +189,8 @@
       "type": "boolean",
       "title": "Show Seconds",
       "default": true,
-      "description": "No longer used: the timezone list shows hours and minutes, which read at a glance beside the map. Kept so saved configs stay valid."
+      "description": "Kept so saved configs stay valid. HIDDEN: no reader; the timezone list shows hours and minutes, which read at a glance beside the map.",
+      "x-display": "hidden"
     },
     "colors": {
       "type": "object",

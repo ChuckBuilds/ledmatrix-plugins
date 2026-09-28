@@ -79,8 +79,8 @@ generated from it. The keys you'll touch most often:
 | `show_daily_forecast` | `true` | Toggle daily mode |
 | `show_almanac` | `true` | Toggle almanac mode (sun/moon) |
 | `show_radar` | `true` | Toggle precipitation radar mode |
-| `show_alerts` | `true` | Show active weather alerts (preempts rotation, US only) |
-| `show_feels_like` / `show_dew_point` / `show_visibility` / `show_pressure` | `true` | Extra current-conditions metrics (need height ≥ 48px) |
+| `show_alerts` | `true` | **Hidden (still declared); has no effect.** It only feeds live priority, which this plugin's settings do not offer, and no screen draws alerts |
+| `show_feels_like` / `show_dew_point` / `show_visibility` / `show_pressure` | `true` | Extra current-conditions metrics, in the bottom bar. Dew point, visibility and pressure are dropped, in that order, when the panel is too narrow |
 | `radar_map_style` | `"osm"` | Basemap: `osm`, `carto`, `carto_dark`, `esri` (real tiles, worldwide) or `vector` (retro WeatherStar state outlines, US-only). Tile styles fall back to the vector map automatically when tiles can't be fetched |
 | `radar_range_miles` | `75` | Distance from your location to the panel edge (10–500). Replaces the deprecated `radar_zoom`. While this is left at `75`, an old config's `radar_zoom` other than `6` still sets the range (4=200, 5=100, 7=25, 8=12 miles); set any other range to override it |
 | `radar_show_nowcast` | `true` | Append ~30 min of predicted radar (`FCST +10m` … with yellow dots) after the observed frames |
@@ -115,16 +115,16 @@ basemap. On a connected display the basemap tiles and the precipitation frames
 fill it; those come from live tile servers, which is why this one screen cannot
 be reproduced from a recording the way the others are.
 
-Every mode adapts to the panel. The current-conditions screen adds the
-feels-like, dew point, visibility and pressure readings only when the panel is
-at least 48px tall:
+Every mode adapts to the panel. The current-conditions screen fits as many of
+the bottom-bar readings as the panel's width allows, dropping dew point,
+visibility and pressure first:
 
 ![Current conditions on four panel sizes](../../docs/assets/ledmatrix-weather/panel-sizes.png)
 
-When an active weather alert is available and `show_alerts` is true, the
-alert takes priority over the normal rotation. Alerts are sourced from the
-[NWS API](https://www.weather.gov/documentation/services-web-api) and are
-only available for US locations.
+Weather alerts are fetched from the
+[NWS API](https://www.weather.gov/documentation/services-web-api) (US
+locations only), but no screen draws them yet, and `show_alerts` is hidden
+because it has no effect from the settings page.
 
 ## Usage
 
