@@ -126,7 +126,7 @@ def plugin(broker, clock):
     p.logger.addHandler(logging.NullHandler())
     p.logger.propagate = False
     p.mqtt_host, p.mqtt_port = "broker", 1883
-    p.mqtt_username = p.mqtt_password = ""
+    p.mqtt_username = ""  # no login, so the password is never read
     p.mqtt_client_id = "ledmatrix-mqtt-notifications"
     p.mqtt_keepalive = 60
     p.topics = ["homeassistant/ledmatrix/+"]
