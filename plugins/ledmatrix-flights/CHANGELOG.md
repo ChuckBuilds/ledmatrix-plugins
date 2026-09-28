@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.14.5] - 2026-09-28
+
+### Fixed
+- Five settings now do what they say. aircraft_categories no longer hides
+  every aircraft on the adsb.fi/adsb.lol sources: their fetcher now keeps the
+  API's category field. anchor_airport matches routes in either code system:
+  FR24 enrichment supplies IATA and the adsbnet route lookup ICAO, so an
+  anchor entered one way never matched the other. trail_length 0 draws no
+  trail instead of an unlimited one. Tiles are cached per tile source, so
+  changing or clearing custom_tile_server no longer serves the old server's
+  tiles for up to a year; tiles from the default server keep their existing
+  cache names. show_aircraft_icon now controls the logo on area-mode cards.
+
 ## [1.14.4] - 2026-09-28
 
 ### Changed

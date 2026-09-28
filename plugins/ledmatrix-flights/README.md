@@ -165,9 +165,9 @@ under `ledmatrix-flights`. The full schema is
 | `layout` | *(blank)* | Force a specific flight detail layout. Leave empty for auto-selection based on display width — one of `""`, `flight_detail_wide`, `flight_detail_condensed`. Advanced. |
 | `widescreen_threshold` | `256` | Minimum canvas width in pixels to use the widescreen flight detail layout (128–1280). Advanced. |
 | `show_banner` | `false` | **Hidden (still declared); has no effect.** Nothing draws the banner. |
-| `show_aircraft_icon` | `true` | Show airline logos in area mode (8×8 pixel sprites next to callsigns). Flight detail layouts always show logos in the logo zone when available (52 airlines included as PNG assets). Advanced. |
+| `show_aircraft_icon` | `true` | Show the airline logo on area-mode cards. Flight detail and stats cards always show it when one is available (52 airlines are bundled as PNG assets). Advanced. |
 | `show_trails` | `true` | Show aircraft movement trails. Advanced. |
-| `trail_length` | `10` | Number of trail points to display per aircraft (0–50). Advanced. |
+| `trail_length` | `10` | Number of trail points to display per aircraft (0–50; 0 draws no trail). Advanced. |
 | `scroll_speed` | `2` | **Hidden (still declared); has no effect.** No flight tracker view scrolls text. |
 | `overhead_alt_interval` | `4` | On the overhead (live-priority) card, the route (e.g. SEA>PHX) and the aircraft model share one text row and alternate. This is how many seconds each stays up before swapping. Set to 0 to disable alternation (route always wins). The model is shown as a friendly name (e.g. 'Boeing 737-900') when the type is known. Advanced. |
 
