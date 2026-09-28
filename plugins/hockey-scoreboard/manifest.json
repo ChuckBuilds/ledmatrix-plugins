@@ -1,7 +1,7 @@
 {
   "id": "hockey-scoreboard",
   "name": "Hockey Scoreboard",
-  "version": "1.35.2",
+  "version": "1.35.3",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, and NCAA Women's hockey with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/hockey-scoreboard",
@@ -54,6 +54,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.35.3",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Scroll and Vegas cards follow each league's Display Options for records and rankings. They read only the shared defaults, so NCAA cards showed neither, whatever the league was set to; on Vegas the NCAA leagues' shots and power-play settings were not read either."
+    },
     {
       "version": "1.35.2",
       "released": "2026-09-28",

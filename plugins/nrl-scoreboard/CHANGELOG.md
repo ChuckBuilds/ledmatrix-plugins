@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.29.5] - 2026-09-28
+
+### Fixed
+- Scroll and Vegas cards follow the Display Options settings for records,
+  rankings and odds. They read only the root keys, so a change made under
+  Display Options reached the switch view but not a scrolling card.
+
 ## [1.29.4] - 2026-09-28
 
 ### Fixed

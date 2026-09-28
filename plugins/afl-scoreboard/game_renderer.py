@@ -79,6 +79,28 @@ def _resolve_font_path(path: str) -> str:
 logger = logging.getLogger(__name__)
 
 
+_MISSING = object()
+
+
+def _display_option(config: Dict[str, Any], key: str, default: Any, fallback: Any,
+                    legacy_root: Optional[str] = None) -> Any:
+    """A toggle declared both in display_options and at the root.
+
+    The same rule the manager's adapter applies for the switch view: a
+    display_options value that differs from its schema default wins, then
+    the root value (or its legacy name). ``fallback`` is used only when neither is present (a
+    bare test config), keeping what this renderer drew before.
+    """
+    opts = config.get("display_options") or {}
+    value = opts.get(key, _MISSING)
+    if value is not _MISSING and value != default:
+        return value
+    for name in (key, legacy_root):
+        if name and name in config:
+            return config[name]
+    return fallback if value is _MISSING else value
+
+
 class GameRenderer(SportsGameRendererMixin):
     """
     Renders individual game cards as PIL Images for display.
@@ -116,10 +138,13 @@ class GameRenderer(SportsGameRendererMixin):
         # Load fonts
         self.fonts = self._unshare_element_fonts(self._load_fonts())
         
-        # Display options
-        self.show_odds = config.get("show_odds", False)
-        self.show_records = config.get("show_records", False)
-        self.show_ranking = config.get("show_ranking", False)
+        # Display options, resolved as the switch view resolves them. Reading
+        # only the root keys, the scroll and Vegas cards ignored a change
+        # made under display_options.
+        self.show_odds = _display_option(config, "show_odds", True, False)
+        self.show_records = _display_option(config, "show_records", False, False)
+        self.show_ranking = _display_option(config, "show_ranking", False, False,
+                                            legacy_root="show_rankings")
         
         # Rankings cache (populated externally)
         self._team_rankings_cache: Dict[str, int] = {}

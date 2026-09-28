@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.31.3] - 2026-09-28
+
+### Fixed
+- Scroll and Vegas cards follow each league's Display Options for records
+  and rankings. They read only the shared defaults, so the cards showed
+  neither, whatever the league was set to; on Vegas the shots setting was not
+  read either.
+
 ## [1.31.2] - 2026-09-28
 
 ### Fixed

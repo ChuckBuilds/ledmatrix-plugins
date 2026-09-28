@@ -1,7 +1,7 @@
 {
   "id": "lacrosse-scoreboard",
   "name": "Lacrosse Scoreboard",
-  "version": "1.31.2",
+  "version": "1.31.3",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NCAA men's and women's lacrosse games with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/lacrosse-scoreboard",
@@ -50,6 +50,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.31.3",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Scroll and Vegas cards follow each league's Display Options for records and rankings. They read only the shared defaults, so the cards showed neither, whatever the league was set to; on Vegas the shots setting was not read either."
+    },
     {
       "version": "1.31.2",
       "released": "2026-09-28",
