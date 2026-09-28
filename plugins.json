@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-09-27",
+  "last_updated": "2026-09-28",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -406,10 +406,10 @@
       "plugin_path": "plugins/birdnet-go",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-24",
+      "last_updated": "2026-09-27",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.5"
+      "latest_version": "1.2.6"
     },
     {
       "id": "leaderboard",
@@ -534,7 +534,7 @@
       "last_updated": "2026-09-27",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.3"
+      "latest_version": "1.2.4"
     },
     {
       "id": "music",
@@ -602,10 +602,10 @@
       "plugin_path": "plugins/on-air",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-11",
+      "last_updated": "2026-09-27",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.9",
+      "latest_version": "1.2.10",
       "icon": "fa-circle-dot"
     },
     {

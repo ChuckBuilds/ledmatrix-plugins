@@ -1,7 +1,7 @@
 {
   "id": "on-air",
   "name": "On Air Light",
-  "version": "1.2.9",
+  "version": "1.2.10",
   "author": "ChuckBuilds",
   "description": "Retro broadcast ON AIR tally light. Activate remotely via MQTT or Home Assistant to signal you're on a call, recording, or live \u00e2\u20ac\u201d stays on until you turn it off.",
   "entry_point": "manager.py",
@@ -22,6 +22,12 @@
     ">=2.0.0"
   ],
   "versions": [
+    {
+      "version": "1.2.10",
+      "released": "2026-09-27",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "The MQTT connection recovers from a silent or refusing broker. A broker that never answered left the loop waiting forever, so the sign stopped responding to Home Assistant until a restart; a refused login redialled every 5 s with no backoff, leaving the previous client running each time. The loop now tears a failed client down before redialling and backs off 1, 2, 4 ... 60 s, as pomodoro-timer does. Shutdown releases the client even if the loop thread has died."
+    },
     {
       "version": "1.2.9",
       "released": "2026-09-11",
@@ -99,7 +105,7 @@
   "license": "GPL-3.0",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/on-air",
   "config_schema": "config_schema.json",
-  "last_updated": "2026-09-02",
+  "last_updated": "2026-09-27",
   "stars": 0,
   "downloads": 0,
   "verified": true,

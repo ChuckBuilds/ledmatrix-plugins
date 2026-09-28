@@ -599,63 +599,99 @@ class OnAirPlugin(BasePlugin):
             self.logger.error("MQTT connect error: %s", e)
             return False
 
+    def _teardown_client(self) -> None:
+        """Stop the network loop, disconnect, and release the paho client.
+
+        The single place a client is torn down: the reconnect path, the loop's
+        error handler, and shutdown all funnel through here, so a refused or
+        half-open connection never leaves a live client (and its network
+        thread, still auto-reconnecting) behind. Idempotent, and never raises.
+        """
+        client, self.mqtt_client = self.mqtt_client, None
+        self.mqtt_connected  = False
+        self.mqtt_connecting = False
+        if client is None:
+            return
+        try:
+            client.loop_stop()
+        except Exception as e:
+            self.logger.debug("MQTT loop_stop during teardown failed: %s", e)
+        try:
+            client.disconnect()
+        except Exception as e:
+            self.logger.debug("MQTT disconnect during teardown failed: %s", e)
+
+    def _backoff(self) -> bool:
+        """Sleep out the current reconnect delay, then double it.
+
+        Returns True when the plugin is shutting down and the loop should stop.
+        """
+        wait = min(self.mqtt_reconnect_delay, self.mqtt_max_reconnect_delay)
+        self.logger.info("Retrying MQTT in %.0fs", wait)
+        if self.mqtt_stop_event.wait(wait):
+            return True
+        self.mqtt_reconnect_delay = min(
+            self.mqtt_reconnect_delay * 2, self.mqtt_max_reconnect_delay)
+        return False
+
     def _mqtt_loop(self) -> None:
+        """Supervise the connection: dial, wait for CONNACK, redial on failure
+        with backoff, and tear the client down on the way out.
+
+        Previously a broker that never answered left mqtt_connecting set, so
+        the loop sat in its "connected" branch and never redialled; a refused
+        login redialled every 5 s with no backoff and without stopping the
+        previous client.
+        """
         while not self.mqtt_stop_event.is_set():
             try:
-                if not self.mqtt_connected and not self.mqtt_connecting:
-                    self.mqtt_connecting = True
-                    if self._connect_mqtt():
-                        self.mqtt_client.loop_start()
-                        # Wait for CONNACK before looping — prevents duplicate connections
-                        self.mqtt_stop_event.wait(5.0)
-                    else:
-                        self.mqtt_connecting = False
-                        wait = min(self.mqtt_reconnect_delay, self.mqtt_max_reconnect_delay)
-                        self.logger.info("Retrying MQTT in %.0fs", wait)
-                        if self.mqtt_stop_event.wait(wait):
-                            break
-                        self.mqtt_reconnect_delay = min(
-                            self.mqtt_reconnect_delay * 2, self.mqtt_max_reconnect_delay)
-                else:
+                if self.mqtt_connected:
                     if self.mqtt_stop_event.wait(1.0):
                         break
                     self.mqtt_reconnect_delay = 1.0
+                    continue
+
+                # Release whatever is left from a refused or dropped
+                # connection before dialing again.
+                self._teardown_client()
+                self.mqtt_connecting = True
+                if not self._connect_mqtt():
+                    self._teardown_client()
+                    if self._backoff():
+                        break
+                    continue
+
+                client = self.mqtt_client
+                if client is None:      # torn down from another thread
+                    continue
+                client.loop_start()
+                # Wait for CONNACK before looping so a second connection is
+                # never opened. If it never arrives, or the broker refuses,
+                # drop this client and back off.
+                self.mqtt_stop_event.wait(5.0)
+                if not self.mqtt_connected and not self.mqtt_stop_event.is_set():
+                    self.logger.warning("No MQTT connection to %s:%s within 5s; retrying",
+                                        self.mqtt_host, self.mqtt_port)
+                    self._teardown_client()
+                    if self._backoff():
+                        break
             except Exception as e:
                 self.logger.error("MQTT loop error: %s", e, exc_info=True)
-                self.mqtt_connected  = False
-                self.mqtt_connecting = False
-                if self.mqtt_client:
-                    try:
-                        self.mqtt_client.loop_stop()
-                        self.mqtt_client.disconnect()
-                    except Exception:
-                        pass
-                    self.mqtt_client = None
-                wait = min(self.mqtt_reconnect_delay, self.mqtt_max_reconnect_delay)
-                if self.mqtt_stop_event.wait(wait):
+                self._teardown_client()
+                if self._backoff():
                     break
-                self.mqtt_reconnect_delay = min(
-                    self.mqtt_reconnect_delay * 2, self.mqtt_max_reconnect_delay)
 
         self._publish_availability(False)
-        if self.mqtt_client:
-            try:
-                self.mqtt_client.loop_stop()
-                self.mqtt_client.disconnect()
-            except Exception:
-                pass
-            self.mqtt_client = None
+        self._teardown_client()
         self.logger.info("MQTT loop stopped")
 
     def _graceful_shutdown(self) -> None:
+        """Stop the supervisor thread and release the client. Safe to call twice."""
+        self.mqtt_stop_event.set()
         if self.mqtt_thread and self.mqtt_thread.is_alive():
-            self.mqtt_stop_event.set()
-            if self.mqtt_client:
-                try:
-                    self.mqtt_client.loop_stop()
-                    self.mqtt_client.disconnect()
-                except Exception:
-                    pass
+            self._teardown_client()   # wakes the loop instead of waiting it out
             self.mqtt_thread.join(timeout=5.0)
-        self.mqtt_connected  = False
-        self.mqtt_connecting = False
+        self.mqtt_thread = None
+        # Unconditional: the loop may have died, or never started, with a
+        # live client still attached.
+        self._teardown_client()

@@ -1,7 +1,7 @@
 {
   "id": "birdnet-go",
   "name": "BirdNET-Go",
-  "version": "1.2.5",
+  "version": "1.2.6",
   "author": "ChuckBuilds",
   "description": "Show what BirdNET-Go is hearing. One screen cycles a different species each turn \u2014 name, confidence, how many times it has been heard today, and a photo \u2014 and a second shows today's stats: species count, total detections and the most-heard species. Polls the BirdNET-Go REST API, with optional MQTT for instant pop-ups.",
   "category": "integration",
@@ -21,6 +21,12 @@
   "entry_point": "manager.py",
   "class_name": "BirdNetGoPlugin",
   "versions": [
+    {
+      "released": "2026-09-27",
+      "version": "1.2.6",
+      "changelog": "With MQTT enabled, the plugin no longer cycles its broker connection in a tight loop. The loop checked for a connection straight after loop_start(), before the broker could answer, so every pass tore down the client it had just dialled and dialled again, with no delay. It now waits up to 5 s for the broker's answer and backs off 1, 2, 4 ... 60 s on failure, as pomodoro-timer does. on_disable releases the client even if the loop thread has died. REST polling (the default) is unchanged.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-09-24",
       "version": "1.2.5",
@@ -72,7 +78,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-03",
+  "last_updated": "2026-09-27",
   "stars": 0,
   "downloads": 0,
   "verified": true,
