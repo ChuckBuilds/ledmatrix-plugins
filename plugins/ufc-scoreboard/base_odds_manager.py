@@ -163,6 +163,17 @@ class BaseOddsManager:
 
             return odds_data
 
+        except requests.exceptions.HTTPError as e:
+            status = getattr(getattr(e, "response", None), "status_code", None)
+            if status == 404:
+                # ESPN answers 404, not an empty list, for a bout it has no
+                # line for -- most of every card. That is "no odds", not an
+                # error: cache it like the empty response above so the bout
+                # is not re-asked (and logged) on every update.
+                self.logger.debug(f"No odds for {cache_key} (ESPN returned 404)")
+                self.cache_manager.set(cache_key, {"no_odds": True}, ttl=self.cache_ttl)
+            else:
+                self.logger.error(f"Error fetching odds from ESPN API for {cache_key}: {e}")
         except requests.exceptions.RequestException as e:
             self.logger.error(f"Error fetching odds from ESPN API for {cache_key}: {e}")
         except json.JSONDecodeError:
