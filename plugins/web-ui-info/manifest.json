@@ -1,7 +1,7 @@
 {
   "id": "web-ui-info",
   "name": "Web UI Info",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "author": "LEDMatrix",
   "description": "Displays the web UI URL for easy access. Shows 'visit web ui at http://[deviceID]:5000'",
   "entry_point": "manager.py",
@@ -19,6 +19,12 @@
   "update_interval": 300,
   "default_duration": 10,
   "versions": [
+    {
+      "version": "2.0.2",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "On a Pi the address is drawn at font size 7, the size every preview uses. The Pi install path loaded the 4x6 face at size 6, where it is not crisp."
+    },
     {
       "version": "2.0.1",
       "released": "2026-09-11",
@@ -58,7 +64,7 @@
       "ledmatrix_min": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-07",
+  "last_updated": "2026-09-28",
   "compatible_versions": [
     ">=2.0.0"
   ]
