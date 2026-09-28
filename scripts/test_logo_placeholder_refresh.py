@@ -9,7 +9,10 @@ downloader again -- one transient failure costs that team its logo forever.
 The check lives in `_logo_needs_refresh`, which is a *copied* helper: the
 sports engine is duplicated per scoreboard lineage rather than shared. These
 tests pin the behaviour and hold every copy byte-identical, so a fix to one
-cannot silently skip the others.
+cannot silently skip the others. Core 3.5.0 ships it as
+`src.common.sports_helpers.logo_needs_refresh`; a scoreboard that floors on
+3.5.0 may import that under the private name instead of carrying a copy
+(ufc-scoreboard does).
 
 Run from the repo root:
 
@@ -28,6 +31,10 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 PLUGINS = REPO_ROOT / "plugins"
 
 HELPER_RE = re.compile(r"def _logo_needs_refresh\(.*?\n(?=\n\nclass )", re.S)
+#: A loader that adopted core's helper under the private name.
+ADOPTED_RE = re.compile(
+    r"^from src\.common\.sports_helpers import \([^)]*"
+    r"\blogo_needs_refresh as _logo_needs_refresh\b", re.M)
 
 
 def copies():
@@ -50,7 +57,10 @@ class HelperCopiesAgree(unittest.TestCase):
     def test_all_copies_are_byte_identical(self):
         bodies = {}
         for path in copies():
-            match = HELPER_RE.search(path.read_text(encoding="utf-8"))
+            text = path.read_text(encoding="utf-8")
+            match = HELPER_RE.search(text)
+            if match is None and ADOPTED_RE.search(text):
+                continue  # adopted core's; nothing local to keep in step
             self.assertIsNotNone(
                 match, f"{path.relative_to(REPO_ROOT)}: no _logo_needs_refresh")
             bodies.setdefault(match.group(0), []).append(
