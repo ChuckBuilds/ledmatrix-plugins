@@ -66,7 +66,13 @@ plugin_dir, base, change, attr = sys.argv[1], *map(json.loads, sys.argv[2:4]), s
 sys.path.insert(0, plugin_dir)
 from src.plugin_system.testing.mocks import (
     MockCacheManager, MockDisplayManager, MockPluginManager)
-import manager as m
+try:
+    import manager as m
+except ImportError as exc:
+    # CI installs a plugin's requirements only when the PR changes that
+    # plugin, so its imports (paho, socketio, ...) may be absent here.
+    print(json.dumps("SKIP: %s is not installed" % (exc.name or exc)))
+    raise SystemExit
 if getattr(m, "GOOGLE_AVAILABLE", True) is False:
     print(json.dumps("SKIP: the Google client libraries are not installed"))
     raise SystemExit
