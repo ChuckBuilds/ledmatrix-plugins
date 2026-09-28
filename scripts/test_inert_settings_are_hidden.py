@@ -122,6 +122,9 @@ def classify(plugin, path):
             return "feeds update_interval_seconds, which is never read"
         if path.endswith("display_durations.base"):
             return "no reader; no mode is named 'base'"
+        if (plugin == "basketball-scoreboard"
+                and path.endswith("display_durations.live")):
+            return "duplicate of live_game_duration, which is the one read"
         if path == "defaults.season_cache_duration_seconds":
             return "no reader"
         if path == "update_interval" and _manifest_declares_update_interval(plugin):

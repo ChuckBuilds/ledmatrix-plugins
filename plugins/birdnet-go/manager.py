@@ -1215,6 +1215,10 @@ class BirdNetGoPlugin(BasePlugin):
 
     def on_disable(self) -> None:
         super().on_disable()
+        self._stop_mqtt()
+
+    def _stop_mqtt(self) -> None:
+        """Stop the supervisor thread and release the client. Safe to call twice."""
         self.mqtt_stop_event.set()
         if self.mqtt_thread and self.mqtt_thread.is_alive():
             self._teardown_client()   # wakes the loop instead of waiting it out
@@ -1224,6 +1228,34 @@ class BirdNetGoPlugin(BasePlugin):
         # Unconditional: the loop may have died, or never started, with a
         # live client still attached.
         self._teardown_client()
+
+    #: Detection state carried across a settings save when the source is the
+    #: same, so the panel does not go blank until the next poll.
+    _KEPT_ON_SAVE = ('last_detection', '_last_detection_key', '_recent_species',
+                     'daily_stats', '_species_img_cache', '_species_img_failed')
+
+    def on_config_change(self, new_config: Dict[str, Any]) -> None:
+        """Apply a settings save without a restart.
+
+        The core calls this rather than reloading the plugin, and the base
+        version only replaces self.config, so the broker, topic, fonts,
+        colours and display options kept their old values until a restart.
+        The MQTT connection is stopped, __init__ reads every setting again,
+        and the connection restarts with the new settings. What has been
+        heard is kept while the source (API URL and MQTT topic) is the same.
+        """
+        source = (self.api_base_url, self.mqtt_host, self.mqtt_topic)
+        self._stop_mqtt()
+        with self.state_lock:
+            kept = {name: getattr(self, name) for name in self._KEPT_ON_SAVE}
+        self.__init__(self.plugin_id, new_config, self.display_manager,
+                      self.cache_manager, self.plugin_manager)
+        if (self.api_base_url, self.mqtt_host, self.mqtt_topic) == source:
+            with self.state_lock:
+                for name, value in kept.items():
+                    setattr(self, name, value)
+        if self.enabled:
+            self.on_enable()
 
     def cleanup(self) -> None:
         self.on_disable()

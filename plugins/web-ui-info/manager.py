@@ -271,13 +271,16 @@ class WebUIInfoPlugin(BasePlugin):
                     project_root = current_dir.parent.parent
                     font_path = project_root / "assets" / "fonts" / "4x6-font.ttf"
 
+                    # 4x6-font is crisp only at multiples of 7. This branch is
+                    # the one a Pi takes (plugin-repos/<id> under the core),
+                    # and it loaded size 6 while every preview used 7.
                     if font_path.exists():
-                        font_small = ImageFont.truetype(str(font_path), 6)
+                        font_small = ImageFont.truetype(str(font_path), 7)
                     else:
                         # Try relative path from current working directory
                         font_path = "assets/fonts/4x6-font.ttf"
                         if os.path.exists(font_path):
-                            font_small = ImageFont.truetype(font_path, 7)  # 4x6-font is crisp only at multiples of 7
+                            font_small = ImageFont.truetype(font_path, 7)
                         else:
                             font_small = ImageFont.load_default()
                 except Exception as e:

@@ -61,6 +61,18 @@
       "notes": "UPCOMING NEVER BLANK: a full-screen upcoming scoreboard whose middle is 'date and time' with both Show Date (Full-Screen) and Show Time (Full-Screen) off drew two logos and 'Next Game' and nothing to say when the game is. That combination is what the core settings form left on boards saved before LEDMatrix #597 -- it drew newly added keys as unchecked boxes, so a Save wrote both as false -- and it is what a live board showed on every football and hockey upcoming card. It now draws both lines. Hiding one line, or both under 'vs' or 'none', is still honoured. RECENT DATE: the full-screen recent scoreboard now draws the date the game was played along its bottom edge, and the score moves up between the logos to make room -- the layout football, baseball, afl, nrl and soccer already use. Before, a finished game showed only 'Final' and a score, with no way to tell which game it was. Written in Full-Screen Date Format; new scroll_card.switch_recent_show_date (default true) turns it off. The scroll and Vegas recent card gains the same date. LIVE PRIORITY: live_priority now defaults on for NCAA men's and women's hockey, as it already did for the other leagues, so a live game involving your team takes the panel instead of waiting its turn. Only configs that never saved the key change."
     },
     {
+      "version": "1.35.3",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Scroll and Vegas cards follow each league's Display Options for records and rankings. They read only the shared defaults, so NCAA cards showed neither, whatever the league was set to; on Vegas the NCAA leagues' shots and power-play settings were not read either."
+    },
+    {
+      "version": "1.35.2",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Upcoming games now stay up for the configured per-game time. SportsUpcoming set game_display_duration = 15, so every upcoming game got 15 s whatever the setting said; it now reads upcoming_game_duration, as football, baseball and ufc do. The adapter now forwards display_durations.recent and .upcoming to the managers as recent_game_duration / upcoming_game_duration; they were never passed, so Recent and Upcoming games also got 15 s each. Only boards with a non-default value change: the default is 15 s, the value the code used. The league's 'Enable dynamic duration' switch now works. supports_dynamic_duration returned the per-mode switch whenever it was present, and the core fills its default (off) into every config, so the league switch was never read. The league switch now turns dynamic duration on for every mode; a mode switch still turns on just that mode."
+    },
+    {
       "version": "1.35.1",
       "released": "2026-09-28",
       "ledmatrix_min_version": "3.4.0",

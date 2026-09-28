@@ -1,7 +1,7 @@
 {
   "id": "tide-display",
   "name": "Tide Display",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "author": "ChuckBuilds",
   "description": "Coastal tide display with animated wave level, tide schedule, 24-hour chart, and tidal statistics. Powered by the free NOAA Tides & Currents API (US stations, no API key required).",
   "entry_point": "manager.py",
@@ -25,6 +25,12 @@
     ">=2.0.0"
   ],
   "versions": [
+    {
+      "version": "1.3.3",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Switching units no longer shows old-unit heights. The daily high/low and hourly data were cached per station only, so after imperial -> metric the cached feet were drawn with an 'm' label until the next day (the live reading for up to six minutes). Cached data now carries its units, and data in other units is never served, not even as outage fallback. The first update after upgrading refetches once."
+    },
     {
       "version": "1.3.2",
       "released": "2026-09-15",
@@ -100,7 +106,7 @@
   "license": "GPL-3.0",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/tide-display",
   "config_schema": "config_schema.json",
-  "last_updated": "2026-09-02",
+  "last_updated": "2026-09-28",
   "stars": 0,
   "downloads": 0,
   "verified": true,

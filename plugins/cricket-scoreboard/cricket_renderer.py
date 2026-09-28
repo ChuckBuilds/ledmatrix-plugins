@@ -15,7 +15,7 @@ onto the display_manager and pushes with update_display().
 
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, tzinfo
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -62,10 +62,13 @@ class CricketRenderer:
     """Renders cricket match cards for the LED matrix."""
 
     def __init__(self, display_width: int, display_height: int,
-                 config: Dict[str, Any]):
+                 config: Dict[str, Any], tz: Optional[tzinfo] = None):
         self.width = display_width
         self.height = display_height
         self.config = config or {}
+        # Start times arrive in UTC; they are drawn in this zone (the Pi's
+        # local zone when None).
+        self.tz = tz
 
         custom = self.config.get("customization", {}) or {}
         colors = custom.get("colors", {}) or {}
@@ -435,9 +438,10 @@ class CricketRenderer:
             return f"{whole}"
         return f"{whole}.{balls}"
 
-    @staticmethod
-    def _format_datetime(dt: datetime) -> str:
+    def _format_datetime(self, dt: datetime) -> str:
+        """A start time in the display's timezone. It used to be drawn in UTC,
+        so an evening match in New York read as the next morning."""
         try:
-            return dt.strftime("%b %d %H:%M")
+            return dt.astimezone(self.tz).strftime("%b %d %H:%M")
         except Exception:
             return ""

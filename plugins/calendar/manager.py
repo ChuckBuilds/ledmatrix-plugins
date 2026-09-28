@@ -61,6 +61,15 @@ class CalendarPlugin(BasePlugin):
         """Initialize the calendar plugin."""
         super().__init__(plugin_id, config, display_manager, cache_manager, plugin_manager)
         
+        # State that update(), display() and get_info() read, set before the
+        # early return below: without the Google libraries they used to
+        # raise AttributeError on every call.
+        self.service = None
+        self.events = []
+        self.current_event_index = 0
+        self.last_rotation = time.time()
+        self._read_settings(config)
+
         if not GOOGLE_AVAILABLE:
             self.logger.error("Google Calendar libraries not available. Install: google-auth-oauthlib google-auth-httplib2 google-api-python-client")
             self.enabled = False
@@ -70,22 +79,7 @@ class CalendarPlugin(BasePlugin):
         plugin_dir = os.path.dirname(os.path.abspath(__file__))
         self.credentials_file = os.path.join(plugin_dir, config.get('credentials_file', 'credentials.json'))
         self.token_file = os.path.join(plugin_dir, config.get('token_file', 'token.pickle'))
-        self.max_events = config.get('max_events', 3)
-        self.calendars = config.get('calendars', ['primary'])
-        # Validate calendars is not empty
-        if not self.calendars or len(self.calendars) == 0:
-            self.logger.warning("No calendars configured, defaulting to 'primary'")
-            self.calendars = ['primary']
-        self.update_interval = config.get('update_interval', 3600)
-        self.show_all_day = config.get('show_all_day_events', True)
-        self.rotation_interval = config.get('event_rotation_interval', 10)
-        
-        # State
-        self.service = None
-        self.events = []
-        self.current_event_index = 0
-        self.last_rotation = time.time()
-        
+
         # Colors
         self.text_color = (255, 255, 255)
         self.time_color = (255, 200, 100)
@@ -112,6 +106,34 @@ class CalendarPlugin(BasePlugin):
 
         self.logger.info(f"Calendar plugin initialized with {len(self.calendars)} calendar(s)")
     
+    def _read_settings(self, config: Dict[str, Any]) -> None:
+        """The display and fetch settings. Called from __init__ and
+        on_config_change."""
+        self.max_events = config.get('max_events', 3)
+        self.calendars = config.get('calendars', ['primary'])
+        # Validate calendars is not empty
+        if not self.calendars or len(self.calendars) == 0:
+            self.logger.warning("No calendars configured, defaulting to 'primary'")
+            self.calendars = ['primary']
+        self.update_interval = config.get('update_interval', 3600)
+        self.show_all_day = config.get('show_all_day_events', True)
+        self.rotation_interval = config.get('event_rotation_interval', 10)
+
+    def on_config_change(self, new_config: Dict[str, Any]) -> None:
+        """Apply a settings save without a restart.
+
+        The core calls this rather than reloading the plugin, and the base
+        version only replaces self.config, so the calendars, event count,
+        rotation and fonts kept their old values until a restart. Sign-in is
+        left alone: the credentials are the same files. A changed calendar
+        list is fetched on the next update(), since the cache key names it.
+        """
+        super().on_config_change(new_config)
+        if not GOOGLE_AVAILABLE:
+            return
+        self._read_settings(self.config)
+        self._load_fonts()
+
     def _get_timezone(self):
         """Get timezone from config with proper error handling."""
         try:

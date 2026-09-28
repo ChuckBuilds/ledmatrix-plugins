@@ -55,6 +55,7 @@ class Client:
         if len(BROKER.clients) >= 40:  # _connect_mqtt swallows this
             raise RuntimeError("40 clients built")
         self.started = self.stopped = False
+        self.published = []
         self.on_connect = self.on_disconnect = self.on_message = None
         BROKER.clients.append(self)
 
@@ -70,8 +71,8 @@ class Client:
     def subscribe(self, *a, **k):
         pass
 
-    def publish(self, *a, **k):
-        pass
+    def publish(self, topic, payload=None, **k):
+        self.published.append((topic, payload, self.stopped))
 
     def loop_start(self):
         # The broker answers over the network, i.e. not before the
@@ -197,6 +198,17 @@ p._connect_mqtt()
 p.mqtt_client.loop_start()
 p._graceful_shutdown()
 check("shutdown releases the client", not BROKER.live() and p.mqtt_client is None)
+
+# 6. A clean shutdown tells Home Assistant the sign is offline, while it can.
+p = plugin([0], FakeClock(budget=1000))
+p._connect_mqtt()
+client = p.mqtt_client
+client.loop_start()
+p.mqtt_stop_event.wait(0)          # deliver the CONNACK
+p._graceful_shutdown()
+offline = [(t, pl, stopped) for t, pl, stopped in client.published if pl == "offline"]
+check("shutdown publishes offline before the client is stopped",
+      bool(offline) and offline[0][2] is False, str(client.published))
 
 print("%d failed" % len(failures))
 sys.exit(1 if failures else 0)

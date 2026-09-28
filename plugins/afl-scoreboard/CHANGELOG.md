@@ -1,5 +1,41 @@
 # Changelog
 
+## [1.30.4] - 2026-09-28
+
+### Fixed
+- Scroll and Vegas cards follow the Display Options settings for records,
+  rankings and odds. They read only the root keys, so a change made under
+  Display Options reached the switch view but not a scrolling card.
+
+## [1.30.3] - 2026-09-28
+
+### Fixed
+- Scroll and Vegas cards now pick up saved settings without a restart:
+  on_config_change rebuilt the managers but not the scroll display manager,
+  which with its card renderer held the config it was built with. Rebuilt as
+  football-scoreboard does.
+
+## [1.30.2] - 2026-09-28
+
+### Fixed
+- Upcoming games now stay up for the configured per-game time. SportsUpcoming
+  set game_display_duration = 15, so every upcoming game got 15 s whatever the
+  setting said; it now reads upcoming_game_duration, as football, baseball and
+  ufc do. The adapter already forwarded it. Only boards with a non-default
+  value change: the default is 15 s, the value the code used.
+- The league's 'Enable dynamic duration' switch now works.
+  supports_dynamic_duration returned the per-mode switch whenever it was
+  present, and the core fills its default (off) into every config, so the
+  league switch was never read. The league switch now turns dynamic duration
+  on for every mode; a mode switch still turns on just that mode.
+- Settings on the main page are heard again: recent_games_to_show,
+  upcoming_games_to_show, favorite_rotation_boost, the other-games limits and
+  show_favorite_teams_only are also declared inside game_limits / filtering,
+  and the adapter preferred those nested copies whenever present, which after
+  the core's default fill is always. A nested value now wins only when it
+  differs from its default, as display_options already did; otherwise the
+  main-page value is used.
+
 ## [1.30.1] - 2026-09-28
 
 ### Changed

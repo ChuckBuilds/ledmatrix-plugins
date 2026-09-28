@@ -244,7 +244,7 @@
           "type": "boolean",
           "title": "Show Session Times",
           "default": true,
-          "description": "Show qualifying and sprint session times in addition to race time"
+          "description": "Show the day and time of the next session (practice, qualifying, sprint or race) on the upcoming race card. Off hides the time line entirely."
         },
         "countdown_enabled": {
           "x-advanced": true,
@@ -258,7 +258,7 @@
           "type": "boolean",
           "title": "Show Circuit Stats Card",
           "default": true,
-          "description": "Show a circuit facts card after the upcoming race card: laps, distance, and lap record"
+          "description": "Add a circuit facts card (laps, distance, lap record) after the upcoming race in the Vegas marquee. The f1_upcoming screen shows the race card only."
         }
       },
       "x-propertyOrder": [

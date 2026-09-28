@@ -378,13 +378,20 @@ class YouTubeStatsPlugin(BasePlugin):
         return self.update_interval_config
 
     def on_config_change(self, new_config: Dict[str, Any]) -> None:
-        """Pick up a new update_interval without a restart.
+        """Apply a settings save without a restart.
 
-        get_update_interval(), update()'s throttle and the stats cache all read
-        it. Other settings still apply on the next restart, as before.
+        The core calls this rather than reloading the plugin, and only
+        update_interval used to be re-read here: colours, fonts, the channel
+        and the key waited for a restart. __init__ reads config and loads
+        local assets only, so it runs again; the fetched stats are kept
+        unless the channel or key changed, when the next update() refetches.
         """
-        super().on_config_change(new_config)
-        self.update_interval_config = self.config.get('update_interval', 300)
+        source = (self.channel_id, self.api_key)
+        kept = (self.channel_stats, self._has_fetched, self._last_attempt)
+        self.__init__(self.plugin_id, new_config, self.display_manager,
+                      self.cache_manager, self.plugin_manager)
+        if (self.channel_id, self.api_key) == source:
+            self.channel_stats, self._has_fetched, self._last_attempt = kept
 
     def update(self) -> None:
         """Fetch/update data for this plugin.

@@ -1,7 +1,7 @@
 {
   "id": "christmas-countdown",
   "name": "Christmas Countdown",
-  "version": "2.0.1",
+  "version": "2.0.3",
   "author": "ChuckBuilds",
   "description": "Display a countdown to Christmas with a stylized Christmas tree logo and festive text",
   "category": "holiday",
@@ -17,6 +17,18 @@
     "christmas-countdown"
   ],
   "versions": [
+    {
+      "version": "2.0.3",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Saved settings now apply without a restart. The core applies a web-UI save by calling on_config_change, not by reloading the plugin, and the base version only replaces self.config, so the text colour kept its old value. __init__ only reads config and loads the tree image, so on_config_change runs it again."
+    },
+    {
+      "version": "2.0.2",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Hides tree_size, which is read and validated but never applied (the tree is sized from the panel height). No behaviour change: hidden keys stay declared, so saved configs still load."
+    },
     {
       "version": "2.0.1",
       "released": "2026-09-15",
@@ -58,7 +70,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-07",
+  "last_updated": "2026-09-28",
   "stars": 0,
   "downloads": 0,
   "verified": true,

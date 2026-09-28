@@ -1,7 +1,7 @@
 {
   "id": "f1-scoreboard",
   "name": "F1 Scoreboard",
-  "version": "1.9.1",
+  "version": "1.9.3",
   "author": "ChuckBuilds",
   "class_name": "F1ScoreboardPlugin",
   "entry_point": "manager.py",
@@ -29,6 +29,18 @@
     "f1_calendar"
   ],
   "versions": [
+    {
+      "version": "1.9.3",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Race-weekend data arrives when it happens. The faster race-weekend and live refresh never ran: with no get_update_interval hook the core called update() hourly; the hook now asks for the live-check interval on a race weekend and returns None otherwise. The latest round was read from a 24-hour persistent cache before the API, so after a race the round, and results, poles and qualifying keyed by it, lagged up to a day; the API is asked once the one-hour memo expires, with the persistent copy kept as the offline fallback. Recent races are cached by round, and a failed (empty) fetch is not cached. Qualifying looks one round ahead, so Saturday's qualifying shows before Sunday's race. The scroll content no longer looks the round up on the render path, and a practice session removed from sessions_to_show stops showing."
+    },
+    {
+      "version": "1.9.2",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Settings text only. upcoming.show_circuit_info adds its card in the Vegas marquee only (the f1_upcoming screen shows the race card alone), and upcoming.show_session_times controls the one time line on the upcoming card, not extra session times."
+    },
     {
       "version": "1.9.1",
       "released": "2026-09-15",
@@ -316,7 +328,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-15",
+  "last_updated": "2026-09-28",
   "stars": 0,
   "downloads": 0,
   "verified": true,

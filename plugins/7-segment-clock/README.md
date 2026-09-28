@@ -202,9 +202,10 @@ against no leading zero](../../docs/assets/7-segment-clock/time-formats.png)
 
 ### `has_flashing_separator`
 
-When `true` (the default) the colon blinks in step with the seconds: lit on
-even seconds, blanked on odd ones. This is the classic digital-clock heartbeat,
-and it doubles as a quiet "the panel has not frozen" indicator.
+When `true` (the default) the colon blinks once a second: it alternates lit
+and blanked on every frame the core draws, starting lit when the clock comes on
+screen on an even second. This is the classic digital-clock heartbeat, and it
+doubles as a quiet "the panel has not frozen" indicator.
 
 Set it to `false` to keep the colon permanently lit.
 

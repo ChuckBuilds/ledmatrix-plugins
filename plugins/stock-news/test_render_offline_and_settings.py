@@ -165,13 +165,13 @@ def test_logos_not_downloaded_while_drawing():
           f"update() downloads the missing logo (requests {session.urls})")
     check((plugin._logo_dir / "ZZTEST.png").exists(), "the logo is cached to disk by update()")
     check(not list(plugin._logo_dir.glob("*.part")), "no partial logo file is left behind")
-    check(plugin.scroll_helper.cached_image is not None and plugin._logo_rebuild_pending,
+    check(plugin.scroll_helper.cached_image is not None and plugin._strip_rebuild_pending,
           "a logo landing mid-pass does not clear the strip; the rebuild waits for the pass to end")
 
     plugin.rotation_enabled = False
     plugin.scroll_helper.is_scroll_complete = lambda: True
     plugin.display()
-    check(not plugin._logo_rebuild_pending and plugin.scroll_helper.cached_image is None,
+    check(not plugin._strip_rebuild_pending and plugin.scroll_helper.cached_image is None,
           "the strip is rebuilt once the pass completes")
 
     session.urls.clear()

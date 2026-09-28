@@ -6,7 +6,7 @@ Uses Open-Meteo API (free, no API key required) with RainViewer for precipitatio
 
 Features:
 - Current weather conditions with temperature, humidity, wind speed
-- Hourly forecast (next 24-48 hours)
+- Hourly forecast (next four hours)
 - Daily forecast (next 7 days)
 - Weather icons matching conditions
 - UV index display
@@ -430,8 +430,15 @@ class WeatherPlugin(BasePlugin):
         return self._layout_cache
 
     def on_config_change(self, new_config: Dict[str, Any]) -> None:
-        """Handle live configuration updates."""
-        self.config = new_config
+        """Apply a settings save without a restart.
+
+        Everything __init__ reads is read again. A change of units or place
+        also invalidates the fetched data -- it holds the old units and the
+        old place -- so the next update() fetches instead of waiting out
+        update_interval.
+        """
+        fetched_for = (self.units, dict(self.location), self._coord_override)
+        super().on_config_change(new_config)
         self.location = {
             'city': new_config.get('location_city', self.location.get('city', 'Dallas')),
             'state': new_config.get('location_state', self.location.get('state', 'Texas')),
@@ -447,6 +454,17 @@ class WeatherPlugin(BasePlugin):
         self.show_daily = new_config.get('show_daily_forecast', self.show_daily)
         self.show_almanac = new_config.get('show_almanac', self.show_almanac)
         self.show_radar = new_config.get('show_radar', self.show_radar)
+        self.show_alerts = new_config.get('show_alerts', self.show_alerts)
+        self.show_feels_like = new_config.get('show_feels_like', self.show_feels_like)
+        self.show_dew_point = new_config.get('show_dew_point', self.show_dew_point)
+        self.show_visibility = new_config.get('show_visibility', self.show_visibility)
+        self.show_pressure = new_config.get('show_pressure', self.show_pressure)
+        try:
+            self.update_interval = int(new_config.get('update_interval', self.update_interval))
+        except (ValueError, TypeError):
+            pass
+        if (self.units, self.location, self._coord_override) != fetched_for:
+            self.last_update = 0
 
         # Re-parse radar settings; _ensure_radar_fetcher rebuilds the fetcher
         # on its next call if the signature changed.

@@ -13,6 +13,12 @@ import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+def _round_money(value: float) -> float:
+    """Cents, as always, from $0.10 up. Below that the value is kept whole:
+    rounding a sub-cent coin to cents stored it as 0.0."""
+    return round(value, 2) if abs(value) >= 0.1 else value
+
+
 class StockDataFetcher:
     """Handles fetching stock and cryptocurrency data from Yahoo Finance API."""
     
@@ -115,15 +121,20 @@ class StockDataFetcher:
         api_symbol = symbol
         display_symbol = symbol.replace('-USD', '') if is_crypto else symbol
         
-        # Check cache first
-        cache_key = f"stock_data_{display_symbol}"
+        # Check cache first. Crypto has its own prefix: stock SOL and crypto
+        # SOL-USD both display as "SOL" and used to share one entry.
+        cache_key = f"{'crypto' if is_crypto else 'stock'}_data_{display_symbol}"
         # Each type is cached for its own interval: crypto.update_interval for
         # crypto (it was read and never used), update_interval for stocks.
         cache_ttl = (self.config_manager.crypto_update_interval if is_crypto
                      else self.config_manager.update_interval)
 
         if self.cache_manager:
-            cached_data = self.cache_manager.get(cache_key, max_age=cache_ttl)
+            # Half the interval: the entry is written partway through an
+            # update, so a max_age of the full interval was still fresh at the
+            # next scheduled update and every symbol refreshed only on every
+            # other one.
+            cached_data = self.cache_manager.get(cache_key, max_age=max(1, cache_ttl // 2))
             if cached_data:
                 self.logger.debug("Using cached data for %s", display_symbol)
                 return cached_data
@@ -186,8 +197,8 @@ class StockDataFetcher:
             result_data = {
                 'symbol': display_symbol,
                 'name': meta.get('symbol', display_symbol),  # Use symbol as name if not available
-                'price': round(current_price, 2),
-                'change': round(change, 2),  # Dollar change (current_price - previous_close)
+                'price': _round_money(current_price),
+                'change': _round_money(change),  # Dollar change (current_price - previous_close)
                 'change_percent': round(change_percent, 2),  # Percentage change
                 'open': previous_close,  # Store previous_close as "open" to match old structure
                 'price_history': price_history,

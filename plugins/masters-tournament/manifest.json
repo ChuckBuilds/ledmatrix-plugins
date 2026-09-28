@@ -1,7 +1,7 @@
 {
   "id": "masters-tournament",
   "name": "Masters Tournament",
-  "version": "3.2.1",
+  "version": "3.2.3",
   "description": "Broadcast-quality Masters Tournament display with real ESPN player headshots, accurate Augusta National hole layouts, fun facts, past champions, live leaderboards, and pixel-perfect LED matrix rendering",
   "category": "sports",
   "author": "ChuckBuilds",
@@ -44,6 +44,18 @@
     "height": 64
   },
   "versions": [
+    {
+      "version": "3.2.3",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "A saved favorite_players list now highlights on the leaderboard without a restart: the renderer kept the config dict it was built with."
+    },
+    {
+      "version": "3.2.2",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Settings text only: course_tour.show_divider applies to every hole card, and update_interval cannot fetch faster than the data cache (30 s during play)."
+    },
     {
       "version": "3.2.1",
       "released": "2026-09-20",
@@ -209,7 +221,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-16",
+  "last_updated": "2026-09-28",
   "compatible_versions": [
     ">=3.4.0"
   ]

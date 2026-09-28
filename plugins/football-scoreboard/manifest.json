@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "3.13.0",
+  "version": "3.14.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -26,10 +26,22 @@
   ],
   "versions": [
     {
-      "version": "3.13.0",
+      "version": "3.14.0",
       "released": "2026-09-28",
       "ledmatrix_min_version": "3.4.0",
       "notes": "UPCOMING NEVER BLANK: a full-screen upcoming scoreboard whose middle is 'date and time' with both Show Date (Full-Screen) and Show Time (Full-Screen) off drew two logos and 'Next Game' and nothing to say when the game is. That combination is what the core settings form left on boards saved before LEDMatrix #597 -- it drew newly added keys as unchecked boxes, so a Save wrote both as false -- and it is what a live board showed on every football and hockey upcoming card. It now draws both lines. Hiding one line, or both under 'vs' or 'none', is still honoured. RECENT DATE: the full-screen recent date now goes through Full-Screen Date Format like the upcoming one (the 'numeric' default leaves it unchanged), and new scroll_card.switch_recent_show_date (default true) turns it off, matching baseball-scoreboard."
+    },
+    {
+      "version": "3.13.0",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Declares <league>.mode_durations (live, recent and upcoming, null by default) for NFL and NCAA Football. The plugin has always read these and enforces them on its display path, but the schema did not declare them, so the web UI could not set them. A null value behaves exactly as an absent one did. README documents them."
+    },
+    {
+      "version": "3.12.2",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "The league's 'Enable dynamic duration' switch now works. supports_dynamic_duration returned the per-mode switch whenever it was present, and the core fills its default (off) into every config, so the league switch was never read. The league switch now turns dynamic duration on for every mode; a mode switch still turns on just that mode. Only boards with the league switch on change."
     },
     {
       "version": "3.12.1",

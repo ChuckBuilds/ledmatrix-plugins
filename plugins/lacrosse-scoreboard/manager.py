@@ -85,6 +85,24 @@ FAVORITE_CHECK_LEAGUES = {
 logger = logging.getLogger(__name__)
 
 
+def _per_game_duration(league_config, mode_type, default=15):
+    """Seconds each game of a mode stays up, from display_durations.<mode>.
+
+    Falls back to the flat <mode>_game_duration of older configs, then to
+    the default. A value that is not a positive number is ignored rather
+    than handed to a manager that divides and compares with it.
+    """
+    for value in ((league_config.get("display_durations") or {}).get(mode_type),
+                  league_config.get(f"{mode_type}_game_duration")):
+        try:
+            seconds = float(value)
+        except (TypeError, ValueError):
+            continue
+        if seconds > 0:
+            return seconds
+    return default
+
+
 class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
     """
     Lacrosse scoreboard plugin.
@@ -983,6 +1001,11 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "test_mode": league_config.get("test_mode", False),
                 "live_game_duration": resolve_live_duration(),
                 "non_favorite_live_game_duration": resolve_non_favorite_live_duration(),
+                # Per-game time for Recent and Upcoming. The managers read
+                # these keys; without them every game got 15 s whatever
+                # display_durations said.
+                "recent_game_duration": _per_game_duration(league_config, "recent"),
+                "upcoming_game_duration": _per_game_duration(league_config, "upcoming"),
                 "background_service": {
                     "request_timeout": 30,
                     "max_retries": 3,
@@ -2106,12 +2129,12 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
         league_dynamic = league_config.get("dynamic_duration", {})
         league_modes = league_dynamic.get("modes", {})
         mode_config = league_modes.get(mode_type, {})
-        if "enabled" in mode_config:
-            return bool(mode_config.get("enabled", False))
-        
-        # Check per-league setting
-        if "enabled" in league_dynamic:
-            return bool(league_dynamic.get("enabled", False))
+        # The league switch turns every mode on; a mode switch turns on just
+        # that mode. Both default to off and the core fills every default into
+        # the config, so returning the mode switch whenever it was present (as
+        # this did) meant the league switch was never read.
+        if mode_config.get("enabled", False) or league_dynamic.get("enabled", False):
+            return True
         
         # No global fallback - return False
         return False

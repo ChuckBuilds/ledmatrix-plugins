@@ -1,5 +1,37 @@
 # Changelog
 
+## [2.33.1] - 2026-09-28
+
+### Fixed
+- Dynamic duration now sizes a slot from its games. get_cycle_duration read
+  manager.games, which no soccer manager has, so the per-game total was always
+  0; it also summed every enabled league although each display mode is one
+  league. It now counts the mode's own league through _get_games_from_manager.
+
+## [2.33.0] - 2026-09-28
+
+### Added
+- Declares the five goal-celebration settings on custom leagues
+  (celebration_enabled, celebration_duration, celebrate_opponent_goals,
+  celebration_team_colors, celebration_confetti), with the built-in leagues'
+  defaults. The adapter already read them from a custom league, but the strict
+  schema rejected them, so they could only be set by hand and then failed
+  validation.
+
+## [2.32.2] - 2026-09-28
+
+### Fixed
+- Upcoming games now stay up for the configured per-game time. SportsUpcoming
+  set game_display_duration = 15, so every upcoming game got 15 s whatever the
+  setting said; it now reads upcoming_game_duration, as football, baseball and
+  ufc do. The adapter already forwarded it. Only boards with a non-default
+  value change: the default is 15 s, the value the code used.
+- The league's 'Enable dynamic duration' switch now works.
+  supports_dynamic_duration returned the per-mode switch whenever it was
+  present, and the core fills its default (off) into every config, so the
+  league switch was never read. The league switch now turns dynamic duration
+  on for every mode; a mode switch still turns on just that mode.
+
 ## [2.32.1] - 2026-09-28
 
 ### Changed

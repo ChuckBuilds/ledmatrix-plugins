@@ -343,7 +343,7 @@ All **Advanced**.
 | `<league>.live_game_duration` | 10–120 s | `20` | Per-game time for live games. Applies to games with a favorite when a non-favorite duration is set. |
 | `<league>.non_favorite_live_game_duration` | 0–120 s | `0` | Shorter turn for live games with no favorite. `0` means use `live_game_duration` for everything. |
 | `<league>.display_durations.base` | 1–120 s | `15` | **Hidden (still declared); has no effect.** No mode is named `base`. |
-| `<league>.display_durations.live` | 1–120 s | `20` | Per-game time for live games. |
+| `<league>.display_durations.live` | 1–120 s | `20` | **Hidden (still declared); has no effect.** A duplicate of `live_game_duration`, which is the one read. |
 | `<league>.display_durations.recent` | 1–120 s | `15` | Per-game time on the Recent screen. |
 | `<league>.display_durations.upcoming` | 1–120 s | `15` | Per-game time on the Upcoming screen. |
 
@@ -371,19 +371,15 @@ All **Advanced**.
 
 ### Mode durations
 
-How long the *whole mode* holds the board before the core rotates on. `null`
-uses the dynamic calculation. Both **Advanced**, and read by the LEDMatrix core
-rather than by this plugin, which is why they do not appear in the plugin's own
-source.
+How long the *whole mode* holds the board before the next mode. `null` sizes it
+from the games (games × per-game time). All **Advanced**; the plugin reads them
+by name, `<mode>_mode_duration` (`manager.py` `_get_mode_duration`).
 
 | Key | Type | Default |
 |---|---|---|
+| `<league>.mode_durations.live_mode_duration` | 10–600 s or `null` | `null` |
 | `<league>.mode_durations.recent_mode_duration` | 10–600 s or `null` | `null` |
 | `<league>.mode_durations.upcoming_mode_duration` | 10–600 s or `null` | `null` |
-
-> There is **no `live_mode_duration`** here, unlike the football, hockey and
-> lacrosse scoreboards. Live mode's total is governed by dynamic duration or by
-> `display_durations.live` per game.
 
 ### Dynamic duration
 

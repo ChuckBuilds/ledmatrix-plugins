@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.33.0",
+  "version": "2.34.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -54,10 +54,28 @@
   ],
   "versions": [
     {
-      "version": "2.33.0",
+      "version": "2.34.0",
       "released": "2026-09-28",
       "ledmatrix_min_version": "3.4.0",
       "notes": "UPCOMING NEVER BLANK: a full-screen upcoming scoreboard whose middle is 'date and time' with both Show Date (Full-Screen) and Show Time (Full-Screen) off drew two logos and 'Next Game' and nothing to say when the game is. That combination is what the core settings form left on boards saved before LEDMatrix #597 -- it drew newly added keys as unchecked boxes, so a Save wrote both as false -- and it is what a live board showed on every football and hockey upcoming card. It now draws both lines. Hiding one line, or both under 'vs' or 'none', is still honoured. RECENT DATE: the full-screen recent date now goes through Full-Screen Date Format like the upcoming one (the 'numeric' default leaves it unchanged), and new scroll_card.switch_recent_show_date (default true) turns it off, matching baseball-scoreboard."
+    },
+    {
+      "version": "2.33.1",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Dynamic duration now sizes a slot from its games. get_cycle_duration read manager.games, which no soccer manager has, so the per-game total was always 0; it also summed every enabled league although each display mode is one league. It now counts the mode's own league through _get_games_from_manager."
+    },
+    {
+      "version": "2.33.0",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Declares the five goal-celebration settings on custom leagues (celebration_enabled, celebration_duration, celebrate_opponent_goals, celebration_team_colors, celebration_confetti), with the built-in leagues' defaults. The adapter already read them from a custom league, but the strict schema rejected them, so they could only be set by hand and then failed validation."
+    },
+    {
+      "version": "2.32.2",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Upcoming games now stay up for the configured per-game time. SportsUpcoming set game_display_duration = 15, so every upcoming game got 15 s whatever the setting said; it now reads upcoming_game_duration, as football, baseball and ufc do. The adapter already forwarded it. Only boards with a non-default value change: the default is 15 s, the value the code used. The league's 'Enable dynamic duration' switch now works. supports_dynamic_duration returned the per-mode switch whenever it was present, and the core fills its default (off) into every config, so the league switch was never read. The league switch now turns dynamic duration on for every mode; a mode switch still turns on just that mode."
     },
     {
       "version": "2.32.1",

@@ -1,5 +1,24 @@
 # Changelog
 
+## [3.13.0] - 2026-09-28
+
+### Added
+- Declares <league>.mode_durations (live, recent and upcoming, null by
+  default) for NFL and NCAA Football. The plugin has always read these and
+  enforces them on its display path, but the schema did not declare them, so
+  the web UI could not set them. A null value behaves exactly as an absent one
+  did. README documents them.
+
+## [3.12.2] - 2026-09-28
+
+### Fixed
+- The league's 'Enable dynamic duration' switch now works.
+  supports_dynamic_duration returned the per-mode switch whenever it was
+  present, and the core fills its default (off) into every config, so the
+  league switch was never read. The league switch now turns dynamic duration
+  on for every mode; a mode switch still turns on just that mode. Only boards
+  with the league switch on change.
+
 ## [3.12.1] - 2026-09-28
 
 ### Changed

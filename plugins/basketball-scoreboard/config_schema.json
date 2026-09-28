@@ -692,7 +692,8 @@
               "default": 20,
               "minimum": 1,
               "maximum": 120,
-              "description": "Display duration for live NBA games"
+              "description": "Display duration for live NBA games HIDDEN: a duplicate: the live per-game time is <league>.live_game_duration, which the managers read. This copy was never consulted.",
+              "x-display": "hidden"
             },
             "recent": {
               "x-advanced": true,
@@ -819,6 +820,17 @@
               "minimum": 10,
               "maximum": 600,
               "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation). Set to null to use dynamic calculation. When mode cycles back, continues from last game shown (no repetition)."
+            },
+            "live_mode_duration": {
+              "x-advanced": true,
+              "type": [
+                "number",
+                "null"
+              ],
+              "default": null,
+              "minimum": 10,
+              "maximum": 600,
+              "description": "Total seconds the Live mode stays on screen before the next mode. Leave empty to size it from the games (games x per-game time)."
             }
           }
         }
@@ -1230,7 +1242,8 @@
               "default": 20,
               "minimum": 5,
               "maximum": 120,
-              "description": "Display duration for live WNBA games"
+              "description": "Display duration for live WNBA games HIDDEN: a duplicate: the live per-game time is <league>.live_game_duration, which the managers read. This copy was never consulted.",
+              "x-display": "hidden"
             },
             "recent": {
               "x-advanced": true,
@@ -1357,6 +1370,17 @@
               "minimum": 10,
               "maximum": 600,
               "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation). Set to null to use dynamic calculation. When mode cycles back, continues from last game shown (no repetition)."
+            },
+            "live_mode_duration": {
+              "x-advanced": true,
+              "type": [
+                "number",
+                "null"
+              ],
+              "default": null,
+              "minimum": 10,
+              "maximum": 600,
+              "description": "Total seconds the Live mode stays on screen before the next mode. Leave empty to size it from the games (games x per-game time)."
             }
           }
         }
@@ -1765,7 +1789,8 @@
               "default": 20,
               "minimum": 5,
               "maximum": 120,
-              "description": "Display duration for live NCAA Men's Basketball games"
+              "description": "Display duration for live NCAA Men's Basketball games HIDDEN: a duplicate: the live per-game time is <league>.live_game_duration, which the managers read. This copy was never consulted.",
+              "x-display": "hidden"
             },
             "recent": {
               "x-advanced": true,
@@ -1892,6 +1917,17 @@
               "minimum": 10,
               "maximum": 600,
               "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation). Set to null to use dynamic calculation. When mode cycles back, continues from last game shown (no repetition)."
+            },
+            "live_mode_duration": {
+              "x-advanced": true,
+              "type": [
+                "number",
+                "null"
+              ],
+              "default": null,
+              "minimum": 10,
+              "maximum": 600,
+              "description": "Total seconds the Live mode stays on screen before the next mode. Leave empty to size it from the games (games x per-game time)."
             }
           }
         }
@@ -2300,7 +2336,8 @@
               "default": 20,
               "minimum": 5,
               "maximum": 120,
-              "description": "Display duration for live NCAA Women's Basketball games"
+              "description": "Display duration for live NCAA Women's Basketball games HIDDEN: a duplicate: the live per-game time is <league>.live_game_duration, which the managers read. This copy was never consulted.",
+              "x-display": "hidden"
             },
             "recent": {
               "x-advanced": true,
@@ -2427,6 +2464,17 @@
               "minimum": 10,
               "maximum": 600,
               "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation). Set to null to use dynamic calculation. When mode cycles back, continues from last game shown (no repetition)."
+            },
+            "live_mode_duration": {
+              "x-advanced": true,
+              "type": [
+                "number",
+                "null"
+              ],
+              "default": null,
+              "minimum": 10,
+              "maximum": 600,
+              "description": "Total seconds the Live mode stays on screen before the next mode. Leave empty to size it from the games (games x per-game time)."
             }
           }
         }

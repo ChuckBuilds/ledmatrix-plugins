@@ -335,7 +335,7 @@ class MarchMadnessPlugin(BasePlugin):
                 start_time_utc = dt.replace(tzinfo=pytz.UTC)
             else:
                 start_time_utc = dt.astimezone(pytz.UTC)
-            local = start_time_utc.astimezone(pytz.timezone("US/Eastern"))
+            local = start_time_utc.astimezone(self._display_timezone())
             # %-m/%-d/%-I are glibc extensions: strftime raises ValueError on
             # Windows and musl. Build the same text portably instead.
             game_date = f"{local.month}/{local.day}"
@@ -872,6 +872,28 @@ class MarchMadnessPlugin(BasePlugin):
 
         self.display_manager.image = img
         self.display_manager.update_display()
+
+    def _display_timezone(self):
+        """The LEDMatrix timezone, for game dates and tip-off times.
+
+        These were always drawn in US/Eastern, unlabelled, whatever the board
+        was set to. US/Eastern remains the fallback when no timezone is set
+        or the name is unknown.
+        """
+        if getattr(self, "_tz", None) is None:
+            name = None
+            try:
+                config_manager = getattr(self.plugin_manager, "config_manager", None)
+                if config_manager is not None:
+                    name = config_manager.get_timezone()
+            except Exception:
+                name = None
+            try:
+                self._tz = pytz.timezone(name) if name else pytz.timezone("US/Eastern")
+            except pytz.UnknownTimeZoneError:
+                self.logger.warning("Unknown timezone %r; using US/Eastern", name)
+                self._tz = pytz.timezone("US/Eastern")
+        return self._tz
 
     # ------------------------------------------------------------------
     # Duration / cycle management

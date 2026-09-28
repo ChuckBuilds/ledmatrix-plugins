@@ -166,7 +166,7 @@ A change is **correct** only if all of the following hold for touched plugins:
 | Plugin loads beside others | Deferred import binds another plugin’s module | `scripts/check_module_collisions.py` + CI |
 | Manifest valid | Missing required fields / schema drift | CI vs core `schema/manifest_schema.json` |
 | Renders on panels | Crash, draw past edge, or golden drift | Core `check_plugin.py` + CI harness |
-| Config UI ↔ runtime | Schema default ≠ `config.get` default; README tables lie | Manual + PR checklist; prefer matching schema |
+| Config UI ↔ runtime | A drawn setting nothing reads; schema default ≠ `config.get` default; README tables lie | `scripts/test_schema_settings_are_read.py` (a setting nothing names) + `test_inert_settings_are_hidden.py` (scoreboard settings read then lost); defaults and READMEs manual. An inert key is hidden (`x-display: hidden` + `HIDDEN:` reason), never deleted |
 | No secret leak | Key/token committed | `.gitignore` + PR template / [VERIFICATION.md](./VERIFICATION.md) |
 
 Optional but strong: commit `plugins/<id>/test/harness.json` + golden PNGs so

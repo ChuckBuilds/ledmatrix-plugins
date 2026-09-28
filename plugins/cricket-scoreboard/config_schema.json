@@ -69,7 +69,7 @@
       "default": 15,
       "minimum": 5,
       "maximum": 60,
-      "description": "Duration in seconds to display each match",
+      "description": "Seconds a mode stays on screen when it has no matches to time by. Per-match time comes from live_game_duration, recent_game_duration and upcoming_game_duration.",
       "x-advanced": true
     },
     "live_game_duration": {

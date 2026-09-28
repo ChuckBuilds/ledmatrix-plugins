@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.3.2] - 2026-09-28
+
+### Fixed
+- Saved settings now apply without a restart. The core applies a web-UI save
+  by calling on_config_change, not by reloading the plugin, and the base
+  version only replaces self.config; only update_interval was re-read, so a
+  newly entered server URL and API key kept showing 'Set URL/API Key' until a
+  restart. __init__ runs again; the next poll refills the panel.
+
+## [1.3.1] - 2026-09-28
+
+### Changed
+- Settings text only: leaving every content type unchecked shows all types.
+
 ## [1.3.0] - 2026-09-16
 
 ### Fixed

@@ -5,6 +5,7 @@ Real-time aircraft tracking with ADS-B data, map backgrounds, flight plans, and 
 Migrated from feature/flight-tracker-manager branch with flattened configuration structure for plugin compatibility.
 """
 
+import hashlib
 import json
 import logging
 import math
@@ -64,6 +65,10 @@ from metar_fetcher import MetarFetcher
 logger = logging.getLogger(__name__)
 
 
+
+
+#: The tile server the plugin ships with; see _tile_source_tag.
+DEFAULT_TILE_SERVER = 'https://maps.chuck-builds.com'
 
 
 class FlightTrackerPlugin(BasePlugin):
@@ -137,7 +142,7 @@ class FlightTrackerPlugin(BasePlugin):
         # Custom tile server URL (for self-hosted OSM servers). The default
         # mirrors config_schema.json; an explicit empty string selects
         # tile_provider instead.
-        self.custom_tile_server = self.map_bg_config.get('custom_tile_server', 'https://maps.chuck-builds.com')
+        self.custom_tile_server = self.map_bg_config.get('custom_tile_server', DEFAULT_TILE_SERVER)
         
         # Log tile server configuration
         if self.custom_tile_server:
@@ -452,7 +457,7 @@ class FlightTrackerPlugin(BasePlugin):
         self.map_contrast = self.map_bg_config.get('contrast', 1.0)
         self.map_saturation = self.map_bg_config.get('saturation', 1.0)
         self.disable_on_cache_error = self.map_bg_config.get('disable_on_cache_error', False)
-        self.custom_tile_server = self.map_bg_config.get('custom_tile_server', 'https://maps.chuck-builds.com')
+        self.custom_tile_server = self.map_bg_config.get('custom_tile_server', DEFAULT_TILE_SERVER)
 
         # Trails
         self.show_trails = self.config.get('show_trails', True)
@@ -1299,8 +1304,7 @@ class FlightTrackerPlugin(BasePlugin):
                 if icao not in self.aircraft_trails:
                     self.aircraft_trails[icao] = []
                 self.aircraft_trails[icao].append((new_info['lat'], new_info['lon'], current_time))
-                if len(self.aircraft_trails[icao]) > self.trail_length:
-                    self.aircraft_trails[icao] = self.aircraft_trails[icao][-self.trail_length:]
+                self._trim_trail(icao)
 
         # Remove stale aircraft
         stale = [icao for icao, info in self.aircraft_data.items()
@@ -1377,8 +1381,7 @@ class FlightTrackerPlugin(BasePlugin):
                 if icao not in self.aircraft_trails:
                     self.aircraft_trails[icao] = []
                 self.aircraft_trails[icao].append((new_info['lat'], new_info['lon'], current_time))
-                if len(self.aircraft_trails[icao]) > self.trail_length:
-                    self.aircraft_trails[icao] = self.aircraft_trails[icao][-self.trail_length:]
+                self._trim_trail(icao)
 
         # Remove stale aircraft
         stale = [icao for icao, info in self.aircraft_data.items()
@@ -1998,8 +2001,7 @@ class FlightTrackerPlugin(BasePlugin):
                 self.aircraft_trails[icao].append((lat, lon, current_time))
                 
                 # Limit trail length
-                if len(self.aircraft_trails[icao]) > self.trail_length:
-                    self.aircraft_trails[icao] = self.aircraft_trails[icao][-self.trail_length:]
+                self._trim_trail(icao)
         
         # Clean up old aircraft (not seen in last 60 seconds)
         stale_icao = [icao for icao, info in self.aircraft_data.items()
@@ -2199,7 +2201,24 @@ class FlightTrackerPlugin(BasePlugin):
     
     def _get_tile_cache_path(self, x: int, y: int, zoom: int) -> Path:
         """Get the cache file path for a tile."""
-        return self.tile_cache_dir / f"{self.tile_provider}_{zoom}_{x}_{y}.png"
+        return self.tile_cache_dir / f"{self._tile_source_tag()}_{zoom}_{x}_{y}.png"
+
+    def _tile_source_tag(self) -> str:
+        """The name tiles are cached under: one per source actually fetched.
+
+        Tiles were cached under the provider name even when a custom tile
+        server (on by default) supplied them, so changing or clearing the
+        server kept serving the old server's tiles for up to cache_ttl_hours
+        (a year by default). The default server keeps the provider name the
+        existing caches were written under; another server gets a short hash
+        of its URL, and no server at all gets its own tag.
+        """
+        server = (self.custom_tile_server or '').strip().rstrip('/')
+        if server == DEFAULT_TILE_SERVER:
+            return self.tile_provider
+        if server:
+            return "custom-" + hashlib.sha1(server.encode("utf-8")).hexdigest()[:8]
+        return f"{self.tile_provider}-direct"
     
     def _is_tile_cached(self, x: int, y: int, zoom: int) -> bool:
         """Check if a tile is cached and not expired."""
@@ -3231,23 +3250,54 @@ class FlightTrackerPlugin(BasePlugin):
 
         return aircraft_list
 
+    def _trim_trail(self, icao: str) -> None:
+        """Keep the last trail_length positions. With trail_length 0 (the
+        schema's minimum) the slice [-0:] kept the whole trail -- unlimited,
+        the opposite of what 0 asks for."""
+        keep = max(0, int(self.trail_length or 0))
+        trail = self.aircraft_trails.get(icao)
+        if trail is not None and len(trail) > keep:
+            self.aircraft_trails[icao] = trail[len(trail) - keep:] if keep else []
+
     def _get_anchor_aircraft(self) -> list:
         """Get aircraft matching the anchor airport as origin or destination."""
         if not self.anchor_airport:
             return []
-        anchor = self.anchor_airport.upper()
+        anchor = self._anchor_codes()
         matches = []
         for ac in self.aircraft_data.values():
             origin = (ac.get('origin') or '').upper()
             dest = (ac.get('destination') or '').upper()
-            if anchor in (origin, dest):
+            if origin in anchor or dest in anchor:
                 ac_copy = dict(ac)
-                if dest == anchor:
+                if dest in anchor:
                     ac_copy['_anchor_arrival'] = True
-                elif origin == anchor:
+                elif origin in anchor:
                     ac_copy['_anchor_departure'] = True
                 matches.append(ac_copy)
         return matches
+
+    def _anchor_codes(self) -> set:
+        """The anchor airport under both of its codes.
+
+        Routes arrive as IATA from FR24 enrichment (on by default) and as ICAO
+        from the adsb.fi/adsb.lol route lookup, so an anchor entered one way
+        never matched the other: "KTPA" found nothing on FR24 data and "TPA"
+        nothing on adsbnet data. The bundled airport table maps between them.
+        """
+        code = str(self.anchor_airport or '').strip().upper()
+        if getattr(self, '_anchor_codes_for', None) != code:
+            codes = {code} if code else set()
+            try:
+                from static_data import airports as _airports
+                ap = _airports.by_icao(code) or _airports.by_iata(code)
+            except Exception:
+                ap = None
+            if ap:
+                codes.update(str(ap.get(k) or '').upper() for k in ('icao', 'iata'))
+            codes.discard('')
+            self._anchor_codes_for, self._anchor_code_set = code, codes
+        return self._anchor_code_set
 
     def _display_area(self, force_clear: bool = False) -> None:
         """Display area mode: one aircraft per full display, cycling through them."""

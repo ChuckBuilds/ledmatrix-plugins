@@ -632,7 +632,9 @@ class GameRenderer(SportsGameRendererMixin):
             self._draw_dynamic_odds(draw_overlay, game['odds'], self.display_width, self.display_height)
 
         # Draw records or rankings if enabled
-        if self.show_records or self.show_ranking:
+        # Per league, as the switch card resolves them (manager.py).
+        if (self._league_option(league, 'show_records', self.show_records)
+                or self._league_option(league, 'show_ranking', self.show_ranking)):
             self._draw_records_or_rankings(draw_overlay, game)
 
         # Composite the overlay onto main image
@@ -690,6 +692,27 @@ class GameRenderer(SportsGameRendererMixin):
             shots_x = (self.display_width - shots_width) // 2
             self._draw_text_with_outline(draw, shots_text, (shots_x, shots_y), shots_font)
 
+    def _league_config(self, league: str) -> Dict:
+        """The config block for a game's league.
+
+        The scroll path tags games with the config key ('ncaa_mens', 'ncaa_mens'),
+        Vegas with the ESPN sport key ('ncaam_lacrosse'); both name the same block.
+        """
+        key = {"ncaam_lacrosse": "ncaa_mens", "ncaaw_lacrosse": "ncaa_womens"}.get(league, league)
+        return self.config.get(key) or {}
+
+    def _league_option(self, league: str, key: str, fallback: bool) -> bool:
+        """Resolve a display option the way manager.py does for the switch card:
+        the league's display_options, then its flat key, then defaults."""
+        league_config = self._league_config(league)
+        display_options = league_config.get("display_options") or {}
+        if key in display_options:
+            return bool(display_options[key])
+        if key in league_config:
+            return bool(league_config[key])
+        defaults = self.config.get("defaults") or {}
+        return bool(defaults.get(key, self.config.get(key, fallback)))
+
     def _show_shots(self, league: str) -> bool:
         """Is the shots line wanted for this league?
 
@@ -698,14 +721,7 @@ class GameRenderer(SportsGameRendererMixin):
         never wrote it and the line never appeared on a scroll or Vegas card.
         Walk the ladder manager.py resolves for the switch card instead.
         """
-        league_config = self.config.get(league) or {}
-        display_options = league_config.get("display_options") or {}
-        if "show_shots" in display_options:
-            return bool(display_options["show_shots"])
-        if "show_shots" in league_config:
-            return bool(league_config["show_shots"])
-        defaults = self.config.get("defaults") or {}
-        return bool(defaults.get("show_shots", False))
+        return self._league_option(league, "show_shots", False)
 
     def _draw_recent_game_status(self, draw: ImageDraw.Draw, game: Dict) -> None:
         """Draw status elements for a recently completed game."""
@@ -897,6 +913,9 @@ class GameRenderer(SportsGameRendererMixin):
         home_abbr = home_team.get('abbrev', '')
         away_record = away_team.get('record', '')
         home_record = home_team.get('record', '')
+        league = game.get('league', 'ncaa_mens')
+        show_records = self._league_option(league, 'show_records', self.show_records)
+        show_ranking = self._league_option(league, 'show_ranking', self.show_ranking)
 
         record_bbox = draw.textbbox((0, 0), "0-0", font=record_font)
         record_height = record_bbox[3] - record_bbox[1]
@@ -904,31 +923,40 @@ class GameRenderer(SportsGameRendererMixin):
 
         # Away team info
         if away_abbr:
-            away_text = self._get_team_display_text(away_abbr, away_record)
+            away_text = self._get_team_display_text(away_abbr, away_record,
+                                                   show_records, show_ranking)
             if away_text:
                 away_record_x = 3
                 self._draw_text_with_outline(draw, away_text, (away_record_x, record_y), record_font)
 
         # Home team info
         if home_abbr:
-            home_text = self._get_team_display_text(home_abbr, home_record)
+            home_text = self._get_team_display_text(home_abbr, home_record,
+                                                   show_records, show_ranking)
             if home_text:
                 home_record_bbox = draw.textbbox((0, 0), home_text, font=record_font)
                 home_record_width = home_record_bbox[2] - home_record_bbox[0]
                 home_record_x = self.display_width - home_record_width - 3
                 self._draw_text_with_outline(draw, home_text, (home_record_x, record_y), record_font)
 
-    def _get_team_display_text(self, abbr: str, record: str) -> str:
+    def _get_team_display_text(self, abbr: str, record: str,
+                               show_records: Optional[bool] = None,
+                               show_ranking: Optional[bool] = None) -> str:
         """Get the display text for a team (ranking or record).
 
-        Rankings take precedence over records when both are enabled.
+        Rankings take precedence over records when both are enabled. The two
+        flags default to the renderer-wide values.
         """
-        if self.show_ranking:
+        if show_records is None:
+            show_records = self.show_records
+        if show_ranking is None:
+            show_ranking = self.show_ranking
+        if show_ranking:
             rank = self._team_rankings_cache.get(abbr, 0)
             if rank > 0:
                 return f"#{rank}"
             # Both on: an unranked team shows its record rather than nothing.
-            return record if self.show_records else ''
-        if self.show_records:
+            return record if show_records else ''
+        if show_records:
             return record
         return ''

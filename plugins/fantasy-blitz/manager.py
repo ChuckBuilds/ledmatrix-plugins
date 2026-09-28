@@ -201,6 +201,10 @@ class FantasyBlitzPlugin(BasePlugin):
         super().on_config_change(new_config)
         self.config = new_config
         self._load_config(new_config)
+        # The delay buffer must hold snapshots older than the delay. Sized in
+        # __init__ only, raising the delay here left it too short, so view()
+        # fell back to its oldest snapshot and showed scores early.
+        self._delayed.keep_seconds = max(180.0, self.spoiler_delay + 120)
         self.data.timeout = float(self.request_timeout)
         self._frame_cache.clear()
         self._shown_key = None

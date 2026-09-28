@@ -66,7 +66,7 @@
       "minimum": 0,
       "maximum": 64,
       "title": "Font Size (px)",
-      "description": "Font height in pixels when a custom Font path is set. Set to 0 to auto-size to 80% of the display height.",
+      "description": "Font height in pixels when a custom Font path is set (0 uses 8 px). Without a Font path, the built-in font is auto-sized to 80% of the display height.",
       "x-advanced": true
     },
 

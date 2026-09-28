@@ -145,6 +145,9 @@ class PomodoroTimerPlugin(BasePlugin):
         self.task = ""
         self.alert_until = 0.0
         self.alert_color: Optional[Tuple[int, int, int]] = None
+        # Completion flash: inverted on the last frame, and when it last swapped.
+        self._flash_on = False
+        self._flash_swapped_at = 0.0
 
         self._load_settings(config)
         self.remaining = self.phase_total = float(self.work_minutes * 60)
@@ -956,6 +959,24 @@ class PomodoroTimerPlugin(BasePlugin):
             self.logger.debug("Crisp text failed, falling back: %s", e)
             draw.text((x - ox, y - oy), text, font=font, fill=color)
 
+    def _flash_frame(self) -> bool:
+        """Is this frame of the completion flash the inverted one?
+
+        The core draws this plugin about once a second, a little over, so a
+        flash read off the clock (inverted on even half-seconds) was sampled
+        almost in step with itself: it held one state for many seconds, then
+        the other. Swap on each frame at least ~half a second after the last
+        swap instead -- every frame at the usual 1 FPS, twice a second at a
+        higher rate -- and open an alert inverted.
+        """
+        now = time.monotonic()
+        since = now - self._flash_swapped_at
+        if since > 1.5:
+            self._flash_on, self._flash_swapped_at = True, now
+        elif since >= 0.45:
+            self._flash_on, self._flash_swapped_at = not self._flash_on, now
+        return self._flash_on
+
     def _render(self, draw, width: int, height: int, snap: Dict[str, Any]) -> None:
         """Compose one frame: background, phase content, then the indicator."""
         phase = snap["phase"]
@@ -966,9 +987,9 @@ class PomodoroTimerPlugin(BasePlugin):
         background = self.background_color
         text_color = accent if self.color_mode == "phase" else self.time_color
 
-        # Completion flash: swap foreground and background twice a second.
+        # Completion flash: swap foreground and background.
         if snap["alerting"] and self.alert_flash:
-            if int(time.monotonic() * 2) % 2 == 0:
+            if self._flash_frame():
                 flash = snap["alert_color"] or accent
                 background = flash
                 text_color = self.background_color

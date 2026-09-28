@@ -115,7 +115,7 @@ at a glance, while a 64-wide panel can only show a slice — which is why
 | `show_date_line` | boolean | `true` | Dotted midnight line on the map, with the weekday on each side |
 | `date_line_labels` | string | `bottom` | Where those weekdays sit: `bottom` or `top` edge of the map |
 | `clock_format` | string | `24h` | `12h` or `24h` |
-| `show_seconds` | boolean | `true` | No longer used since 1.2.0; the list shows hours and minutes |
+| `show_seconds` | boolean | `true` | No longer used since 1.2.0; the list shows hours and minutes. Hidden from the settings page since 1.2.2 |
 | `colors.*` | array | see below | Nine RGB colours for map and text elements |
 
 The terminator drifts about a quarter of a degree a minute, so

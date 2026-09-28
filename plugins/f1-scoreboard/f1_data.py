@@ -729,16 +729,18 @@ class F1DataSource:
         if season is None:
             season = datetime.now(timezone.utc).year
 
-        cache_key = f"f1_recent_races_{season}_{count}"
-        cached = self._get_cached(cache_key, "race_results")
-        if cached is not None:
-            return cached
-
         current_round = self._get_latest_round(season)
 
         if current_round == 0:
             return self._fallback_previous_season(
                 "fetch_recent_races", season, default_return=[], count=count)
+
+        # The round is in the key: a list cached before a race is not the
+        # list after it, and was served for up to a day.
+        cache_key = f"f1_recent_races_{season}_{count}_r{current_round}"
+        cached = self._get_cached(cache_key, "race_results")
+        if cached is not None:
+            return cached
 
         races = []
         for round_num in range(current_round, max(0, current_round - count), -1):
@@ -746,7 +748,8 @@ class F1DataSource:
             if result:
                 races.append(result)
 
-        self._set_cached(cache_key, races)
+        if races:  # an empty list is a failed fetch, not a day's answer
+            self._set_cached(cache_key, races)
         return races
 
     # ─── Jolpi: Qualifying Results ─────────────────────────────────────
@@ -764,7 +767,14 @@ class F1DataSource:
 
         # Determine latest round if not specified
         if round_num is None:
-            round_num = self._get_latest_round(season)
+            latest = self._get_latest_round(season)
+            # Qualifying runs before its race, so on a race weekend the newest
+            # qualifying belongs to the round after the last completed race.
+            # Asked for only the latest round, Saturday showed last weekend's.
+            upcoming = self.fetch_qualifying(season, latest + 1)
+            if upcoming:
+                return upcoming
+            round_num = latest
             if round_num == 0:
                 return self._fallback_previous_season(
                     "fetch_qualifying", season)
@@ -968,12 +978,12 @@ class F1DataSource:
         if season is None:
             season = datetime.now(timezone.utc).year
 
-        cache_key = f"f1_poles_{season}"
+        current_round = self._get_latest_round(season)
+        cache_key = f"f1_poles_{season}_r{current_round}"
         cached = self._get_cached(cache_key, "qualifying")
         if cached is not None:
             return cached
 
-        current_round = self._get_latest_round(season)
         poles: Dict[str, int] = {}
 
         for r in range(1, current_round + 1):
@@ -1149,6 +1159,17 @@ class F1DataSource:
         """Public accessor for the latest completed round number."""
         return self._get_latest_round(season)
 
+    def cached_latest_round(self, season: int) -> int:
+        """The last known round without any network request (0 if unknown).
+
+        For the render path, which must never fetch: the memo if there is
+        one, whatever its age, else the persistent copy.
+        """
+        if season in self._latest_round_cache:
+            return self._latest_round_cache[season][1]
+        cached_round = self._get_cached(f"f1_latest_round_{season}", "latest_round")
+        return cached_round if cached_round is not None else 0
+
     def _get_latest_round(self, season: int) -> int:
         """Get the latest completed round number for a season (memoized)."""
         # Return memoized value if fresh (within standings cache duration)
@@ -1158,20 +1179,21 @@ class F1DataSource:
             if time.time() - cached_time < max_age:
                 return round_num
 
-        # Persistent cache so the value survives restarts and the plugin still
-        # resolves the latest round when the ergast API is unreachable (offline).
+        # Ask the API once the memo above expires. The persistent copy is the
+        # fallback for a restart while offline, not a first stop: read first,
+        # it answered for up to a day after a race, so the new round -- and
+        # everything keyed by it (results, qualifying, poles) -- lagged a day.
         round_key = f"f1_latest_round_{season}"
-        cached_round = self._get_cached(round_key, "latest_round")
-        if cached_round is not None:
-            self._latest_round_cache[season] = (time.time(), cached_round)
-            return cached_round
-
         data = self._fetch_json(
             f"{JOLPI_BASE}/{season}/driverStandings.json")
         if not data:
             data = self._fetch_json(
                 f"{JOLPI_BASE}/current/driverStandings.json")
         if not data:
+            cached_round = self._get_cached(round_key, "latest_round")
+            if cached_round is not None:
+                self._latest_round_cache[season] = (time.time(), cached_round)
+                return cached_round
             return 0
 
         try:

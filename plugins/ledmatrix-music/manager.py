@@ -175,11 +175,30 @@ class MusicPlugin(BasePlugin):
             )
 
     def on_config_change(self, new_config: Dict[str, Any]) -> None:
-        """Refresh layout_mode/_adaptive -- otherwise only ever computed in
-        __init__, so a runtime layout_mode change would be silently ignored
-        until the plugin is restarted."""
+        """Apply a settings save without a restart.
+
+        The core calls this rather than reloading the plugin. Only layout_mode
+        used to be re-read, so fonts, scrolling and the polling interval kept
+        their old values until a restart. They are read again here; the poll
+        thread picks up the interval on its next sleep.
+
+        preferred_source is the exception: switching it means tearing down
+        one client and its threads and starting the other, which a save does
+        not do. The running source is kept and the log says a restart is
+        needed, rather than recording a source nothing is listening to.
+        """
+        source = self.preferred_source
         super().on_config_change(new_config)
+        self._load_config()
+        if self.preferred_source != source:
+            self.logger.warning(
+                "preferred_source changed to %s; restart the display service to "
+                "switch from %s", self.preferred_source, source)
+            self.preferred_source = source
+        self._load_custom_fonts()
         self._apply_layout_mode()
+        self.scroll_position_title = self.scroll_position_artist = 0
+        self.scroll_position_album = 0
 
     def _load_config(self):
         """Load configuration with flattened access (no nested 'music' key)."""

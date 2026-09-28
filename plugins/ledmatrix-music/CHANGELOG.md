@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.5.1] - 2026-09-28
+
+### Fixed
+- Saved settings now apply without a restart. The core applies a web-UI save
+  by calling on_config_change, not by reloading the plugin, and the base
+  version only replaces self.config; only layout_mode was re-read, so fonts,
+  text scrolling and the polling interval waited for a restart. They are re-
+  read on save. Switching preferred_source still needs a restart (it means
+  replacing one client and its threads with the other); the log says so
+  instead of recording a source nothing listens to.
+
+## [1.5.0] - 2026-09-28
+
+### Added
+- Declares spotify_redirect_uri (a secret, blank by default). The Spotify
+  client reads it from config_secrets.json, and the core merges secrets into
+  the plugin config, where the strict schema rejected it: a user who followed
+  the README had the plugin flagged Degraded. Blank keeps the default,
+  http://127.0.0.1:8888/callback, and the README example now matches that
+  default instead of localhost:8080.
+
 ## [1.4.5] - 2026-09-27
 
 ### Fixed

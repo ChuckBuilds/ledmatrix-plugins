@@ -1,5 +1,25 @@
 # Changelog
 
+## [2.7.5] - 2026-09-28
+
+### Fixed
+- More saved settings apply without a restart: show_feels_like,
+  show_dew_point, show_visibility, show_pressure, show_alerts and
+  update_interval were not re-read, and on_config_change set self.config
+  directly, so enabled went stale. It now calls the base on_config_change and
+  re-reads them. A change of units or location also forces the next update to
+  fetch, instead of showing the old units or place for up to update_interval.
+
+## [2.7.4] - 2026-09-28
+
+### Changed
+- Hides show_alerts: it only feeds live priority, which this plugin's settings
+  do not offer, and no screen draws alerts. Settings text now matches the
+  screens: the hourly forecast shows four hours and the daily three days, and
+  the extra current-conditions readings depend on panel width, not a 48 px
+  height. No behaviour change: hidden keys stay declared, so saved configs
+  still load.
+
 ## [2.7.3] - 2026-09-27
 
 ### Fixed
