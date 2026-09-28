@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.36.0",
+  "version": "1.36.1",
   "update_interval": 60,
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
@@ -19,6 +19,12 @@
   "branch": "main",
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
+    {
+      "version": "1.36.1",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Test fixture only, no runtime change. The harness fixture still seeded nba_schedule_2025, a key the managers stopped reading when the schedule cache moved to per-window keys, so every Recent/Upcoming render fetched the frozen January 2026 window from ESPN. Those games are all final now, so Upcoming drew nothing at any size (flagged only at the five sizes the fill check covers). The fixture now seeds nba_schedule_window_14_7."
+    },
     {
       "version": "1.36.0",
       "released": "2026-09-28",
