@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.7.8] - 2026-09-28
+
+### Changed
+- Removed code that nothing called. No change in behaviour.
+
 ## [2.7.7] - 2026-09-28
 
 ### Fixed

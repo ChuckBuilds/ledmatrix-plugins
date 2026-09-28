@@ -414,36 +414,6 @@ class FR24DetailFetcher:
             logger.warning(f"[Flight Tracker] FR24 detail fetch failed for {fr24_id}: {e}")
             return None
 
-    def enrich_aircraft(self, aircraft: Dict) -> None:
-        """Fetch FR24 detail for an aircraft and apply airline/timing fields in-place."""
-        fr24_id = aircraft.get('fr24_id')
-        if not fr24_id:
-            return
-
-        detail = self.fetch_detail(fr24_id)
-        if not detail:
-            return
-
-        airline = detail.get('airline') or {}
-        if airline.get('name') and not aircraft.get('airline_name'):
-            aircraft['airline_name'] = airline['name']
-
-        airport = detail.get('airport') or {}
-        origin_info = airport.get('origin') or {}
-        dest_info = airport.get('destination') or {}
-        origin_pos = origin_info.get('position') or {}
-        dest_pos = dest_info.get('position') or {}
-        if origin_pos.get('latitude') and not aircraft.get('origin_lat'):
-            aircraft['origin_lat'] = origin_pos['latitude']
-            aircraft['origin_lon'] = origin_pos['longitude']
-        if dest_pos.get('latitude') and not aircraft.get('dest_lat'):
-            aircraft['dest_lat'] = dest_pos['latitude']
-            aircraft['dest_lon'] = dest_pos['longitude']
-
-        time_data = detail.get('time') or {}
-        aircraft['fr24_time'] = time_data
-
-
 # ---------------------------------------------------------------------------
 # OpenSky Network (free REST API)
 # ---------------------------------------------------------------------------

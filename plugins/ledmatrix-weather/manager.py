@@ -2047,49 +2047,6 @@ class WeatherPlugin(BasePlugin):
 
     # --- Weather Alerts Display ---
 
-    def _display_alerts(self) -> None:
-        """Display active weather alerts if any."""
-        try:
-            alerts = []
-            if self.weather_data:
-                alerts = self.weather_data.get('alerts', [])
-            if not alerts:
-                return  # No alerts — skip silently
-
-            width = self.display_manager.matrix.width
-            height = self.display_manager.matrix.height
-            img = Image.new('RGB', (width, height), (0, 0, 0))
-            draw = ImageDraw.Draw(img)
-            draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
-
-            font = self._detail_font
-            font_h = 7
-            alert = alerts[0]  # Show first alert
-
-            event = alert.get('event', 'Weather Alert')
-            sender = alert.get('sender_name', '')
-            description = alert.get('description', '')
-
-            y = 1
-            # Row 1: Alert type in red/yellow
-            draw.text((2, y), event[:30], font=font, fill=(255, 80, 0))
-            y += font_h + 1
-
-            # Row 2: Sender
-            if sender:
-                draw.text((2, y), sender[:30], font=font, fill=(200, 200, 200))
-                y += font_h + 1
-
-            # Row 3+: Description (truncated to fit)
-            if description:
-                desc_short = description.replace('\n', ' ')[:60]
-                draw.text((2, y), desc_short, font=font, fill=(180, 180, 180))
-
-            self.display_manager.image = img
-            self.display_manager.update_display()
-        except Exception:
-            self.logger.exception("Error displaying alerts")
-
     def has_live_content(self) -> bool:
         """Return True if there are active severe weather alerts."""
         if not self.show_alerts or not self.weather_data:
@@ -2289,18 +2246,6 @@ class WeatherPlugin(BasePlugin):
 
         return None
 
-    def display_weather(self, force_clear: bool = False) -> None:
-        """Display current weather (compatibility method for display controller)."""
-        self.display(force_clear=force_clear, display_mode='weather')
-
-    def display_hourly_forecast(self, force_clear: bool = False) -> None:
-        """Display hourly forecast (compatibility method for display controller)."""
-        self.display(force_clear=force_clear, display_mode='hourly_forecast')
-
-    def display_daily_forecast(self, force_clear: bool = False) -> None:
-        """Display daily forecast (compatibility method for display controller)."""
-        self.display(force_clear=force_clear, display_mode='daily_forecast')
-
     def get_info(self) -> Dict[str, Any]:
         """Return plugin info for web UI."""
         info = super().get_info()
@@ -2322,4 +2267,3 @@ class WeatherPlugin(BasePlugin):
         self.weather_data = None
         self.forecast_data = None
         self.logger.info("Weather plugin cleaned up")
-

@@ -22,21 +22,11 @@ def null_safe(value: Any, fmt_func: Optional[Callable] = None, default: str = "-
 
 # --- Raw conversions (internal feet / knots / fpm) ---
 
-def meters_to_feet(m: float) -> float:
-    return m * 3.28084
-
 def feet_to_meters(ft: float) -> float:
     return ft / 3.28084
 
-def ms_to_knots(ms: float) -> float:
-    return ms * 1.94384
-
 def knots_to_kmh(kts: float) -> float:
     return kts * 1.852
-
-def ms_to_fpm(ms: float) -> float:
-    return ms * 196.85
-
 
 # --- Altitude ---
 
@@ -199,29 +189,8 @@ def _vr_unit_from_system(system: str) -> str:
     return "ms" if system == "metric" else "fpm"
 
 
-def convert_altitude(feet: float, system: str = "imperial") -> float:
-    u = _alt_unit_from_system(system)
-    return _ALT_CONVERTERS.get(u, lambda x: x)(feet)
-
-def convert_speed(knots: float, system: str = "imperial") -> float:
-    u = _spd_unit_from_system(system)
-    return _SPD_CONVERTERS.get(u, lambda x: x)(knots)
-
-def convert_vrate(fpm: float, system: str = "imperial") -> float:
-    u = _vr_unit_from_system(system)
-    return _VR_CONVERTERS.get(u, lambda x: x)(fpm)
-
-def convert_distance(miles: float, system: str = "imperial") -> float:
-    return miles * 1.60934 if system == "metric" else miles
-
 def altitude_unit(system: str = "imperial") -> str:
     return "m" if system == "metric" else "ft"
 
 def speed_unit(system: str = "imperial") -> str:
     return "kmh" if system == "metric" else "kn"
-
-def vrate_unit(system: str = "imperial") -> str:
-    return "m/s" if system == "metric" else "fpm"
-
-def distance_unit(system: str = "imperial") -> str:
-    return "km" if system == "metric" else "mi"
