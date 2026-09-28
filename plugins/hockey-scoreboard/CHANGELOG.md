@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.35.4] - 2026-09-28
+
+### Fixed
+- Test fixture only, no runtime change. The harness made 16 live ESPN
+  scoreboard requests per run: the always-instantiated live manager fetched
+  today's games on every render, because with no live games it polls on its
+  idle back-off rather than the huge update_intervals.live the fixture relied
+  on. The fixture now sets test_mode, so the live manager simulates its game
+  and the run makes no requests. Rendered frames are unchanged.
+
 ## [1.35.3] - 2026-09-28
 
 ### Fixed

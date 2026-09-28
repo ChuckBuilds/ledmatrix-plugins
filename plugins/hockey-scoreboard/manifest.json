@@ -1,7 +1,7 @@
 {
   "id": "hockey-scoreboard",
   "name": "Hockey Scoreboard",
-  "version": "1.35.3",
+  "version": "1.35.4",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, and NCAA Women's hockey with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/hockey-scoreboard",
@@ -54,6 +54,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.35.4",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Test fixture only, no runtime change. The harness made 16 live ESPN scoreboard requests per run: the always-instantiated live manager fetched today's games on every render, because with no live games it polls on its idle back-off rather than the huge update_intervals.live the fixture relied on. The fixture now sets test_mode, so the live manager simulates its game and the run makes no requests. Rendered frames are unchanged."
+    },
     {
       "version": "1.35.3",
       "released": "2026-09-28",
