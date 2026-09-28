@@ -1,7 +1,7 @@
 {
   "id": "news",
   "name": "News Ticker",
-  "version": "1.6.3",
+  "version": "1.6.4",
   "description": "Displays scrolling news headlines from RSS feeds including sports news from ESPN, NCAA updates, and custom RSS sources",
   "author": "ChuckBuilds",
   "category": "content",
@@ -20,6 +20,12 @@
   "branch": "main",
   "plugin_path": "plugins/news",
   "versions": [
+    {
+      "released": "2026-09-28",
+      "version": "1.6.4",
+      "changelog": "A feed that fails keeps its last headlines on the ticker. update() rebuilt the list from scratch and added a feed only when its fetch succeeded, so a timed-out feed dropped out, and with every feed down the panel showed 'No Headlines Available' instead of what it had.",
+      "ledmatrix_min_version": "3.4.0"
+    },
     {
       "released": "2026-09-27",
       "version": "1.6.3",
@@ -148,7 +154,7 @@
   ],
   "stars": 0,
   "downloads": 0,
-  "last_updated": "2026-09-27",
+  "last_updated": "2026-09-28",
   "verified": true,
   "screenshot": "",
   "display_modes": [

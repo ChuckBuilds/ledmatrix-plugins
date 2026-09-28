@@ -5,6 +5,7 @@ Handles all display creation, layout, and rendering logic for both
 scrolling and static display modes.
 """
 
+import math
 import os
 from typing import Dict, Any, List, Optional, Tuple
 from PIL import Image, ImageDraw, ImageFont
@@ -26,6 +27,17 @@ def _pixel_draw(image):
     draw.fontmode = "1"
     return draw
 
+
+
+def format_money(value: float, signed: bool = False) -> str:
+    """Two decimals from $0.10 up, as always. Below that, four significant
+    digits, so a sub-cent coin is not drawn as $0.00."""
+    value = float(value)
+    magnitude = abs(value)
+    decimals = 2
+    if 0 < magnitude < 0.1:
+        decimals = min(10, 3 - math.floor(math.log10(magnitude)))
+    return f"{value:{'+' if signed else ''}.{decimals}f}"
 
 
 class StockDisplayRenderer:
@@ -235,7 +247,7 @@ class StockDisplayRenderer:
         # Create text elements
         display_symbol = symbol.replace('-USD', '') if is_crypto else symbol
         symbol_text = display_symbol
-        price_text = f"${data['price']:.2f}"
+        price_text = f"${format_money(data['price'])}"
 
         # Build change text based on show_change and show_percentage flags
         # Get flags from config (stock-specific or crypto-specific)
@@ -249,7 +261,7 @@ class StockDisplayRenderer:
         # Build change text components
         change_parts = []
         if show_change:
-            change_parts.append(f"{data['change']:+.2f}")
+            change_parts.append(format_money(data['change'], signed=True))
         if show_percentage:
             # Use change_percent if available, otherwise calculate from change and open
             if 'change_percent' in data:
@@ -372,7 +384,7 @@ class StockDisplayRenderer:
         # Create text
         display_symbol = symbol.replace('-USD', '') if is_crypto else symbol
         symbol_text = display_symbol
-        price_text = f"${data['price']:.2f}"
+        price_text = f"${format_money(data['price'])}"
         
         # Build change text based on show_change and show_percentage flags
         if is_crypto:
@@ -385,7 +397,7 @@ class StockDisplayRenderer:
         # Build change text components
         change_parts = []
         if show_change:
-            change_parts.append(f"{data['change']:+.2f}")
+            change_parts.append(format_money(data['change'], signed=True))
         if show_percentage:
             if 'change_percent' in data:
                 change_parts.append(f"({data['change_percent']:+.1f}%)")

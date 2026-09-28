@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-stocks",
   "name": "Stock & Crypto Ticker",
-  "version": "2.11.1",
+  "version": "2.11.2",
   "description": "Displays stock tickers with prices, changes, and optional charts for stocks and cryptocurrencies. Supports scroll and switch display modes.",
   "author": "LEDMatrix Team",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/ledmatrix-stocks",
@@ -38,6 +38,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "2.11.2",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Quotes refresh on schedule: the cache was read with max_age equal to the update interval, and each entry is written partway through an update, so at the next scheduled update it was still fresh and every symbol refreshed only every other time. It is now reused for half the interval. Crypto has its own cache key, so stock SOL and crypto SOL-USD (both shown as SOL) no longer share a quote. Prices and changes under $0.10 keep four significant digits instead of rounding to $0.00; from $0.10 up they draw exactly as before."
+    },
     {
       "version": "2.11.1",
       "released": "2026-09-17",
@@ -145,7 +151,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-15",
+  "last_updated": "2026-09-28",
   "stars": 0,
   "downloads": 0,
   "verified": true,
