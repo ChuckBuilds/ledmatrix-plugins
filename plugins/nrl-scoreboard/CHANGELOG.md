@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.31.0] - 2026-09-28
+
+### Changed
+- Requires LEDMatrix core 3.5.0 (`ledmatrix_min_version` and
+  `compatible_versions`), the first release that ships
+  `src/common/espn_dates.py` and `src/common/sports_helpers.py`. The store
+  refuses to install or update this version onto an older core.
+
+### Removed
+- `nrl_espn_dates.py`, the bundled copy of core's ESPN date-range helper.
+  `src.common.espn_dates` is now imported plainly; on a 3.5.0 core the plugin
+  already ran core's copy.
+- `sports.py`'s private copies of the shared sports helpers: `_clamp_window`,
+  `_clamp_seconds`, `_logo_needs_refresh` (imported from core under the same
+  names) and `SportsCore`'s `_mode_customization`, `_setting_int`,
+  `_reset_dwell_on_reentry`, `_next_switch_index`, `_spread_weighted_order`,
+  `_odds_color` and `_upcoming_date_and_time_text` (inherited from core's
+  `SportsHelpersMixin`). Core's bodies are identical.
+- `SportsCore._get_weeks_data`. The override existed because older cores' mixin
+  sent ESPN a raw date range; core 3.5.0's mixin fetches the same window
+  through the same range-safe helper.
+
+No behaviour change: every safety-harness render is byte-identical.
+
 ## [1.30.1] - 2026-09-28
 
 ### Removed

@@ -44,7 +44,7 @@ modules present in 3.0.0 are always there and need no entry. Versions come
 from the release tags in the LEDMatrix repo (first tag whose tree contains the
 file), regenerated with::
 
-    for t in v3.0.0 v3.1.0 v3.2.0 v3.3.0 v3.3.1 v3.4.0; do
+    for t in v3.0.0 v3.1.0 v3.2.0 v3.3.0 v3.3.1 v3.4.0 v3.5.0; do
         git ls-tree -r --name-only $t -- src | grep '\\.py$' > $t.txt; done
     # then diff consecutive lists
 
@@ -118,25 +118,29 @@ MODULE_FIRST_VERSION = {
     "src.common.path_safety": "3.4.0",
     "src.common.scroll_config": "3.4.0",
     "src.display_geometry": "3.4.0",  # core #580
-    # on core main, in no tagged release yet. When the next release is
-    # tagged, set each None entry here to that tag -- the test's
+    # v3.5.0
+    "src.common.bdf_font": "3.5.0",  # core #627
+    "src.common.espn_dates": "3.5.0",  # core #591
+    "src.common.frame_timing": "3.5.0",  # core #629
+    "src.common.json_body": "3.5.0",  # core #633
+    "src.common.render_gate": "3.5.0",  # core #630
+    "src.common.sports_helpers": "3.5.0",  # core #583
+    "src.core_config_keys": "3.5.0",  # core #589
+    "src.deprecation": "3.5.0",  # core #610
+    "src.device_location": "3.5.0",  # core #617
+    "src.font_usage": "3.5.0",  # core #619
+    "src.matrix_support": "3.5.0",  # core #595
+    "src.pi5_matrix_support": "3.5.0",  # core #586
+    "src.plugin_system.plugin_dirs": "3.5.0",  # core #623
+    "src.plugin_system.repo_urls": "3.5.0",  # core #635
+    "src.plugin_system.store_install": "3.5.0",  # core #659
+    "src.plugin_system.store_registry": "3.5.0",  # core #659
+    "src.plugin_system.store_update": "3.5.0",  # core #659
+    "src.redaction": "3.5.0",  # core #614
+    "src.scan_order": "3.5.0",  # core #634
+    # on core main, in no tagged release yet: add as None. When the next
+    # release is tagged, set each None entry here to that tag -- the test's
     # tag-verification section insists on it once the tag is in its list.
-    "src.common.bdf_font": None,  # core #627
-    "src.common.espn_dates": None,  # core #591
-    "src.common.frame_timing": None,  # core #629
-    "src.common.json_body": None,  # core #633
-    "src.common.render_gate": None,  # core #630
-    "src.common.sports_helpers": None,  # core #583
-    "src.core_config_keys": None,  # core #589
-    "src.deprecation": None,  # core #610
-    "src.device_location": None,  # core #617
-    "src.font_usage": None,  # core #619
-    "src.matrix_support": None,  # core #595
-    "src.pi5_matrix_support": None,  # core #586
-    "src.plugin_system.plugin_dirs": None,  # core #623
-    "src.plugin_system.repo_urls": None,  # core #635
-    "src.redaction": None,  # core #614
-    "src.scan_order": None,  # core #634
 }
 
 #: Releases whose ``src/__init__.py`` ``__version__`` lags their tag. The
@@ -148,9 +152,9 @@ MODULE_FIRST_VERSION = {
 #:
 #: Facts from the published tags: v3.3.0 (bc2dbf38) and v3.3.1 (32d637a4)
 #: both report "3.3.0" and both contain ``sports_shared``; v3.4.0 (9e3f184d)
-#: reports "3.4.0" and needs no entry. v3.3.1 adds no
-#: ``src`` module, so no table entry names 3.3.1 and this mapping is
-#: currently inert. It stays because it is true (the tag test checks it).
+#: reports "3.4.0" and v3.5.0 (5b30052b) reports "3.5.0"; neither needs an
+#: entry. v3.3.1 adds no ``src`` module, so no table entry names 3.3.1 and
+#: this mapping is currently inert. It stays because it is true (the tag test checks it).
 #: Entries describe published tags, so they are permanent.
 REPORTED_AS = {
     "3.3.1": "3.3.0",
