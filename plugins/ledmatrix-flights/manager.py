@@ -963,15 +963,22 @@ class FlightTrackerPlugin(BasePlugin):
         current_time = time.time()
         current_date = datetime.now().date()
         
+        # A new month starts the spend count again.
+        month = (current_date.year, current_date.month)
+        if getattr(self, '_usage_month', None) != month:
+            self.monthly_api_calls = 0
+            self._usage_month = month
+
         # Reset daily counter if new day
         if self.last_reset_date != current_date:
             self.api_calls_today = 0
             self.last_reset_date = current_date
-            self.logger.info(f"[Flight Tracker] Daily API budget reset: {self.daily_api_budget} calls available")
-        
+            self.logger.info(f"[Flight Tracker] Daily API budget reset: {self._effective_daily_budget()} calls available")
+
         # Check daily budget first (more restrictive)
-        if self.api_calls_today >= self.daily_api_budget:
-            self.logger.warning(f"[Flight Tracker] Daily API budget reached: {self.api_calls_today}/{self.daily_api_budget} calls today")
+        budget = self._effective_daily_budget()
+        if self.api_calls_today >= budget:
+            self.logger.warning(f"[Flight Tracker] Daily API budget reached: {self.api_calls_today}/{budget} calls today")
             return False
         
         # Check hourly rate limit
@@ -996,7 +1003,7 @@ class FlightTrackerPlugin(BasePlugin):
         budget_usage = current_cost / self.monthly_budget
         
         # Log cost information
-        self.logger.info(f"[Flight Tracker] API call recorded. Today: {self.api_calls_today}/{self.daily_api_budget}, "
+        self.logger.info(f"[Flight Tracker] API call recorded. Today: {self.api_calls_today}/{self._effective_daily_budget()}, "
                    f"Monthly: {self.monthly_api_calls} calls (${current_cost:.2f}), "
                    f"Budget usage: {budget_usage:.1%}")
         
@@ -1005,16 +1012,24 @@ class FlightTrackerPlugin(BasePlugin):
             self.logger.warning(f"[Flight Tracker] BUDGET WARNING: {budget_usage:.1%} of monthly budget used "
                           f"(${current_cost:.2f}/${self.monthly_budget:.2f})")
         
-        # Smart budget management - reduce daily budget as month progresses
-        current_day = datetime.now().day
-        if current_day > 15:  # After mid-month, be more conservative
-            self.daily_api_budget = min(self.daily_api_budget, 40)  # Reduce to 40 calls/day
-            self.logger.info(f"[Flight Tracker] Mid-month budget adjustment: {self.daily_api_budget} calls/day")
-        
-        # Emergency stop at 95% budget
         if budget_usage >= 0.95:
-            self.logger.error("[Flight Tracker] EMERGENCY STOP: 95% of budget reached. Disabling API calls.")
-            self.daily_api_budget = 0  # Effectively disable further calls
+            self.logger.error("[Flight Tracker] EMERGENCY STOP: 95% of the monthly budget reached. "
+                              "No more FlightAware calls until next month.")
+
+    def _effective_daily_budget(self) -> int:
+        """Today's call allowance: the configured daily_api_budget, capped at 40
+        after the 15th, and 0 once 95% of the month's spend is used.
+
+        Worked out on each check. It used to be written back into
+        daily_api_budget, so the mid-month cap carried into the next month
+        and the emergency stop never lifted until a restart -- and the month's
+        call count never reset either.
+        """
+        if self.monthly_api_calls * self.cost_per_call >= 0.95 * self.monthly_budget:
+            return 0
+        if datetime.now().day > 15:  # After mid-month, be more conservative
+            return min(self.daily_api_budget, 40)
+        return self.daily_api_budget
     
     
     def _fetch_aircraft_data(self) -> Optional[Dict]:
@@ -1815,18 +1830,19 @@ class FlightTrackerPlugin(BasePlugin):
             self.logger.info(f"[Flight Tracker] Skipping flight plan fetch for {callsign} (not worth fetching - category: {aircraft_category})")
             return {'origin': 'Unknown', 'destination': 'Unknown', 'aircraft_type': aircraft_category}
         
-        # Check rate limiting
-        if not self._check_rate_limit():
-            self.logger.warning(f"[Flight Tracker] Rate limit reached, skipping API call for {callsign}")
-            return {'origin': 'Unknown', 'destination': 'Unknown', 'aircraft_type': aircraft_category}
-        
-        # Use cache manager for flight plan data
+        # Cache first: a cached plan costs no call, so it is served even when
+        # the budget is spent (the limit used to be checked first).
         cache_key = f"flight_plan_{callsign}"
         cached_data = self.cache_manager.get(cache_key, max_age=self.cache_ttl_seconds)
         
         if cached_data:
             self.logger.debug(f"[Flight Tracker] Using cached flight plan for {callsign}")
             return cached_data
+
+        # Check rate limiting
+        if not self._check_rate_limit():
+            self.logger.warning(f"[Flight Tracker] Rate limit reached, skipping API call for {callsign}")
+            return {'origin': 'Unknown', 'destination': 'Unknown', 'aircraft_type': aircraft_category}
         
         self.logger.info(f"[Flight Tracker] Fetching flight plan data for {callsign}")
         
