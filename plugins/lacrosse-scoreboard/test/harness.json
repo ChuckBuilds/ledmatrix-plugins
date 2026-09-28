@@ -1,5 +1,5 @@
 {
-  "_comment": "Deterministic fixture for the plugin safety harness. Seeds the NCAA men's lacrosse season-schedule cache (key ncaa_mens_lacrosse_schedule_2026) with one final, one in-progress, and one scheduled game so recent/upcoming render real game cards without network access. Live mode is disabled: the live manager's _fetch_data() -> _fetch_todays_games() is a direct network call with no cache read and no test_mode passthrough in _adapt_config_for_manager, so the live screen can never be fed from mock data. The huge update_intervals.live keeps the always-instantiated live manager from attempting that doomed network fetch on every update() (under freeze_time, now - last_update stays below it), keeping CI runs fast.",
+  "_comment": "Deterministic fixture for the plugin safety harness. Seeds the NCAA men's lacrosse season-schedule cache (key ncaa_mens_lacrosse_schedule_2026) with one final, one in-progress, and one scheduled game so recent/upcoming render real game cards without network access. Nothing here may reach ESPN: freezegun hands the real clock to calls made from a thread's run(), so the SwitchRefresh thread display() starts always finds its manager due and runs update(). An update() that fetches is still on the network when freeze_time ends, and its next schedule read uses the real date -- a live fetch of next season. So update() must be cache-only: filtering.other_games_min_quality is 'any' because the default 'ranked' fetches the live NCAA poll on every update() (held in memory, so it cannot be seeded, and it made which fixture games pass the filter depend on that day's poll), and test_mode makes the always-instantiated live manager simulate its game instead of fetching today's scoreboard. A huge update_intervals.live used to stand in for test_mode, but with no live games the live manager polls on its idle back-off, not that interval, so it fetched on every render. Live display stays off so the screens under test and their golden cards are unchanged.",
   "config": {
     "enabled": true,
     "timezone": "UTC",
@@ -18,14 +18,15 @@
         "favorite_teams_only": false,
         "show_all_live": true
       },
-      "update_intervals": {
-        "live": 9999999999
+      "filtering": {
+        "other_games_min_quality": "any"
       },
       "display_options": {
         "show_records": false,
         "show_ranking": false,
         "show_odds": false
-      }
+      },
+      "test_mode": true
     },
     "ncaa_womens": {
       "enabled": false
