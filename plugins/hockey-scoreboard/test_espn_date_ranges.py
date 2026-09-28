@@ -28,7 +28,7 @@ for _candidate in ([Path(_core)] if _core else []) + [plugin_dir.parents[2] / "L
         break
 
 try:
-    import hockey_espn_dates  # noqa: E402
+    from src.common import espn_dates  # noqa: E402
     import nhl_managers  # noqa: E402
 except ModuleNotFoundError as exc:
     # Skip only for a missing core checkout; a missing plugin module is a failure.
@@ -64,7 +64,7 @@ class FakeESPN:
         params = dict(params or {})
         self.calls.append(params)
         dates = str(params.get("dates", ""))
-        if hockey_espn_dates.parse_espn_date_range(dates) is not None:
+        if espn_dates.parse_espn_date_range(dates) is not None:
             return FakeResponse(400)
         return FakeResponse(200, {"events": [{"id": "game-" + dates}]})
 
@@ -101,8 +101,7 @@ class FixedCoreService(OldCoreService):
 @pytest.fixture(autouse=True)
 def forget_rejected_ranges(monkeypatch):
     # The rejected-range memo is process-wide; each test starts clean. It lives
-    # in whichever helper the plugin runs on: core's when core ships one (as it
-    # does here), else the bundled hockey_espn_dates.
+    # in the helper the plugin runs on: core's src.common.espn_dates.
     import sports
     helper = sys.modules[sports.fetch_espn_scoreboard.__module__]
     monkeypatch.setattr(helper, "_ranges_rejected_until", 0.0)
@@ -140,8 +139,8 @@ def test_the_window_is_fetched_here_when_the_service_cannot_fetch_ranges(service
     # read, for games Recent and Upcoming then filtered out.
     expected, window = manager._schedule_window()
     assert sent[0] == expected
-    start, end = hockey_espn_dates.parse_espn_date_range(expected)
-    chunks = hockey_espn_dates.espn_date_chunks(start, end)
+    start, end = espn_dates.parse_espn_date_range(expected)
+    chunks = espn_dates.espn_date_chunks(start, end)
     # The chunks are fetched concurrently, so only the rejected range keeps a
     # fixed position; which chunk answers first is not significant.
     assert sorted(sent[1:]) == sorted(chunks)
