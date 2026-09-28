@@ -377,7 +377,9 @@ class WeatherPlugin(BasePlugin):
         Text spacing stays fixed because fonts are fixed-size bitmaps.
         Reference baseline: 128x32 display.
         """
-        if hasattr(self, '_layout_cache'):
+        # on_config_change resets the cache to None, so test the value, not
+        # the attribute: hasattr() would hand None to every renderer.
+        if getattr(self, '_layout_cache', None) is not None:
             return self._layout_cache
 
         width = self.display_manager.matrix.width

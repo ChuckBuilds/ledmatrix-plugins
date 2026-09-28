@@ -1,7 +1,7 @@
 {
   "id": "nfl-stat-leaders",
   "name": "NFL Stat Leaders",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "author": "ChuckBuilds",
   "description": "A scrolling ticker of the NFL's statistical leaders -- passing, rushing and receiving yards and touchdowns, plus receptions, sacks, interceptions, tackles and passer rating. Each category is a separate leaderboard you can turn on or off, drawn with club crests and club colours. Data comes from ESPN's public feed, so no API key is needed.",
   "entry_point": "manager.py",
@@ -31,6 +31,12 @@
     ">=3.4.0"
   ],
   "versions": [
+    {
+      "version": "1.0.1",
+      "released": "2026-09-27",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "global.display_options.scroll_speed and scroll_delay now set the scroll speed. The core resolver reads display_options at the top of the config it is given, but the plugin passed its whole config, where display_options sits under global, so both settings were ignored and every value scrolled at the 100 px/s default. The schema defaults (1.0 / 0.01) are that same 100 px/s, so an unchanged config scrolls as before."
+    },
     {
       "version": "1.0.0",
       "released": "2026-09-22",
@@ -68,5 +74,5 @@
   "verified": true,
   "screenshot": "",
   "license": "GPL-3.0",
-  "last_updated": "2026-09-22"
+  "last_updated": "2026-09-27"
 }

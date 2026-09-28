@@ -433,10 +433,10 @@
       "plugin_path": "plugins/ledmatrix-leaderboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-16",
+      "last_updated": "2026-09-27",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.5.1"
+      "latest_version": "1.5.2"
     },
     {
       "id": "ledmatrix-flights",
@@ -460,10 +460,10 @@
       "plugin_path": "plugins/ledmatrix-flights",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-20",
+      "last_updated": "2026-09-27",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.14.2"
+      "latest_version": "1.14.3"
     },
     {
       "id": "march-madness",
@@ -531,10 +531,10 @@
       "plugin_path": "plugins/mqtt-notifications",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-03",
+      "last_updated": "2026-09-27",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.2"
+      "latest_version": "1.2.3"
     },
     {
       "id": "music",
@@ -554,10 +554,10 @@
       "plugin_path": "plugins/ledmatrix-music",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-16",
+      "last_updated": "2026-09-27",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.4.4"
+      "latest_version": "1.4.5"
     },
     {
       "id": "news",
@@ -578,10 +578,10 @@
       "plugin_path": "plugins/news",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-18",
+      "last_updated": "2026-09-27",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.6.2"
+      "latest_version": "1.6.3"
     },
     {
       "id": "on-air",
@@ -952,10 +952,10 @@
       "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
       "branch": "main",
       "plugin_path": "plugins/ledmatrix-weather",
-      "latest_version": "2.7.2",
+      "latest_version": "2.7.3",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-16",
+      "last_updated": "2026-09-27",
       "verified": true,
       "screenshot": ""
     },
@@ -1164,10 +1164,10 @@
       "plugin_path": "plugins/incoming-packages",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-16",
+      "last_updated": "2026-09-27",
       "verified": true,
       "screenshot": "https://raw.githubusercontent.com/ChuckBuilds/ledmatrix-plugins/main/plugins/incoming-packages/assets/screenshot.png",
-      "latest_version": "1.1.0",
+      "latest_version": "1.1.1",
       "icon": "fas fa-box"
     },
     {
@@ -1289,10 +1289,10 @@
       "plugin_path": "plugins/nfl-stat-leaders",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-22",
+      "last_updated": "2026-09-27",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.0"
+      "latest_version": "1.0.1"
     },
     {
       "id": "fantasy-blitz",

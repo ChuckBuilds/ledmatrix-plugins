@@ -1055,8 +1055,10 @@ class NewsTickerPlugin(BasePlugin):
                     headline['title'] = self._clean_headline(headline['title'])
                     headlines.append(headline)
 
-            # Cache the results
-            self.cache_manager.set(cache_key, headlines, ttl=update_interval * 2)
+            # Cache the results. The stored ttl beats the reader's max_age in
+            # the core cache, so it must equal update_interval: twice that
+            # made every feed refresh at half the configured rate.
+            self.cache_manager.set(cache_key, headlines, ttl=update_interval)
 
             return headlines
 

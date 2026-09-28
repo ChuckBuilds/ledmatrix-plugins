@@ -346,7 +346,7 @@ class MQTTNotificationsPlugin(BasePlugin):
             }
             
             # Store message in cache for display method
-            self.cache_manager.set(f'{self.plugin_id}_current_message', message, max_age=3600)
+            self.cache_manager.set(f'{self.plugin_id}_current_message', message, ttl=3600)
             
             # Trigger on-demand display
             self.cache_manager.set('display_on_demand_request', request_payload)

@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-leaderboard",
   "name": "Sports Leaderboard",
-  "version": "1.5.1",
+  "version": "1.5.2",
   "description": "Displays scrolling leaderboards and standings for multiple sports leagues including NFL, NBA, MLB, NCAA Football, NCAA Basketball, and more",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -31,6 +31,12 @@
   "requirements_file": "requirements.txt",
   "min_ledmatrix_version": "3.4.0",
   "versions": [
+    {
+      "version": "1.5.2",
+      "released": "2026-09-27",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Standings and rankings refresh on update_interval instead of up to a week later. Every read used the core's 'leaderboard' cache strategy, which keeps an entry for 7 days, so while the cache was warm update_interval never caused a fetch. A cached response is now reused only while it is younger than half of update_interval, so each scheduled update fetches. The standings cache key now includes level and season, so changing either fetches that data instead of reusing the old response. Expect one ESPN request per enabled league per update_interval (hourly by default)."
+    },
     {
       "version": "1.5.1",
       "released": "2026-09-16",
@@ -133,7 +139,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-16",
+  "last_updated": "2026-09-27",
   "compatible_versions": [
     ">=3.4.0"
   ]

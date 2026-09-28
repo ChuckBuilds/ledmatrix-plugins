@@ -522,9 +522,27 @@ class IncomingPackagesPlugin(BasePlugin):
         return True
 
     def on_config_change(self, new_config: Dict[str, Any]) -> None:
+        old_source = self._snapshot_cache_key()
+        old_images, old_image_sig = self._images, self._image_sig
         super().on_config_change(new_config)
         self.__init__(self.plugin_id, new_config, self.display_manager,
                       self.cache_manager, self.plugin_manager)
+        # __init__ leaves the plugin "never fetched", which drew "Loading..."
+        # until the core's next scheduled update(), up to update_interval away.
+        # Show the cached snapshot instead: a cache read, no network on the
+        # web thread. _last_fetch stays 0, so the next update() refreshes as
+        # usual.
+        snap = self._load_cached_snapshot()
+        if snap is None:
+            return
+        if self._snapshot_cache_key() == old_source:
+            # Same data source: its images are still right. Each is keyed by
+            # URL and panel size, so update() refetches any that changed.
+            self._images, self._image_sig = old_images, old_image_sig
+        self._snapshot = snap
+        self._cards = self._build_cards(snap)
+        self._has_fetched = True
+        self._last_success = time.time()
 
     # ── rendering ──────────────────────────────────────────────────────────
 

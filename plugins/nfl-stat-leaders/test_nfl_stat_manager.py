@@ -188,6 +188,33 @@ def test_the_scroll_is_paced_by_the_shared_resolver():
     plugin.cleanup()
 
 
+def test_the_configured_scroll_pacing_is_the_one_applied():
+    # global.display_options was never handed to the resolver, which read
+    # display_options at the plugin root, so every value scrolled at the
+    # resolver's 100 px/s default.
+    plugin, _ = build(config={"global": {"display_options": {
+        "scroll_speed": 2.0, "scroll_delay": 0.04}}})
+    settings = plugin._scroll_settings
+    check("the scroll settings are read from global.display_options",
+          settings is not None
+          and settings.source == "display_options.scroll_speed/delay",
+          str(getattr(settings, "source", None)))
+    check("scroll_speed / scroll_delay sets the requested speed (50 px/s)",
+          settings is not None and abs(
+              (settings.requested_pixels_per_second
+               or settings.pixels_per_second) - 50.0) < 1e-6,
+          str(settings))
+    plugin.cleanup()
+
+    plugin, _ = build(config={"global": {"display_options": {
+        "scroll_speed": 1.0, "scroll_delay": 0.01}}})
+    check("the schema defaults still give 100 px/s",
+          abs((plugin._scroll_settings.requested_pixels_per_second
+               or plugin._scroll_settings.pixels_per_second) - 100.0) < 1e-6,
+          str(plugin._scroll_settings))
+    plugin.cleanup()
+
+
 def test_the_slot_length_follows_the_ticker():
     plugin, _ = build()
     plugin.display(force_clear=True)

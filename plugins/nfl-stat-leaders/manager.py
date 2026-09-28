@@ -145,9 +145,13 @@ class NFLStatLeadersPlugin(BasePlugin):
         the resolved pacing.
         """
         if _scroll_config is not None:
+            # The resolver looks for ``display_options`` at the top of
+            # plugin_config; this schema nests it under ``global``. Passing
+            # the plugin root left both settings unread, so every value
+            # scrolled at the resolver's 100 px/s default.
             self._scroll_settings = _scroll_config.configure(
                 self.scroll_helper,
-                plugin_config=self.config,
+                plugin_config=self.global_config,
                 global_config=self.global_config,
                 display_manager=self.display_manager,
                 plugin_logger=self.logger,

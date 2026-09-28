@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.5] - 2026-09-27
+
+### Fixed
+- **The Spotify access token is no longer written to the log.** A startup
+  diagnostic logged the first 120 characters of `config/spotify_auth.json` at
+  INFO on every start, and that file begins with the live access token. It
+  now logs only the file's length.
+
 ## [1.4.4] - 2026-09-16
 
 ### Fixed

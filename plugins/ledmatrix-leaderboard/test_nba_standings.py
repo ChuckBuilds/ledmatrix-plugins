@@ -73,7 +73,7 @@ class FakeResponse:
 
 
 class FakeCache:
-    def get_cached_data_with_strategy(self, *args, **kwargs):
+    def get(self, *args, **kwargs):
         return None
 
     def save_cache(self, *args, **kwargs):

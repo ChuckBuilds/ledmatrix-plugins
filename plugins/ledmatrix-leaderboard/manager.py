@@ -62,7 +62,8 @@ class LeaderboardPlugin(BasePlugin):
 
         # Initialize components
         self.league_config = LeagueConfig(config, self.logger)
-        self.data_fetcher = DataFetcher(cache_manager, self.logger, self.request_timeout)
+        self.data_fetcher = DataFetcher(cache_manager, self.logger, self.request_timeout,
+                                        cache_max_age=self.update_interval // 2)
         self.image_renderer = ImageRenderer(self.display_height, self.logger, self.appearance)
 
         # Initialize scroll helper. Speed, pacing and the frame hold come only
@@ -206,6 +207,7 @@ class LeaderboardPlugin(BasePlugin):
         self._load_config(self.config)
         self.league_config = LeagueConfig(self.config, self.logger)
         self.data_fetcher.request_timeout = self.request_timeout
+        self.data_fetcher.cache_max_age = self.update_interval // 2
         self.image_renderer = ImageRenderer(self.display_height, self.logger, self.appearance)
         self._configure_scroll()
         self.scroll_helper.clear_cache()

@@ -1,7 +1,7 @@
 {
   "id": "news",
   "name": "News Ticker",
-  "version": "1.6.2",
+  "version": "1.6.3",
   "description": "Displays scrolling news headlines from RSS feeds including sports news from ESPN, NCAA updates, and custom RSS sources",
   "author": "ChuckBuilds",
   "category": "content",
@@ -20,6 +20,12 @@
   "branch": "main",
   "plugin_path": "plugins/news",
   "versions": [
+    {
+      "released": "2026-09-27",
+      "version": "1.6.3",
+      "changelog": "Feeds refresh every global.update_interval seconds, as documented, instead of every other interval. Each feed was cached with a ttl of twice update_interval, and the core cache lets a stored ttl beat the reader's max_age, so at the default 300 s a feed was refetched every 600 s. The ttl now equals update_interval.",
+      "ledmatrix_min_version": "3.4.0"
+    },
     {
       "released": "2026-09-18",
       "version": "1.6.2",
@@ -142,7 +148,7 @@
   ],
   "stars": 0,
   "downloads": 0,
-  "last_updated": "2026-09-16",
+  "last_updated": "2026-09-27",
   "verified": true,
   "screenshot": "",
   "display_modes": [

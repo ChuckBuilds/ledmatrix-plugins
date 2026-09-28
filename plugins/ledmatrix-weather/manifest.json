@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-weather",
   "name": "Weather Display",
-  "version": "2.7.2",
+  "version": "2.7.3",
   "author": "ChuckBuilds",
   "class_name": "WeatherPlugin",
   "update_interval": 60,
@@ -26,6 +26,12 @@
     "radar"
   ],
   "versions": [
+    {
+      "released": "2026-09-27",
+      "version": "2.7.3",
+      "notes": "Saving settings in the web UI no longer blanks the current, hourly and daily screens until a restart. on_config_change resets the layout cache to None, and _get_layout tested hasattr(), which is still true for None, so it handed None to every renderer; each one raised after clearing the panel. The layout is now recomputed when the cache is empty.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-09-16",
       "version": "2.7.2",
@@ -198,7 +204,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-16",
+  "last_updated": "2026-09-27",
   "stars": 0,
   "downloads": 0,
   "verified": true,
