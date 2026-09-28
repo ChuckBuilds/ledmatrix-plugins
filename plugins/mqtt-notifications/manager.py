@@ -614,6 +614,17 @@ class MQTTNotificationsPlugin(BasePlugin):
         # Connection health is managed by background thread
         # This method is called periodically by the plugin system
     
+    @property
+    def needs_high_fps(self) -> bool:
+        """Ask the core for its fast display loop while text may scroll.
+
+        Without it display() runs once a second, and the scroll -- timed in
+        pixels per second -- advanced in scroll_speed-sized jumps (30px at the
+        default) instead of moving. A frame here is a crop from the cached
+        strip, microseconds of work, so the fast loop costs little.
+        """
+        return bool(self.scroll_enabled)
+
     def display(self, force_clear: bool = False) -> bool:
         """
         Display the current MQTT message.
@@ -675,6 +686,11 @@ class MQTTNotificationsPlugin(BasePlugin):
                     current_time = time.time()
                     delta_time = current_time - self.last_update_time
                     self.last_update_time = current_time
+                    # A gap longer than a frame means the screen was away
+                    # (rotation, or a new message): resume where it was
+                    # instead of jumping by the whole time it was hidden.
+                    if delta_time > 1.5:
+                        delta_time = 0.0
                     
                     # Create text cache if needed
                     if self.text_image_cache is None:
