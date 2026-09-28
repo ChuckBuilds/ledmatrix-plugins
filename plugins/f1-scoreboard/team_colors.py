@@ -111,17 +111,3 @@ def get_team_color(constructor_id):
     """
     normalized = normalize_constructor_id(constructor_id)
     return F1_TEAM_COLORS.get(normalized, (200, 200, 200))
-
-
-def get_constructor_logo_filename(constructor_id):
-    """
-    Get the expected logo filename for a constructor.
-
-    Args:
-        constructor_id: Constructor identifier (any format)
-
-    Returns:
-        Logo filename like 'mclaren.png'
-    """
-    normalized = normalize_constructor_id(constructor_id)
-    return f"{normalized}.png" if normalized else "unknown.png"

@@ -1338,12 +1338,6 @@ class NFLDraftPlugin(BasePlugin):
         """
         self.display_manager.set_scrolling_state(False)
 
-    def _display_blank(self) -> None:
-        """Render a solid black frame (off-season silence — no text, no errors)."""
-        img = Image.new('RGB', (self.display_width, self.display_height), (0, 0, 0))
-        self.display_manager.image = img
-        self.display_manager.update_display()
-
     def _display_no_data(self) -> None:
         """Display a no data message."""
         img = Image.new('RGB', (self.display_width, self.display_height), (0, 0, 0))

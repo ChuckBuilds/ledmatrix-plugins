@@ -273,16 +273,6 @@ class FlightRenderer:
     def _draw(self, draw, text, pos, font, color=(255, 255, 255)):
         draw.text(pos, text, font=font, fill=color)
 
-    def _draw_outlined(self, draw, text, pos, font, color=(255, 255, 255)):
-        x, y = pos
-        for dx, dy in [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]:
-            draw.text((x + dx, y + dy), text, font=font, fill=(0, 0, 0))
-        draw.text(pos, text, font=font, fill=color)
-
-    def _draw_right(self, draw, text, y, font, color, margin=2):
-        w = self._tw(draw, text, font)
-        draw.text((self.width - w - margin, y), text, font=font, fill=color)
-
     def _draw_centered(self, draw, text, y, font, color, zone_x=0, zone_w=None):
         zw = zone_w or self.width
         # Truncate first so text wider than the zone degrades to a clean
@@ -295,9 +285,6 @@ class FlightRenderer:
         tw = self._tw(draw, text, font)
         x = max(zone_x, zone_x + (zw - tw) // 2)
         draw.text((x, y), text, font=font, fill=color)
-
-    def _draw_sep(self, draw, y, color=(40, 40, 40)):
-        draw.line([(0, y), (self.width, y)], fill=color, width=1)
 
     def _truncate(self, draw, text: str, font, max_w: int) -> str:
         """Truncate text with ellipsis if it exceeds max_w pixels."""
@@ -359,10 +346,6 @@ class FlightRenderer:
         self.dm.image = img.copy()
         self.dm.update_display()
         return True
-
-    def reset_banner(self):
-        self._banner_shown = False
-        self._banner_start = 0.0
 
     # =====================================================================
     # Flight Detail — layout auto-selection

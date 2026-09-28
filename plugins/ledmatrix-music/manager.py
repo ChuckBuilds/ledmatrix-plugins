@@ -701,15 +701,6 @@ class MusicPlugin(BasePlugin):
                     self.logger.debug("YTM Activate Sync: No track data available from connected YTM client.")
                     self._process_ytm_data_update(None, "YTM Activate Sync (No Data)")
 
-    def deactivate_music_display(self):
-        """Deactivate music display and disconnect YTM."""
-        self.logger.info("Music display deactivated.")
-        self.is_music_display_active = False
-        
-        if self.ytm and self.ytm.is_connected:
-            self.logger.info("Disconnecting YTM client due to music display deactivation.")
-            self.ytm.disconnect_client()
-
     def _handle_ytm_direct_update(self, ytm_data):
         """Handle a direct state update from YTMClient."""
         raw_title_from_event = ytm_data.get('video', {}).get('title', 'No Title') if isinstance(ytm_data, dict) else 'Data not a dict'

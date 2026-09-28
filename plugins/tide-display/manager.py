@@ -680,12 +680,6 @@ class TidePlugin(BasePlugin):
         else:
             draw.line([(cx-sz,cy),(cx+sz,cy)], fill=c, width=2)
 
-    def _mini_bar(self, draw, x, y, w, h, ratio, color):
-        """Tiny filled progress bar."""
-        draw.rectangle([x, y, x+w-1, y+h-1], fill=C_BAR_OUT)
-        fill = max(1, int(w * ratio))
-        draw.rectangle([x, y, x+fill-1, y+h-1], fill=color)
-
     def _moon_icon(self, draw, cx, cy, r, phase):
         bbox = [cx-r, cy-r, cx+r, cy+r]
         is_new  = phase < 0.04 or phase > 0.96

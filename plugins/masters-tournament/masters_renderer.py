@@ -1656,9 +1656,3 @@ class MastersRenderer:
         favorites = self.config.get("favorite_players", [])
         player_name = player.get("player", "")
         return any(fav.lower() in player_name.lower() for fav in favorites)
-
-    def _format_score(self, score: int) -> str:
-        return format_score_to_par(score)
-
-    def _get_hole_info(self, hole_number: int) -> Dict[str, Any]:
-        return get_hole_info(hole_number)

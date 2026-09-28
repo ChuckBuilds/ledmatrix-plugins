@@ -6,7 +6,7 @@ Data covers Winter Olympics medal totals through 2022 Beijing.
 """
 
 from dataclasses import dataclass
-from typing import Dict, Optional
+from typing import Optional
 
 # Historical all-time Winter Olympics medal counts (through Beijing 2022)
 # Source: Olympics.com
@@ -99,31 +99,6 @@ def get_historical_stats(country_code: str) -> Optional[HistoricalStats]:
     )
 
 
-def get_country_sport_history(country_code: str, sport: str) -> Dict:
-    """
-    Get a country's historical performance in a specific sport.
-
-    Note: This function is a stub that returns placeholder data.
-    Full implementation would require sport-specific historical data
-    that is not currently included in this module.
-
-    Args:
-        country_code: ISO 3166-1 alpha-3 code
-        sport: Sport name (normalized)
-
-    Returns:
-        Dict with placeholder values (all zeros/empty lists)
-    """
-    # Stub implementation - returns empty/zero values
-    # Future implementation would require sport-specific data sources
-    return {
-        "country": country_code,
-        "sport": sport,
-        "all_time_golds": 0,
-        "notable_athletes": [],
-    }
-
-
 def format_historical_comparison(
     country_code: str,
     current_gold: int,
@@ -160,37 +135,3 @@ def _ordinal(n: int) -> str:
     else:
         suffix = {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
     return f"{n}{suffix}"
-
-
-def get_olympic_record(sport: str, event: str) -> Optional[Dict]:
-    """
-    Get the Olympic record for a specific event.
-
-    Args:
-        sport: Sport name (normalized)
-        event: Event name (normalized)
-
-    Returns:
-        Record data dict or None
-    """
-    sport_key = sport.lower().replace(" ", "_").replace("-", "_")
-    if sport_key not in WINTER_OLYMPIC_RECORDS:
-        return None
-
-    # Try to find matching event
-    records = WINTER_OLYMPIC_RECORDS[sport_key]
-    event_key = event.lower().replace(" ", "_").replace("'", "")
-
-    # First try exact match
-    if event_key in records:
-        return records[event_key]
-
-    # Fallback: token-based matching (all tokens in key must be in event_key or vice versa)
-    event_tokens = set(event_key.split("_"))
-    for key, record in records.items():
-        key_tokens = set(key.split("_"))
-        # Check if one set of tokens is a subset of the other
-        if key_tokens.issubset(event_tokens) or event_tokens.issubset(key_tokens):
-            return record
-
-    return None
