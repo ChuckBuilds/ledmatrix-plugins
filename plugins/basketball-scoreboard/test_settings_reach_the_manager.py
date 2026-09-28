@@ -54,7 +54,10 @@ LEAGUE_ALLOW = {
                      "(checked separately below); *_display_mode is read from "
                      "the plugin config by manager._get_display_mode",
     "scroll_settings": "read from the plugin config by the scroll display",
-    "display_durations": "read from the plugin config by manager.get_display_duration",
+    "display_durations": "base and live are hidden (no reader; live_game_duration is the "
+                         "live control); recent and upcoming are forwarded as "
+                         "recent_game_duration / upcoming_game_duration (checked "
+                         "separately below)",
     "dynamic_duration": "read from the plugin config by the manager's "
                         "dynamic-duration helpers",
     "mode_durations": "read from the plugin config by manager.get_display_duration",
@@ -189,6 +192,21 @@ def main():
               % (league, league),
               all(modes.get("%s_%s" % (league, m)) is False
                   for m in ("live", "recent", "upcoming")), modes)
+
+    # -- display_durations.recent / .upcoming --
+    # The managers read recent_game_duration / upcoming_game_duration. The
+    # adapter did not forward them, so every Recent and Upcoming game stayed
+    # up for 15 s whatever these said.
+    for league in leagues:
+        obj.config = {league: {"enabled": True, "favorite_teams": ["UGA"],
+                               "display_durations": {"recent": 23, "upcoming": 27}}}
+        adapted = adapt(league)
+        landed = next((v for v in adapted.values() if isinstance(v, dict)
+                       and "live_game_duration" in v), adapted)
+        check("%s.display_durations.recent/upcoming reach the manager" % league,
+              (landed.get("recent_game_duration"), landed.get("upcoming_game_duration"))
+              == (23, 27),
+              (landed.get("recent_game_duration"), landed.get("upcoming_game_duration")))
 
     # -- plugin-root keys --
     print("\n  plugin root")

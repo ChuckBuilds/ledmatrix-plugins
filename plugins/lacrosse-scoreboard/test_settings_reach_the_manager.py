@@ -58,8 +58,6 @@ ELSEWHERE = {
     "display_modes.live_display_mode": "switch/scroll choice read by _parse_display_mode_settings",
     "display_modes.recent_display_mode": "switch/scroll choice read by _parse_display_mode_settings",
     "display_modes.upcoming_display_mode": "switch/scroll choice read by _parse_display_mode_settings",
-    "display_durations.recent": "read by _get_game_duration / _get_mode_duration from the league block",
-    "display_durations.upcoming": "read by _get_game_duration / _get_mode_duration from the league block",
     "display_durations.base": "declared but never read (drift report section 2)",
     "live_priority": "plugin __init__ reads it into ncaa_*_live_priority",
     "scroll_settings": "read by the core scroll display via SCROLL_LEAGUE_KEYS, not the managers",

@@ -343,7 +343,7 @@ All **Advanced**.
 | `<league>.live_game_duration` | 10–120 s | `20` | Per-game time for live games. Applies to games with a favorite when a non-favorite duration is set. |
 | `<league>.non_favorite_live_game_duration` | 0–120 s | `0` | Shorter turn for live games with no favorite. `0` means use `live_game_duration` for everything. |
 | `<league>.display_durations.base` | 1–120 s | `15` | **Hidden (still declared); has no effect.** No mode is named `base`. |
-| `<league>.display_durations.live` | 1–120 s | `20` | Per-game time for live games. |
+| `<league>.display_durations.live` | 1–120 s | `20` | **Hidden (still declared); has no effect.** A duplicate of `live_game_duration`, which is the one read. |
 | `<league>.display_durations.recent` | 1–120 s | `15` | Per-game time on the Recent screen. |
 | `<league>.display_durations.upcoming` | 1–120 s | `15` | Per-game time on the Upcoming screen. |
 
@@ -383,7 +383,7 @@ source.
 
 > There is **no `live_mode_duration`** here, unlike the football, hockey and
 > lacrosse scoreboards. Live mode's total is governed by dynamic duration or by
-> `display_durations.live` per game.
+> `live_game_duration` per game.
 
 ### Dynamic duration
 

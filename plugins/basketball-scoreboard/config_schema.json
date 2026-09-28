@@ -686,7 +686,8 @@
               "default": 20,
               "minimum": 1,
               "maximum": 120,
-              "description": "Display duration for live NBA games"
+              "description": "Display duration for live NBA games HIDDEN: a duplicate: the live per-game time is <league>.live_game_duration, which the managers read. This copy was never consulted.",
+              "x-display": "hidden"
             },
             "recent": {
               "x-advanced": true,
@@ -1224,7 +1225,8 @@
               "default": 20,
               "minimum": 5,
               "maximum": 120,
-              "description": "Display duration for live WNBA games"
+              "description": "Display duration for live WNBA games HIDDEN: a duplicate: the live per-game time is <league>.live_game_duration, which the managers read. This copy was never consulted.",
+              "x-display": "hidden"
             },
             "recent": {
               "x-advanced": true,
@@ -1759,7 +1761,8 @@
               "default": 20,
               "minimum": 5,
               "maximum": 120,
-              "description": "Display duration for live NCAA Men's Basketball games"
+              "description": "Display duration for live NCAA Men's Basketball games HIDDEN: a duplicate: the live per-game time is <league>.live_game_duration, which the managers read. This copy was never consulted.",
+              "x-display": "hidden"
             },
             "recent": {
               "x-advanced": true,
@@ -2294,7 +2297,8 @@
               "default": 20,
               "minimum": 5,
               "maximum": 120,
-              "description": "Display duration for live NCAA Women's Basketball games"
+              "description": "Display duration for live NCAA Women's Basketball games HIDDEN: a duplicate: the live per-game time is <league>.live_game_duration, which the managers read. This copy was never consulted.",
+              "x-display": "hidden"
             },
             "recent": {
               "x-advanced": true,

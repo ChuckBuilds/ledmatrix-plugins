@@ -102,6 +102,38 @@ def _display_option(display_options: Dict[str, Any], root: Dict[str, Any],
 
 # NRL is a single league. Its ESPN league slug is "3" (see nrl_managers.py), but
 # the plugin's display modes / config are keyed with the friendly "nrl" name.
+#: Schema defaults of settings declared both at the root and in a nested block
+#: (game_limits, filtering). The core fills both copies with these, so a
+#: nested value equal to its default says nothing about what the user chose;
+#: see _nested_or_root.
+_NESTED_DEFAULTS = {
+    "recent_games_to_show": 1,
+    "upcoming_games_to_show": 1,
+    "other_upcoming_games_to_show": 1,
+    "other_recent_games_to_show": 1,
+    "other_rotation_interval_seconds": 1800,
+    "favorite_rotation_boost": 1,
+    "other_games_min_quality": "ranked",
+    "other_games_divisions": ["fbs"],
+    "show_favorite_teams_only": True,
+}
+
+
+def _nested_or_root(nested: Dict[str, Any], root: Dict[str, Any], key: str,
+                    fallback: Any) -> Any:
+    """A setting declared in a nested block and at the root.
+
+    The nested copy used to win whenever present, and after the core's
+    default fill it always is, so the root copy -- the one the settings page
+    shows first -- was saved and ignored. Now, as for display_options: a
+    nested value that differs from its default wins, then the root value;
+    ``fallback`` applies only when neither declares the key.
+    """
+    if key not in nested and key not in root:
+        return fallback
+    return _display_option(nested, root, key, _NESTED_DEFAULTS.get(key, fallback))
+
+
 LEAGUE_KEY = NRL_LEAGUE_SLUG  # "3" — ESPN's NRL slug, do not change to "nrl"
 LEAGUE_NAME = LEAGUE_NAMES.get(NRL_LEAGUE_SLUG, "NRL")
 
@@ -285,12 +317,9 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
             game_limits, and both render in the web UI. Reading one location
             meant the other was accepted, saved, and silently ignored -- the
             same class of gap as leaving the key out of this translation
-            altogether. game_limits wins where present, matching how the two
-            older limits already resolved.
+            altogether. See _nested_or_root for which copy wins.
             """
-            if key in game_limits:
-                return game_limits[key]
-            return cfg.get(key, default)
+            return _nested_or_root(game_limits, cfg, key, default)
 
         display_options = cfg.get("display_options") or {}
 
@@ -365,10 +394,8 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
                     "celebration_confetti", True
                 ),
                 "celebrate_opponent_goals": cfg.get("celebrate_opponent_goals", False),
-                "show_favorite_teams_only": filtering.get(
-                    "show_favorite_teams_only",
-                    cfg.get("show_favorite_teams_only", False),
-                ),
+                "show_favorite_teams_only": _nested_or_root(
+                    filtering, cfg, "show_favorite_teams_only", False),
                 "show_all_live": filtering.get(
                     "show_all_live", cfg.get("show_all_live", False)
                 ),
@@ -1518,10 +1545,12 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         dynamic = self.config.get("dynamic_duration", {})
         mode_config = dynamic.get("modes", {}).get(mode_type, {})
-        if "enabled" in mode_config:
-            return bool(mode_config.get("enabled", False))
-        if "enabled" in dynamic:
-            return bool(dynamic.get("enabled", False))
+        # The league switch turns every mode on; a mode switch turns on just
+        # that mode. Both default to off and the core fills every default into
+        # the config, so returning the mode switch whenever it was present (as
+        # this did) meant the league switch was never read.
+        if mode_config.get("enabled", False) or dynamic.get("enabled", False):
+            return True
         return False
 
     def get_dynamic_duration_cap(self) -> Optional[float]:

@@ -59,8 +59,6 @@ ALLOWLIST = {
     "display_modes.recent_display_mode": "manager.py _parse_display_mode_settings (switch/scroll)",
     "display_modes.upcoming_display_mode": "manager.py _parse_display_mode_settings (switch/scroll)",
     "dynamic_duration.*": "manager.py reads it for dynamic duration",
-    "display_durations.recent": "manager.py reads it for per-game dwell",
-    "display_durations.upcoming": "manager.py reads it for per-game dwell",
     # Declared but never read anywhere (audit dead-code list); left for the
     # schema owner rather than silently wired to something.
     "display_durations.base": "dead schema key: nothing reads it",
