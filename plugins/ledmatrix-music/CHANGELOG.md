@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.5.0] - 2026-09-28
+
+### Added
+- Declares spotify_redirect_uri (a secret, blank by default). The Spotify
+  client reads it from config_secrets.json, and the core merges secrets into
+  the plugin config, where the strict schema rejected it: a user who followed
+  the README had the plugin flagged Degraded. Blank keeps the default,
+  http://127.0.0.1:8888/callback, and the README example now matches that
+  default instead of localhost:8080.
+
 ## [1.4.5] - 2026-09-27
 
 ### Fixed

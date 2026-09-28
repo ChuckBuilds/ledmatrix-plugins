@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.32.2",
+  "version": "2.33.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -53,6 +53,12 @@
     "soccer_usa.1_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.33.0",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Declares the five goal-celebration settings on custom leagues (celebration_enabled, celebration_duration, celebrate_opponent_goals, celebration_team_colors, celebration_confetti), with the built-in leagues' defaults. The adapter already read them from a custom league, but the strict schema rejected them, so they could only be set by hand and then failed validation."
+    },
     {
       "version": "2.32.2",
       "released": "2026-09-28",

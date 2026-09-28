@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.35.2",
+  "version": "1.36.0",
   "update_interval": 60,
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
@@ -19,6 +19,12 @@
   "branch": "main",
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
+    {
+      "version": "1.36.0",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Declares <league>.mode_durations.live_mode_duration (null by default). The plugin reads <mode>_mode_duration by name, so a live value already worked when hand-edited, but the schema offered only recent and upcoming. The README said live had no such setting and that the core read these keys; both corrected."
+    },
     {
       "version": "1.35.2",
       "released": "2026-09-28",

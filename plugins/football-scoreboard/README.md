@@ -541,6 +541,18 @@ All **Advanced**.
 | `<league>.celebration_team_colors` | boolean | `true` (**Advanced**) |
 | `<league>.celebration_confetti` | boolean | `true` (**Advanced**) |
 
+### Mode durations
+
+How long the *whole mode* holds the board before the next mode, whether or not
+dynamic duration is on. `null` sizes it from the games (games × per-game time).
+All **Advanced**; declared in the schema since 3.13.0, read before that too.
+
+| Key | Type | Default |
+|---|---|---|
+| `<league>.mode_durations.live_mode_duration` | 10–600 s or `null` | `null` |
+| `<league>.mode_durations.recent_mode_duration` | 10–600 s or `null` | `null` |
+| `<league>.mode_durations.upcoming_mode_duration` | 10–600 s or `null` | `null` |
+
 ### Dynamic duration
 
 Sizes each mode's total time from how much there is to show. All **Advanced**.

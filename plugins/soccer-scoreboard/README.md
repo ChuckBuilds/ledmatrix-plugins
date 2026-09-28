@@ -175,6 +175,12 @@ the ESPN league code — a row with a blank name will not save.
 | `custom_leagues[].league_code` | string, 1–50 chars | — | ESPN code, lowercase and dot-separated, e.g. `mex.1`. |
 | `custom_leagues[].priority` | 1–100 or `null` | `50` | Display order; lower shows first. |
 
+A custom league also takes the built-in leagues' goal-celebration settings,
+declared on custom leagues since 2.33.0 (they were read before that, but a
+config carrying them failed validation): `celebration_enabled` (`true`),
+`celebration_duration` (`8` s), `celebrate_opponent_goals` (`false`),
+`celebration_team_colors` (`true`) and `celebration_confetti` (`true`).
+
 Common codes:
 
 | Code | League |

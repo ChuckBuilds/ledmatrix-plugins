@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-music",
   "name": "Music Player - Now Playing",
-  "version": "1.4.5",
+  "version": "1.5.0",
   "description": "Real-time now playing display for Spotify and YouTube Music with album art, scrolling text, and progress bars",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -65,6 +65,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.5.0",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Declares spotify_redirect_uri (a secret, blank by default). The Spotify client reads it from config_secrets.json, and the core merges secrets into the plugin config, where the strict schema rejected it: a user who followed the README had the plugin flagged Degraded. Blank keeps the default, http://127.0.0.1:8888/callback, and the README example now matches that default instead of localhost:8080."
+    },
     {
       "version": "1.4.5",
       "released": "2026-09-27",
@@ -181,7 +187,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-27",
+  "last_updated": "2026-09-28",
   "stars": 0,
   "downloads": 0,
   "verified": true,

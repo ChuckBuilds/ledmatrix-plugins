@@ -788,6 +788,46 @@
               }
             }
           }
+        },
+        "mode_durations": {
+          "type": "object",
+          "title": "Mode-Level Durations",
+          "description": "Control total duration for each mode type for NFL. If not set, uses dynamic calculation (total_games × per_game_duration).",
+          "properties": {
+            "recent_mode_duration": {
+              "x-advanced": true,
+              "type": [
+                "number",
+                "null"
+              ],
+              "default": null,
+              "minimum": 10,
+              "maximum": 600,
+              "description": "Total seconds the Recent mode stays on screen before the next mode. Leave empty to size it from the games (games x per-game time)."
+            },
+            "upcoming_mode_duration": {
+              "x-advanced": true,
+              "type": [
+                "number",
+                "null"
+              ],
+              "default": null,
+              "minimum": 10,
+              "maximum": 600,
+              "description": "Total seconds the Upcoming mode stays on screen before the next mode. Leave empty to size it from the games (games x per-game time)."
+            },
+            "live_mode_duration": {
+              "x-advanced": true,
+              "type": [
+                "number",
+                "null"
+              ],
+              "default": null,
+              "minimum": 10,
+              "maximum": 600,
+              "description": "Total seconds the Live mode stays on screen before the next mode. Leave empty to size it from the games (games x per-game time)."
+            }
+          }
         }
       }
     },
@@ -1288,6 +1328,46 @@
                   }
                 }
               }
+            }
+          }
+        },
+        "mode_durations": {
+          "type": "object",
+          "title": "Mode-Level Durations",
+          "description": "Control total duration for each mode type for NCAA Football. If not set, uses dynamic calculation (total_games × per_game_duration).",
+          "properties": {
+            "recent_mode_duration": {
+              "x-advanced": true,
+              "type": [
+                "number",
+                "null"
+              ],
+              "default": null,
+              "minimum": 10,
+              "maximum": 600,
+              "description": "Total seconds the Recent mode stays on screen before the next mode. Leave empty to size it from the games (games x per-game time)."
+            },
+            "upcoming_mode_duration": {
+              "x-advanced": true,
+              "type": [
+                "number",
+                "null"
+              ],
+              "default": null,
+              "minimum": 10,
+              "maximum": 600,
+              "description": "Total seconds the Upcoming mode stays on screen before the next mode. Leave empty to size it from the games (games x per-game time)."
+            },
+            "live_mode_duration": {
+              "x-advanced": true,
+              "type": [
+                "number",
+                "null"
+              ],
+              "default": null,
+              "minimum": 10,
+              "maximum": 600,
+              "description": "Total seconds the Live mode stays on screen before the next mode. Leave empty to size it from the games (games x per-game time)."
             }
           }
         }

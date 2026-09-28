@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.33.0] - 2026-09-28
+
+### Added
+- Declares the five goal-celebration settings on custom leagues
+  (celebration_enabled, celebration_duration, celebrate_opponent_goals,
+  celebration_team_colors, celebration_confetti), with the built-in leagues'
+  defaults. The adapter already read them from a custom league, but the strict
+  schema rejected them, so they could only be set by hand and then failed
+  validation.
+
 ## [2.32.2] - 2026-09-28
 
 ### Fixed

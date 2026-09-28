@@ -101,7 +101,7 @@
       "last_updated": "2026-09-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.35.2"
+      "latest_version": "1.36.0"
     },
     {
       "id": "calendar",
@@ -264,7 +264,7 @@
       "last_updated": "2026-09-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "3.12.2"
+      "latest_version": "3.13.0"
     },
     {
       "id": "geochron",
@@ -554,10 +554,10 @@
       "plugin_path": "plugins/ledmatrix-music",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-27",
+      "last_updated": "2026-09-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.4.5"
+      "latest_version": "1.5.0"
     },
     {
       "id": "news",
@@ -784,7 +784,7 @@
       "last_updated": "2026-09-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.32.2"
+      "latest_version": "2.33.0"
     },
     {
       "id": "static-image",
