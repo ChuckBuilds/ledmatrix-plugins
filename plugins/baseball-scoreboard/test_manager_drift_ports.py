@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Manager-init and odds-cache fixes ported from sibling scoreboards.
+"""Manager-init fixes ported from sibling scoreboards.
 
   * P-A4 -- each league's managers are built in their own try. One shared try
     meant a constructor raising for MLB skipped MiLB and NCAA as well.
@@ -9,8 +9,10 @@
     TypeError on null, leaving every league unbuilt.
   * P-OVF -- a config Infinity (json parses a bare Infinity) falls back to the
     default instead of raising OverflowError from manager construction.
-  * P-B1 -- a cached {"no_odds": True} marker is a cache hit: get_odds returns
-    None without asking ESPN again until the entry expires.
+
+The P-B1 check (a cached {"no_odds": True} marker is a cache hit) went with the
+bundled base_odds_manager.py it exercised: the plugin imports core's
+src.base_odds_manager, so that copy never ran.
 
 Run: <core-venv>/bin/python plugins/baseball-scoreboard/test_manager_drift_ports.py
 """
@@ -158,38 +160,11 @@ def test_infinity_falls_back():
     check("_setting_int(inf) returns the default", got == 1800, got)
 
 
-def test_no_odds_marker_is_a_cache_hit():
-    print("\nP-B1: a cached no-odds marker does not refetch")
-    import base_odds_manager as bom
-    cache = MagicMock()
-    cache.get.return_value = {"no_odds": True}
-    manager = bom.BaseOddsManager(cache, None)
-    original = bom.requests.get
-
-    def boom(*a, **k):
-        raise AssertionError("ESPN must not be asked while the marker is cached")
-
-    bom.requests.get = boom
-    try:
-        try:
-            got = manager.get_odds("baseball", "mlb", "401")
-            asked = False
-        except AssertionError:
-            got, asked = None, True
-    finally:
-        bom.requests.get = original
-    check("the marker returns None", got is None, got)
-    check("no request was made", not asked)
-    check("nothing was written back over the marker", not cache.set.called,
-          cache.set.call_args)
-
-
 def main():
     os.chdir(str(CORE))
     test_leagues_initialise_independently()
     test_divisions_pass_through()
     test_infinity_falls_back()
-    test_no_odds_marker_is_a_cache_hit()
     if failures:
         print("\n%d check(s) failed" % len(failures))
         return 1

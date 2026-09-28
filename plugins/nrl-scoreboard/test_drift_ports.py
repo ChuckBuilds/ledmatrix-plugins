@@ -13,11 +13,14 @@ file holds them, one section per fix:
   * M13  "Logo Error" is drawn on the image that is displayed
   * M3   a mode retaking the panel gives its card a full dwell
   * M4   rotated-in games get odds off the display path
-  * B1   a cached no-odds marker is a cache hit
   * B3   rankings+records: an unranked team shows its record
   * OVF  a config Infinity does not crash window clamping
   * M12  other_games_divisions is passed through raw; test_mode is forwarded
   * A1   Vegas rebuilds its own slate when the games change, without update()
+
+B1 (a cached no-odds marker is a cache hit) went with the bundled
+base_odds_manager.py it exercised: sports.py imports core's
+src.base_odds_manager, so that copy never ran.
 
 Run: <core-venv>/bin/python plugins/nrl-scoreboard/test_drift_ports.py
 """
@@ -65,7 +68,6 @@ def main():
     import sports
     import game_renderer as gr
     import nrl_managers
-    import base_odds_manager
 
     class Core(sports.SportsCore):
         def __init__(self, config=None, width=64, height=32):
@@ -216,23 +218,6 @@ def main():
     check("the game without odds got them", games[0].get("odds") == {"over_under": 40.5})
     check("the game that had odds was not re-asked",
           rot.odds_manager.get_odds.call_count == 1, rot.odds_manager.get_odds.call_count)
-
-    # -- B1 -----------------------------------------------------------------
-    print("\nB1: a cached no-odds marker is a cache hit")
-    om = base_odds_manager.BaseOddsManager.__new__(base_odds_manager.BaseOddsManager)
-    om.logger, om.update_interval, om.request_timeout = LOG, 3600, 5
-    om.base_url = "http://example.invalid"
-    om.cache_manager = MagicMock()
-    om.cache_manager.get.return_value = {"no_odds": True}
-    real_get = base_odds_manager.requests.get
-    base_odds_manager.requests.get = MagicMock(side_effect=AssertionError("fetched"))
-    try:
-        got = om.get_odds("rugby-league", "3", "123")
-        fetched = base_odds_manager.requests.get.called
-    finally:
-        base_odds_manager.requests.get = real_get
-    check("returns None", got is None, got)
-    check("and does not ask ESPN again", not fetched)
 
     # -- B3 -----------------------------------------------------------------
     print("\nB3: rankings and records both on")

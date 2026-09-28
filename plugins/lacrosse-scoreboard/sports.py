@@ -36,18 +36,9 @@ except ModuleNotFoundError as exc:
     if exc.name not in {"src", "src.logo_downloader"}:
         raise
     from logo_downloader import LogoDownloader, download_missing_logo
-# Prefer the core-shipped odds manager (adds cache_ttl support); fall back to
-# the bundled copy for cores that don't ship src.base_odds_manager yet.
-# Both branches are module-level imports, so they are collision-safe under the
-# loader's bare-name isolation rules (see docs/plugin-development/08-*.md).
-try:
-    from src.base_odds_manager import BaseOddsManager
-except ModuleNotFoundError as exc:
-    # Fall back only when the CORE module is absent; an import failure from
-    # inside it (missing dependency) should surface, not be masked.
-    if exc.name not in {"src", "src.base_odds_manager"}:
-        raise
-    from base_odds_manager import BaseOddsManager
+# Core has shipped src.base_odds_manager since v3.0.0, below this plugin's
+# ledmatrix_min_version, so the bundled fallback copy was unreachable and is gone.
+from src.base_odds_manager import BaseOddsManager
 from data_sources import ESPNDataSource
 # Prefer core's ESPN date-range helper, which core keeps current (orjson
 # parsing, giving way to the Vegas render thread); fall back to the bundled

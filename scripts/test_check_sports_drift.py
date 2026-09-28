@@ -139,7 +139,10 @@ check("the copied support modules are tracked",
 # logo_downloader.py is held to a lower bar: the drift fixes deleted the
 # vendored copy from lineages that now import core's src.logo_downloader, so
 # only the lineages still carrying a fallback copy are left to compare.
-_SUPPORT_MIN_LINEAGES = {"base_odds_manager.py": 5, "data_sources.py": 5,
+# base_odds_manager.py has no bar: the eight team scoreboards deleted their
+# unreachable fallback copies (they import core's src.base_odds_manager), so
+# only ufc-scoreboard's MMA fork is left, with no sibling to drift from.
+_SUPPORT_MIN_LINEAGES = {"data_sources.py": 5,
                          "dynamic_team_resolver.py": 5, "logo_downloader.py": 2}
 check("the support modules are compared across several lineages",
       all(max((len(per) for (f, _), per in index.items() if f == name),
