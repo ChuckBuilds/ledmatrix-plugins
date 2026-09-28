@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.29.4] - 2026-09-28
+
+### Fixed
+- Dynamic duration now sizes a slot from its games. get_cycle_duration read
+  manager.games, which no manager has, so the per-game total was always 0; it
+  now uses _get_games_from_manager, as afl-scoreboard does.
+
 ## [1.29.3] - 2026-09-28
 
 ### Fixed

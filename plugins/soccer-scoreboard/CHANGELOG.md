@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.33.1] - 2026-09-28
+
+### Fixed
+- Dynamic duration now sizes a slot from its games. get_cycle_duration read
+  manager.games, which no soccer manager has, so the per-game total was always
+  0; it also summed every enabled league although each display mode is one
+  league. It now counts the mode's own league through _get_games_from_manager.
+
 ## [2.33.0] - 2026-09-28
 
 ### Added

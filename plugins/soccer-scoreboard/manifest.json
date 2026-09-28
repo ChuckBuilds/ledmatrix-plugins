@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.33.0",
+  "version": "2.33.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -53,6 +53,12 @@
     "soccer_usa.1_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.33.1",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Dynamic duration now sizes a slot from its games. get_cycle_duration read manager.games, which no soccer manager has, so the per-game total was always 0; it also summed every enabled league although each display mode is one league. It now counts the mode's own league through _get_games_from_manager."
+    },
     {
       "version": "2.33.0",
       "released": "2026-09-28",

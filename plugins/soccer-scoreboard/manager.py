@@ -3247,19 +3247,20 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                     effective_duration = max(effective_duration, floor)
             return effective_duration
 
-        # No mode-level duration - use dynamic calculation
-        # Accumulate per-league (games * duration) to handle different durations per league
+        # No mode-level duration: games x per-game time, for this mode's own
+        # league. This read manager.games, which no soccer manager has, so it
+        # was always 0 and the plugin never sized a slot from its games; it
+        # also summed every enabled league although each mode is one league.
         total_duration = 0.0
-
-        for league_key, league_data in self._league_registry.items():
-            if not league_data.get('enabled', False):
-                continue
-            manager = league_data.get('managers', {}).get(mode_type)
-            if manager:
-                games = getattr(manager, 'games', [])
-                if games:
-                    game_duration = self._get_game_duration(league_key, mode_type, manager)
-                    total_duration += len(games) * game_duration
+        body = display_mode[len('soccer_'):] if display_mode.startswith('soccer_') else ''
+        league_key = body.rsplit('_', 1)[0] if '_' in body else None
+        league_data = self._league_registry.get(league_key, {}) if league_key else {}
+        manager = (league_data.get('managers', {}).get(mode_type)
+                   if league_data.get('enabled', False) else None)
+        if manager:
+            games = self._get_games_from_manager(manager, mode_type)
+            if games:
+                total_duration = len(games) * self._get_game_duration(league_key, mode_type, manager)
 
         if total_duration == 0.0:
             return None

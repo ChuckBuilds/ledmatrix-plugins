@@ -37,6 +37,7 @@ plugin.nfl_recent`, and when the managers fail to build the whole block is
 skipped and the test passes having verified nothing.
 """
 import ast
+import re
 import sys
 from pathlib import Path
 
@@ -48,6 +49,10 @@ FUNCTION = "get_cycle_duration"
 DEAD = ("upcoming_games", "recent_games")
 # Either of these means the caller found the real list.
 GOOD = ("_get_games_from_manager", "games_list")
+# No manager has a `games` attribute at all. soccer and nrl sized every slot
+# from getattr(manager, "games", []) -- always empty, so dynamic duration never
+# counted a game -- and the substring rule above cannot see it.
+NO_SUCH_ATTRIBUTE = re.compile(r"""getattr\(\s*manager\s*,\s*['"]games['"]""")
 
 results = []
 
@@ -101,6 +106,9 @@ def main():
         check("%s: does not size the cycle from a list nothing fills" % pid,
               not reads_dead or bool(finds_real),
               "reads %s and never reaches games_list" % ", ".join(reads_dead))
+        check("%s: does not read manager.games, which no manager has" % pid,
+              not NO_SUCH_ATTRIBUTE.search(source),
+              "getattr(manager, 'games') is always empty")
 
     print("  (%d copies: %s)" % (len(covered), ", ".join(covered)))
 

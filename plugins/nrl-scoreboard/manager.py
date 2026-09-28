@@ -1661,7 +1661,10 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
         manager = self._get_manager(mode_type)
         total_duration = 0.0
         if manager:
-            games = getattr(manager, "games", [])
+            # This read a `games` attribute, which no manager has: always 0,
+            # so dynamic duration never sized a slot from its games. afl
+            # uses the same helper.
+            games = self._get_games_from_manager(manager, mode_type)
             if games:
                 total_duration = len(games) * self._get_game_duration(mode_type, manager)
 
