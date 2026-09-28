@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.36.2",
+  "version": "1.36.3",
   "update_interval": 60,
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
@@ -19,6 +19,12 @@
   "branch": "main",
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
+    {
+      "version": "1.36.3",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Background Service settings (request timeout, max retries, priority) reach the league managers; they were fixed at 30 s, 3 and 2 whatever was set."
+    },
     {
       "version": "1.36.2",
       "released": "2026-09-28",

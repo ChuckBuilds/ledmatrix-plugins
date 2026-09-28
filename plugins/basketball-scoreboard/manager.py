@@ -106,6 +106,17 @@ def _per_game_duration(league_config, mode_type, default=15):
     return default
 
 
+def _background_settings(config: Dict[str, Any]) -> Dict[str, Any]:
+    """Timeout, retries and priority for the managers' background fetches,
+    from the root ``background_service`` block (schema defaults if absent)."""
+    bg = config.get("background_service") or {}
+    return {
+        "request_timeout": bg.get("request_timeout", 30),
+        "max_retries": bg.get("max_retries", 3),
+        "priority": bg.get("priority", 2),
+    }
+
+
 class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
     """
     Basketball scoreboard plugin using existing manager classes.
@@ -997,11 +1008,9 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "show_all_live": show_all_live,
                 "filtering": filtering,
                 "march_madness": league_config.get("march_madness", {}),
-                "background_service": {
-                    "request_timeout": 30,
-                    "max_retries": 3,
-                    "priority": 2,
-                },
+                # The root background_service settings; these were pinned
+                # at their defaults here, so changing them did nothing.
+                "background_service": _background_settings(self.config),
             }
         }
 
