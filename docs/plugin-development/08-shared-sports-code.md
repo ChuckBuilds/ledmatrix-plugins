@@ -13,7 +13,7 @@ family of shared-shape modules:
 | `game_renderer.py` | 8 | |
 | `dynamic_team_resolver.py` | 8 | true forks — different constructor signatures |
 | `logo_downloader.py` | 0 | every scoreboard imports core's `src.logo_downloader` (f1-scoreboard's same-named file is an unrelated `F1LogoLoader`) |
-| `<sport>_espn_dates.py` | 9 | every scoreboard; a copy of core's `src/common/espn_dates.py` under a three-line header. **Identical by rule:** `scripts/test_espn_dates_copies.py` fails if any copy differs from the others or from core's, and on a fetch that sends ESPN `dates` without it. Fix it in core, then copy to all nine |
+| `<sport>_espn_dates.py` | 8 | every team scoreboard; a copy of core's `src/common/espn_dates.py` under a three-line header. **Identical by rule:** `scripts/test_espn_dates_copies.py` fails if any copy differs from the others or from core's, and on a fetch that sends ESPN `dates` without it. Fix it in core, then copy to all eight. ufc floors on core 3.5.0 and imports `src.common.espn_dates` plainly; the test's `SUNSET_PLUGINS` keeps its copy deleted |
 | `<sport>_favorite_check.py` | 7 | afl, baseball, basketball, football, hockey, lacrosse, nrl. Byte-identical today, but **no check keeps them so** — edit all seven together |
 
 Apart from the two sport-prefixed helpers, none of these copies are identical. **Any fix to a shared-shape file must be
@@ -55,8 +55,8 @@ the core actually ships:
   scoreboard imports `src.logo_downloader`, and the eight non-UFC scoreboards
   import `src.base_odds_manager`, plainly); `odds-ticker` uses `src.*` for
   everything and ships no local copies — it is the model citizen. Core has
-  shipped both modules since v3.0.0, and every scoreboard floors at 3.4.0 and
-  already imports `src.common.sports_shared` (3.3.0) unguarded, so the bundled
+  shipped both modules since v3.0.0, and every scoreboard floors at 3.4.0 or
+  above and already imports `src.common.sports_shared` (3.3.0) unguarded, so the bundled
   fallbacks they used to carry could never run and were deleted. (Core's
   `BaseOddsManager` still lacks the `no_odds` cache-hit fix the old bundled
   copies had; that is a core change.)
@@ -81,6 +81,16 @@ main, where it is present, and its guard test fails rather than skips if it
 ever goes missing. A copy that is absent is fine: once a plugin
 floors `ledmatrix_min_version` on the release that ships `sports_helpers`, it
 may delete its copies and inherit `SportsHelpersMixin` (the sunset rule below).
+
+ufc-scoreboard has (1.16.0, floor 3.5.0). It was also the one scoreboard not
+on `src.common.sports_shared`: its `SportsCore`, `SportsLive` and
+`SportsRecent` now inherit `SportsCoreSharedMixin` + `SportsHelpersMixin`,
+`SportsLiveSharedMixin` and `SportsRecentSharedMixin` in the order the team
+scoreboards use, with the module-level helpers imported under their old
+private names. What remains in its `sports.py` is its own: the overrides
+whose behaviour differs from core's (`_draw_scorebug_layout`,
+`_get_layout_offset`, `_draw_text_with_outline`) and the methods core does not
+ship. Inheriting `_idle_live_interval` brought it core's #599 kickoff clamp.
 
 ## Device-wide settings: read them from the core, not a copy
 
