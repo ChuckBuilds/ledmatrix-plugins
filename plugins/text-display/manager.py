@@ -714,11 +714,18 @@ class TextDisplayPlugin(BasePlugin):
         
         # Update scroll settings
         old_scroll_enabled = self.scroll_enabled
+        old_gap = self.scroll_gap_width
         self.scroll_enabled = new_config.get('scroll', self.scroll_enabled)
+        # The core reads enable_scrolling on every mode entry to choose the
+        # high-FPS loop. Set only in __init__, turning scrolling on here left
+        # the text crawling at one frame a second until a restart.
+        self.enable_scrolling = self.scroll_enabled
         self.scroll_speed = float(new_config.get('scroll_speed', self.scroll_speed))
         self.scroll_delay = float(new_config.get('scroll_delay', self.scroll_delay))
         self.scroll_loop = new_config.get('scroll_loop', self.scroll_loop)
         self.scroll_gap_width = int(new_config.get('scroll_gap_width', self.scroll_gap_width))
+        if self.scroll_gap_width != old_gap:
+            self.text_image_cache = None  # the gap is drawn into the strip
 
         # Re-run the shared resolver on every save, exactly as at load. It
         # reads self.config, which super() has just replaced, and resets the
@@ -779,7 +786,10 @@ class TextDisplayPlugin(BasePlugin):
         try:
             text_color_raw = new_config.get('text_color')
             if text_color_raw:
-                self.text_color = tuple(int(c) for c in text_color_raw)
+                new_text_color = tuple(int(c) for c in text_color_raw)
+                if new_text_color != self.text_color:
+                    self.text_color = new_text_color
+                    self.text_image_cache = None  # the strip holds the old colour
             
             bg_color_raw = new_config.get('background_color')
             if bg_color_raw:

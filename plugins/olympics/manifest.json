@@ -1,7 +1,7 @@
 {
   "id": "olympics",
   "name": "Olympics",
-  "version": "3.1.1",
+  "version": "3.1.2",
   "author": "ChuckBuilds",
   "description": "Enhanced Olympics plugin with live medal counts, upcoming events, results, and countdown. Supports Vegas scroll mode and regular display mode.",
   "category": "sports",
@@ -37,6 +37,12 @@
     "country_tracking": true
   },
   "versions": [
+    {
+      "version": "3.1.2",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Saved settings now apply without a restart. The core applies a web-UI save by calling on_config_change, not by reloading the plugin, and the base version only replaces self.config, so every setting read in __init__, and the renderers built from it, kept its old value. Settings are read in _apply_config(), called from __init__ and on_config_change; fetched data and locks are untouched."
+    },
     {
       "version": "3.1.1",
       "released": "2026-09-28",

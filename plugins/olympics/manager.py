@@ -68,7 +68,31 @@ class OlympicsPlugin(BasePlugin):
         """Initialize the Olympics plugin."""
         super().__init__(plugin_id, config, display_manager, cache_manager, plugin_manager)
 
-        # Configuration
+        self._apply_config(config)
+
+        # State
+        self.olympics_data: Optional[OlympicsData] = None
+        self._data_lock = threading.Lock()
+        self._update_lock = threading.Lock()  # Lock for _update_in_progress flag
+        self._update_in_progress = False
+        self.current_section = self._get_initial_section()
+        self.last_section_change = time.time()
+        self.last_displayed_message = None
+        self.last_update_time = 0
+
+        # Content change detection
+        self._last_content_hash: Optional[str] = None
+
+        # Medal cycling state for switch mode (individual country display)
+        self._current_medal_index = 0
+        self._last_medal_cycle_time = 0
+
+        self.logger.info("Olympics plugin initialized with Vegas mode support")
+
+    def _apply_config(self, config: Dict[str, Any]) -> None:
+        """Every setting, and the helpers built from them. Called from
+        __init__ and on_config_change; touches no fetched data or locks."""
+        display_manager = self.display_manager
         self.timezone = config.get('timezone', 'UTC')
         self.top_countries_count = config.get('top_countries_count', 5)
         self.additional_countries = config.get('additional_countries', [])
@@ -111,27 +135,25 @@ class OlympicsPlugin(BasePlugin):
             config
         )
 
-        # State
-        self.olympics_data: Optional[OlympicsData] = None
-        self._data_lock = threading.Lock()
-        self._update_lock = threading.Lock()  # Lock for _update_in_progress flag
-        self._update_in_progress = False
-        self.current_section = self._get_initial_section()
-        self.last_section_change = time.time()
         self.section_duration = config.get('section_duration', 10)  # seconds per section
-        self.last_displayed_message = None
-        self.last_update_time = 0
         self.update_interval = config.get('update_interval', 300)  # 5 minutes
-
-        # Content change detection
-        self._last_content_hash: Optional[str] = None
-
-        # Medal cycling state for switch mode (individual country display)
-        self._current_medal_index = 0
-        self._last_medal_cycle_time = 0
         self._medal_cycle_duration = config.get('medal_cycle_duration', 3)  # seconds per country
 
-        self.logger.info("Olympics plugin initialized with Vegas mode support")
+    def on_config_change(self, new_config: Dict[str, Any]) -> None:
+        """Apply a settings save without a restart.
+
+        The core calls this rather than reloading the plugin, and the base
+        version only replaces self.config, so every setting read in __init__
+        -- and the renderers built from it -- kept its old value until a
+        restart. The fetched data stays; the screen is redrawn with the new
+        settings and the next update() refreshes the data as usual.
+        """
+        super().on_config_change(new_config)
+        self._apply_config(self.config)
+        if self.current_section not in self._get_enabled_sections():
+            self.current_section = self._get_initial_section()
+        self._last_content_hash = None
+        self.last_displayed_message = None
 
     def _get_initial_section(self) -> int:
         """Get the first enabled section for initialization."""

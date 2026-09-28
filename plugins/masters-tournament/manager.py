@@ -969,6 +969,9 @@ class MastersTournamentPlugin(BasePlugin):
         ).get("duration", 10)
         self.data_source.config = new_config
         self.data_source.mock_mode = new_config.get("mock_data", False)
+        # The renderer reads favorite_players from the config it was built
+        # with; without this the leaderboard highlight kept the old list.
+        self.renderer.config = new_config
         self._last_hole_advance.clear()
         self._last_page_advance.clear()
         self._refresh_phase_modes()

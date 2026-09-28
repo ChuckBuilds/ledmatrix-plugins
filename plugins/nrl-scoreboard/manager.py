@@ -1457,6 +1457,19 @@ class NrlScoreboardPlugin(BasePlugin if BasePlugin else object):
             self._vegas_signature = None
 
             self._initialize_managers()
+            # Rebuild the scroll display manager so it sees the new config: it
+            # and its cached card renderer hold the dict they were built with,
+            # which on_config_change has just replaced, so the ticker and the
+            # Vegas cards kept the old settings until a restart.
+            self._scroll_manager = None
+            if SCROLL_AVAILABLE and ScrollDisplayManager:
+                try:
+                    self._scroll_manager = ScrollDisplayManager(
+                        self.display_manager, self.config, self.logger,
+                        global_config=getattr(self, 'global_config', {}) or {})
+                except Exception as e:
+                    self.logger.warning(f"Could not rebuild scroll display manager: {e}")
+                    self._scroll_manager = None
             self._display_mode_settings = self._parse_display_mode_settings()
             self.modes = self._get_available_modes()
             self.current_mode_index = 0

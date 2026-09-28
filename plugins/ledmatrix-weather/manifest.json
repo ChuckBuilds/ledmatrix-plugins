@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-weather",
   "name": "Weather Display",
-  "version": "2.7.4",
+  "version": "2.7.5",
   "author": "ChuckBuilds",
   "class_name": "WeatherPlugin",
   "update_interval": 60,
@@ -26,6 +26,12 @@
     "radar"
   ],
   "versions": [
+    {
+      "released": "2026-09-28",
+      "version": "2.7.5",
+      "notes": "More saved settings apply without a restart: show_feels_like, show_dew_point, show_visibility, show_pressure, show_alerts and update_interval were not re-read, and on_config_change set self.config directly, so enabled went stale. It now calls the base on_config_change and re-reads them. A change of units or location also forces the next update to fetch, instead of showing the old units or place for up to update_interval.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-09-28",
       "version": "2.7.4",

@@ -1,7 +1,7 @@
 {
   "id": "birdnet-go",
   "name": "BirdNET-Go",
-  "version": "1.2.6",
+  "version": "1.2.7",
   "author": "ChuckBuilds",
   "description": "Show what BirdNET-Go is hearing. One screen cycles a different species each turn \u2014 name, confidence, how many times it has been heard today, and a photo \u2014 and a second shows today's stats: species count, total detections and the most-heard species. Polls the BirdNET-Go REST API, with optional MQTT for instant pop-ups.",
   "category": "integration",
@@ -21,6 +21,12 @@
   "entry_point": "manager.py",
   "class_name": "BirdNetGoPlugin",
   "versions": [
+    {
+      "released": "2026-09-28",
+      "version": "1.2.7",
+      "changelog": "Saved settings now apply without a restart. The core applies a web-UI save by calling on_config_change, not by reloading the plugin, and the base version only replaces self.config, so the broker, topic, fonts, colours and display options kept their old values. The MQTT connection is stopped, __init__ reads every setting again, and it reconnects; what has been heard is kept while the source is the same.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-09-27",
       "version": "1.2.6",
@@ -78,7 +84,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-27",
+  "last_updated": "2026-09-28",
   "stars": 0,
   "downloads": 0,
   "verified": true,

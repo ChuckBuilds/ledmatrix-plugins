@@ -41,10 +41,7 @@ class HelloWorldPlugin(BasePlugin):
         super().__init__(plugin_id, config, display_manager, cache_manager, plugin_manager)
 
         # Plugin-specific configuration
-        self.message = config.get('message', 'Hello, World!')
-        self.show_time = config.get('show_time', True)
-        self.color = tuple(config.get('color', [255, 255, 255]))
-        self.time_color = tuple(config.get('time_color', [0, 255, 255]))
+        self._load_config(config)
 
         # Load the 6x9 BDF font
         self._load_font()
@@ -57,6 +54,25 @@ class HelloWorldPlugin(BasePlugin):
 
         # Register fonts
         self._register_fonts()
+
+    def _load_config(self, config):
+        """Read every setting. Called from __init__ and on_config_change, so
+        a setting added here is picked up by a web-UI save as well."""
+        self.message = config.get('message', 'Hello, World!')
+        self.show_time = config.get('show_time', True)
+        self.color = tuple(config.get('color', [255, 255, 255]))
+        self.time_color = tuple(config.get('time_color', [0, 255, 255]))
+
+    def on_config_change(self, new_config):
+        """Apply a settings save without a restart.
+
+        The core calls this rather than reloading the plugin, and the base
+        version only replaces self.config -- anything __init__ copied into an
+        attribute keeps its old value unless it is read again here.
+        """
+        super().on_config_change(new_config)
+        self._load_config(self.config)
+        self._register_fonts()  # the registrations carry the colours
 
     def _register_fonts(self):
         """Register fonts with the font manager."""

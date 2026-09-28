@@ -369,13 +369,16 @@ class JellyfinNowPlayingPlugin(BasePlugin):
         return self.update_interval_config
 
     def on_config_change(self, new_config: Dict[str, Any]) -> None:
-        """Pick up a new update_interval without a restart.
+        """Apply a settings save without a restart.
 
-        get_update_interval() and the session cache both read it. Other
-        settings still apply on the next restart, as before.
+        The core calls this rather than reloading the plugin, and only
+        update_interval used to be re-read here, so a freshly entered server
+        URL and API key kept showing "Set URL/API Key" until a restart.
+        __init__ reads config and loads local fonts only, so it runs again;
+        the next poll (update_interval, 10 s by default) refills the panel.
         """
-        super().on_config_change(new_config)
-        self.update_interval_config = self.config.get('update_interval', 10)
+        self.__init__(self.plugin_id, new_config, self.display_manager,
+                      self.cache_manager, self.plugin_manager)
 
     def update(self) -> None:
         """Poll Jellyfin for the active session and refresh the poster."""
