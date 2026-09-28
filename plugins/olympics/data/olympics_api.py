@@ -153,13 +153,6 @@ class OlympicsCache:
             except Exception as e:
                 logger.debug(f"Failed to write cache file: {e}")
 
-    def get_age(self, key: str) -> Optional[float]:
-        """Get age of cached entry in seconds."""
-        with self._lock:
-            if key in self._cache:
-                return time.time() - self._cache[key].get('cached_at', 0)
-        return None
-
     def clear(self) -> None:
         """Clear all cached data (memory and files)."""
         with self._lock:
@@ -1124,20 +1117,6 @@ class OlympicsDataFetcher:
         # Return the soonest event
         return min(upcoming, key=lambda e: e.start_time)
 
-    def get_time_to_next_event(self) -> Optional[timedelta]:
-        """
-        Get time remaining until the next event.
-
-        Returns:
-            Timedelta to next event, or None if no events upcoming.
-        """
-        next_event = self.get_next_event()
-        if not next_event:
-            return None
-
-        now = _utcnow()
-        return next_event.start_time - now
-
     def fetch_live_status(self) -> List[OlympicEvent]:
         """
         Fetch current live events with lightweight status check.
@@ -1179,13 +1158,3 @@ class OlympicsDataFetcher:
                 self.cache.set(cache_key, event_dicts, 120)
 
             return live_events
-
-    def get_medal_event_alerts(self) -> List[OlympicEvent]:
-        """
-        Get live medal events (finals) for priority display.
-
-        Returns:
-            List of live events that are finals (medal-deciding).
-        """
-        live = self.fetch_live_status()
-        return [e for e in live if e.is_final]

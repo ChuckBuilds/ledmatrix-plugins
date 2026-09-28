@@ -170,13 +170,3 @@ class LeagueConfig:
     def get_league_config(self, league_key: str) -> Optional[Dict[str, Any]]:
         """Get configuration for a specific league."""
         return self.league_configs.get(league_key)
-    
-    def is_league_enabled(self, league_key: str) -> bool:
-        """Check if a league is enabled."""
-        league_config = self.league_configs.get(league_key)
-        return league_config is not None and league_config.get('enabled', False)
-    
-    def get_all_configs(self) -> Dict[str, Dict[str, Any]]:
-        """Get all league configurations."""
-        return self.league_configs.copy()
-

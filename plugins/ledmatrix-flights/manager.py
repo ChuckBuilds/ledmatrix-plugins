@@ -751,21 +751,6 @@ class FlightTrackerPlugin(BasePlugin):
                 fonts['large'] = ImageFont.load_default()
         return fonts
 
-    def _display_size(self) -> str:
-        """Return 'tiny', 'small', or 'large' based on current display dimensions.
-
-        tiny  — 64 wide or narrower, or 32 tall or shorter
-        small — up to 128×32 or 64×64 range
-        large — 192+ wide or 96+ tall
-        """
-        w = self.display_width
-        h = self.display_height
-        if w >= 192 or h >= 64:
-            return 'large'
-        if w >= 65 or h >= 33:
-            return 'small'
-        return 'tiny'
-
     def _draw_text_with_outline(self, draw, text, position, font, fill=(255, 255, 255), outline_color=(0, 0, 0)):
         """Draw text with a black outline for better readability."""
         x, y = position
@@ -851,11 +836,6 @@ class FlightTrackerPlugin(BasePlugin):
                 return 8  # Default fallback
         except Exception:
             return 8  # Safe fallback
-    
-    def _calculate_line_spacing(self, font, padding_factor: float = 1.2) -> int:
-        """Calculate proper line spacing based on font height with padding."""
-        font_height = self._get_font_height(font)
-        return int(font_height * padding_factor)
     
     # flightaware.<nested key> -> the deprecated flat key it replaced.
     _FA_FLAT_KEYS = {
@@ -2209,11 +2189,6 @@ class FlightTrackerPlugin(BasePlugin):
                 f"https://b.tile.openstreetmap.org/{zoom}/{x}/{y}.png",
                 f"https://c.tile.openstreetmap.org/{zoom}/{x}/{y}.png"
             ]
-    
-    def _get_tile_url(self, x: int, y: int, zoom: int) -> str:
-        """Get the URL for a map tile based on provider (backward compatibility)."""
-        urls = self._get_tile_urls(x, y, zoom)
-        return urls[0]  # Return first URL for backward compatibility
     
     def _get_tile_cache_path(self, x: int, y: int, zoom: int) -> Path:
         """Get the cache file path for a tile."""
@@ -3866,7 +3841,3 @@ class FlightTrackerPlugin(BasePlugin):
             # Don't fail validation - just warn, as the plugin can work without flight plans
         
         return True
-
-
-
-

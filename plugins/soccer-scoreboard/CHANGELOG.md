@@ -1,6 +1,6 @@
 # Changelog
 
-## [2.33.3] - 2026-09-28
+## [2.33.4] - 2026-09-28
 
 ### Removed
 - Deleted the bundled `base_odds_manager.py` fallback. It could never run:
@@ -11,6 +11,11 @@
   data source classes; nothing referenced them.
 
 No behaviour change.
+
+## [2.33.3] - 2026-09-28
+
+### Changed
+- Removed code that nothing called. No change in behaviour.
 
 ## [2.33.2] - 2026-09-28
 

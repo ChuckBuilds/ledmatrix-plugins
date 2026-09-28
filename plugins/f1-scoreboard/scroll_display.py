@@ -211,10 +211,6 @@ class ScrollDisplay:
         """Check if content has been prepared for scrolling."""
         return self._is_prepared
 
-    def get_content_count(self) -> int:
-        """Get the number of content items."""
-        return len(self._content_items)
-
     def is_scroll_complete(self) -> bool:
         """Check if the scroll cycle has completed; releases the hold if so."""
         if not self.scroll_helper or not self._is_prepared:

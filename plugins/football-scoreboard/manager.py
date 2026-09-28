@@ -3683,27 +3683,6 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
         )
         return True
 
-    def _filter_managers_by_live_content(self, managers: list, mode_type: str) -> list:
-        """Filter managers based on live content when in live mode.
-        
-        Args:
-            managers: List of manager instances
-            mode_type: 'live', 'recent', or 'upcoming'
-            
-        Returns:
-            Filtered list of managers with live content (for live mode) or original list
-        """
-        if mode_type != 'live':
-            return managers
-        
-        # For live mode, only include managers with actual live games
-        filtered = []
-        for manager in managers:
-            if self._has_live_games_for_manager(manager):
-                filtered.append(manager)
-        
-        return filtered
-
     def _resolve_managers_for_mode(self, mode_type: str) -> list:
         """
         Resolve ordered list of managers to try for a given mode type.

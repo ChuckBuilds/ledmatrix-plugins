@@ -1091,18 +1091,6 @@ class SportsCore(SportsCoreSharedMixin, ABC):
         except Exception as e:
             self.logger.error(f"Error drawing odds: {e}", exc_info=True)
 
-    @staticmethod
-    def _centred_span(draw, text: str, font, width: int, x_offset: int = 0):
-        """(left, right) of a string centred on a `width`-wide row, or None."""
-        if not text:
-            return None
-        try:
-            text_width = draw.textlength(text, font=font)
-        except Exception:
-            return None
-        left = int((width - text_width) // 2 + x_offset)
-        return left, int(left + text_width)
-
     #: Which customization element owns each loaded face. The font loader
     #: already picks each face from exactly that element (element_key=), so
     #: resolving the colour from the face keeps the two in step by

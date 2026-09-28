@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.30.5] - 2026-09-28
+## [1.30.6] - 2026-09-28
 
 ### Removed
 - Deleted the bundled `base_odds_manager.py` fallback. It could never run:
@@ -9,6 +9,11 @@
   import is now plain.
 
 No behaviour change.
+
+## [1.30.5] - 2026-09-28
+
+### Changed
+- Removed code that nothing called. No change in behaviour.
 
 ## [1.30.4] - 2026-09-28
 

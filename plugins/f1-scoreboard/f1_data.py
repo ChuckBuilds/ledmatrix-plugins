@@ -419,10 +419,6 @@ class F1DataSource:
         """Return whether we're currently in a race weekend window."""
         return self._is_race_weekend
 
-    def get_live_session_type(self) -> str:
-        """Return the currently live session abbreviation, or empty string."""
-        return self._live_session_type
-
     def get_championship_gaps(self, standings: List[Dict],
                                points_key: str = "points") -> List[Dict]:
         """

@@ -233,16 +233,6 @@ class EventCardRenderer:
             # Fallback without pytz
             return event_time.strftime("%m/%d %H:%M")
 
-    def _truncate_text(self, text: str, max_chars: int) -> str:
-        """Truncate text to max characters with ellipsis (fallback method)."""
-        text = self._transform_event_name(text)
-        if len(text) <= max_chars:
-            return text
-        # Handle very small max_chars values
-        if max_chars < 3:
-            return "." * max_chars
-        return text[:max(0, max_chars - 2)] + ".."
-
     def _split_text_lines(self, text: str, max_width: int, draw: ImageDraw.ImageDraw,
                            font, max_lines: int = 2) -> List[str]:
         """
