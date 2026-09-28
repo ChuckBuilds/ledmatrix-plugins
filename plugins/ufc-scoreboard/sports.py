@@ -16,11 +16,10 @@ from PIL import Image, ImageDraw, ImageFont
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-# Import simplified dependencies for plugin use
-try:
-    from dynamic_team_resolver import DynamicTeamResolver
-except ImportError:
-    DynamicTeamResolver = None
+# Import simplified dependencies for plugin use.
+# No dynamic_team_resolver: ufc-scoreboard ships none, so a bare import only
+# ever bound ANOTHER plugin's copy off sys.path (hockey's, whose constructor
+# takes no cache_manager, made every UFC manager fail with TypeError).
 from base_odds_manager import BaseOddsManager
 from data_sources import ESPNDataSource
 # Prefer core's ESPN date-range helper, which core keeps current (orjson
@@ -343,25 +342,12 @@ class SportsCore(ABC):
         self._games_lock = threading.RLock()
         self.fonts = self._load_fonts()
 
-        # Initialize dynamic team resolver and resolve favorite teams
-        # UFC doesn't use team resolution, so make it optional
+        # UFC has no teams to resolve (favourites are fighters), so the
+        # configured list is used as given. dynamic_resolver stays None.
         raw_favorite_teams = self.mode_config.get("favorite_teams", [])
-        if DynamicTeamResolver is not None:
-            self.dynamic_resolver = DynamicTeamResolver(cache_manager=cache_manager)
-            self.favorite_teams = self.dynamic_resolver.resolve_teams(
-                raw_favorite_teams, sport_key
-            )
-        else:
-            self.dynamic_resolver = None
-            self.favorite_teams = raw_favorite_teams
-
-        # Log dynamic team resolution
-        if raw_favorite_teams != self.favorite_teams:
-            self.logger.info(
-                f"Resolved dynamic teams: {raw_favorite_teams} -> {self.favorite_teams}"
-            )
-        else:
-            self.logger.info(f"Favorite teams: {self.favorite_teams}")
+        self.dynamic_resolver = None
+        self.favorite_teams = raw_favorite_teams
+        self.logger.info(f"Favorite teams: {self.favorite_teams}")
 
         self.logger.setLevel(logging.INFO)
 
