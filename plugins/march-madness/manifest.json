@@ -1,7 +1,7 @@
 {
   "id": "march-madness",
   "name": "March Madness",
-  "version": "2.1.2",
+  "version": "2.1.3",
   "description": "NCAA March Madness tournament bracket tracker with round branding, seeded matchups, live scores, and upset highlighting",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -20,6 +20,12 @@
     ">=3.4.0"
   ],
   "versions": [
+    {
+      "version": "2.1.3",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Game dates and tip-off times follow the LEDMatrix timezone. They were always converted to US/Eastern, unlabelled, whatever the board was set to; US/Eastern remains the fallback when no timezone is set."
+    },
     {
       "version": "2.1.2",
       "released": "2026-09-28",

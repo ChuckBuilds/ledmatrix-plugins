@@ -310,8 +310,13 @@ class OfTheDayPlugin(BasePlugin):
         
         for category_name, data in self.data_files.items():
             try:
-                # Find today's entry using day of year
+                # Find today's entry using day of year. The bundled files
+                # run 1-365, so the last day of a leap year (366) found
+                # nothing and showed "No Data" all day; it takes day 365's
+                # entry when the file has none of its own.
                 day_key = str(day_of_year)
+                if day_key not in data and day_of_year == 366:
+                    day_key = "365"
                 
                 if day_key in data:
                     self.current_items[category_name] = data[day_key]
@@ -324,14 +329,14 @@ class OfTheDayPlugin(BasePlugin):
                 self.logger.error(f"Error loading today's item for {category_name}: {e}")
     
     def update(self) -> None:
-        """Update items if it's a new day."""
-        current_time = time.time()
-        
-        # Check if we need to update
-        if current_time - self.last_update < self.update_interval:
-            return
-        
-        self.last_update = current_time
+        """Update items if it's a new day.
+
+        No throttle of its own: the core already calls this on
+        update_interval, and a second gate on top of that could hold the new
+        day's entry back for up to two intervals after midnight. Checking the
+        date costs nothing.
+        """
+        self.last_update = time.time()
         
         # Check if it's a new day
         today = self._today()

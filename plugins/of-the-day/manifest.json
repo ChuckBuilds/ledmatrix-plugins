@@ -1,7 +1,7 @@
 {
   "id": "of-the-day",
   "name": "Of The Day Display",
-  "version": "1.4.7",
+  "version": "1.4.8",
   "author": "ChuckBuilds",
   "description": "Display daily featured content like Word of the Day, Bible verses, or custom daily items. Supports multiple categories with rotating display and configurable data sources.",
   "category": "information",
@@ -21,6 +21,12 @@
     "of_the_day"
   ],
   "versions": [
+    {
+      "released": "2026-09-28",
+      "version": "1.4.8",
+      "changelog": "31 December of a leap year (day 366, next in 2028) shows day 365's entry instead of 'No Data' when a category file has no entry for 366; a file that has one still gets it. A new day's entry also loads on the first update after midnight: update() had its own update_interval gate on top of the core's schedule, which could hold it back for up to two intervals.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-09-16",
       "version": "1.4.7",
@@ -103,7 +109,7 @@
       "ledmatrix_min": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-16",
+  "last_updated": "2026-09-28",
   "stars": 0,
   "downloads": 0,
   "verified": true,

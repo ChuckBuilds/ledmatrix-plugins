@@ -17,6 +17,7 @@ import threading
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
+from zoneinfo import ZoneInfo
 
 from PIL import Image
 
@@ -111,7 +112,10 @@ class CricketScoreboardPlugin(BasePlugin if BasePlugin else object):
         self.fetcher = CricketDataFetcher(cache_manager, self.config,
                                           self.competitions, request_timeout=req_timeout)
         self.renderer = CricketRenderer(self.display_width, self.display_height,
-                                        self.config)
+                                        self.config, tz=self._display_timezone())
+        # The mode display() last drew. The core asks for the slot length
+        # after drawing, without naming the mode; see get_cycle_duration.
+        self._last_display_mode: Optional[str] = None
 
         # No background data service: every fetch runs synchronously in
         # update() through self.fetcher. The service used to be created here
@@ -316,6 +320,7 @@ class CricketScoreboardPlugin(BasePlugin if BasePlugin else object):
         match = self._current_match(mode)
         if match is None:
             return False
+        self._last_display_mode = mode
 
         try:
             image = self._render_match(mode, match)
@@ -332,6 +337,23 @@ class CricketScoreboardPlugin(BasePlugin if BasePlugin else object):
             self.logger.warning("Cricket display push failed: %s", e)
             return False
         return True
+
+    def _display_timezone(self):
+        """The LEDMatrix timezone setting, or None for the Pi's local zone."""
+        name = None
+        try:
+            config_manager = getattr(self.plugin_manager, "config_manager", None)
+            if config_manager is not None:
+                name = config_manager.get_timezone()
+        except Exception:
+            name = None
+        if not name:
+            return None
+        try:
+            return ZoneInfo(name)
+        except Exception:
+            self.logger.warning("Unknown timezone %r; using the system zone", name)
+            return None
 
     def _pick_default_mode(self) -> str:
         if self.mode_enabled.get(MODE_LIVE, True) and self.live_matches:
@@ -350,7 +372,13 @@ class CricketScoreboardPlugin(BasePlugin if BasePlugin else object):
         return self.get_cycle_duration(display_mode) or self.display_duration
 
     def get_cycle_duration(self, display_mode: str = None) -> Optional[float]:
-        mode = display_mode or self._pick_default_mode()
+        # The core calls get_display_duration() with no mode, right after
+        # display(mode). Falling straight back to _pick_default_mode timed
+        # every mode as live-or-recent: Upcoming ran for the Recent total
+        # whenever recent matches existed, and mode_durations applied to the
+        # wrong mode.
+        mode = (display_mode or getattr(self, "_last_display_mode", None)
+                or self._pick_default_mode())
         matches = self._matches_for_mode(mode)
         if not matches:
             return self.display_duration
