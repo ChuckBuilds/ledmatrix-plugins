@@ -618,7 +618,9 @@ class FlightRenderer:
 
         # --- Left zone: airline logo (large, vertically centered) ---
         logo_w = 2  # left margin when no logo
-        logo = _load_airline_logo(airline_icao, h - 8) if airline_icao else None
+        # show_aircraft_icon was read into this renderer and never consulted.
+        logo = (_load_airline_logo(airline_icao, h - 8)
+                if airline_icao and self.show_aircraft_icon else None)
         if logo:
             lx = 2
             ly = (h - logo.height) // 2

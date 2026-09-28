@@ -699,6 +699,10 @@ class AdsbNetFetcher(AircraftFetcher):
                 "color": color,
                 "last_seen": current_time,
                 "vertical_rate": vertical_rate,
+                # The ADS-B emitter category (A1..C3). Without it any
+                # aircraft_categories filter hid every aircraft on these
+                # sources, since the filter found no category to match.
+                "category": (ac.get("category") or "").strip(),
             }
 
         logger.info(

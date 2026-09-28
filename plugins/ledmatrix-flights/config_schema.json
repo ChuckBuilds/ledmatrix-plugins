@@ -707,7 +707,7 @@
       "x-advanced": true,
       "type": "boolean",
       "title": "Show Airline Logos",
-      "description": "Show airline logos in area mode (8×8 pixel sprites next to callsigns). Flight detail layouts always show logos in the logo zone when available (52 airlines included as PNG assets).",
+      "description": "Show the airline logo on area-mode cards. Flight detail and stats cards always show it when one is available (52 airlines are bundled as PNG assets).",
       "default": true
     },
     "scroll_speed": {
