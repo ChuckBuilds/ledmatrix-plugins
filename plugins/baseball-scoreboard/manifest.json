@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.50.1",
+  "version": "1.51.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.51.0",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.5.0",
+      "notes": "Requires LEDMatrix core 3.5.0, and drops the bundled copies of code that core now ships. baseball_espn_dates.py, the ESPN date-range helper, is deleted and src.common.espn_dates is imported plainly; on a 3.5.0 core the plugin already ran core's copy. sports.py's private copies of the shared sports helpers (_clamp_window, _clamp_seconds, _logo_needs_refresh and SportsCore's _mode_customization, _setting_int, _reset_dwell_on_reentry, _next_switch_index, _spread_weighted_order, _odds_color and _upcoming_date_and_time_text) are deleted: SportsCore inherits them from core's src.common.sports_helpers.SportsHelpersMixin, whose bodies are identical. SportsCore's _get_weeks_data override is deleted too; it existed for cores whose mixin sent ESPN a raw date range, and core 3.5.0's mixin fetches the same window through the same range-safe helper. The floor rises to 3.5.0, the release that ships both modules, and the store refuses to install or update this version onto anything older. No behaviour change: every safety-harness render is byte-identical."
+    },
     {
       "version": "1.50.1",
       "released": "2026-09-28",
@@ -760,6 +766,6 @@
   "class_name": "BaseballScoreboardPlugin",
   "entry_point": "manager.py",
   "compatible_versions": [
-    ">=3.4.0"
+    ">=3.5.0"
   ]
 }
