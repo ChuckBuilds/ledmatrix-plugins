@@ -2100,41 +2100,6 @@ class SportsCore(SportsCoreSharedMixin, SportsHelpersMixin, ABC):
             )
             return None
 
-    def _get_weeks_data(self) -> Optional[Dict]:
-        """Games in the lookback/lookahead window, shown while the season loads.
-
-        Overrides the core mixin's copy, which asks ESPN for this window as a
-        date range. ESPN has answered ranges with 400 since 2026-09-15 and cores
-        from before that fix have no fallback, so without this override the
-        window fails whenever the season schedule is not cached yet.
-        """
-        date_str = ""
-        try:
-            now = datetime.now(pytz.utc)
-            start_date = now - timedelta(days=self.schedule_lookback_days)
-            end_date = now + timedelta(days=self.schedule_lookahead_days)
-            date_str = f"{start_date.strftime('%Y%m%d')}-{end_date.strftime('%Y%m%d')}"
-            url = f"https://site.api.espn.com/apis/site/v2/sports/{self.sport}/{self.league}/scoreboard"
-            data = fetch_espn_scoreboard(
-                self.session,
-                url,
-                params={"dates": date_str, "limit": ESPN_MAX_LIMIT},
-                headers=self.headers,
-                timeout=10,
-                logger=self.logger,
-            )
-            immediate_events = data.get("events", [])
-
-            if immediate_events:
-                self.logger.info(f"Fetched {len(immediate_events)} events {date_str}")
-                return {"events": immediate_events}
-
-        except requests.exceptions.RequestException as e:
-            self.logger.warning(
-                f"Error fetching this weeks games for {self.sport} - {self.league} - {date_str}: {e}"
-            )
-        return None
-
     def _background_fetches_espn_ranges(self) -> bool:
         """Can the core's background service fetch an ESPN date range?
 
