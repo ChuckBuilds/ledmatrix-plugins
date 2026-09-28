@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.12.1] - 2026-09-28
+
+### Changed
+- Hides a config control that does nothing. The root update_interval does
+  nothing: the manifest declares update_interval (60 s), which the core
+  scheduler prefers, and live games are polled at live_update_interval. No
+  behaviour change: the key stays declared, so saved configs still load.
+  README updated to match.
+
 ## [3.12.0] - 2026-09-24
 
 ### Changed

@@ -239,7 +239,8 @@
           "default": 3600,
           "minimum": 30,
           "maximum": 86400,
-          "description": "Default base update interval in seconds for fetching game data"
+          "description": "Default base update interval in seconds for fetching game data HIDDEN: nothing reads it. It seeds each league's base update interval, which every manager then replaces with its own (live_update_interval, recent_update_interval, upcoming_update_interval) before anything reads it; the core scheduler reads update_interval, not this key.",
+          "x-display": "hidden"
         },
         "season_cache_duration_seconds": {
           "x-advanced": true,
@@ -247,7 +248,8 @@
           "default": 86400,
           "minimum": 3600,
           "maximum": 604800,
-          "description": "How long to cache season data (seconds)"
+          "description": "How long to cache season data (seconds) HIDDEN: nothing reads it.",
+          "x-display": "hidden"
         }
       }
     },
@@ -578,7 +580,8 @@
               "default": 60,
               "minimum": 15,
               "maximum": 300,
-              "description": "Base update interval for NHL data"
+              "description": "Base update interval for NHL data HIDDEN: nothing reads it. It seeds each league's base update interval, which every manager then replaces with its own (live_update_interval, recent_update_interval, upcoming_update_interval) before anything reads it; the core scheduler reads update_interval, not this key.",
+              "x-display": "hidden"
             },
             "live": {
               "x-advanced": true,
@@ -640,7 +643,8 @@
               "default": 15,
               "minimum": 5,
               "maximum": 60,
-              "description": "Base display duration for NHL games"
+              "description": "Base display duration for NHL games HIDDEN: nothing reads it; no mode is named 'base'.",
+              "x-display": "hidden"
             },
             "live": {
               "x-advanced": true,
@@ -1135,7 +1139,8 @@
               "default": 300,
               "minimum": 60,
               "maximum": 600,
-              "description": "Base update interval for NCAA Men's Hockey data"
+              "description": "Base update interval for NCAA Men's Hockey data HIDDEN: nothing reads it. It seeds each league's base update interval, which every manager then replaces with its own (live_update_interval, recent_update_interval, upcoming_update_interval) before anything reads it; the core scheduler reads update_interval, not this key.",
+              "x-display": "hidden"
             },
             "live": {
               "x-advanced": true,
@@ -1197,7 +1202,8 @@
               "default": 15,
               "minimum": 5,
               "maximum": 60,
-              "description": "Base display duration for NCAA Men's Hockey games"
+              "description": "Base display duration for NCAA Men's Hockey games HIDDEN: nothing reads it; no mode is named 'base'.",
+              "x-display": "hidden"
             },
             "live": {
               "x-advanced": true,
@@ -1679,7 +1685,8 @@
               "default": 300,
               "minimum": 60,
               "maximum": 900,
-              "description": "Base update interval for NCAA Women's Hockey data"
+              "description": "Base update interval for NCAA Women's Hockey data HIDDEN: nothing reads it. It seeds each league's base update interval, which every manager then replaces with its own (live_update_interval, recent_update_interval, upcoming_update_interval) before anything reads it; the core scheduler reads update_interval, not this key.",
+              "x-display": "hidden"
             },
             "live": {
               "x-advanced": true,
@@ -1741,7 +1748,8 @@
               "default": 15,
               "minimum": 5,
               "maximum": 60,
-              "description": "Base display duration for NCAA Women's Hockey games"
+              "description": "Base display duration for NCAA Women's Hockey games HIDDEN: nothing reads it; no mode is named 'base'.",
+              "x-display": "hidden"
             },
             "live": {
               "x-advanced": true,

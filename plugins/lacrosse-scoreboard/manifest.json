@@ -1,7 +1,7 @@
 {
   "id": "lacrosse-scoreboard",
   "name": "Lacrosse Scoreboard",
-  "version": "1.31.0",
+  "version": "1.31.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NCAA men's and women's lacrosse games with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/lacrosse-scoreboard",
@@ -50,6 +50,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.31.1",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Hides config controls that do nothing. defaults.update_interval_seconds and each league's update_intervals.base feed update_interval_seconds, which is never read: every manager replaces it with its own live, recent or upcoming interval. defaults.season_cache_duration_seconds and each league's display_durations.base have no reader. No behaviour change: the keys stay declared, so saved configs still load. README updated to match."
+    },
     {
       "version": "1.31.0",
       "released": "2026-09-24",
@@ -484,7 +490,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-20",
+  "last_updated": "2026-09-28",
   "stars": 0,
   "downloads": 0,
   "verified": true,

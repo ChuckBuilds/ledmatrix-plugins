@@ -202,7 +202,8 @@
       "default": 3600,
       "minimum": 30,
       "maximum": 86400,
-      "description": "How often to fetch new data in seconds"
+      "description": "How often to fetch new data in seconds HIDDEN: the manifest declares update_interval (60 s), and the core scheduler uses the manifest's value over this setting; while a game is live, get_update_interval() answers instead.",
+      "x-display": "hidden"
     },
     "game_display_duration": {
       "x-advanced": true,
@@ -524,7 +525,8 @@
           "default": 3600,
           "minimum": 30,
           "maximum": 86400,
-          "description": "How often to fetch new data (seconds)"
+          "description": "How often to fetch new data (seconds) HIDDEN: nothing reads it. It seeds each league's base update interval, which every manager then replaces with its own (live_update_interval, recent_update_interval, upcoming_update_interval) before anything reads it; the core scheduler reads update_interval, not this key.",
+          "x-display": "hidden"
         },
         "game_limits": {
           "type": "object",
@@ -675,7 +677,8 @@
               "default": 15,
               "minimum": 1,
               "maximum": 120,
-              "description": "Base display duration for NBA games"
+              "description": "Base display duration for NBA games HIDDEN: nothing reads it; no mode is named 'base'.",
+              "x-display": "hidden"
             },
             "live": {
               "x-advanced": true,
@@ -1060,7 +1063,8 @@
           "default": 3600,
           "minimum": 30,
           "maximum": 86400,
-          "description": "How often to fetch new data (seconds)"
+          "description": "How often to fetch new data (seconds) HIDDEN: nothing reads it. It seeds each league's base update interval, which every manager then replaces with its own (live_update_interval, recent_update_interval, upcoming_update_interval) before anything reads it; the core scheduler reads update_interval, not this key.",
+          "x-display": "hidden"
         },
         "game_limits": {
           "type": "object",
@@ -1211,7 +1215,8 @@
               "default": 15,
               "minimum": 5,
               "maximum": 120,
-              "description": "Base display duration for WNBA games"
+              "description": "Base display duration for WNBA games HIDDEN: nothing reads it; no mode is named 'base'.",
+              "x-display": "hidden"
             },
             "live": {
               "x-advanced": true,
@@ -1557,7 +1562,8 @@
           "default": 3600,
           "minimum": 30,
           "maximum": 86400,
-          "description": "How often to fetch new data (seconds)"
+          "description": "How often to fetch new data (seconds) HIDDEN: nothing reads it. It seeds each league's base update interval, which every manager then replaces with its own (live_update_interval, recent_update_interval, upcoming_update_interval) before anything reads it; the core scheduler reads update_interval, not this key.",
+          "x-display": "hidden"
         },
         "game_limits": {
           "type": "object",
@@ -1744,7 +1750,8 @@
               "default": 15,
               "minimum": 5,
               "maximum": 120,
-              "description": "Base display duration for NCAA Men's Basketball games"
+              "description": "Base display duration for NCAA Men's Basketball games HIDDEN: nothing reads it; no mode is named 'base'.",
+              "x-display": "hidden"
             },
             "live": {
               "x-advanced": true,
@@ -2090,7 +2097,8 @@
           "default": 3600,
           "minimum": 30,
           "maximum": 86400,
-          "description": "How often to fetch new data (seconds)"
+          "description": "How often to fetch new data (seconds) HIDDEN: nothing reads it. It seeds each league's base update interval, which every manager then replaces with its own (live_update_interval, recent_update_interval, upcoming_update_interval) before anything reads it; the core scheduler reads update_interval, not this key.",
+          "x-display": "hidden"
         },
         "game_limits": {
           "type": "object",
@@ -2277,7 +2285,8 @@
               "default": 15,
               "minimum": 5,
               "maximum": 120,
-              "description": "Base display duration for NCAA Women's Basketball games"
+              "description": "Base display duration for NCAA Women's Basketball games HIDDEN: nothing reads it; no mode is named 'base'.",
+              "x-display": "hidden"
             },
             "live": {
               "x-advanced": true,

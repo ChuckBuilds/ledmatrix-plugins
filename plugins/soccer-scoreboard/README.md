@@ -339,7 +339,7 @@ Defaults are the schema defaults, which is what the web UI writes.
 | `game_display_duration` | 3–60 s | `15` | **Advanced.** Per-match time within a mode, where the league does not override it. |
 | `live_game_duration` | 10–120 s | `30` | **Advanced.** Per-match time for live matches, where the league does not override it. |
 | `show_records` | boolean | `false` | Draw win-draw-loss records in the bottom corners. |
-| `show_ranking` | boolean | `false` | Draw table positions where available. **Hidden from the config form since 2.32.0 (still declared) — the empty rank badge also replaced the record.** |
+| `show_ranking` | boolean | `false` | Draw table positions where available. **Hidden from the config form since 2.32.1 (still declared) — the empty rank badge also replaced the record.** |
 | `show_odds` | boolean | `true` | Draw betting odds. |
 | `show_favorite_teams_only` | boolean | `true` | Show only your clubs' matches, where the league does not override it. |
 | `recent_games_to_show` | 1–20 | `1` | Pool size for finished matches, where the league does not override it. |
@@ -350,7 +350,7 @@ Defaults are the schema defaults, which is what the web UI writes.
 | `favorite_rotation_boost` | 1–5 | `1` | **Advanced.** Number of turns each favorite team's recent/upcoming game gets for every 1 turn other games get in switch mode. `1` shows each game once. |
 | `other_games_min_quality` | `any` \| `ranked` | `ranked` | **Advanced.** Inert in soccer — see above. **Hidden from the config form since 2.32.0 (still declared).** |
 | `other_games_divisions` | array | `["fbs"]` | **Advanced.** Inert in soccer — see above. **Hidden from the config form since 2.32.0 (still declared).** |
-| `update_interval_seconds` | 30–86400 s | `3600` | **Advanced.** Base data refresh cadence. |
+| `update_interval_seconds` | 30–86400 s | `3600` | **Hidden (still declared); has no effect.** Every manager replaces it with its own live/recent/upcoming interval before anything reads it. |
 | `live_update_interval` | 10–300 s | `30` | **Advanced.** Refresh cadence while a match is live. |
 | `recent_update_interval` | 60–86400 s | `3600` | **Advanced.** Refresh cadence for finished matches. |
 | `upcoming_update_interval` | 60–86400 s | `3600` | **Advanced.** Refresh cadence for the schedule. |
@@ -446,7 +446,7 @@ See [The selection settings](#the-selection-settings).
 
 | Key | Type | Default | What it does |
 |---|---|---|---|
-| `<league>.update_interval_seconds` | number | `3600` | This league's base fetch cadence. |
+| `<league>.update_interval_seconds` | number | `3600` | **Hidden (still declared); has no effect.** Every manager replaces it with its own live/recent/upcoming interval before anything reads it. |
 | `<league>.live_update_interval` | number | `30` | How often live match data refreshes. |
 | `<league>.recent_update_interval` | number | `3600` | How often the finished-matches list is rebuilt. This also sets how soon a match that has just ended can appear. |
 | `<league>.upcoming_update_interval` | number | `3600` | How often the upcoming-matches list is rebuilt. Selection and the non-favorite rotation both run on the display side, so this governs only the fetch. |

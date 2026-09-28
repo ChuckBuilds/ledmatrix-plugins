@@ -377,8 +377,9 @@
       "default": 3600,
       "minimum": 30,
       "maximum": 86400,
-      "description": "How often to fetch new data (seconds)",
-      "x-advanced": true
+      "description": "How often to fetch new data (seconds) HIDDEN: nothing reads it. It seeds each league's base update interval, which every manager then replaces with its own (live_update_interval, recent_update_interval, upcoming_update_interval) before anything reads it; the core scheduler reads update_interval, not this key.",
+      "x-advanced": true,
+      "x-display": "hidden"
     },
     "live_update_interval": {
       "type": "integer",
@@ -451,8 +452,9 @@
     "show_ranking": {
       "type": "boolean",
       "default": false,
-      "description": "Show team rankings (when available)",
-      "x-advanced": true
+      "description": "Show team rankings (when available) HIDDEN: this league publishes no poll, so the rank table is always empty, and the badge REPLACES the record: turning this on erased the records Show Records draws. Hidden at league level in 2026-09; this root copy still reached the switch view. Kept declared so saved configs keep validating.",
+      "x-advanced": true,
+      "x-display": "hidden"
     },
     "show_odds": {
       "type": "boolean",

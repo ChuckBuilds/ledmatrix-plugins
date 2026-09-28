@@ -257,7 +257,7 @@ These nine sit at the top level, outside any league block.
 | `enabled` | `true` | Whether the plugin takes part in the rotation at all |
 | `display_duration` | `30` | Seconds each mode holds the panel before the rotation moves on |
 | `game_display_duration` | `15` | Seconds each individual game shows before the next one within the same mode |
-| `update_interval` | `3600` | Base fetch interval |
+| `update_interval` | `3600` | **Hidden (still declared); has no effect.** The manifest's `update_interval` (60 s) wins in the core scheduler, and live games are polled at `live_update_interval`. |
 | `timezone` | `""` | **Advanced.** IANA timezone for start times, e.g. `America/Chicago`. Blank follows the global LEDMatrix timezone, then the system one |
 
 | `schedule_lookback_days` | `14` | **Advanced.** How far back the recent screens can see |
@@ -402,7 +402,7 @@ a panel.
 | `live_update_interval` | `30` | How often live game data is refreshed |
 | `recent_update_interval` | `3600` | How often the finished-games list is rebuilt |
 | `upcoming_update_interval` | `3600` | How often the upcoming list is rebuilt |
-| `update_interval_seconds` | `3600` | Base fetch interval for this league |
+| `update_interval_seconds` | `3600` | **Hidden (still declared); has no effect.** Every manager replaces it with its own live/recent/upcoming interval before anything reads it. |
 | `stale_game_timeout` | `300` | How long a live game may go without an update before it is dropped |
 | `odds_update_interval` | `3600` | How often betting odds are refreshed for recent and upcoming games |
 | `live_odds_update_interval` | `60` | How often betting odds are refreshed for games in progress |

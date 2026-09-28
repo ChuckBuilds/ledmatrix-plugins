@@ -236,7 +236,8 @@
           "default": 3600,
           "minimum": 30,
           "maximum": 86400,
-          "description": "Default base update interval in seconds for fetching game data"
+          "description": "Default base update interval in seconds for fetching game data HIDDEN: nothing reads it. It seeds each league's base update interval, which every manager then replaces with its own (live_update_interval, recent_update_interval, upcoming_update_interval) before anything reads it; the core scheduler reads update_interval, not this key.",
+          "x-display": "hidden"
         },
         "season_cache_duration_seconds": {
           "x-advanced": true,
@@ -244,7 +245,8 @@
           "default": 86400,
           "minimum": 3600,
           "maximum": 604800,
-          "description": "How long to cache season data (seconds)"
+          "description": "How long to cache season data (seconds) HIDDEN: nothing reads it.",
+          "x-display": "hidden"
         },
         "show_shots": {
           "x-advanced": true,
@@ -503,7 +505,8 @@
               "default": 300,
               "minimum": 60,
               "maximum": 900,
-              "description": "Base update interval for NCAA Men's Lacrosse data"
+              "description": "Base update interval for NCAA Men's Lacrosse data HIDDEN: nothing reads it. It seeds each league's base update interval, which every manager then replaces with its own (live_update_interval, recent_update_interval, upcoming_update_interval) before anything reads it; the core scheduler reads update_interval, not this key.",
+              "x-display": "hidden"
             },
             "live": {
               "x-advanced": true,
@@ -565,7 +568,8 @@
               "default": 15,
               "minimum": 5,
               "maximum": 60,
-              "description": "Base display duration for NCAA Men's Lacrosse games"
+              "description": "Base display duration for NCAA Men's Lacrosse games HIDDEN: nothing reads it; no mode is named 'base'.",
+              "x-display": "hidden"
             },
             "live": {
               "x-advanced": true,
@@ -1004,7 +1008,8 @@
               "default": 300,
               "minimum": 60,
               "maximum": 900,
-              "description": "Base update interval for NCAA Women's Lacrosse data"
+              "description": "Base update interval for NCAA Women's Lacrosse data HIDDEN: nothing reads it. It seeds each league's base update interval, which every manager then replaces with its own (live_update_interval, recent_update_interval, upcoming_update_interval) before anything reads it; the core scheduler reads update_interval, not this key.",
+              "x-display": "hidden"
             },
             "live": {
               "x-advanced": true,
@@ -1066,7 +1071,8 @@
               "default": 15,
               "minimum": 5,
               "maximum": 60,
-              "description": "Base display duration for NCAA Women's Lacrosse games"
+              "description": "Base display duration for NCAA Women's Lacrosse games HIDDEN: nothing reads it; no mode is named 'base'.",
+              "x-display": "hidden"
             },
             "live": {
               "x-advanced": true,
