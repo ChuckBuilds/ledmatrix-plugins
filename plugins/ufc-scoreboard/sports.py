@@ -16,11 +16,10 @@ from PIL import Image, ImageDraw, ImageFont
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-# Import simplified dependencies for plugin use
-try:
-    from dynamic_team_resolver import DynamicTeamResolver
-except ImportError:
-    DynamicTeamResolver = None
+# Import simplified dependencies for plugin use.
+# No dynamic_team_resolver: ufc-scoreboard ships none, so a bare import only
+# ever bound ANOTHER plugin's copy off sys.path (hockey's, whose constructor
+# takes no cache_manager, made every UFC manager fail with TypeError).
 from base_odds_manager import BaseOddsManager
 from data_sources import ESPNDataSource
 # Prefer core's ESPN date-range helper, which core keeps current (orjson
@@ -343,25 +342,12 @@ class SportsCore(ABC):
         self._games_lock = threading.RLock()
         self.fonts = self._load_fonts()
 
-        # Initialize dynamic team resolver and resolve favorite teams
-        # UFC doesn't use team resolution, so make it optional
+        # UFC has no teams to resolve (favourites are fighters), so the
+        # configured list is used as given. dynamic_resolver stays None.
         raw_favorite_teams = self.mode_config.get("favorite_teams", [])
-        if DynamicTeamResolver is not None:
-            self.dynamic_resolver = DynamicTeamResolver(cache_manager=cache_manager)
-            self.favorite_teams = self.dynamic_resolver.resolve_teams(
-                raw_favorite_teams, sport_key
-            )
-        else:
-            self.dynamic_resolver = None
-            self.favorite_teams = raw_favorite_teams
-
-        # Log dynamic team resolution
-        if raw_favorite_teams != self.favorite_teams:
-            self.logger.info(
-                f"Resolved dynamic teams: {raw_favorite_teams} -> {self.favorite_teams}"
-            )
-        else:
-            self.logger.info(f"Favorite teams: {self.favorite_teams}")
+        self.dynamic_resolver = None
+        self.favorite_teams = raw_favorite_teams
+        self.logger.info(f"Favorite teams: {self.favorite_teams}")
 
         self.logger.setLevel(logging.INFO)
 
@@ -458,8 +444,16 @@ class SportsCore(ABC):
         font_name = element_config.get('font', 'PressStart2P-Regular.ttf')
         font_size = int(element_config.get('font_size', default_size))  # Ensure integer for PIL
 
-        # Build font path
-        font_path = _resolve_font_path(os.path.join('assets', 'fonts', font_name))
+        # Build font path. This plugin's schema (shared with fight_renderer,
+        # which reads the value as a path) defaults to repo-relative paths
+        # such as "assets/fonts/tom-thumb.bdf"; joining those onto
+        # assets/fonts gave "assets/fonts/assets/fonts/...", so the configured
+        # face never loaded. A value with a directory is used as given; a bare
+        # filename still lives under assets/fonts.
+        if os.path.dirname(font_name):
+            font_path = _resolve_font_path(font_name)
+        else:
+            font_path = _resolve_font_path(os.path.join('assets', 'fonts', font_name))
 
         # Try to load the font
         try:

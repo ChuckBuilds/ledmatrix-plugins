@@ -136,11 +136,12 @@ check("every tracked filename contributed something",
 check("the copied support modules are tracked",
       {"base_odds_manager.py", "data_sources.py", "dynamic_team_resolver.py",
        "logo_downloader.py"} <= set(gate.TRACKED_FILES))
-# logo_downloader.py is held to a lower bar: the drift fixes deleted the
-# vendored copy from lineages that now import core's src.logo_downloader, so
-# only the lineages still carrying a fallback copy are left to compare.
-_SUPPORT_MIN_LINEAGES = {"base_odds_manager.py": 5, "data_sources.py": 5,
-                         "dynamic_team_resolver.py": 5, "logo_downloader.py": 2}
+# base_odds_manager.py and logo_downloader.py have no bar: every scoreboard
+# that carried one as an unreachable fallback deleted it and imports core's
+# src.base_odds_manager / src.logo_downloader. What is left is ufc-scoreboard's
+# MMA odds fork and f1-scoreboard's unrelated F1LogoLoader, neither with a
+# sibling to drift from.
+_SUPPORT_MIN_LINEAGES = {"data_sources.py": 5, "dynamic_team_resolver.py": 5}
 check("the support modules are compared across several lineages",
       all(max((len(per) for (f, _), per in index.items() if f == name),
               default=0) >= need

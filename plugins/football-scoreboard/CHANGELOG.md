@@ -1,5 +1,19 @@
 # Changelog
 
+## [3.14.1] - 2026-09-28
+
+### Removed
+- Deleted the bundled `base_odds_manager.py` fallback. It could never run:
+  core has shipped `src.base_odds_manager` since v3.0.0, below this plugin's
+  3.4.0 floor, so odds already came from core's `BaseOddsManager`. The
+  import is now plain.
+- Deleted the bundled `logo_downloader.py` fallback for the same reason:
+  logos already came from core's `src.logo_downloader`.
+- Deleted the unused `MLBAPIDataSource` and `SoccerAPIDataSource`
+  data source classes; nothing referenced them.
+
+No behaviour change.
+
 ## [3.13.2] - 2026-09-28
 
 ### Changed

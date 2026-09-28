@@ -121,8 +121,6 @@ logging.basicConfig(level=logging.CRITICAL)
 # ---------------------------------------------------------------------------
 def test_imports() -> None:
     import data_sources  # noqa: F401
-    import logo_downloader  # noqa: F401
-    import base_odds_manager  # noqa: F401
     import dynamic_team_resolver  # noqa: F401
     import game_renderer  # noqa: F401
     import scroll_display  # noqa: F401

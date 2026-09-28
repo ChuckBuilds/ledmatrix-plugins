@@ -9,10 +9,10 @@ family of shared-shape modules:
 | `sports.py` | 9 | `SportsCore` / `SportsUpcoming` / `SportsRecent` / `SportsLive` |
 | `scroll_display.py` | 10 | + `f1-scoreboard` (a reduced rewrite) |
 | `data_sources.py` | 9 | soccer's copy is byte-equivalent to the core's |
-| `base_odds_manager.py` | 9 | ufc's is a genuine MMA fork (athlete odds) |
+| `base_odds_manager.py` | 1 | ufc's MMA fork (athlete odds) only; the other eight import core's `src.base_odds_manager` |
 | `game_renderer.py` | 8 | |
 | `dynamic_team_resolver.py` | 8 | true forks — different constructor signatures |
-| `logo_downloader.py` | 2 | football and lacrosse, as the fallback behind a guarded `src.logo_downloader` import (f1-scoreboard's same-named file is an unrelated `F1LogoLoader`) |
+| `logo_downloader.py` | 0 | every scoreboard imports core's `src.logo_downloader` (f1-scoreboard's same-named file is an unrelated `F1LogoLoader`) |
 | `<sport>_espn_dates.py` | 9 | every scoreboard; a copy of core's `src/common/espn_dates.py` under a three-line header. **Identical by rule:** `scripts/test_espn_dates_copies.py` fails if any copy differs from the others or from core's, and on a fetch that sends ESPN `dates` without it. Fix it in core, then copy to all nine |
 | `<sport>_favorite_check.py` | 7 | afl, baseball, basketball, football, hockey, lacrosse, nrl. Byte-identical today, but **no check keeps them so** — edit all seven together |
 
@@ -51,28 +51,15 @@ The long-term home for this code is the core repo, so a fix lands once and
 every scoreboard benefits. Convergence happens module by module, gated on what
 the core actually ships:
 
-- **Already converged:** `logo_downloader` (every scoreboard imports
-  `src.logo_downloader`; football and lacrosse keep a bundled fallback); `odds-ticker` uses `src.*` for everything and
-  ships no local copies — it is the model citizen.
-- **Converging now:** `base_odds_manager`. The eight non-UFC scoreboards import
-  it guardedly, preferring the core's version:
-
-  ```python
-  try:
-      from src.base_odds_manager import BaseOddsManager  # core-shipped
-  except ModuleNotFoundError as exc:
-      # Fall back only when the CORE module is absent. A bare `except
-      # ImportError` would also swallow a failure raised *inside* a core
-      # module that is present, silently loading the bundled copy and hiding
-      # a broken core install.
-      if exc.name not in {"src", "src.base_odds_manager"}:
-          raise
-      from base_odds_manager import BaseOddsManager      # bundled fallback
-  ```
-
-  Both branches are module-level (entry-point load time), so they are safe
-  under the loader's bare-name isolation rules (see doc 07 / CLAUDE.md module
-  naming). The local copy stays until the sunset rule below is met.
+- **Already converged:** `logo_downloader` and `base_odds_manager` (every
+  scoreboard imports `src.logo_downloader`, and the eight non-UFC scoreboards
+  import `src.base_odds_manager`, plainly); `odds-ticker` uses `src.*` for
+  everything and ships no local copies — it is the model citizen. Core has
+  shipped both modules since v3.0.0, and every scoreboard floors at 3.4.0 and
+  already imports `src.common.sports_shared` (3.3.0) unguarded, so the bundled
+  fallbacks they used to carry could never run and were deleted. (Core's
+  `BaseOddsManager` still lacks the `no_odds` cache-hit fix the old bundled
+  copies had; that is a core change.)
 - **Not converging (documented forks):** `dynamic_team_resolver` (plugin copies
   take `cache_manager` in the constructor; the core's does not — different
   API), ufc's `base_odds_manager` (MMA athlete-odds fork), and — until the core
