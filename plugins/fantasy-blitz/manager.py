@@ -717,7 +717,7 @@ class FantasyBlitzPlugin(BasePlugin):
         # display() stays free of cache writes, and a restart inside that
         # minute costs at most one repeated alert.
         current = self.alerts.current
-        if current is not None and now - current.get("shown_at", now) >= ALERT_SECONDS:
+        if current is not None and now - current.get("shown_at", now) >= self._alert_seconds():
             self.alerts.finish()
             return False
         alert = self.alerts.take(now, self.spoiler_delay)
@@ -731,16 +731,22 @@ class FantasyBlitzPlugin(BasePlugin):
     # duration and live priority
     # ------------------------------------------------------------------
 
+    def _alert_seconds(self) -> float:
+        """How long one big-play alert stays up: ``screens.big_play.duration``,
+        or ALERT_SECONDS for 0. The alert used to end at ALERT_SECONDS whatever
+        the setting, while the mode ran for the setting."""
+        return float(self.screens["big_play"]["duration"] or ALERT_SECONDS)
+
     def get_display_duration(self) -> float:
         """Seconds for the mode on screen; ``duration: 0`` means "long enough"."""
         screen = self._current_screen
         if screen is None:
             return float(self.display_duration)
+        if screen == "big_play":
+            return self._alert_seconds()
         configured = self.screens.get(screen, {}).get("duration", 0)
         if configured:
             return float(configured)
-        if screen == "big_play":
-            return float(ALERT_SECONDS)
         items = self.content.get(screen) or []
         if screen in LIST_SCREENS:
             count, per = len(self._pages(items)), PAGE_SECONDS

@@ -1,7 +1,7 @@
 {
   "id": "youtube-stats",
   "name": "YouTube Stats",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "author": "ChuckBuilds",
   "description": "Display YouTube channel statistics including subscriber count, total views, and channel name on your LED matrix",
   "category": "social",
@@ -33,6 +33,12 @@
     }
   ],
   "versions": [
+    {
+      "released": "2026-09-28",
+      "version": "1.3.2",
+      "changelog": "A freshly enabled plugin loads and shows what to set (YT: Set Channel, or YT: Update API Key) instead of failing validation and showing nothing. The message wraps to the panel width instead of running off both edges.",
+      "ledmatrix_min_version": "3.4.0"
+    },
     {
       "released": "2026-09-28",
       "version": "1.3.1",
