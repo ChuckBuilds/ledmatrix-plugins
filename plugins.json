@@ -27,7 +27,7 @@
       "last_updated": "2026-09-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.3.1"
+      "latest_version": "1.3.2"
     },
     {
       "id": "7-segment-clock",
@@ -487,7 +487,7 @@
       "last_updated": "2026-09-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.1.2"
+      "latest_version": "2.1.3"
     },
     {
       "id": "masters-tournament",
@@ -677,10 +677,10 @@
       "plugin_path": "plugins/of-the-day",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-16",
+      "last_updated": "2026-09-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.4.7"
+      "latest_version": "1.4.8"
     },
     {
       "id": "olympics",
