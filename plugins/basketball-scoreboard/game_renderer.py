@@ -470,10 +470,6 @@ class GameRenderer(SportsGameRendererMixin):
         """Delegates to src.common.sports_card, shared by every scoreboard."""
         return _card.coerce_rgb(value, fallback)
 
-    def _favorite_teams_for(self, game: Dict[str, Any]) -> list:
-        """Delegates to src.common.sports_card, shared by every scoreboard."""
-        return _card.favorite_teams_for(self.config, game)
-
     @staticmethod
     def _side_is_favorite(game: Dict[str, Any], side: str, favorites: set) -> bool:
         """Delegates to src.common.sports_card, shared by every scoreboard."""
@@ -902,5 +898,3 @@ class GameRenderer(SportsGameRendererMixin):
         elif self.show_records:
             return record
         return ''
-
-

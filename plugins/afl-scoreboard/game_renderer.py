@@ -364,71 +364,6 @@ class GameRenderer(SportsGameRendererMixin):
             self.logger.error(f"Error loading logo for {team_abbrev}: {e}")
             return None
     
-    def _resize_logo_to_fit(
-        self, 
-        logo: Image.Image, 
-        max_width: int, 
-        max_height: int
-    ) -> Image.Image:
-        """
-        Resize a logo to fit within given dimensions while maintaining aspect ratio.
-        
-        Args:
-            logo: PIL Image of the logo
-            max_width: Maximum width in pixels
-            max_height: Maximum height in pixels
-            
-        Returns:
-            Resized logo image
-        """
-        if logo.width <= max_width and logo.height <= max_height:
-            return logo
-        
-        # Create a copy to avoid modifying the cached version
-        resized_logo = logo.copy()
-        resized_logo.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
-        return resized_logo
-    
-    def _calculate_max_logo_dimensions(
-        self, 
-        score_width: int, 
-        side: str
-    ) -> Tuple[int, int]:
-        """
-        Calculate maximum logo dimensions based on available space.
-        
-        Args:
-            score_width: Width of the score text in pixels
-            side: 'home' or 'away' to determine which side of the display
-            
-        Returns:
-            Tuple of (max_width, max_height) in pixels
-        """
-        # Padding around score text and edges
-        score_padding = 8  # Space between logo and score text
-        edge_padding = 10  # Space from display edges
-        
-        # Calculate available width for each logo
-        center_x = self.display_width // 2
-        score_left = center_x - (score_width // 2)
-        score_right = center_x + (score_width // 2)
-        
-        if side == 'away':
-            # Away logo on the left side
-            available_width = score_left - score_padding - edge_padding
-        else:  # home
-            # Home logo on the right side
-            available_width = self.display_width - score_right - score_padding - edge_padding
-        
-        # Ensure minimum width (at least 20% of display width)
-        min_width = int(self.display_width * 0.2)
-        available_width = max(available_width, min_width)
-        
-        # Max height is slightly less than display height to leave room for status text
-        max_height = int(self.display_height * 0.85)
-        
-        return (available_width, max_height)
-    
     #: Which customization element owns each loaded face. The font loader
     #: already picks each face from exactly that element (element_key=), so
     #: resolving the colour from the face keeps the two in step by
@@ -498,10 +433,6 @@ class GameRenderer(SportsGameRendererMixin):
     def _coerce_rgb(value, fallback):
         """Delegates to src.common.sports_card, shared by every scoreboard."""
         return _card.coerce_rgb(value, fallback)
-
-    def _favorite_teams_for(self, game: Dict[str, Any]) -> list:
-        """Delegates to src.common.sports_card, shared by every scoreboard."""
-        return _card.favorite_teams_for(self.config, game)
 
     @staticmethod
     def _side_is_favorite(game: Dict[str, Any], side: str, favorites: set) -> bool:

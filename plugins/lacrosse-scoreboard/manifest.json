@@ -57,6 +57,12 @@
       "notes": "UPCOMING NEVER BLANK: a full-screen upcoming scoreboard whose middle is 'date and time' with both Show Date (Full-Screen) and Show Time (Full-Screen) off drew two logos and 'Next Game' and nothing to say when the game is. That combination is what the core settings form left on boards saved before LEDMatrix #597 -- it drew newly added keys as unchecked boxes, so a Save wrote both as false -- and it is what a live board showed on every football and hockey upcoming card. It now draws both lines. Hiding one line, or both under 'vs' or 'none', is still honoured. RECENT DATE: the full-screen recent scoreboard now draws the date the game was played along its bottom edge, and the score moves up between the logos to make room -- the layout football, baseball, afl, nrl and soccer already use. Before, a finished game showed only 'Final' and a score, with no way to tell which game it was. Written in Full-Screen Date Format; new scroll_card.switch_recent_show_date (default true) turns it off. The scroll and Vegas recent card gains the same date. LIVE PRIORITY: live_priority now defaults on for NCAA men's and women's lacrosse, as it already did for the other leagues, so a live game involving your team takes the panel instead of waiting its turn. Only configs that never saved the key change."
     },
     {
+      "version": "1.31.5",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Removed code that nothing called. No change in behaviour."
+    },
+    {
       "version": "1.31.4",
       "released": "2026-09-28",
       "ledmatrix_min_version": "3.4.0",

@@ -32,6 +32,12 @@
       "notes": "UPCOMING NEVER BLANK: a full-screen upcoming scoreboard whose middle is 'date and time' with both Show Date (Full-Screen) and Show Time (Full-Screen) off drew two logos and 'Next Game' and nothing to say when the game is. That combination is what the core settings form left on boards saved before LEDMatrix #597 -- it drew newly added keys as unchecked boxes, so a Save wrote both as false -- and it is what a live board showed on every football and hockey upcoming card. It now draws both lines. Hiding one line, or both under 'vs' or 'none', is still honoured. RECENT DATE: the full-screen recent date now goes through Full-Screen Date Format like the upcoming one (the 'numeric' default leaves it unchanged), and new scroll_card.switch_recent_show_date (default true) turns it off, matching baseball-scoreboard."
     },
     {
+      "version": "3.13.2",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Removed code that nothing called. No change in behaviour."
+    },
+    {
       "version": "3.13.1",
       "released": "2026-09-28",
       "ledmatrix_min_version": "3.4.0",

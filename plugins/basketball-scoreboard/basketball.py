@@ -116,39 +116,6 @@ class BasketballLive(Basketball, SportsLive):
     def __init__(self, config: Dict[str, Any], display_manager, cache_manager, logger: logging.Logger, sport_key: str):
         super().__init__(config, display_manager, cache_manager, logger, sport_key)
 
-    # Test mode removed
-    def _test_mode_update_removed(self):
-        if self.current_game and self.current_game["is_live"]:
-            try:
-                minutes, seconds = map(int, self.current_game["clock"].split(':'))
-                seconds -= 1
-                if seconds < 0:
-                    seconds = 59
-                    minutes -= 1
-                    if minutes < 0:
-                        # Simulate end of quarter
-                        if self.current_game["period"] < 4:
-                            self.current_game["period"] += 1
-                            # Update period_text
-                            if self.current_game["period"] == 1:
-                                self.current_game["period_text"] = "Q1"
-                            elif self.current_game["period"] == 2:
-                                self.current_game["period_text"] = "Q2"
-                            elif self.current_game["period"] == 3:
-                                self.current_game["period_text"] = "Q3"
-                            elif self.current_game["period"] == 4:
-                                self.current_game["period_text"] = "Q4"
-                            # Reset clock for next quarter (12:00 for basketball)
-                            minutes, seconds = 12, 0
-                        else:
-                            # Simulate overtime
-                            self.current_game["period"] += 1
-                            self.current_game["period_text"] = f"OT{self.current_game['period'] - 4}"
-                            minutes, seconds = 5, 0
-                self.current_game["clock"] = f"{minutes:02d}:{seconds:02d}"
-                self.current_game["status_text"] = f"{self.current_game['period_text']} {self.current_game['clock']}"
-            except ValueError:
-                self.logger.warning("Test mode: Could not parse clock")
 
     def _draw_scorebug_layout(self, game: Dict, force_clear: bool = False) -> None:
         """Draw the detailed scorebug layout for a live Basketball game."""
@@ -365,4 +332,3 @@ class BasketballLive(Basketball, SportsLive):
 
         except Exception as e:
             self.logger.error(f"Error displaying live Basketball game: {e}", exc_info=True)
-

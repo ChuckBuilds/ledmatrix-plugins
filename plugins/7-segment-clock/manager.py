@@ -157,10 +157,6 @@ class SevenSegmentClockPlugin(BasePlugin):
             self.logger.warning(f"Invalid hex color '{hex_color}', using white")
             return (255, 255, 255)
 
-    def _rgb_to_hex(self, r: int, g: int, b: int) -> str:
-        """Convert RGB tuple to hex color string."""
-        return f"#{r:02x}{g:02x}{b:02x}"
-
     def _format_time(self, dt: datetime) -> Tuple[str, bool]:
         """
         Format time string based on configuration.
@@ -509,4 +505,3 @@ class SevenSegmentClockPlugin(BasePlugin):
                 self.logger.warning(f"Unknown timezone '{timezone_str}', will fall back to main config or UTC")
 
         return True
-

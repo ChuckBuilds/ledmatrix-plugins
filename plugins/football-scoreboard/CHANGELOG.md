@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.13.2] - 2026-09-28
+
+### Changed
+- Removed code that nothing called. No change in behaviour.
+
 ## [3.13.1] - 2026-09-28
 
 ### Fixed

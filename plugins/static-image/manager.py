@@ -1105,32 +1105,6 @@ class StaticImagePlugin(BasePlugin):
             self.logger.info("Set enable_scrolling to %s in on_enable (fallback, in __dict__: %s)", 
                            self.enable_scrolling, 'enable_scrolling' in self.__dict__)
     
-    def _update_enable_scrolling(self) -> None:
-        """
-        Update enable_scrolling attribute based on current image state.
-        Called when image changes to keep enable_scrolling in sync.
-        """
-        # Check if current image is animated
-        if self.is_animated:
-            self.enable_scrolling = True
-            return
-        
-        # Check if current image path is a GIF
-        if self.image_path and self.image_path.lower().endswith('.gif'):
-            self.enable_scrolling = True
-            return
-        
-        # Check if any configured images are GIFs
-        has_gif_images = False
-        if self.images_list:
-            for img_info in self.images_list:
-                img_path = img_info.get('path', '') if isinstance(img_info, dict) else str(img_info)
-                if img_path and img_path.lower().endswith('.gif'):
-                    has_gif_images = True
-                    break
-        
-        self.enable_scrolling = has_gif_images
-    
     def validate_config(self) -> bool:
         """Validate plugin configuration."""
         # Call parent validation first
@@ -1233,4 +1207,3 @@ class StaticImagePlugin(BasePlugin):
         self.gif_frame_delays = []
         self.current_frame_index = 0
         self.logger.info("Static image plugin cleaned up")
-

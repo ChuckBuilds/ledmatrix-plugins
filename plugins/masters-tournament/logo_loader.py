@@ -98,31 +98,6 @@ class MastersLogoLoader:
         self._cache[cache_key] = placeholder
         return placeholder
 
-    def get_azalea_icon(self, size: int = 16) -> Optional[Image.Image]:
-        """Get the azalea flower accent icon."""
-        cache_key = f"azalea_{size}"
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-
-        icon_path = self.logos_dir / "azalea.png"
-        if icon_path.exists():
-            try:
-                img = Image.open(icon_path).convert("RGBA")
-                img.thumbnail((size, size), Image.Resampling.LANCZOS)
-                self._cache[cache_key] = img
-                return img
-            except Exception as e:
-                logger.warning(f"Failed to load azalea: {e}")
-
-        # Pink circle fallback
-        placeholder = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-        draw = ImageDraw.Draw(placeholder)
-        r = size // 3
-        c = size // 2
-        draw.ellipse([c - r, c - r, c + r, c + r], fill=(255, 105, 180, 255))
-        self._cache[cache_key] = placeholder
-        return placeholder
-
     def get_hole_image(self, hole_number: int, max_width: int = 40, max_height: int = 28) -> Optional[Image.Image]:
         """Get a hole map image for Augusta National."""
         if not 1 <= hole_number <= 18:
@@ -224,45 +199,6 @@ class MastersLogoLoader:
             logger.warning(f"Failed to download headshot for {player_id or self._url_key(url)}: {e}")
             return False
 
-    def get_country_flag(self, country_code: str, width: int = 16, height: int = 10) -> Optional[Image.Image]:
-        """Get a country flag image."""
-        if not country_code:
-            return None
-
-        cache_key = f"flag_{country_code}_{width}x{height}"
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-
-        flag_path = self.flags_dir / f"{country_code}.png"
-        if flag_path.exists():
-            try:
-                img = Image.open(flag_path).convert("RGBA")
-                img = img.resize((width, height), Image.Resampling.NEAREST)
-                self._cache[cache_key] = img
-                return img
-            except Exception as e:
-                logger.warning(f"Failed to load flag {country_code}: {e}")
-
-        return None
-
-    def get_icon(self, icon_name: str, size: int = 16) -> Optional[Image.Image]:
-        """Load an icon from the icons directory."""
-        cache_key = f"icon_{icon_name}_{size}"
-        if cache_key in self._cache:
-            return self._cache[cache_key]
-
-        icon_path = self.icons_dir / icon_name
-        if icon_path.exists():
-            try:
-                img = Image.open(icon_path).convert("RGBA")
-                img.thumbnail((size, size), Image.Resampling.LANCZOS)
-                self._cache[cache_key] = img
-                return img
-            except Exception as e:
-                logger.warning(f"Failed to load icon {icon_name}: {e}")
-
-        return None
-
     def _create_text_placeholder(self, text: str, width: int, height: int,
                                   color: Tuple[int, int, int] = (255, 255, 255)) -> Image.Image:
         """Create a simple text-based placeholder."""
@@ -328,14 +264,6 @@ class MastersLogoLoader:
                 except Exception:
                     pass
         return ImageFont.load_default()
-
-    def preload_all_holes(self, max_width: int = 40, max_height: int = 28):
-        """Preload all 18 hole images into cache."""
-        count = 0
-        for hole_num in range(1, 19):
-            if self.get_hole_image(hole_num, max_width, max_height):
-                count += 1
-        logger.info(f"Preloaded {count} hole images")
 
     def clear_cache(self):
         """Clear the in-memory image cache."""

@@ -318,18 +318,6 @@ class MastersDataSource:
             "is_masters": False,
         }
 
-    @staticmethod
-    def _second_thursday_of_april(year: int) -> datetime:
-        """Backwards-compatible alias — delegates to the correct algorithm.
-
-        The original 'second Thursday of April' rule gave wrong dates for
-        2022 (Apr 13, actual Apr 7) and 2023 (Apr 13, actual Apr 6).
-        The correct rule is the Thursday between April 6-12 inclusive.
-        This method is kept so any external callers are not broken.
-        """
-        from masters_helpers import _masters_thursday
-        return _masters_thursday(year)
-
     # ── Schedule / tee times ─────────────────────────────────────
 
     def fetch_schedule(self) -> List[Dict]:
@@ -499,17 +487,6 @@ class MastersDataSource:
         except Exception as e:
             self.logger.error(f"Error parsing player details: {e}")
             return None
-
-    def _is_masters_tournament(self, data: Dict) -> bool:
-        """Check if the current tournament in ESPN data is the Masters."""
-        try:
-            events = data.get("events", [])
-            if not events:
-                return False
-            name = events[0].get("name", "").lower()
-            return any(kw in name for kw in ["masters", "augusta national", "augusta"])
-        except Exception:
-            return False
 
     def _parse_tee_times_from_leaderboard(self, data: Dict) -> List[Dict]:
         """Extract tee-time pairings from an ESPN leaderboard payload.
