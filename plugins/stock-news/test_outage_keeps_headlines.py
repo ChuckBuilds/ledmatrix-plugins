@@ -18,7 +18,6 @@ Exit 0 pass, 1 fail, 2 skip.
 import logging
 import os
 import sys
-from types import SimpleNamespace
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
