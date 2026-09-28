@@ -1,7 +1,7 @@
 {
   "id": "countdown",
   "name": "Countdown Display",
-  "version": "3.3.2",
+  "version": "3.3.3",
   "author": "ChuckBuilds",
   "description": "Create and manage customizable countdowns with images. Perfect for birthdays, holidays, events, and special occasions.",
   "entry_point": "manager.py",
@@ -21,6 +21,12 @@
     ">=2.0.0"
   ],
   "versions": [
+    {
+      "version": "3.3.3",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Layout overrides each apply on their own: value_x works without name_x, name_x and value_x work under right alignment, and setting only an image size no longer moves an image-right image to the left edge."
+    },
     {
       "version": "3.3.2",
       "released": "2026-09-21",
@@ -111,5 +117,5 @@
   "license": "GPL-3.0",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/countdown",
   "config_schema": "config_schema.json",
-  "last_updated": "2026-09-21"
+  "last_updated": "2026-09-28"
 }
