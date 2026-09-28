@@ -1,7 +1,7 @@
 {
   "id": "calendar",
   "name": "Google Calendar",
-  "version": "1.2.7",
+  "version": "1.2.8",
   "author": "ChuckBuilds",
   "description": "Display upcoming events from Google Calendar with date, time, and event details. Shows next 1-3 events with automatic rotation and timezone support.",
   "category": "productivity",
@@ -35,6 +35,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.2.8",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Saved settings now apply without a restart. The core applies a web-UI save by calling on_config_change, not by reloading the plugin, and the base version only replaces self.config, so the calendars, event count, rotation interval and fonts kept their old values. They are re-read on save; sign-in is left alone, and a changed calendar list is fetched on the next update."
+    },
     {
       "version": "1.2.7",
       "released": "2026-09-15",
@@ -130,7 +136,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-02",
+  "last_updated": "2026-09-28",
   "stars": 0,
   "downloads": 0,
   "verified": true,

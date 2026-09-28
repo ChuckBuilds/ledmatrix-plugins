@@ -1,5 +1,15 @@
 # Changelog
 
+## [2.7.5] - 2026-09-28
+
+### Fixed
+- More saved settings apply without a restart: show_feels_like,
+  show_dew_point, show_visibility, show_pressure, show_alerts and
+  update_interval were not re-read, and on_config_change set self.config
+  directly, so enabled went stale. It now calls the base on_config_change and
+  re-reads them. A change of units or location also forces the next update to
+  fetch, instead of showing the old units or place for up to update_interval.
+
 ## [2.7.4] - 2026-09-28
 
 ### Changed

@@ -68,6 +68,18 @@ class ChristmasCountdownPlugin(BasePlugin):
         
         self.logger.info("Christmas countdown plugin initialized")
     
+    def on_config_change(self, new_config: Dict[str, Any]) -> None:
+        """Apply a settings save without a restart.
+
+        The core calls this rather than reloading the plugin, and the base
+        version only replaces self.config, so every setting __init__ copied
+        into an attribute kept its old value until the next restart. __init__
+        only reads config and loads local assets, so running it again is the
+        simplest way to re-read every setting.
+        """
+        self.__init__(self.plugin_id, new_config, self.display_manager,
+                      self.cache_manager, self.plugin_manager)
+
     def _load_tree_image(self) -> None:
         """Load Christmas tree image from plugin directory."""
         try:

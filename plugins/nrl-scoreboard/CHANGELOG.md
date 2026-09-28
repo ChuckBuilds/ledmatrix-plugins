@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.29.3] - 2026-09-28
+
+### Fixed
+- Scroll and Vegas cards now pick up saved settings without a restart:
+  on_config_change rebuilt the managers but not the scroll display manager,
+  which with its card renderer held the config it was built with. Rebuilt as
+  football-scoreboard does.
+
 ## [1.29.2] - 2026-09-28
 
 ### Fixed

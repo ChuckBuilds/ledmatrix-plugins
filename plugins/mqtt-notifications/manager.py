@@ -836,6 +836,25 @@ class MQTTNotificationsPlugin(BasePlugin):
         
         self._stop_mqtt()
     
+    def on_config_change(self, new_config: Dict[str, Any]) -> None:
+        """Apply a settings save without a restart.
+
+        The core calls this rather than reloading the plugin, and the base
+        version only replaces self.config, so the broker, topics, font and
+        colours kept their old values until a restart. The connection is
+        stopped, __init__ reads every setting again, and it reconnects with
+        the new ones. A notification already on screen stays.
+        """
+        self._stop_mqtt()
+        with self.message_lock:
+            message = self.current_message
+        self.__init__(self.plugin_id, new_config, self.display_manager,
+                      self.cache_manager, self.plugin_manager)
+        with self.message_lock:
+            self.current_message = message
+        if self.enabled:
+            self.on_enable()
+
     def cleanup(self) -> None:
         """Cleanup resources."""
         self._stop_mqtt()

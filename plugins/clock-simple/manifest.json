@@ -1,7 +1,7 @@
 {
   "id": "clock-simple",
   "name": "Simple Clock",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "author": "ChuckBuilds",
   "description": "A simple clock display with current time and date",
   "category": "time",
@@ -16,6 +16,12 @@
     "clock-simple"
   ],
   "versions": [
+    {
+      "version": "1.1.2",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Saved settings now apply without a restart. The core applies a web-UI save by calling on_config_change, not by reloading the plugin, and the base version only replaces self.config, so format, colours, fonts, position and timezone kept their old values. __init__ only reads config and loads local assets, so on_config_change runs it again."
+    },
     {
       "version": "1.1.1",
       "released": "2026-09-15",
@@ -61,7 +67,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-02",
+  "last_updated": "2026-09-28",
   "stars": 0,
   "downloads": 0,
   "verified": true,

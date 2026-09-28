@@ -1,7 +1,7 @@
 {
   "id": "nrl-scoreboard",
   "name": "NRL Scoreboard",
-  "version": "1.29.2",
+  "version": "1.29.3",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NRL (National Rugby League) games with real-time scores and game status.",
   "category": "sports",
@@ -18,6 +18,12 @@
     "nrl_upcoming"
   ],
   "versions": [
+    {
+      "version": "1.29.3",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Scroll and Vegas cards now pick up saved settings without a restart: on_config_change rebuilt the managers but not the scroll display manager, which with its card renderer held the config it was built with. Rebuilt as football-scoreboard does."
+    },
     {
       "version": "1.29.2",
       "released": "2026-09-28",

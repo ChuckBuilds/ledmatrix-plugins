@@ -1,7 +1,7 @@
 {
   "id": "text-display",
   "name": "Text Display",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "author": "ChuckBuilds",
   "description": "Display custom scrolling or static text with configurable fonts, colors, and scroll speed. Perfect for announcements, messages, or custom displays.",
   "category": "display",
@@ -24,6 +24,12 @@
     }
   },
   "versions": [
+    {
+      "version": "1.3.2",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Turning scrolling on in the settings now scrolls at full speed: on_config_change updated scroll_enabled but not enable_scrolling, which the core reads to choose the high-FPS loop, so the text crawled at one frame a second until a restart. A new text colour or scroll gap also redraws the scrolling strip; only a new background colour used to."
+    },
     {
       "version": "1.3.1",
       "released": "2026-09-16",
@@ -109,7 +115,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-16",
+  "last_updated": "2026-09-28",
   "stars": 0,
   "downloads": 0,
   "verified": true,

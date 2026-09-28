@@ -280,6 +280,17 @@ def test_config_change_applies_without_a_restart(frozen):
     assert plugin.scoring == "standard" and len(plugin.content["player_card"]) == 2
 
 
+def test_raising_the_spoiler_delay_grows_the_buffer(frozen):
+    # The buffer was sized once in __init__. Raising the delay from the web
+    # UI left it too short to hold a snapshot that old, so view() fell back
+    # to the oldest one it had and showed scores before the delay was up.
+    plugin, _, _ = make_plugin()
+    new = copy.deepcopy(plugin.config)
+    new["spoiler_delay_seconds"] = 300
+    plugin.on_config_change(new)
+    assert plugin._delayed.keep_seconds >= 300 + 120
+
+
 def test_info_reports_the_week(frozen):
     plugin, _, _ = make_plugin()
     plugin.update()
