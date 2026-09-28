@@ -774,7 +774,7 @@
         "daily_api_budget": {
           "x-advanced": true,
           "type": "integer",
-          "description": "Maximum FlightAware API calls per day",
+          "description": "Maximum FlightAware API calls per day. After the 15th it is capped at 40, and once about $9.50 of calls (at $0.005 each) is spent in a month, none are made until the 1st.",
           "minimum": 1,
           "maximum": 200,
           "default": 60

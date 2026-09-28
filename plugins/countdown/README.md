@@ -215,11 +215,11 @@ text on the right two thirds.
 
 | Key | Default | Meaning |
 |-----|---------|---------|
-| `image_x` / `image_y` | `0` | Image top-left corner |
+| `image_x` / `image_y` | `0` | Image top-left corner; `0` for both keeps the preset's placement |
 | `image_width` | `0` | `0` means auto — a third of the panel width |
 | `image_height` | `0` | `0` means auto — the full panel height |
-| `name_x` / `name_y` | `null` | `null` means auto: centred in the text area, upper third |
-| `value_x` / `value_y` | `null` | `null` means auto: centred, lower two thirds |
+| `name_x` / `name_y` | `null` | `null` means auto: centred in the text area, upper third. `name_x` is the line's centre |
+| `value_x` / `value_y` | `null` | `null` means auto: centred, lower two thirds. `value_x` is the line's centre |
 
 Both `layout` and `style` also accept `null` or an empty string, which the web
 UI may write when you clear a field.

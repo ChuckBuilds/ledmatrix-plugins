@@ -255,7 +255,7 @@ under `ledmatrix-flights`. The full schema is
 | `flightaware.api_key` | *(blank)* | Your FlightAware AeroAPI key. Leave blank if you are not using FlightAware — the plugin works fully without this. Secret, masked in the web UI. |
 | `flightaware.enabled` | `false` | Enable paid FlightAware API calls. Must be true AND api_key must be set for FlightAware to be used. Disabled by default — do not enable unless you have a paid subscription. |
 | `flightaware.max_api_calls_per_hour` | `25` | Maximum FlightAware API calls per hour (1–100). Advanced. |
-| `flightaware.daily_api_budget` | `60` | Maximum FlightAware API calls per day (1–200). Advanced. |
+| `flightaware.daily_api_budget` | `60` | Maximum FlightAware API calls per day (1–200). After the 15th it is capped at 40, and once about $9.50 of calls ($0.005 each) is spent in a month, none are made until the 1st. Cached flight plans are still shown. Advanced. |
 | `flightaware.cache_ttl_hours` | `12` | Flight plan cache time-to-live in hours (1–168). Advanced. |
 | `flightaware.min_callsign_length` | `4` | Minimum callsign length to fetch flight plan data (3–10). Advanced. |
 | `flightaware.airline_callsign_prefixes` | `["AAL", "UAL", "DAL", "SWA", "JBU", "ASQ", …` | List of airline callsign prefixes to prioritize for flight plan fetching. Advanced. |

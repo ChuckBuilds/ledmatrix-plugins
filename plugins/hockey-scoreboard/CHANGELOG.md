@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.35.4] - 2026-09-28
+
+### Fixed
+- Each league's scroll settings apply to that league's scrolling strip: the
+  scroll speed and dynamic duration came from the NHL settings whichever
+  league was shown.
+
 ## [1.35.3] - 2026-09-28
 
 ### Fixed

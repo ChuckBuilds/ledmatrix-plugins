@@ -187,10 +187,10 @@
       "plugin_path": "plugins/countdown",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-21",
+      "last_updated": "2026-09-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "3.3.2",
+      "latest_version": "3.3.3",
       "icon": "fa-clock"
     },
     {
@@ -463,7 +463,7 @@
       "last_updated": "2026-09-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.14.5"
+      "latest_version": "1.14.6"
     },
     {
       "id": "march-madness",
@@ -952,7 +952,7 @@
       "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
       "branch": "main",
       "plugin_path": "plugins/ledmatrix-weather",
-      "latest_version": "2.7.6",
+      "latest_version": "2.7.7",
       "stars": 0,
       "downloads": 0,
       "last_updated": "2026-09-28",
