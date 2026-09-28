@@ -416,6 +416,7 @@ scroll mode.
 | `scroll_card.time_format` | `12h` | `12h` (7:40PM) or `24h` (19:40) |
 | `scroll_card.show_date` | `true` | Draw the date at all |
 | `scroll_card.show_time` | `true` | Draw the start time at all |
+| `scroll_card.switch_recent_show_date` | `true` | Draw the game's date along the bottom of the full-screen recent scoreboard, written in `switch_date_format` |
 | `scroll_card.swap_date_time` | `false` | Put the time above the date instead of below |
 | `scroll_card.center_gap` | *(auto)* | Fixed pixel gap in the middle of a scroll card |
 | `scroll_card.center_gap_ratio` | `0.28` | **Advanced.** Gap as a fraction of card width, when `center_gap` is unset |

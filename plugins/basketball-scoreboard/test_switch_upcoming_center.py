@@ -255,6 +255,19 @@ def main():
           lit_rows(no_date) and lit_rows(no_date) < lit_rows(default_img))
     check("switch_show_date and switch_show_time together cover the default render",
           lit_rows(no_time) | lit_rows(no_date) == lit_rows(default_img))
+    # Both switches off under "date_time" is the fingerprint the core's old
+    # settings form left (it saved newly added boxes as unchecked), and it
+    # blanked the card, so it draws both lines; under "vs" it is honoured.
+    both_off, keep = render({"scroll_card": {"switch_show_date": False,
+                                             "switch_show_time": False}})
+    check("both full-screen switches off under date_time still draws both",
+          list(both_off.getdata()) == list(default_img.getdata()) and keep)
+    vs_both_off, _ = render({"scroll_card": {"switch_show_date": False,
+                                             "switch_show_time": False,
+                                             "switch_upcoming_center": "vs"}})
+    vs_on, _ = render({"scroll_card": {"switch_upcoming_center": "vs"}})
+    check("both switches off under vs is still honoured",
+          lit_rows(vs_both_off) < lit_rows(vs_on))
     shared_off, _ = render({"scroll_card": {"show_date": False, "show_time": False}})
     check("scroll-card show_date/show_time do not blank this display",
           list(shared_off.getdata()) == list(default_img.getdata()))

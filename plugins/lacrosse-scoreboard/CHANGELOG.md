@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.31.6] - 2026-09-28
+## [1.32.1] - 2026-09-28
 
 ### Removed
 - Deleted the bundled `base_odds_manager.py` fallback. It could never run:

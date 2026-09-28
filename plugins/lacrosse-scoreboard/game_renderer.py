@@ -729,6 +729,21 @@ class GameRenderer(SportsGameRendererMixin):
         status_y = 1
         self._draw_text_with_outline(draw, status_text, (status_x, status_y), self.fonts['time'])
 
+        # Game date (Bottom center), as the football, basketball, afl, nrl
+        # and soccer cards draw it -- sat on the bottom edge by its own
+        # measured height, since the detail font scales with the panel.
+        game_date = game.get("game_date", "")
+        if game_date:
+            date_width = draw.textlength(game_date, font=self.fonts['detail'])
+            date_x = (self.display_width - date_width) // 2
+            try:
+                bbox = draw.textbbox((0, 0), game_date, font=self.fonts['detail'])
+                date_h = bbox[3] - bbox[1]
+            except (AttributeError, TypeError, ValueError):
+                date_h = 6
+            date_y = max(0, self.display_height - date_h - 2)
+            self._draw_text_with_outline(draw, game_date, (date_x, date_y), self.fonts['detail'])
+
     # ------------------------------------------------------------------
     # Card options -- config["scroll_card"], plus the shared
     # customization.layout offsets and per-element colours.

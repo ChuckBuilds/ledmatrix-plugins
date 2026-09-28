@@ -76,7 +76,7 @@
       "last_updated": "2026-09-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.49.5"
+      "latest_version": "1.50.1"
     },
     {
       "id": "basketball-scoreboard",
@@ -101,7 +101,7 @@
       "last_updated": "2026-09-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.36.5"
+      "latest_version": "1.37.1"
     },
     {
       "id": "calendar",
@@ -264,7 +264,7 @@
       "last_updated": "2026-09-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "3.13.3"
+      "latest_version": "3.14.1"
     },
     {
       "id": "geochron",
@@ -359,7 +359,7 @@
       "last_updated": "2026-09-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.35.6",
+      "latest_version": "1.36.1",
       "icon": "fas fa-hockey-puck"
     },
     {
@@ -383,7 +383,7 @@
       "last_updated": "2026-09-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.31.6",
+      "latest_version": "1.32.1",
       "icon": "fas fa-baseball-ball"
     },
     {
@@ -784,7 +784,7 @@
       "last_updated": "2026-09-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.33.4"
+      "latest_version": "2.34.1"
     },
     {
       "id": "static-image",
@@ -1072,7 +1072,7 @@
       "downloads": 0,
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.30.6",
+      "latest_version": "1.31.1",
       "last_updated": "2026-09-28"
     },
     {
@@ -1119,7 +1119,7 @@
       "last_updated": "2026-09-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.29.7"
+      "latest_version": "1.30.1"
     },
     {
       "id": "jellyfin-now-playing",

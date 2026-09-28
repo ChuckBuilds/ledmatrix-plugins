@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "3.13.3",
+  "version": "3.14.1",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -26,10 +26,16 @@
   ],
   "versions": [
     {
-      "version": "3.13.3",
+      "version": "3.14.1",
       "released": "2026-09-28",
       "ledmatrix_min_version": "3.4.0",
       "notes": "Removes the bundled base_odds_manager.py fallback. It could never run: core has shipped src.base_odds_manager since v3.0.0, below this plugin's 3.4.0 floor, and odds already came from core's BaseOddsManager. Same for the bundled logo_downloader.py: logos already came from core's src.logo_downloader. Also deletes the unused MLBAPIDataSource and SoccerAPIDataSource data source classes, which nothing referenced. No behaviour change."
+    },
+    {
+      "version": "3.14.0",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "UPCOMING NEVER BLANK: a full-screen upcoming scoreboard whose middle is 'date and time' with both Show Date (Full-Screen) and Show Time (Full-Screen) off drew two logos and 'Next Game' and nothing to say when the game is. That combination is what the core settings form left on boards saved before LEDMatrix #597 -- it drew newly added keys as unchecked boxes, so a Save wrote both as false -- and it is what a live board showed on every football and hockey upcoming card. It now draws both lines. Hiding one line, or both under 'vs' or 'none', is still honoured. RECENT DATE: the full-screen recent date now goes through Full-Screen Date Format like the upcoming one (the 'numeric' default leaves it unchanged), and new scroll_card.switch_recent_show_date (default true) turns it off, matching baseball-scoreboard."
     },
     {
       "version": "3.13.2",

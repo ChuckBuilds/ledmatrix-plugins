@@ -3724,7 +3724,7 @@ class FootballScoreboardPlugin(BasePlugin if BasePlugin else object):
             # Only include managers with live_priority enabled AND actual live games
             for league_id in enabled_leagues:
                 league_data = self._league_registry.get(league_id, {})
-                live_priority = league_data.get('live_priority', False)
+                live_priority = league_data.get('live_priority', True)
                 
                 manager = self._get_league_manager_for_mode(league_id, 'live')
                 if not manager:
