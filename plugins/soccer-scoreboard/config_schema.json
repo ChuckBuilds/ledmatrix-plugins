@@ -301,7 +301,8 @@
         "enabled": {
           "type": "boolean",
           "default": true,
-          "description": "Enable background service for data fetching",
+          "description": "Enable background service for data fetching HIDDEN: never read; background fetching is always on when the core provides the service.",
+          "x-display": "hidden",
           "x-advanced": true
         },
         "max_workers": {

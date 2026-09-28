@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.33.1",
+  "version": "2.33.2",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -53,6 +53,12 @@
     "soccer_usa.1_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.33.2",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Background Service settings (request timeout, max retries, priority) reach the league managers, custom leagues included; they were fixed at 30 s, 3 and 2 whatever was set. Its Enabled switch, which was never read, is hidden."
+    },
     {
       "version": "2.33.1",
       "released": "2026-09-28",

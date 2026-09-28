@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.33.2] - 2026-09-28
+
+### Fixed
+- Background Service settings (request timeout, max retries, priority) reach
+  the league managers, custom leagues included; they were fixed at 30 s, 3 and
+  2 whatever was set. Its Enabled switch, which was never read, is hidden.
+
 ## [2.33.1] - 2026-09-28
 
 ### Fixed
