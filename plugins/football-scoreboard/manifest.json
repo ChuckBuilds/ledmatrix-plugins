@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "3.13.2\r",
+  "version": "3.13.2",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -26,7 +26,7 @@
   ],
   "versions": [
     {
-      "version": "3.13.2\r",
+      "version": "3.13.2",
       "released": "2026-09-28",
       "ledmatrix_min_version": "3.4.0",
       "notes": "Removed code that nothing called. No change in behaviour."

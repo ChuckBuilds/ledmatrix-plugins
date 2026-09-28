@@ -1,7 +1,7 @@
 {
   "id": "f1-scoreboard",
   "name": "F1 Scoreboard",
-  "version": "1.9.5\r",
+  "version": "1.9.5",
   "author": "ChuckBuilds",
   "class_name": "F1ScoreboardPlugin",
   "entry_point": "manager.py",
@@ -30,7 +30,7 @@
   ],
   "versions": [
     {
-      "version": "1.9.5\r",
+      "version": "1.9.5",
       "released": "2026-09-28",
       "ledmatrix_min_version": "3.4.0",
       "notes": "Removed code that nothing called. No change in behaviour."

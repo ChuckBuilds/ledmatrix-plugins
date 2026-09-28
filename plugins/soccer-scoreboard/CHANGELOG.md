@@ -1,6 +1,6 @@
 # Changelog
 
-## [2.33.3] - 2026-09-28
+## [2.33.3] - 2026-09-28
 
 ### Changed
 - Removed code that nothing called. No change in behaviour.

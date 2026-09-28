@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.30.5] - 2026-09-28
+## [1.30.5] - 2026-09-28
 
 ### Changed
 - Removed code that nothing called. No change in behaviour.

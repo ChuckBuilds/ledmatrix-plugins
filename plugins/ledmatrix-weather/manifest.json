@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-weather",
   "name": "Weather Display",
-  "version": "2.7.8\r",
+  "version": "2.7.8",
   "author": "ChuckBuilds",
   "class_name": "WeatherPlugin",
   "update_interval": 60,
@@ -28,7 +28,7 @@
   "versions": [
     {
       "released": "2026-09-28",
-      "version": "2.7.8\r",
+      "version": "2.7.8",
       "notes": "Removed code that nothing called. No change in behaviour.",
       "ledmatrix_min_version": "2.0.0"
     },
