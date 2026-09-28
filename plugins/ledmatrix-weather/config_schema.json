@@ -40,7 +40,7 @@
     "location_state": {
       "type": "string",
       "default": "Texas",
-      "description": "State or province name (optional but recommended for US cities to avoid ambiguity)",
+      "description": "State or province, for reference. The place lookup matches only the city and country, so it does not pick between two cities of the same name: for that, set latitude and longitude.",
       "title": "State/Province"
     },
     "location_country": {

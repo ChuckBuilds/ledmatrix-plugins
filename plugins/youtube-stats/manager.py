@@ -462,7 +462,8 @@ class YouTubeStatsPlugin(BasePlugin):
             self.last_displayed_stats = None  # redraw the stats once they arrive
             if self._api_key_error:
                 self._warn_throttled(self._api_key_error)
-                self._show_error_on_display("YT: Update API Key")
+                self._show_error_on_display(
+                    "YT: Set Channel" if self.api_key and not self.channel_id else "YT: Update API Key")
             else:
                 self._warn_throttled("No channel stats available to display")
                 self._show_error_on_display("No data")
@@ -489,12 +490,23 @@ class YouTubeStatsPlugin(BasePlugin):
             draw = ImageDraw.Draw(image)
             draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
             font = self.font or ImageFont.load_default()
-            bbox = draw.textbbox((0, 0), message, font=font)
-            text_w = bbox[2] - bbox[0]
-            text_h = bbox[3] - bbox[1]
-            x = (matrix_width - text_w) // 2
-            y = (matrix_height - text_h) // 2
-            draw.text((x, y), message, font=font, fill=color)
+            # Wrap at spaces to the panel width: on one line "YT: Update API
+            # Key" is 144 px in the 8 px font, clipped at both edges of a 64-
+            # or 128-wide panel.
+            lines = []
+            for word in message.split():
+                trial = f"{lines[-1]} {word}" if lines else word
+                if lines and draw.textlength(trial, font=font) <= matrix_width:
+                    lines[-1] = trial
+                else:
+                    lines.append(word)
+            line_h = draw.textbbox((0, 0), "Ag", font=font)[3] + 1
+            y = max(0, (matrix_height - line_h * len(lines)) // 2)
+            for line in lines:
+                text_w = draw.textlength(line, font=font)
+                x = max(0, int(matrix_width - text_w) // 2)
+                draw.text((x, y), line, font=font, fill=color)
+                y += line_h
             self.display_manager.image = image
             self.display_manager.update_display()
         except Exception as e:
@@ -505,14 +517,12 @@ class YouTubeStatsPlugin(BasePlugin):
         if not super().validate_config():
             return False
         
-        # Check for required channel_id
+        # A missing channel ID or key is a setup step, not a broken config:
+        # returning False here left a freshly enabled plugin in the core's
+        # ERROR state, so the panel never showed what to set. Load, and let
+        # display() say it.
         if not self.channel_id:
-            self.logger.error("channel_id is required but not configured")
-            return False
-        
-        # Check for API key (from merged secrets)
+            self.logger.warning("channel_id is not set yet; the panel shows 'YT: Set Channel'")
         if not self.api_key:
-            self.logger.error("api_key is required but not configured in secrets")
-            return False
-        
+            self.logger.warning("api_key is not set yet (Settings > Secrets); the panel shows 'YT: Update API Key'")
         return True

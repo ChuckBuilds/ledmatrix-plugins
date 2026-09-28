@@ -1,7 +1,7 @@
 {
   "id": "fantasy-blitz",
   "name": "Fantasy Blitz",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": "ChuckBuilds",
   "description": "An arcade-style NFL fantasy football show with no league login needed: the week's top scorers as collectible player cards with photos, a live leaderboard, big-play celebrations as they happen, dud alerts for the biggest busts, the free agents everyone is adding, injury news, the top scorer at each position, Tuesday awards and the season race. Optionally follows a watchlist and your own Sleeper or ESPN league. Points in PPR, Half-PPR or Standard from Sleeper's public feed, with ESPN for game states and headshots. No API key.",
   "entry_point": "manager.py",
@@ -39,6 +39,12 @@
     ">=3.0.0"
   ],
   "versions": [
+    {
+      "version": "1.0.2",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.0.0",
+      "notes": "Screens > Big Play > Duration sets how long each alert stays up. The alert ended after 8 seconds whatever it said, while the mode ran for the setting."
+    },
     {
       "version": "1.0.1",
       "released": "2026-09-28",

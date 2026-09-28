@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-weather",
   "name": "Weather Display",
-  "version": "2.7.5",
+  "version": "2.7.6",
   "author": "ChuckBuilds",
   "class_name": "WeatherPlugin",
   "update_interval": 60,
@@ -26,6 +26,12 @@
     "radar"
   ],
   "versions": [
+    {
+      "released": "2026-09-28",
+      "version": "2.7.6",
+      "notes": "Docs: State/Province is for reference; the place lookup matches city and country only. Set latitude and longitude for a city name shared by two places.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-09-28",
       "version": "2.7.5",
