@@ -444,8 +444,16 @@ class SportsCore(ABC):
         font_name = element_config.get('font', 'PressStart2P-Regular.ttf')
         font_size = int(element_config.get('font_size', default_size))  # Ensure integer for PIL
 
-        # Build font path
-        font_path = _resolve_font_path(os.path.join('assets', 'fonts', font_name))
+        # Build font path. This plugin's schema (shared with fight_renderer,
+        # which reads the value as a path) defaults to repo-relative paths
+        # such as "assets/fonts/tom-thumb.bdf"; joining those onto
+        # assets/fonts gave "assets/fonts/assets/fonts/...", so the configured
+        # face never loaded. A value with a directory is used as given; a bare
+        # filename still lives under assets/fonts.
+        if os.path.dirname(font_name):
+            font_path = _resolve_font_path(font_name)
+        else:
+            font_path = _resolve_font_path(os.path.join('assets', 'fonts', font_name))
 
         # Try to load the font
         try:
