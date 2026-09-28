@@ -101,11 +101,12 @@ class SpotifyClient:
                 else:
                     logging.warning("DIAG: Stat check indicates NO READ PERMISSION for effective UID.")
 
-                # Attempt to open and read directly
+                # Attempt to open and read directly. Log only the size: the
+                # file holds the live access and refresh tokens.
                 with open(SPOTIFY_AUTH_CACHE_PATH, 'r') as f_test:
-                    content_preview = f_test.read(120) # Read a bit more
-                    logging.info(f"DIAG: Cache file manual read successful. Content (first 120 chars): '{content_preview}'")
-                    if not content_preview.strip():
+                    content = f_test.read()
+                    logging.info(f"DIAG: Cache file manual read successful ({len(content)} chars).")
+                    if not content.strip():
                         logging.warning("DIAG: Cache file IS EMPTY or whitespace only (manual inspection).")
             except Exception as e_diag:
                 logging.error(f"DIAG: Error during diagnostic check/read of cache file: {e_diag}")

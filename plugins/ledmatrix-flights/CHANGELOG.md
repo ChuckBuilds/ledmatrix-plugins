@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.14.3] - 2026-09-27
+
+### Fixed
+- **Two in-memory caches no longer grow for as long as the plugin runs.** The
+  cache that rate-limits the off-screen-coordinate debug line gained a key for
+  every new off-screen position and never dropped one; expired keys are now
+  pruned at most once per 30 s, and the line is logged exactly as before. The
+  FR24 flight-detail cache kept every flight's full response forever; entries
+  past their 12-hour TTL are now evicted, with a cap of 500.
+
 ## [1.14.1] - 2026-09-16
 
 ### Fixed

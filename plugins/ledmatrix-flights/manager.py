@@ -195,6 +195,7 @@ class FlightTrackerPlugin(BasePlugin):
         # Logging rate limiting for bounds warnings
         self.bounds_warning_cache = {}
         self.bounds_warning_interval = 30  # Only log each unique coordinate once every 30 seconds
+        self._bounds_warning_pruned_at = 0.0
         
         # Altitude color configuration - matches the gradient from the image
         # This uses the standard aviation altitude color scale
@@ -1220,10 +1221,31 @@ class FlightTrackerPlugin(BasePlugin):
             data = response.json()
             data['_fetched_at'] = time.time()
             self.fr24_detail_cache[fr24_id] = data
+            self._evict_fr24_detail_cache()
             return data
         except Exception as e:
             self.logger.warning(f"[Flight Tracker] FR24 detail fetch failed for {fr24_id}: {e}")
             return None
+
+    # Enough for every aircraft a busy area shows within the TTL; the cap only
+    # bites when the TTL alone would let the cache grow without bound.
+    FR24_DETAIL_CACHE_MAX = 500
+
+    def _evict_fr24_detail_cache(self) -> None:
+        """Drop expired FR24 details, then the oldest past the size cap.
+
+        Entries were only ever TTL-checked on read, so every flight seen stayed
+        in memory for the life of the process.
+        """
+        now = time.time()
+        cache = self.fr24_detail_cache
+        for key in [k for k, v in cache.items()
+                    if now - v.get('_fetched_at', 0) >= self.fr24_detail_cache_ttl]:
+            del cache[key]
+        overflow = len(cache) - self.FR24_DETAIL_CACHE_MAX
+        if overflow > 0:
+            for key in sorted(cache, key=lambda k: cache[k].get('_fetched_at', 0))[:overflow]:
+                del cache[key]
 
     def _enrich_aircraft_from_fr24_detail(self, aircraft: Dict) -> None:
         """Fetch FR24 detail for an aircraft and apply airline name + timing fields in-place."""
@@ -2098,7 +2120,17 @@ class FlightTrackerPlugin(BasePlugin):
            current_time - self.bounds_warning_cache[coord_key] > self.bounds_warning_interval:
             self.logger.debug(f"[Flight Tracker] Coordinate ({lat}, {lon}) -> pixel ({x_pixel}, {y_pixel}) is outside display bounds {self.display_width}x{self.display_height}")
             self.bounds_warning_cache[coord_key] = current_time
-        
+
+        # Every new off-screen position adds a key, so drop the expired ones
+        # (they would log again anyway). At most once per interval: this runs
+        # on the render path for every trail point.
+        if current_time - getattr(self, '_bounds_warning_pruned_at', 0.0) > self.bounds_warning_interval:
+            self.bounds_warning_cache = {
+                k: t for k, t in self.bounds_warning_cache.items()
+                if current_time - t <= self.bounds_warning_interval
+            }
+            self._bounds_warning_pruned_at = current_time
+
         return None
     
     def _latlon_to_tile_coords(self, lat: float, lon: float, zoom: int) -> Tuple[int, int]:

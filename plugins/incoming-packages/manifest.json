@@ -1,7 +1,7 @@
 {
   "id": "incoming-packages",
   "name": "Incoming Packages",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": "ChuckBuilds",
   "description": "Rotating cards for packages headed your way - per carrier, with the count arriving today highlighted. Reads a normalized snapshot from a pluggable provider: the Home Assistant Mail and Packages integration (default), AfterShip, or a built-in demo. Email scanning stays inside Home Assistant; the plugin only stores an API URL + token.",
   "category": "productivity",
@@ -27,6 +27,12 @@
     "pillow"
   ],
   "versions": [
+    {
+      "released": "2026-09-27",
+      "version": "1.1.1",
+      "changelog": "Saving settings no longer shows \"Loading...\" for up to ten minutes. A save re-ran __init__, which left the plugin \"never fetched\" until the core's next scheduled update(), one update_interval away. The cached snapshot is now shown straight away (a cache read, no network on the web thread), and its images are kept when the data source has not changed.",
+      "ledmatrix_min_version": "3.4.0"
+    },
     {
       "released": "2026-09-16",
       "version": "1.1.0",
@@ -58,7 +64,7 @@
       "notes": "Initial release. Provider-agnostic incoming-package display with a Home Assistant Mail and Packages provider (default, auto-discovers sensor.mail_* entities over the HA REST API), an AfterShip provider, and a built-in demo provider. Size-adaptive rotating cards: one per active carrier with a drawn carrier badge, the count arriving today (prioritized and shown in an accent color), the count in transit, and a lead summary card, plus optional USPS mail count. Renders on all panel sizes from 64x32 to 256x64 with adaptive font tiers and marquee text; on-panel setup/error messages."
     }
   ],
-  "last_updated": "2026-09-16",
+  "last_updated": "2026-09-27",
   "stars": 0,
   "downloads": 0,
   "verified": true,

@@ -15,7 +15,7 @@ class DataFetcher:
     """Handles fetching standings and rankings data from ESPN API."""
     
     def __init__(self, cache_manager, logger: Optional[logging.Logger] = None, 
-                 request_timeout: int = 30):
+                 request_timeout: int = 30, cache_max_age: int = 1800):
         """
         Initialize data fetcher.
         
@@ -23,10 +23,24 @@ class DataFetcher:
             cache_manager: Cache manager instance
             logger: Optional logger instance
             request_timeout: Request timeout in seconds
+            cache_max_age: Seconds a cached response is reused (see _read_cache)
         """
         self.cache_manager = cache_manager
         self.logger = logger or logging.getLogger(__name__)
         self.request_timeout = request_timeout
+        self.cache_max_age = cache_max_age
+
+    def _read_cache(self, cache_key: str) -> Optional[Dict[str, Any]]:
+        """A cached response no older than cache_max_age, else None.
+
+        These reads used the core's 'leaderboard' cache strategy, which keeps
+        an entry for 7 days, so while the cache was warm update_interval never
+        caused a fetch and standings could be a week old. The manager sets
+        cache_max_age to half its update_interval: each entry is written a few
+        seconds into an update, so a max_age of the full interval would still
+        be fresh at the next scheduled update and skip every other refresh.
+        """
+        return self.cache_manager.get(cache_key, max_age=self.cache_max_age)
     
     def fetch_standings(self, league_config: Dict[str, Any]) -> List[Dict[str, Any]]:
         """
@@ -82,7 +96,7 @@ class DataFetcher:
         cache_key = f"leaderboard_{league_key}_rankings"
         
         # Try to get cached data first
-        cached_data = self.cache_manager.get_cached_data_with_strategy(cache_key, 'leaderboard')
+        cached_data = self._read_cache(cache_key)
         if cached_data:
             self.logger.info(f"Using cached rankings data for {league_key}")
             return cached_data.get('standings', [])
@@ -172,7 +186,7 @@ class DataFetcher:
         league_key = league_config['league']
         cache_key = f"leaderboard_{league_key}_rankings"
         
-        cached_data = self.cache_manager.get_cached_data_with_strategy(cache_key, 'leaderboard')
+        cached_data = self._read_cache(cache_key)
         if cached_data:
             self.logger.info(f"Using cached rankings data for {league_key}")
             return cached_data.get('standings', [])
@@ -250,7 +264,7 @@ class DataFetcher:
         league_key = league_config['league']
         cache_key = f"leaderboard_{league_key}_tournament_seeds"
 
-        cached_data = self.cache_manager.get_cached_data_with_strategy(cache_key, 'leaderboard')
+        cached_data = self._read_cache(cache_key)
         if cached_data:
             self.logger.info(f"Using cached tournament seed data for {league_key}")
             return cached_data.get('standings', [])
@@ -334,7 +348,7 @@ class DataFetcher:
         league_key = league_config['league']
         cache_key = f"leaderboard_{league_key}_rankings"
 
-        cached_data = self.cache_manager.get_cached_data_with_strategy(cache_key, 'leaderboard')
+        cached_data = self._read_cache(cache_key)
         if cached_data:
             self.logger.info(f"Using cached rankings data for {league_key}")
             return cached_data.get('standings', [])
@@ -420,9 +434,11 @@ class DataFetcher:
     def _fetch_standings_data(self, league_config: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Fetch standings data from ESPN API using the standings endpoint."""
         league_key = league_config['league']
-        cache_key = f"leaderboard_{league_key}_standings"
+        # Level and season change the response, so they are part of the key.
+        cache_key = (f"leaderboard_{league_key}_standings_"
+                     f"{league_config.get('level', 1)}_{league_config.get('season') or 'current'}")
         
-        cached_data = self.cache_manager.get_cached_data_with_strategy(cache_key, 'leaderboard')
+        cached_data = self._read_cache(cache_key)
         if cached_data:
             cached_standings = cached_data.get('standings', [])
             self.logger.info(f"Using cached standings data for {league_key}: {len(cached_standings)} teams found")
@@ -520,7 +536,7 @@ class DataFetcher:
         league_key = league_config['league']
         cache_key = f"leaderboard_{league_key}"
         
-        cached_data = self.cache_manager.get_cached_data_with_strategy(cache_key, 'leaderboard')
+        cached_data = self._read_cache(cache_key)
         if cached_data:
             self.logger.info(f"Using cached leaderboard data for {league_key}")
             return cached_data.get('standings', [])
@@ -649,7 +665,7 @@ class DataFetcher:
         league = league_config['league']
         cache_key = f"team_record_{league}_{team_abbr}"
         
-        cached_data = self.cache_manager.get_cached_data_with_strategy(cache_key, 'leaderboard')
+        cached_data = self._read_cache(cache_key)
         if cached_data:
             return cached_data.get('record')
         

@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-music",
   "name": "Music Player - Now Playing",
-  "version": "1.4.4",
+  "version": "1.4.5",
   "description": "Real-time now playing display for Spotify and YouTube Music with album art, scrolling text, and progress bars",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -65,6 +65,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.4.5",
+      "released": "2026-09-27",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "The Spotify access token is no longer written to the log. A startup diagnostic logged the first 120 characters of config/spotify_auth.json at INFO on every start, and that file begins with the live access token, so about 100 characters of it went to journald. The diagnostic now logs only the file's length."
+    },
     {
       "version": "1.4.4",
       "released": "2026-09-16",
@@ -175,7 +181,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-16",
+  "last_updated": "2026-09-27",
   "stars": 0,
   "downloads": 0,
   "verified": true,

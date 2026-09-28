@@ -1,5 +1,14 @@
 # Changelog
 
+## [2.7.3] - 2026-09-27
+
+### Fixed
+- **Saving settings no longer blanks the current, hourly and daily screens.**
+  `on_config_change` resets the layout cache to `None`, and `_get_layout`
+  tested `hasattr()`, which is still true for `None`, so every renderer got
+  `None` and raised after clearing the panel. The screens stayed black until
+  a restart. The layout is now recomputed when the cache is empty.
+
 ## [2.7.2] - 2026-09-16
 
 ### Fixed

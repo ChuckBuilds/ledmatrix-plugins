@@ -1,7 +1,7 @@
 {
   "id": "mqtt-notifications",
   "name": "MQTT Notifications",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "author": "ChuckBuilds",
   "description": "Display text or images from HomeAssistant via MQTT. Supports dynamic MQTT topics with wildcard support for flexible notification handling that interrupts the normal display rotation.",
   "category": "integration",
@@ -18,6 +18,12 @@
   "entry_point": "manager.py",
   "class_name": "MQTTNotificationsPlugin",
   "versions": [
+    {
+      "released": "2026-09-27",
+      "version": "1.2.3",
+      "changelog": "Notifications now interrupt the rotation, as the README describes. The message was stored with cache_manager.set(..., max_age=3600), but the core's set() takes ttl, so the call raised TypeError, the handler logged it, and the on-demand request that follows it was never written: a notification waited for the plugin's turn in rotation instead. The call now passes ttl.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-09-03",
       "version": "1.2.2",
@@ -67,7 +73,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-02",
+  "last_updated": "2026-09-27",
   "stars": 0,
   "downloads": 0,
   "verified": true,
