@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "3.17.0",
+  "version": "3.17.1",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "3.17.1",
+      "released": "2026-09-29",
+      "ledmatrix_min_version": "3.7.0",
+      "notes": "Manifest is ASCII-only again. The em dashes in earlier release notes are now stored as JSON escape sequences, which read back as the same text. Tools that open manifest.json in the platform's default encoding (cp1252 on Windows: the core's scripts/dev_server.py) turned the raw bytes into garbage characters. No change in behaviour."
+    },
     {
       "version": "3.17.0",
       "released": "2026-09-29",
@@ -652,7 +658,7 @@
       "released": "2026-07-10",
       "version": "2.8.0",
       "ledmatrix_min_version": "2.0.0",
-      "notes": "Adaptive layout (beta, opt-in): set layout_mode: \"adaptive\" to scale fonts/logos/regions to any panel size. Default stays \"classic\" — rendering is unchanged unless you opt in; switch back to classic in config to revert without reinstalling. Adaptive mode also applies customization.layout x/y offsets in scroll mode (classic scroll never did). User-configured fonts win over adaptive sizing."
+      "notes": "Adaptive layout (beta, opt-in): set layout_mode: \"adaptive\" to scale fonts/logos/regions to any panel size. Default stays \"classic\" \u2014 rendering is unchanged unless you opt in; switch back to classic in config to revert without reinstalling. Adaptive mode also applies customization.layout x/y offsets in scroll mode (classic scroll never did). User-configured fonts win over adaptive sizing."
     },
     {
       "released": "2026-07-08",
