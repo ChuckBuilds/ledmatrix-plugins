@@ -33,6 +33,7 @@ import types
 import logging
 import tempfile
 import threading
+from unittest import mock
 
 from PIL import Image, ImageChops
 
@@ -413,7 +414,6 @@ def _render_celebration(scored_side, width=128, height=32, elapsed=2.5,
                         motif="net", kind="goal", phrase="GOAL!",
                         away="BOS", home="TOR", team_colors=True, confetti=True):
     """Render a celebration screen deterministically via production fonts."""
-    import sports
     from sports import SportsCore
 
     logos = _logo_dir()
@@ -464,12 +464,10 @@ def _render_celebration(scored_side, width=128, height=32, elapsed=2.5,
         "phrase": phrase,
     }
 
-    saved = sports.time
-    sports.time = types.SimpleNamespace(time=lambda: elapsed)
-    try:
+    # Patched on the time module itself: the drawing is core's
+    # (src.common.sports_celebration), which reads time.time from there.
+    with mock.patch("time.time", return_value=elapsed):
         live._draw_celebration_layout(celebration, force_clear=True)
-    finally:
-        sports.time = saved
     return live.display_manager.image.convert("RGB")
 
 
