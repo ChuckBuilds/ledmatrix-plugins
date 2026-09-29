@@ -20,10 +20,18 @@ daily; local runs and the pre-commit hook stay offline.
   `version`, in either direction. Behind: the store never offers the update.
   Ahead: the store offers a version that was never shipped, and a normal run
   will not fix it (it never downgrades).
+- a monorepo entry whose `latest_version` is the same version as its
+  manifest's but not the same string ("1.5.4\\r" for "1.5.4"). Version
+  comparison cannot see that -- int() strips whitespace -- so a stray
+  carriage return sat in 11 entries with every check passing. A normal run
+  rewrites it to the manifest's string.
 - a monorepo entry whose store-visible metadata (name, description, author,
   category, tags, icon, last_updated) differs from what a normal run would
   write. The pre-commit hook folds that into the commit; a PR without it
   would publish stale metadata until the post-merge sync.
+- a manifest `version` or synced metadata value with leading or trailing
+  whitespace. The registry copies the manifest as is, so only the manifest
+  can fix it.
 - a plugins/<dir> with a manifest but no registry entry whose plugin_path
   points at it. The plugin is never published to the store, and nothing
   else notices. (Adding a monorepo plugin still means adding its entry by
@@ -88,11 +96,21 @@ def synced_metadata(manifest: dict) -> dict:
     return fields
 
 
+def padded_fields(values: dict) -> list[str]:
+    """Keys of `values` whose string (or any string in a list) has leading or
+    trailing whitespace -- a stray "\\r" from a file read with CRLF endings."""
+    return [key for key, value in values.items()
+            if any(isinstance(s, str) and s != s.strip()
+                   for s in (value if isinstance(value, list) else [value]))]
+
+
 def parse_version(version_str: str) -> tuple:
     """Parse a version string into a comparable tuple.
 
     Padded to three parts, so "1.2" and "1.2.0" compare equal -- the store's
-    own comparator treats them as the same version.
+    own comparator treats them as the same version. int() also ignores
+    surrounding whitespace, so equal here does not mean the strings match;
+    update_registry checks that separately.
     """
     version_str = (version_str or "0.0.0").lstrip("v")
     try:
@@ -224,11 +242,15 @@ def update_registry(registry_path: str = "plugins.json", dry_run: bool = False,
 
     Returns one ``(kind, message)`` per disagreement found between a monorepo
     entry and its manifest: kind ``"behind"`` or ``"ahead"`` for a version
-    mismatch, ``"metadata"`` for a synced field that differs. Empty means the
+    mismatch, ``"spelling"`` for the same version written as a different
+    string, ``"metadata"`` for a synced field that differs, and ``"padded"``
+    for a manifest value with surrounding whitespace. Empty means the
     registry already matches.
     A normal run writes every fix it can; a registry version *ahead* of its
-    manifest is reported but never written, because that would be a downgrade.
-    Third-party version raises (--external) are written but are not drift.
+    manifest is reported but never written, because that would be a downgrade,
+    and a padded manifest value is copied as is, because only the manifest can
+    fix it. Third-party version raises (--external) are written but are not
+    drift.
     """
     registry_file = Path(registry_path)
     plugins_dir = registry_file.parent / "plugins"
@@ -298,6 +320,20 @@ def update_registry(registry_path: str = "plugins.json", dry_run: bool = False,
                 f"offers a version that was never shipped. update_registry.py "
                 f"never downgrades: bump the manifest past it, or correct the "
                 f"registry entry."))
+        elif registry_version != manifest_version:
+            # Same version once parsed, different string: "1.5.4\r" or "1.5"
+            # for "1.5.4". The store's comparison cannot see it either, but
+            # the registry should carry exactly what the manifest says. The
+            # entry's last_updated stays: this is not a new release.
+            print(f"  {plugin_id}: {registry_version!r} -> {manifest_version!r} (same version)")
+            drift.append(("spelling",
+                f"{plugin_id}: plugins.json latest_version {registry_version!r} is "
+                f"not exactly the manifest's version {manifest_version!r}. They "
+                f"compare as the same version, which hides it from every version "
+                f"check. Run python update_registry.py and commit plugins.json."))
+            if not dry_run:
+                plugin["latest_version"] = manifest_version
+            updates_made = True
         else:
             print(f"  {plugin_id}: up to date ({registry_version})")
 
@@ -306,7 +342,8 @@ def update_registry(registry_path: str = "plugins.json", dry_run: bool = False,
         # should never disagree with it on the fields the Plugin Store
         # actually renders to users.
         synced_fields = []
-        for field, value in synced_metadata(manifest).items():
+        metadata = synced_metadata(manifest)
+        for field, value in metadata.items():
             if plugin.get(field) != value:
                 if not dry_run:
                     plugin[field] = value
@@ -319,6 +356,17 @@ def update_registry(registry_path: str = "plugins.json", dry_run: bool = False,
                 f"{'differs' if len(synced_fields) == 1 else 'differ'} from "
                 f"the manifest. Run python update_registry.py and commit "
                 f"plugins.json."))
+
+        # The comparisons above are exact, so a stray "\r" in the registry is
+        # drift. One in the manifest is copied faithfully, so flag it here.
+        padded = padded_fields({"version": manifest_version, **metadata})
+        if padded:
+            drift.append(("padded",
+                f"{plugin_id}: {_normalise_plugin_path(plugin_path)}/manifest.json "
+                f"{', '.join(padded)} "
+                f"{'has' if len(padded) == 1 else 'have'} leading or trailing "
+                f"whitespace, which plugins.json copies as is. Fix the manifest "
+                f"and bump its version."))
 
     if updates_made and not dry_run:
         registry["last_updated"] = datetime.now().strftime("%Y-%m-%d")
@@ -360,9 +408,10 @@ def main(argv=None) -> int:
         "--check",
         action="store_true",
         help="Dry run that exits 1 when plugins.json disagrees with the "
-             "manifests (a version in either direction, or synced metadata), a "
-             "plugin directory has no registry entry, or a registry "
-             "plugin_path has no plugin (for CI)",
+             "manifests (a version in either direction, a version string that "
+             "is not the manifest's exactly, or synced metadata), a manifest "
+             "value has surrounding whitespace, a plugin directory has no "
+             "registry entry, or a registry plugin_path has no plugin (for CI)",
     )
     parser.add_argument(
         "--external",
@@ -383,15 +432,15 @@ def main(argv=None) -> int:
         return 1
 
     # A normal run has just written every drift fix except "registry ahead",
-    # which would be a downgrade. --check is about the file as committed, so
-    # it reports all of it.
+    # which would be a downgrade, and "padded", which is the manifest's to
+    # fix. --check is about the file as committed, so it reports all of it.
     problems = [message for kind, message in drift
-                if args.check or kind == "ahead"] + problems
+                if args.check or kind in ("ahead", "padded")] + problems
 
     if not problems:
         if args.check:
-            print("\nPASS plugins.json matches every manifest (versions and "
-                  "synced metadata), every plugins/ directory has a registry "
+            print("\nPASS plugins.json matches every manifest exactly (version "
+                  "strings and synced metadata), every plugins/ directory has a registry "
                   "entry, and every registry plugin_path exists")
         else:
             print("\nPASS every plugins/ directory has a registry entry, and "

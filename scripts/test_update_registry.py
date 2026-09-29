@@ -10,7 +10,9 @@ the 40-odd plugins, not an empty directory).
 
 `--check` also fails when an entry's `latest_version` is behind *or* ahead of
 its manifest, or a synced metadata field differs. It used to discard that
-result and print PASS.
+result and print PASS. And it fails when `latest_version` is the same version
+as the manifest's but not the same string ("1.5.4\\r"), or a manifest value
+has surrounding whitespace.
 
 Exit codes: 0 pass, 1 fail.
 """
@@ -122,8 +124,6 @@ case("a synced metadata field that differs fails",
      manifests={"a": {"id": "a", "version": "1.0.0", "description": "new"}})
 case("a metadata field the manifest does not carry is not drift",
      [{**entry("a", "plugins/a"), "description": "registry only"}], ["a"], 0)
-case("'1.0' and '1.0.0' are the same version",
-     [{**entry("a", "plugins/a"), "latest_version": "1.0"}], ["a"], 0)
 case("a third-party entry's version is not compared",
      [entry("a", "plugins/a"), {"id": "ext", "plugin_path": "", "latest_version": "9.9.9"}],
      ["a"], 0)
@@ -154,6 +154,65 @@ check(f"--check after a normal run fails only on the entry it could not fix (exi
       code == 1 and "b: plugins.json latest_version '3.0.0' is ahead" in out
       and "FAIL a:" not in out)
 shutil.rmtree(root, ignore_errors=True)
+
+print("\nthe registry carries the manifest's version string exactly")
+# #560 wrote "1.5.4\r" into 11 entries. parse_version runs int() per part,
+# which strips whitespace, so it equalled "1.5.4": a normal run printed
+# "up to date" and --check passed.
+check("parse_version still sees '1.0.0\\r', '1.0' and '1.0.0' as one version",
+      reg.parse_version("1.0.0\r") == reg.parse_version("1.0")
+      == reg.parse_version("1.0.0"))
+case("a latest_version with a trailing \\r fails",
+     [{**entry("a", "plugins/a"), "latest_version": "1.0.0\r"}], ["a"], 1,
+     "latest_version '1.0.0\\r' is not exactly the manifest's version '1.0.0'")
+case("'1.0' for a manifest's '1.0.0' fails as a spelling, not behind or ahead",
+     [{**entry("a", "plugins/a"), "latest_version": "1.0"}], ["a"], 1,
+     "latest_version '1.0' is not exactly")
+case("a --dry-run reports the rewrite without failing",
+     [{**entry("a", "plugins/a"), "latest_version": "1.0.0\r"}], ["a"], 0,
+     "'1.0.0\\r' -> '1.0.0' (same version)", extra=("--dry-run",))
+case("a registry-side \\r in a synced field is metadata drift",
+     [{**entry("a", "plugins/a"), "description": "d\r"}], ["a"], 1,
+     "description differs",
+     manifests={"a": {"id": "a", "version": "1.0.0", "description": "d"}})
+
+root = make_tree([{**entry("a", "plugins/a"), "latest_version": "1.0.0\r",
+                   "last_updated": "2026-01-01"},
+                  {**entry("b", "plugins/b"), "latest_version": "2.0\n"}],
+                 ["a", "b"],
+                 {"a": {"id": "a", "version": "1.0.0", "last_updated": "2026-01-01"},
+                  "b": {"id": "b", "version": "2.0.0"}})
+code, out = run_check(root)
+written = {p["id"]: p for p in json.loads((root / "plugins.json").read_text())["plugins"]}
+check(f"a normal run rewrites each to the manifest's string (exit {code})",
+      code == 0 and written["a"]["latest_version"] == "1.0.0"
+      and written["b"]["latest_version"] == "2.0.0" and "WARNING" not in out)
+check("... without touching the entry's last_updated (not a new release)",
+      written["a"]["last_updated"] == "2026-01-01")
+code, out = run_check(root, "--check")
+check(f"--check passes straight after it (exit {code})", code == 0)
+if code:
+    print(out)
+shutil.rmtree(root, ignore_errors=True)
+
+# The registry mirrors the manifest exactly, so padding there would be
+# published; only the manifest can fix it. (The core's manifest schema already
+# rejects a padded version; name, description and tags have no pattern.)
+case("a manifest version with a trailing \\r fails",
+     [entry("a", "plugins/a")], ["a"], 1,
+     "plugins/a/manifest.json version has leading or trailing whitespace",
+     manifests={"a": {"id": "a", "version": "1.0.0\r"}})
+case("a padded manifest name and tag fail together",
+     [{**entry("a", "plugins/a"), "name": " A", "tags": ["x", "y\r"]}], ["a"], 1,
+     "plugins/a/manifest.json name, tags have leading or trailing whitespace",
+     manifests={"a": {"id": "a", "version": "1.0.0", "name": " A", "tags": ["x", "y\r"]}})
+case("without --check a padded manifest value only warns",
+     [{**entry("a", "plugins/a"), "description": "d "}], ["a"], 0,
+     "WARNING a: plugins/a/manifest.json description has", extra=(),
+     manifests={"a": {"id": "a", "version": "1.0.0", "description": "d "}})
+case("inner whitespace is not padding",
+     [{**entry("a", "plugins/a"), "description": "two\nlines"}], ["a"], 0,
+     manifests={"a": {"id": "a", "version": "1.0.0", "description": "two\nlines"}})
 
 print("\nlast_updated is the newer of last_updated and versions[0].released")
 # 27+ manifests had a top-level last_updated older than their newest release,

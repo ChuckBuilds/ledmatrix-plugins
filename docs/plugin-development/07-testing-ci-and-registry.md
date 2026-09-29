@@ -255,9 +255,13 @@ registry:
   claiming one path. A normal run warns; `--check` fails.
 - `--check` also fails when anything a normal run would write is missing from
   the committed `plugins.json`: a `latest_version` behind its manifest, one
-  ahead of it, or a synced metadata field that differs. The pre-commit hook
-  keeps this green; without it, run `python update_registry.py` and commit
-  the result.
+  ahead of it, one that is the same version but not the manifest's exact
+  string (`"1.5.4\r"` for `"1.5.4"`, which a normal run rewrites), or a synced
+  metadata field that differs. The pre-commit hook keeps this green; without
+  it, run `python update_registry.py` and commit the result.
+- A manifest `version` or synced field with leading or trailing whitespace is
+  copied into the registry as is, so it warns on a normal run and fails
+  `--check`. Fix it in the manifest (and bump the version).
 
 ```bash
 python update_registry.py            # sync plugins.json from manifests
