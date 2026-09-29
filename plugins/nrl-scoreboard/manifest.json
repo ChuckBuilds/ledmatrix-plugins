@@ -1,7 +1,7 @@
 {
   "id": "nrl-scoreboard",
   "name": "NRL Scoreboard",
-  "version": "1.31.2",
+  "version": "1.32.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NRL (National Rugby League) games with real-time scores and game status.",
   "category": "sports",
@@ -18,6 +18,12 @@
     "nrl_upcoming"
   ],
   "versions": [
+    {
+      "version": "1.32.0",
+      "released": "2026-09-29",
+      "ledmatrix_min_version": "3.6.1",
+      "notes": "Requires LEDMatrix core 3.6.1, the first release whose favourite-team check has the finished-season fix this plugin shipped in 1.31.2. The bundled nrl_favorite_check.py and the fallback timezone resolver in nrl_timezone.py are removed: the plugin now always runs core's src.common.favorite_team_check and src.common.sports_timezone, as it already did on a 3.6.x core. No behaviour change there: the timezone chosen and every log message are the same, and every safety-harness render is byte-identical."
+    },
     {
       "version": "1.31.2",
       "released": "2026-09-29",
@@ -526,6 +532,6 @@
   "class_name": "NrlScoreboardPlugin",
   "config_schema": "config_schema.json",
   "compatible_versions": [
-    ">=3.5.0"
+    ">=3.6.1"
   ]
 }

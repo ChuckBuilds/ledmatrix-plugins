@@ -89,10 +89,9 @@ class _Holder:
             self.config_manager = config_manager
 
 
-# The module whose system_timezone_name() the resolver calls, so the tests
-# stub the one in use: core's src.common.sports_timezone on a core that ships
-# it (soccer_timezone then resolves through it), the bundled code otherwise.
-_zone_source = getattr(soccer_timezone, "_core", soccer_timezone)
+# The module whose system_timezone_name() the resolver calls: core's
+# src.common.sports_timezone, which soccer_timezone resolves through.
+_zone_source = soccer_timezone._core
 
 # Kept so tests that stub system-zone detection can restore it, and so the
 # results don't depend on the machine the suite runs on.

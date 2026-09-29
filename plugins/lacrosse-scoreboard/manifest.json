@@ -1,7 +1,7 @@
 {
   "id": "lacrosse-scoreboard",
   "name": "Lacrosse Scoreboard",
-  "version": "1.33.3",
+  "version": "1.34.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NCAA men's and women's lacrosse games with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/lacrosse-scoreboard",
@@ -17,7 +17,7 @@
   ],
   "icon": "fas fa-baseball-ball",
   "compatible_versions": [
-    ">=3.5.0"
+    ">=3.6.1"
   ],
   "requires": {
     "python": ">=3.9",
@@ -50,6 +50,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.34.0",
+      "released": "2026-09-29",
+      "ledmatrix_min_version": "3.6.1",
+      "notes": "Requires LEDMatrix core 3.6.1, the first release whose favourite-team check has the finished-season fix this plugin shipped in 1.33.3. The bundled lacrosse_favorite_check.py and the fallback timezone resolver in lacrosse_timezone.py are removed: the plugin now always runs core's src.common.favorite_team_check and src.common.sports_timezone, as it already did on a 3.6.x core. No behaviour change there: the timezone chosen and every log message are the same, and every safety-harness render is byte-identical."
+    },
     {
       "version": "1.33.3",
       "released": "2026-09-29",
