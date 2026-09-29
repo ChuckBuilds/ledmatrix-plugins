@@ -30,9 +30,6 @@ Timezone
      module (its ``_core`` is core's module, and its answers and records match
      its own fallback's), and imports it through the exact-name guard.
 
-f1-scoreboard's copy is compared in 4 and 5 but does not use core (an owner
-decision), so it is not in ``ADOPTERS``.
-
 Checks 2 and 4-6 need a core checkout that ships both modules (LEDMATRIX_CORE,
 or ../LEDMatrix); without one they are skipped with a note, never failed.
 
@@ -58,7 +55,7 @@ TIMEZONE_CORE = "src.common.sports_timezone"
 TIMEZONE_HELPERS = ("_from_config_manager", "system_timezone_name", "_validated")
 
 #: Plugins whose <sport>_timezone.py resolves through core when core has it.
-ADOPTERS = {"afl", "baseball", "basketball", "football", "hockey",
+ADOPTERS = {"afl", "baseball", "basketball", "f1", "football", "hockey",
             "lacrosse", "nrl", "soccer", "ufc"}
 
 failures: list[str] = []
