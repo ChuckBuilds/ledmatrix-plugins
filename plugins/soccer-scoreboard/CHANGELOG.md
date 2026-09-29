@@ -27,6 +27,10 @@
   upcoming that has any. A config change rebuilds the check for the new league
   list, so it reports again.
 
+- Requires LEDMatrix core 3.6.2 (`ledmatrix_min_version`), whose check no
+  longer calls a competition between rounds (e.g. the Europa League) a
+  finished season (core #670).
+
 ### Removed
 - The old check's helpers on the plugin class: `_abbreviates`,
   `_suggest_team_code`, `_fetch_league_teams`, `_fetch_season_start` and the
