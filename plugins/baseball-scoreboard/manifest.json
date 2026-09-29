@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.51.1",
+  "version": "1.51.2",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.51.2",
+      "released": "2026-09-29",
+      "ledmatrix_min_version": "3.5.0",
+      "notes": "Test fixture only, no runtime change. The harness fixture still seeded mlb_schedule_2026, a key the managers stopped reading when the schedule cache moved to per-window keys, so every Recent/Upcoming render fetched the frozen July 2026 window from ESPN. Those games are all final now, so Upcoming drew nothing at any size (flagged only at the five sizes the fill check covers). The fixture now seeds mlb_schedule_window_14_7."
+    },
     {
       "version": "1.51.1",
       "released": "2026-09-29",

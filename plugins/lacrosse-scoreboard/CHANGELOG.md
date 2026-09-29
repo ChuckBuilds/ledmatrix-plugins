@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.33.2] - 2026-09-29
+
+### Fixed
+- Test fixture only, no runtime change. The harness made 112 live ESPN
+  requests per run and, after its frozen clock ended, fetched next season's
+  schedule. freezegun gives the real clock to the SwitchRefresh thread
+  display() starts, so its manager is always due and update() runs; update()
+  fetched the NCAA poll (other_games_min_quality defaults to 'ranked') and the
+  live manager fetched today's scoreboard, because with no live games it polls
+  on its idle back-off rather than the huge update_intervals.live the fixture
+  relied on. The fixture now sets other_games_min_quality 'any' and test_mode,
+  so update() reads only the seeded cache and the run makes no requests.
+  Rendered frames are unchanged.
+
 ## [1.33.1] - 2026-09-29
 
 ### Changed

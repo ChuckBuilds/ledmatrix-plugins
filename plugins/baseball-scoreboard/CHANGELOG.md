@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.51.2] - 2026-09-29
+
+### Fixed
+- Test fixture only, no runtime change. The harness fixture still seeded
+  mlb_schedule_2026, a key the managers stopped reading when the schedule
+  cache moved to per-window keys, so every Recent/Upcoming render fetched the
+  frozen July 2026 window from ESPN. Those games are all final now, so
+  Upcoming drew nothing at any size (flagged only at the five sizes the fill
+  check covers). The fixture now seeds mlb_schedule_window_14_7.
+
 ## [1.51.1] - 2026-09-29
 
 ### Changed
