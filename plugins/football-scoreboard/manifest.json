@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "3.16.0",
+  "version": "3.17.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "3.17.0",
+      "released": "2026-09-29",
+      "ledmatrix_min_version": "3.7.0",
+      "notes": "Requires LEDMatrix core 3.7.0, the first release that ships the code this plugin carried a copy of: the celebration drawing and its colour helpers (src.common.sports_celebration), the season-fetch, lookback and live-odds methods (src.common.sports_fetch) and the game renderer's sports_card delegations (src.common.sports_card_wrappers). The bundled copies are removed and the plugin inherits core's mixins. No behaviour change: the code is the same, every safety-harness render and celebration golden is byte-identical, and every plugin test gives the same result."
+    },
     {
       "version": "3.16.0",
       "released": "2026-09-29",
@@ -901,7 +907,7 @@
   "config_schema": "config_schema.json",
   "entry_point": "manager.py",
   "compatible_versions": [
-    ">=3.6.1"
+    ">=3.7.0"
   ],
   "display": {
     "design_size": {

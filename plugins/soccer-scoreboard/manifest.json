@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.37.0",
+  "version": "2.38.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -53,6 +53,12 @@
     "soccer_usa.1_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.38.0",
+      "released": "2026-09-29",
+      "ledmatrix_min_version": "3.7.0",
+      "notes": "Requires LEDMatrix core 3.7.0, the first release that ships the code this plugin carried a copy of: the celebration drawing and its colour helpers (src.common.sports_celebration), the season-fetch, lookback and live-odds methods (src.common.sports_fetch) and the game renderer's sports_card delegations (src.common.sports_card_wrappers). The bundled copies are removed and the plugin inherits core's mixins. No behaviour change: the code is the same, every safety-harness render and celebration golden is byte-identical, and every plugin test gives the same result."
+    },
     {
       "version": "2.37.0",
       "released": "2026-09-29",
@@ -684,6 +690,6 @@
     }
   ],
   "compatible_versions": [
-    ">=3.6.2"
+    ">=3.7.0"
   ]
 }
