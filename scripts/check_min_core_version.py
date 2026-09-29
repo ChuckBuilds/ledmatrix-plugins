@@ -44,7 +44,7 @@ modules present in 3.0.0 are always there and need no entry. Versions come
 from the release tags in the LEDMatrix repo (first tag whose tree contains the
 file), regenerated with::
 
-    for t in v3.0.0 v3.1.0 v3.2.0 v3.3.0 v3.3.1 v3.4.0 v3.5.0; do
+    for t in v3.0.0 v3.1.0 v3.2.0 v3.3.0 v3.3.1 v3.4.0 v3.5.0 v3.6.0; do
         git ls-tree -r --name-only $t -- src | grep '\\.py$' > $t.txt; done
     # then diff consecutive lists
 
@@ -138,11 +138,12 @@ MODULE_FIRST_VERSION = {
     "src.plugin_system.store_update": "3.5.0",  # core #659
     "src.redaction": "3.5.0",  # core #614
     "src.scan_order": "3.5.0",  # core #634
+    # v3.6.0
+    "src.common.favorite_team_check": "3.6.0",  # core #665 (sports consolidation stage 2)
+    "src.common.sports_timezone": "3.6.0",  # core #665 (sports consolidation stage 2)
     # on core main, in no tagged release yet: add as None. When the next
     # release is tagged, set each None entry here to that tag -- the test's
     # tag-verification section insists on it once the tag is in its list.
-    "src.common.favorite_team_check": None,  # core #665 (sports consolidation stage 2), unreleased
-    "src.common.sports_timezone": None,  # core #665 (sports consolidation stage 2), unreleased
 }
 
 #: Releases whose ``src/__init__.py`` ``__version__`` lags their tag. The
@@ -154,9 +155,9 @@ MODULE_FIRST_VERSION = {
 #:
 #: Facts from the published tags: v3.3.0 (bc2dbf38) and v3.3.1 (32d637a4)
 #: both report "3.3.0" and both contain ``sports_shared``; v3.4.0 (9e3f184d)
-#: reports "3.4.0" and v3.5.0 (5b30052b) reports "3.5.0"; neither needs an
-#: entry. v3.3.1 adds no ``src`` module, so no table entry names 3.3.1 and
-#: this mapping is currently inert. It stays because it is true (the tag test checks it).
+#: reports "3.4.0", v3.5.0 (5b30052b) reports "3.5.0" and v3.6.0 (a11412da)
+#: reports "3.6.0"; none needs an entry. v3.3.1 adds no ``src`` module, so
+#: no table entry names 3.3.1 and this mapping is currently inert. It stays because it is true (the tag test checks it).
 #: Entries describe published tags, so they are permanent.
 REPORTED_AS = {
     "3.3.1": "3.3.0",
