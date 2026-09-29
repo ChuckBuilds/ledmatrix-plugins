@@ -50,7 +50,7 @@
       "last_updated": "2026-09-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.10\r"
+      "latest_version": "1.0.10"
     },
     {
       "id": "baseball-scoreboard",
@@ -436,7 +436,7 @@
       "last_updated": "2026-09-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.5.4\r"
+      "latest_version": "1.5.4"
     },
     {
       "id": "ledmatrix-flights",
@@ -463,7 +463,7 @@
       "last_updated": "2026-09-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.14.7\r"
+      "latest_version": "1.14.7"
     },
     {
       "id": "march-madness",
@@ -511,7 +511,7 @@
       "last_updated": "2026-09-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "3.2.4\r"
+      "latest_version": "3.2.4"
     },
     {
       "id": "mqtt-notifications",
@@ -557,7 +557,7 @@
       "last_updated": "2026-09-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.5.2\r"
+      "latest_version": "1.5.2"
     },
     {
       "id": "news",
@@ -629,7 +629,7 @@
       "last_updated": "2026-09-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.2.1\r",
+      "latest_version": "2.2.1",
       "icon": "fas fa-football-ball"
     },
     {
@@ -657,7 +657,7 @@
       "last_updated": "2026-09-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.7.4\r"
+      "latest_version": "1.7.4"
     },
     {
       "id": "of-the-day",
@@ -705,7 +705,7 @@
       "last_updated": "2026-09-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "3.1.3\r"
+      "latest_version": "3.1.3"
     },
     {
       "id": "pga-tour-leaderboard",
@@ -807,7 +807,7 @@
       "last_updated": "2026-09-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.1.7\r"
+      "latest_version": "1.1.7"
     },
     {
       "id": "stock-news",
@@ -904,7 +904,7 @@
       "last_updated": "2026-09-28",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.3.4\r",
+      "latest_version": "1.3.4",
       "icon": "fa-water"
     },
     {
@@ -952,7 +952,7 @@
       "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
       "branch": "main",
       "plugin_path": "plugins/ledmatrix-weather",
-      "latest_version": "2.7.8\r",
+      "latest_version": "2.7.8",
       "stars": 0,
       "downloads": 0,
       "last_updated": "2026-09-28",
