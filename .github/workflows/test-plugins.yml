@@ -16,6 +16,9 @@ on:
       # editing only it (or plugins.json) had no check at all.
       - 'update_registry.py'
       - 'plugins.json'
+      # test_readme_lists_every_plugin.py guards the Available Plugins tables;
+      # a README-only PR that drops a row or miscounts a heading must run it.
+      - 'README.md'
       - '.github/workflows/test-plugins.yml'
   workflow_dispatch:
     inputs:
