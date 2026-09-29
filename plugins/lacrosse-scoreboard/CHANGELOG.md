@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.33.1] - 2026-09-29
+## [1.33.2] - 2026-09-29
 
 ### Fixed
 - Test fixture only, no runtime change. The harness made 112 live ESPN
@@ -13,6 +13,20 @@
   relied on. The fixture now sets other_games_min_quality 'any' and test_mode,
   so update() reads only the seeded cache and the run makes no requests.
   Rendered frames are unchanged.
+
+## [1.33.1] - 2026-09-29
+
+### Changed
+- On a core that ships them, the favourite-team check and the timezone
+  resolver run core's copies: `manager.py` imports `FavoriteTeamCheck` from
+  `src.common.favorite_team_check`, and `lacrosse_timezone.py` resolves through
+  `src.common.sports_timezone` with this plugin's values. Both core modules
+  were promoted from this plugin's own `lacrosse_favorite_check.py` and
+  `lacrosse_timezone.py`, which stay as the fallback on older cores (the floor
+  stays 3.5.0).
+
+No behaviour change: the timezone chosen and every log message are identical
+on both paths, and every safety-harness render is byte-identical.
 
 ## [1.33.0] - 2026-09-28
 

@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.37.1] - 2026-09-29
+## [1.37.2] - 2026-09-29
 
 ### Fixed
 - Test fixture only, no runtime change. The harness made 16 live ESPN
@@ -9,6 +9,20 @@
   idle back-off rather than the huge update_intervals.live the fixture relied
   on. The fixture now sets test_mode, so the live manager simulates its game
   and the run makes no requests. Rendered frames are unchanged.
+
+## [1.37.1] - 2026-09-29
+
+### Changed
+- On a core that ships them, the favourite-team check and the timezone
+  resolver run core's copies: `manager.py` imports `FavoriteTeamCheck` from
+  `src.common.favorite_team_check`, and `hockey_timezone.py` resolves through
+  `src.common.sports_timezone` with this plugin's values. Both core modules
+  were promoted from this plugin's own `hockey_favorite_check.py` and
+  `hockey_timezone.py`, which stay as the fallback on older cores (the floor
+  stays 3.5.0).
+
+No behaviour change: the timezone chosen and every log message are identical
+on both paths, and every safety-harness render is byte-identical.
 
 ## [1.37.0] - 2026-09-28
 

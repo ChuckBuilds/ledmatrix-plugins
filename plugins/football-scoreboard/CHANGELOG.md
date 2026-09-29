@@ -1,6 +1,6 @@
 # Changelog
 
-## [3.15.1] - 2026-09-29
+## [3.15.2] - 2026-09-29
 
 ### Fixed
 - Test fixture only, no runtime change. The harness fixture still seeded
@@ -9,6 +9,20 @@
   frozen January 2026 window from ESPN. Those games are all final now, so
   Upcoming drew nothing at any size (flagged only at the five sizes the fill
   check covers). The fixture now seeds nfl_schedule_window_14_7.
+
+## [3.15.1] - 2026-09-29
+
+### Changed
+- On a core that ships them, the favourite-team check and the timezone
+  resolver run core's copies: `manager.py` imports `FavoriteTeamCheck` from
+  `src.common.favorite_team_check`, and `football_timezone.py` resolves through
+  `src.common.sports_timezone` with this plugin's values. Both core modules
+  were promoted from this plugin's own `football_favorite_check.py` and
+  `football_timezone.py`, which stay as the fallback on older cores (the floor
+  stays 3.5.0).
+
+No behaviour change: the timezone chosen and every log message are identical
+on both paths, and every safety-harness render is byte-identical.
 
 ## [3.15.0] - 2026-09-28
 

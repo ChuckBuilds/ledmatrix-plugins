@@ -89,9 +89,14 @@ class _Holder:
             self.config_manager = config_manager
 
 
+# The module whose system_timezone_name() the resolver calls, so the tests
+# stub the one in use: core's src.common.sports_timezone on a core that ships
+# it (soccer_timezone then resolves through it), the bundled code otherwise.
+_zone_source = getattr(soccer_timezone, "_core", soccer_timezone)
+
 # Kept so tests that stub system-zone detection can restore it, and so the
 # results don't depend on the machine the suite runs on.
-_real_system_timezone_name = soccer_timezone.system_timezone_name
+_real_system_timezone_name = _zone_source.system_timezone_name
 
 
 def test_plugin_config_override_wins():
@@ -111,7 +116,7 @@ def test_lower_priority_sources_are_not_evaluated():
     cache_cm = _CountingConfigManager("Europe/London")
     system_calls = []
 
-    soccer_timezone.system_timezone_name = lambda: system_calls.append(1) or None
+    _zone_source.system_timezone_name = lambda: system_calls.append(1) or None
     try:
         name = resolve_timezone_name(
             config={"timezone": "America/Chicago"},
@@ -119,7 +124,7 @@ def test_lower_priority_sources_are_not_evaluated():
             cache_manager=_Holder(cache_cm),
         )
     finally:
-        soccer_timezone.system_timezone_name = _real_system_timezone_name
+        _zone_source.system_timezone_name = _real_system_timezone_name
 
     assert name == "America/Chicago", name
     assert plugin_cm.calls == 0, plugin_cm.calls
@@ -180,21 +185,21 @@ def test_blank_and_invalid_values_are_skipped():
 
 
 def test_system_timezone_backstop():
-    soccer_timezone.system_timezone_name = lambda: "America/Chicago"
+    _zone_source.system_timezone_name = lambda: "America/Chicago"
     try:
         name = resolve_timezone_name(config={}, plugin_manager=_Holder(), cache_manager=_Holder())
     finally:
-        soccer_timezone.system_timezone_name = _real_system_timezone_name
+        _zone_source.system_timezone_name = _real_system_timezone_name
     assert name == "America/Chicago", name
     print("✓ system timezone used when no config_manager is reachable")
 
 
 def test_utc_last_resort():
-    soccer_timezone.system_timezone_name = lambda: None
+    _zone_source.system_timezone_name = lambda: None
     try:
         name = resolve_timezone_name(config={}, plugin_manager=None, cache_manager=None)
     finally:
-        soccer_timezone.system_timezone_name = _real_system_timezone_name
+        _zone_source.system_timezone_name = _real_system_timezone_name
     assert name == "UTC", name
     print("✓ falls back to UTC when every source is unavailable")
 
@@ -226,20 +231,20 @@ def test_user_set_utc_is_never_overridden():
 
 
 def test_user_set_utc_beats_the_system_zone():
-    soccer_timezone.system_timezone_name = lambda: "America/Chicago"
+    _zone_source.system_timezone_name = lambda: "America/Chicago"
     try:
         name = resolve_timezone_name(
             config={"timezone": "UTC"}, plugin_manager=_Holder(), cache_manager=_Holder()
         )
     finally:
-        soccer_timezone.system_timezone_name = _real_system_timezone_name
+        _zone_source.system_timezone_name = _real_system_timezone_name
     assert name == "UTC", name
     print("✓ a user-set 'UTC' outranks the host system zone")
 
 
 def test_utc_is_kept_when_nothing_disagrees():
     """A genuinely-UTC device must not be dragged off UTC."""
-    soccer_timezone.system_timezone_name = lambda: "UTC"
+    _zone_source.system_timezone_name = lambda: "UTC"
     try:
         name = resolve_timezone_name(
             config={"timezone": "UTC"},
@@ -247,7 +252,7 @@ def test_utc_is_kept_when_nothing_disagrees():
             cache_manager=_Holder(),
         )
     finally:
-        soccer_timezone.system_timezone_name = _real_system_timezone_name
+        _zone_source.system_timezone_name = _real_system_timezone_name
     assert name == "UTC", name
     print("✓ 'UTC' is kept when the global/system zone agrees")
 
@@ -266,7 +271,7 @@ def test_etc_utc_is_always_honored():
 def test_absent_global_key_falls_through_to_system_zone():
     """The core's get_timezone() returns its own 'UTC' default for a config
     with no timezone key; that must not mask the system zone."""
-    soccer_timezone.system_timezone_name = lambda: "America/Chicago"
+    _zone_source.system_timezone_name = lambda: "America/Chicago"
     try:
         name = resolve_timezone_name(
             config={},
@@ -274,13 +279,13 @@ def test_absent_global_key_falls_through_to_system_zone():
             cache_manager=_Holder(),
         )
     finally:
-        soccer_timezone.system_timezone_name = _real_system_timezone_name
+        _zone_source.system_timezone_name = _real_system_timezone_name
     assert name == "America/Chicago", name
     print("✓ a global config with no timezone key falls through to the system zone")
 
 
 def test_present_global_key_still_wins_over_system_zone():
-    soccer_timezone.system_timezone_name = lambda: "America/Denver"
+    _zone_source.system_timezone_name = lambda: "America/Denver"
     try:
         name = resolve_timezone_name(
             config={},
@@ -288,7 +293,7 @@ def test_present_global_key_still_wins_over_system_zone():
             cache_manager=_Holder(),
         )
     finally:
-        soccer_timezone.system_timezone_name = _real_system_timezone_name
+        _zone_source.system_timezone_name = _real_system_timezone_name
     assert name == "America/Chicago", name
     print("✓ an explicit global timezone still outranks the system zone")
 
