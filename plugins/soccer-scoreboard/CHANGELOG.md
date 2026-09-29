@@ -1,5 +1,39 @@
 # Changelog
 
+## [2.37.0] - 2026-09-29
+
+### Changed
+- The favourite-team check (the log lines that say why a league shows
+  nothing) is now `FavoriteTeamCheck` from core's
+  `src.common.favorite_team_check`, the one the other scoreboards use. It
+  replaces this plugin's own older version in `manager.py`, which that module
+  grew out of. Only the log changes:
+  - The check runs on a background thread. The old one ran inside `update()`,
+    so the first update of each league with favourites waited on up to two
+    ESPN requests.
+  - Between matchdays or seasons, correct codes log the date of the next
+    fixture ("... look correct, but the league has nothing on until 10
+    October 2026 ..."). The old check only spoke when ESPN's scoreboard came
+    back empty, which it rarely does (it shows the last matchday until the
+    next), so it usually just said "recognised". A finished season with no new
+    fixtures published is reported as finished.
+  - A wrong code's warning links to the league's ESPN team list instead of
+    TEAMS.md. The link works for custom leagues too.
+  - Suggestions also match part of a word and put a name's first word first.
+
+  Every league in the registry is checked against its ESPN soccer endpoint
+  (`soccer/<league code>`), custom leagues included; only enabled leagues with
+  favourites are checked, with the favourites of the first of live / recent /
+  upcoming that has any. A config change rebuilds the check for the new league
+  list, so it reports again.
+
+### Removed
+- The old check's helpers on the plugin class: `_abbreviates`,
+  `_suggest_team_code`, `_fetch_league_teams`, `_fetch_season_start` and the
+  `_favorites_checked` set. Nothing else used them.
+
+Every safety-harness render is byte-identical: the check only logs.
+
 ## [2.36.0] - 2026-09-29
 
 ### Changed

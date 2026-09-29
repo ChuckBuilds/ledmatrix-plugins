@@ -14,7 +14,7 @@ family of shared-shape modules:
 | `dynamic_team_resolver.py` | 8 | true forks — different constructor signatures |
 | `logo_downloader.py` | 0 | every scoreboard imports core's `src.logo_downloader` (f1-scoreboard's same-named file is an unrelated `F1LogoLoader`) |
 | `<sport>_espn_dates.py` | 0 | none left. All nine scoreboards floor on core 3.5.0 and import `src.common.espn_dates` plainly (sunset: the eight team scoreboards in stage 1a, ufc in 1b). `scripts/test_espn_dates_copies.py` fails if a plugin in its `SUNSET_PLUGINS` grows its copy or a guarded import back, and on a fetch that sends ESPN `dates` without the helper. Fix it in core |
-| `<sport>_favorite_check.py` | 0 | none left. afl, baseball, basketball, football, hockey, lacrosse and nrl floor on core 3.6.1 (the first release with the favourite check's finished-season fix) and import `src.common.favorite_team_check` plainly. `scripts/test_timezone_and_favorite_check_copies.py` fails if a copy or a guarded import comes back. Fix it in core. soccer's `manager.py` still carries the older check these grew out of: core's reads a mid-season break, where ESPN's soccer scoreboard shows the last matchday, as a finished season. ufc has none: its favourites are fighter names and weight classes, and ESPN publishes no UFC team list to check them against |
+| `<sport>_favorite_check.py` | 0 | none left. afl, baseball, basketball, football, hockey, lacrosse, nrl and soccer floor on core 3.6.1 (the first release with the favourite check's finished-season fix, which also reads a soccer matchday break correctly) and import `src.common.favorite_team_check` plainly; soccer's `manager.py` dropped the older check these grew out of. `scripts/test_timezone_and_favorite_check_copies.py` fails if a copy or a guarded import comes back. Fix it in core. ufc has none: its favourites are fighter names and weight classes, and ESPN publishes no UFC team list to check them against |
 | `<sport>_timezone.py` | 10 | the nine scoreboards + `f1-scoreboard`, all floored on core 3.6.1. Not a copy any more: each is a thin binding whose `resolve_timezone_name` / `resolve_timezone` call core's `src.common.sports_timezone` with the plugin's label, write-back release and module logger. The same script fails if resolver code grows back in one, and checks each binding's values against core's resolver, every log message included. Fix the resolver in core |
 
 Apart from the sport-prefixed helpers, none of these copies are identical. **Any fix to a shared-shape file must be
@@ -78,7 +78,8 @@ the core actually ships:
   (`scripts/check_min_core_version.py` dates them). The nine scoreboards and
   f1 floor on 3.6.1, whose favourite check has the fix for calling a started
   postseason a finished season (core #667). The seven favourite-check copies
-  are deleted and `manager.py` imports core's plainly; each
+  are deleted and `manager.py` imports core's plainly (soccer's too, replacing
+  its own older check); each
   `<sport>_timezone.py` keeps only its binding (label, write-back release,
   logger), so its callers and tests are unchanged.
 - **Not converging (documented forks):** `dynamic_team_resolver` (plugin copies

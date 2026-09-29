@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.36.0",
+  "version": "2.37.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -53,6 +53,12 @@
     "soccer_usa.1_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.37.0",
+      "released": "2026-09-29",
+      "ledmatrix_min_version": "3.6.1",
+      "notes": "The favourite-team check (the log lines that say why a league shows nothing) is now LEDMatrix core's src.common.favorite_team_check, the one the other scoreboards use, replacing this plugin's own older version. Only the log changes: the check runs in the background instead of inside update(); between matchdays a correct code logs the date of the next fixture instead of just 'recognised'; a finished season with nothing new published says so; a wrong code's warning links to the league's ESPN team list instead of TEAMS.md; suggestions also match part of a word. Custom leagues are checked like the predefined ones. Every safety-harness render is byte-identical."
+    },
     {
       "version": "2.36.0",
       "released": "2026-09-29",

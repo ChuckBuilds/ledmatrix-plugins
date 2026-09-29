@@ -313,8 +313,9 @@ downloads its flag on demand from ESPN into the same `national/` directory.
 - **Season rosters change** — promoted/relegated teams join or leave; if a team isn't listed here, check the debug logs for the abbreviation the API returns
 - **Custom leagues** — for any ESPN-supported league not listed here (e.g., `mex.1`, `arg.1`), run the plugin with debug logging and look for `home_abbr`/`away_abbr` log lines to find the correct codes
 - **Nothing showing up?** The plugin now tells you which it is at startup. An
-  unrecognised code logs a warning naming the closest match; a code that is
-  valid but has no fixtures yet logs the date the season starts. Check the logs
+  unrecognised code logs a warning naming the closest match; a valid code in a
+  league with nothing on logs the date of the next fixture (or that the season
+  has finished). Check the logs
   before assuming the code is wrong — between seasons an empty screen is normal
 - **Re-checking a code yourself** — ESPN's team list for a league is at
   `https://site.api.espn.com/apis/site/v2/sports/soccer/<league>/teams`, e.g.

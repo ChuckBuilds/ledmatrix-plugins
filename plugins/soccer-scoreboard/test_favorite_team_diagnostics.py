@@ -6,8 +6,14 @@ the logs: a team code that matches nothing, or a correct code in a league with n
 fixtures yet. Favourites are matched by exact ESPN abbreviation and the codes are
 not guessable — ESPN calls Manchester United ``MAN``, and ``MUN`` is Bayern
 Munich — so a plausible-looking code silently shows nothing.
+
+The check itself is core's ``src.common.favorite_team_check``, tested in full
+where it lives. These tests pin what is soccer's own: the messages for real
+Premier League codes, and which leagues the plugin hands the check, custom
+leagues included. Everything is offline.
 """
 
+import logging
 import os
 import sys
 import types
@@ -108,137 +114,67 @@ PREMIER_LEAGUE = {
 }
 
 
-class Recorder:
+class RecordingLogger(logging.Logger):
+    """Captures formatted records so tests can assert on the message text."""
+
     def __init__(self):
-        self.warnings = []
-        self.infos = []
+        super().__init__("test")
+        self.records = []
 
-    def _fmt(self, msg, args):
-        return msg % args if args else msg
+    def handle(self, record):
+        self.records.append((record.levelname, record.getMessage()))
 
-    def warning(self, msg, *args, **kw):
-        self.warnings.append(self._fmt(msg, args))
-
-    def info(self, msg, *args, **kw):
-        self.infos.append(self._fmt(msg, args))
-
-    def debug(self, msg, *args, **kw):
-        pass
-
-    def error(self, msg, *args, **kw):
-        pass
+    def messages(self, level):
+        return [m for lvl, m in self.records if lvl == level]
 
 
-def make_plugin(favorites, teams=None, season_start=None, teams_raise=False):
-    """Plugin shell wired to canned ESPN responses."""
-    import threading
-    from manager import SoccerScoreboardPlugin
+def premier_league_check(teams=None, note=None):
+    """The check the plugin builds, wired to canned ESPN responses."""
+    from manager import FavoriteTeamCheck
 
-    class _Shell(SoccerScoreboardPlugin):
-        def __init__(self):
-            pass
-
-        def _fetch_league_teams(self, league_key):
-            if teams_raise:
-                raise RuntimeError("network down")
-            return PREMIER_LEAGUE if teams is None else teams
-
-        def _fetch_season_start(self, league_key):
-            return season_start
-
-    plugin = _Shell()
-    plugin.logger = Recorder()
-    plugin._config_lock = threading.RLock()
-    plugin._favorites_checked = set()
-
-    manager = types.SimpleNamespace(favorite_teams=favorites)
-    plugin._managers = {'live': manager}
-    return plugin
+    checker = FavoriteTeamCheck(RecordingLogger(),
+                                {'eng.1': ('Premier League', 'soccer/eng.1')})
+    checker._fetch_teams = staticmethod(
+        lambda path: dict(PREMIER_LEAGUE if teams is None else teams))
+    checker._schedule_note = staticmethod(lambda path: note)
+    return checker
 
 
-def check(plugin):
-    plugin._check_favorite_teams('eng.1', 'Premier League', plugin._managers)
-    return plugin.logger
+def run(favorites, **kwargs):
+    checker = premier_league_check(**kwargs)
+    checker._check('eng.1', favorites)
+    return checker.logger
 
 
 class TestUnknownCode:
     def test_the_reported_case_suggests_the_right_code(self):
         # A user typed MUN for Manchester United, which ESPN calls MAN.
-        log = check(make_plugin(['MUN']))
-        joined = " ".join(log.warnings)
+        joined = " ".join(run(['MUN']).messages('WARNING'))
         assert "'MUN' is not a Premier League team code" in joined
         assert "'MAN'" in joined and "Manchester United" in joined
 
-    def test_man_city_typo_is_also_caught(self):
-        log = check(make_plugin(['MCI']))
-        assert "'MNC'" in " ".join(log.warnings)
-
-    def test_a_club_name_resolves_to_its_code(self):
-        log = check(make_plugin(['Liverpool']))
-        assert "'LIV'" in " ".join(log.warnings)
-
     def test_all_codes_unknown_says_nothing_will_show(self):
-        log = check(make_plugin(['MUN', 'MCI']))
-        assert any("no recognised favorite teams" in w for w in log.warnings)
+        warnings = run(['MUN', 'MCI']).messages('WARNING')
+        assert any("no recognised favorite teams" in w for w in warnings)
 
-    def test_nonsense_code_still_warns_without_a_suggestion(self):
-        log = check(make_plugin(['ZZZZZZ']))
-        assert any("is not a Premier League team code" in w for w in log.warnings)
-
-    def test_lowercase_is_reported_since_matching_is_case_sensitive(self):
-        log = check(make_plugin(['liv']))
-        assert any("'liv'" in w for w in log.warnings)
-        assert "'LIV'" in " ".join(log.warnings)
+    def test_mixed_valid_and_invalid_reports_both(self):
+        log = run(['MAN', 'MUN'])
+        assert any("'MUN'" in w for w in log.messages('WARNING'))
+        assert any('recognised: MAN' in i for i in log.messages('INFO'))
 
 
 class TestSeasonNotStarted:
-    def test_valid_code_with_no_fixtures_names_the_start_date(self):
-        log = check(make_plugin(['MAN'], season_start='21 August 2026'))
-        joined = " ".join(log.infos)
-        assert 'MAN' in joined
-        assert '21 August 2026' in joined
+    def test_valid_code_out_of_season_explains_the_empty_screen(self):
+        log = run(['MAN'], note="the league has nothing on until 21 August 2026")
+        joined = " ".join(log.messages('INFO'))
+        assert 'MAN' in joined and '21 August 2026' in joined
         assert 'expected, not a configuration problem' in joined
+        assert log.messages('WARNING') == []
 
-    def test_no_warning_when_the_code_is_valid(self):
-        log = check(make_plugin(['MAN'], season_start='21 August 2026'))
-        assert log.warnings == []
-
-    def test_valid_code_with_fixtures_reports_plainly(self):
-        log = check(make_plugin(['MAN'], season_start=None))
-        assert any('recognised' in i for i in log.infos)
-        assert log.warnings == []
-
-    def test_season_check_is_skipped_when_every_code_is_wrong(self):
+    def test_season_is_not_mentioned_when_every_code_is_wrong(self):
         # No point reporting the season when the config is the real problem.
-        log = check(make_plugin(['MUN'], season_start='21 August 2026'))
-        assert not any('21 August 2026' in i for i in log.infos)
-
-
-class TestRobustness:
-    def test_runs_once_per_league(self):
-        plugin = make_plugin(['MUN'])
-        for _ in range(4):
-            plugin._check_favorite_teams('eng.1', 'Premier League', plugin._managers)
-        assert len(plugin.logger.warnings) == 2  # one per-code, one summary
-
-    def test_no_favorites_is_silent(self):
-        log = check(make_plugin([]))
-        assert log.warnings == [] and log.infos == []
-
-    def test_a_failed_fetch_is_silent_and_not_retried(self):
-        plugin = make_plugin(['MUN'], teams_raise=True)
-        plugin._check_favorite_teams('eng.1', 'Premier League', plugin._managers)
-        assert plugin.logger.warnings == []
-        assert 'eng.1' in plugin._favorites_checked
-
-    def test_empty_team_list_is_silent(self):
-        log = check(make_plugin(['MUN'], teams={}))
-        assert log.warnings == []
-
-    def test_mixed_valid_and_invalid_reports_both(self):
-        log = check(make_plugin(['MAN', 'MUN'], season_start=None))
-        assert any("'MUN'" in w for w in log.warnings)
-        assert any('MAN' in i for i in log.infos)
+        log = run(['MUN'], note="the league has nothing on until 21 August 2026")
+        assert not any('21 August 2026' in i for i in log.messages('INFO'))
 
 
 class TestSuggestions:
@@ -247,23 +183,74 @@ class TestSuggestions:
         ('MCI', 'MNC'),
         ('ARSENAL', 'ARS'),
         ('TOTTENHAM', 'TOT'),
+        ('Liverpool', 'LIV'),
     ])
     def test_close_matches(self, typed, expected):
-        from manager import SoccerScoreboardPlugin
-        hint = SoccerScoreboardPlugin._suggest_team_code(typed, PREMIER_LEAGUE)
-        assert expected in hint
+        from manager import FavoriteTeamCheck
+        assert "'{}'".format(expected) in FavoriteTeamCheck._suggest(typed, PREMIER_LEAGUE)
 
     def test_no_hint_for_something_unrelated(self):
-        from manager import SoccerScoreboardPlugin
-        assert SoccerScoreboardPlugin._suggest_team_code('QQQQQQ', PREMIER_LEAGUE) == ''
-
-    def test_a_valid_code_draws_no_suggestion(self):
-        # Only unknown codes reach the suggester in production, but a valid one
-        # must not be told its case is wrong.
-        from manager import SoccerScoreboardPlugin
-        assert SoccerScoreboardPlugin._suggest_team_code('LIV', PREMIER_LEAGUE) == ''
+        from manager import FavoriteTeamCheck
+        assert FavoriteTeamCheck._suggest('QQQQQQ', PREMIER_LEAGUE) == ''
 
     def test_wrong_case_is_called_out_explicitly(self):
-        from manager import SoccerScoreboardPlugin
-        hint = SoccerScoreboardPlugin._suggest_team_code('liv', PREMIER_LEAGUE)
+        from manager import FavoriteTeamCheck
+        hint = FavoriteTeamCheck._suggest('liv', PREMIER_LEAGUE)
         assert 'case-sensitive' in hint and "'LIV'" in hint
+
+
+def make_plugin():
+    """Plugin shell with no ESPN access: scheduled checks are recorded."""
+    from manager import SoccerScoreboardPlugin
+
+    plugin = SoccerScoreboardPlugin.__new__(SoccerScoreboardPlugin)
+    plugin.logger = RecordingLogger()
+    return plugin
+
+
+def league(enabled, **favorites_by_mode):
+    managers = {mode: types.SimpleNamespace(favorite_teams=favs)
+                for mode, favs in favorites_by_mode.items()}
+    return {'enabled': enabled, 'managers': managers}
+
+
+def scheduled(plugin, registry):
+    """(league key, favorites) for each league the plugin asks the check about."""
+    calls = []
+    plugin._check_favorite_teams(registry)  # builds the check
+    plugin._favorite_check.schedule = lambda key, favs: calls.append((key, list(favs)))
+    plugin._check_favorite_teams(registry)
+    return calls
+
+
+class TestWiring:
+    def test_each_enabled_league_with_favorites_is_checked(self):
+        registry = {
+            'eng.1': league(True, live=['MAN']),
+            'esp.1': league(False, live=['RMA']),   # disabled
+            'ger.1': league(True, live=[]),         # no favorites
+        }
+        assert scheduled(make_plugin(), registry) == [('eng.1', ['MAN'])]
+
+    def test_favorites_come_from_the_first_mode_that_has_them(self):
+        registry = {'eng.1': league(True, live=[], recent=['LIV'], upcoming=['ARS'])}
+        assert scheduled(make_plugin(), registry) == [('eng.1', ['LIV'])]
+
+    def test_every_league_maps_to_its_espn_soccer_endpoint(self):
+        # A custom league's key is the ESPN code the user typed, so it is
+        # checked against that league like any predefined one.
+        import manager
+        plugin = make_plugin()
+        manager.LEAGUE_NAMES['sco.1'] = 'Scottish Premiership'
+        try:
+            plugin._check_favorite_teams({'eng.1': league(True), 'sco.1': league(True)})
+        finally:
+            manager.LEAGUE_NAMES.pop('sco.1', None)
+        assert plugin._favorite_check.leagues == {
+            'eng.1': ('Premier League', 'soccer/eng.1'),
+            'sco.1': ('Scottish Premiership', 'soccer/sco.1'),
+        }
+
+    def test_a_broken_registry_entry_never_escapes_update(self):
+        plugin = make_plugin()
+        plugin._check_favorite_teams({'eng.1': None})  # must not raise
