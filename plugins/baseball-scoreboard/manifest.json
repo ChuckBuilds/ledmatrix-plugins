@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.51.2",
+  "version": "1.51.3",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.51.3",
+      "released": "2026-09-29",
+      "ledmatrix_min_version": "3.5.0",
+      "notes": "The favourite-team check no longer says the season has finished when it has not. The day after a regular season ends, ESPN's scoreboard still shows that last regular-season day, so a playoff team's fan was told the season was over while their team's playoff games were on the display; the check now says nothing in that case. Between matchdays (soccer, or any league whose calendar lists its match days) it now reports the next matchday instead. Same fix as LEDMatrix core's src.common.favorite_team_check."
+    },
     {
       "version": "1.51.2",
       "released": "2026-09-29",
