@@ -216,7 +216,7 @@ class CommitResolver:
 
     def _git(self, *args: str) -> Optional[str]:
         try:
-            result = subprocess.run(
+            result = subprocess.run(  # nosec B603 B607 - fixed git subcommands, paths only after "--", no shell  # nosemgrep
                 ["git", *args], cwd=self.root, capture_output=True,
                 text=True, encoding="utf-8", errors="replace", timeout=60,
                 check=False)
@@ -228,7 +228,7 @@ class CommitResolver:
         """Contents of `<sha>:<path>`, or None when it does not exist."""
         if self._batch is None:
             try:
-                self._batch = subprocess.Popen(
+                self._batch = subprocess.Popen(  # nosec B603 B607 - fixed git argv, specs go over stdin, no shell  # nosemgrep
                     ["git", "cat-file", "--batch"], cwd=self.root,
                     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                     stderr=subprocess.DEVNULL)

@@ -19,7 +19,7 @@ import contextlib
 import io
 import json
 import shutil
-import subprocess
+import subprocess  # nosec B404 - runs git on temp repos the test creates
 import sys
 import tempfile
 import urllib.error
@@ -368,7 +368,8 @@ GIT = ["git", "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign
 
 
 def git(root, *args):
-    return subprocess.run(GIT + list(args), cwd=root, capture_output=True, text=True,
+    return subprocess.run(GIT + list(args), cwd=root,  # nosec B603 - fixed git argv on a temp test repo, no shell  # nosemgrep
+                          capture_output=True, text=True,
                           check=True).stdout.strip()
 
 
@@ -437,8 +438,9 @@ if have_git:
 
     # A shallow clone cannot see where the version started: keep what is there.
     shallow = Path(tempfile.mkdtemp()) / "shallow"
-    subprocess.run(GIT + ["clone", "-q", "--depth", "1", root.as_uri(), str(shallow)],
-                   capture_output=True, check=True)
+    subprocess.run(  # nosec B603 - fixed git argv on a temp test repo, no shell  # nosemgrep
+        GIT + ["clone", "-q", "--depth", "1", root.as_uri(), str(shallow)],
+        capture_output=True, check=True)
     shallow_data = json.loads((shallow / "plugins.json").read_text())
     shallow_data["plugins"][0]["commit"] = "kept"
     (shallow / "plugins.json").write_text(json.dumps(shallow_data))
