@@ -1,0 +1,379 @@
+{
+  "ufc_scoreboard_schedule_2026": {
+    "events": [
+      {
+        "id": "600050000",
+        "date": "2026-02-14T23:00Z",
+        "name": "UFC Fight Night: outside the lookback",
+        "competitions": [
+          {
+            "id": "600050001",
+            "type": {
+              "abbreviation": "FW"
+            },
+            "status": {
+              "period": 3,
+              "displayClock": "5:00",
+              "type": {
+                "state": "post",
+                "name": "STATUS_FINAL",
+                "shortDetail": "Final",
+                "completed": true
+              }
+            },
+            "competitors": [
+              {
+                "order": 1,
+                "athlete": {
+                  "fullName": "Old Fighter One",
+                  "shortName": "O. One"
+                },
+                "records": [
+                  {
+                    "summary": "10-2-0"
+                  }
+                ],
+                "score": "0",
+                "winner": true
+              },
+              {
+                "order": 2,
+                "athlete": {
+                  "fullName": "Old Fighter Two",
+                  "shortName": "O. Two"
+                },
+                "records": [
+                  {
+                    "summary": "9-3-0"
+                  }
+                ],
+                "score": "0",
+                "winner": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "600050010",
+        "date": "2026-03-07T23:00Z",
+        "name": "UFC Fight Night: recent card",
+        "competitions": [
+          {
+            "id": "600050011",
+            "type": {
+              "abbreviation": "LW"
+            },
+            "status": {
+              "period": 2,
+              "displayClock": "3:12",
+              "type": {
+                "state": "post",
+                "name": "STATUS_FINAL",
+                "shortDetail": "Final",
+                "completed": true
+              }
+            },
+            "competitors": [
+              {
+                "order": 1,
+                "athlete": {
+                  "fullName": "Carlos Mendes",
+                  "shortName": "C. Mendes"
+                },
+                "records": [
+                  {
+                    "summary": "18-4-0"
+                  }
+                ],
+                "score": "0",
+                "winner": true
+              },
+              {
+                "order": 2,
+                "athlete": {
+                  "fullName": "Jake Holloway",
+                  "shortName": "J. Holloway"
+                },
+                "records": [
+                  {
+                    "summary": "15-6-0"
+                  }
+                ],
+                "score": "0",
+                "winner": false
+              }
+            ]
+          },
+          {
+            "id": "600050012",
+            "type": {
+              "abbreviation": "WW"
+            },
+            "status": {
+              "period": 3,
+              "displayClock": "5:00",
+              "type": {
+                "state": "post",
+                "name": "STATUS_FINAL",
+                "shortDetail": "Final",
+                "completed": true
+              }
+            },
+            "competitors": [
+              {
+                "order": 1,
+                "athlete": {
+                  "fullName": "Ivan Petrov",
+                  "shortName": "I. Petrov"
+                },
+                "records": [
+                  {
+                    "summary": "22-5-1"
+                  }
+                ],
+                "score": "0",
+                "winner": false
+              },
+              {
+                "order": 2,
+                "athlete": {
+                  "fullName": "Marcus Reid",
+                  "shortName": "M. Reid"
+                },
+                "records": [
+                  {
+                    "summary": "12-1-0"
+                  }
+                ],
+                "score": "0",
+                "winner": true
+              }
+            ]
+          },
+          {
+            "id": "600050013",
+            "type": {
+              "abbreviation": "BW"
+            },
+            "status": {
+              "period": 0,
+              "displayClock": "0:00",
+              "type": {
+                "state": "post",
+                "name": "STATUS_POSTPONED",
+                "shortDetail": "Postponed",
+                "completed": false
+              }
+            },
+            "competitors": [
+              {
+                "order": 1,
+                "athlete": {
+                  "fullName": "Tomas Silva",
+                  "shortName": "T. Silva"
+                },
+                "records": [
+                  {
+                    "summary": "8-0-0"
+                  }
+                ],
+                "score": "0"
+              },
+              {
+                "order": 2,
+                "athlete": {
+                  "fullName": "Ren Takeda",
+                  "shortName": "R. Takeda"
+                },
+                "records": [
+                  {
+                    "summary": "7-2-0"
+                  }
+                ],
+                "score": "0"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "600050020",
+        "date": "2026-03-14T22:00Z",
+        "name": "UFC 330: upcoming card",
+        "competitions": [
+          {
+            "id": "600050021",
+            "type": {
+              "abbreviation": "MW"
+            },
+            "status": {
+              "period": 0,
+              "displayClock": "0:00",
+              "type": {
+                "state": "pre",
+                "name": "STATUS_SCHEDULED",
+                "shortDetail": "3/14 - 6:00 PM EDT",
+                "completed": false
+              }
+            },
+            "competitors": [
+              {
+                "order": 1,
+                "athlete": {
+                  "fullName": "Andre Costa",
+                  "shortName": "A. Costa"
+                },
+                "records": [
+                  {
+                    "summary": "24-3-0"
+                  }
+                ],
+                "score": "0"
+              },
+              {
+                "order": 2,
+                "athlete": {
+                  "fullName": "Liam O'Brien",
+                  "shortName": "L. O'Brien"
+                },
+                "records": [
+                  {
+                    "summary": "21-2-0"
+                  }
+                ],
+                "score": "0"
+              }
+            ]
+          },
+          {
+            "id": "600050022",
+            "type": {
+              "abbreviation": "HW"
+            },
+            "status": {
+              "period": 0,
+              "displayClock": "0:00",
+              "type": {
+                "state": "pre",
+                "name": "STATUS_SCHEDULED",
+                "shortDetail": "3/14 - 6:30 PM EDT",
+                "completed": false
+              }
+            },
+            "competitors": [
+              {
+                "order": 1,
+                "athlete": {
+                  "fullName": "Viktor Kral",
+                  "shortName": "V. Kral"
+                },
+                "records": [
+                  {
+                    "summary": "16-2-0"
+                  }
+                ],
+                "score": "0"
+              },
+              {
+                "order": 2,
+                "athlete": {
+                  "fullName": "Sam Okafor",
+                  "shortName": "S. Okafor"
+                },
+                "records": [
+                  {
+                    "summary": "0-0-0"
+                  }
+                ],
+                "score": "0"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "600050030",
+        "date": "2026-04-25T22:00Z",
+        "name": "UFC 332: outside the lookahead",
+        "competitions": [
+          {
+            "id": "600050031",
+            "type": {
+              "abbreviation": "FLW"
+            },
+            "status": {
+              "period": 0,
+              "displayClock": "0:00",
+              "type": {
+                "state": "pre",
+                "name": "STATUS_SCHEDULED",
+                "shortDetail": "4/25 - 6:00 PM EDT",
+                "completed": false
+              }
+            },
+            "competitors": [
+              {
+                "order": 1,
+                "athlete": {
+                  "fullName": "Far Future One",
+                  "shortName": "F. One"
+                },
+                "records": [
+                  {
+                    "summary": "5-0-0"
+                  }
+                ],
+                "score": "0"
+              },
+              {
+                "order": 2,
+                "athlete": {
+                  "fullName": "Far Future Two",
+                  "shortName": "F. Two"
+                },
+                "records": [
+                  {
+                    "summary": "6-1-0"
+                  }
+                ],
+                "score": "0"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "odds_espn_mma_ufc_600050001_600050001": {
+    "no_odds": true
+  },
+  "odds_espn_mma_ufc_600050011_600050011": {
+    "no_odds": true
+  },
+  "odds_espn_mma_ufc_600050012_600050012": {
+    "no_odds": true
+  },
+  "odds_espn_mma_ufc_600050013_600050013": {
+    "no_odds": true
+  },
+  "odds_espn_mma_ufc_600050021_600050021": {
+    "details": "COSTA -165",
+    "over_under": 2.5,
+    "spread": null,
+    "home_team_odds": {
+      "money_line": -165,
+      "spread_odds": null
+    },
+    "away_team_odds": {
+      "money_line": 140,
+      "spread_odds": null
+    }
+  },
+  "odds_espn_mma_ufc_600050022_600050022": {
+    "no_odds": true
+  },
+  "odds_espn_mma_ufc_600050031_600050031": {
+    "no_odds": true
+  }
+}

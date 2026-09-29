@@ -8,9 +8,10 @@ private copy of --
 ``_MIN_WINDOW_DAYS`` / ``_MAX_WINDOW_DAYS``) and the ``SportsCore`` methods
 ``_mode_customization``, ``_setting_int``, ``_reset_dwell_on_reentry``,
 ``_next_switch_index``, ``_spread_weighted_order``, ``_odds_color`` and
-``_upcoming_date_and_time_text``. The eight team scoreboards floor on 3.5.0
-and have deleted their copies (they import the module and inherit
-``SportsHelpersMixin``); ufc still carries its eleven.
+``_upcoming_date_and_time_text``. All nine scoreboards floor on 3.5.0 and
+have deleted their copies (they import the module and inherit
+``SportsHelpersMixin``) -- the eight team scoreboards in #563, ufc in its
+1.16.0 -- so today every name is reported absent.
 
 Core has its own parity test, but it only runs when ``LEDMATRIX_PLUGINS`` is
 set, and core CI never sets it. This repo's CI already checks core out, so the

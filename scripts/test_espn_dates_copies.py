@@ -6,7 +6,9 @@ with ``400 Bad Request`` for every sport, and ``limit`` above 500 silently
 truncates. The fix lives in LEDMatrix core as ``src/common/espn_dates.py``,
 first released in core v3.5.0. The scoreboards used to bundle a copy as
 ``<sport>_espn_dates.py`` for older cores; the ones in ``SUNSET_PLUGINS``
-floor on 3.5.0 and have deleted it. ufc still bundles one.
+floor on 3.5.0 and have deleted it. Since ufc's sunset that is all nine, so
+the copy comparison below has nothing to compare unless a copy comes back
+for a scoreboard taken out of the set.
 
 Three things decay without a check, so this guard checks all three:
 
@@ -76,6 +78,7 @@ SUNSET_PLUGINS = frozenset({
     "lacrosse-scoreboard",
     "nrl-scoreboard",
     "soccer-scoreboard",
+    "ufc-scoreboard",
 })
 HEADER_LINES = 3
 

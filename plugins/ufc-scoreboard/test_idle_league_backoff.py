@@ -42,6 +42,8 @@ Run: <core-venv>/bin/python plugins/ufc-scoreboard/test_idle_league_backoff.py
 import ast
 import os
 import sys
+import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 plugin_dir = Path(__file__).resolve().parent
@@ -281,6 +283,35 @@ def main():
     for _ in range(500):
         loose._note_live_fetch(False)
     check("a higher ceiling is honoured", loose._idle_live_interval() == 1800)
+
+    print("\na known card start cuts the idle wait short (core #599)")
+    # SportsLive inherits _idle_live_interval from core's SportsLiveSharedMixin
+    # (3.5.0), whose back-off is clamped by the next start the live fetch has
+    # seen. Before the adoption ufc carried the pre-#599 copy: a league idle
+    # overnight sat at the ceiling and could sleep through a card's first bout.
+    now = datetime.now(timezone.utc)
+    waking = _Live()
+    for _ in range(500):
+        waking._note_live_fetch(False)
+    check("with no known start the ceiling holds", waking._idle_live_interval() == 900)
+    waking._note_scheduled_start_candidate(
+        {"is_live": False, "is_halftime": False,
+         "start_time_utc": now + timedelta(seconds=240)})
+    wait = waking._idle_live_interval()
+    check("a card starting in 4 minutes caps the wait at its start (%ds)" % wait,
+          waking.update_interval <= wait <= 240)
+    waking._next_scheduled_start_ts = time.time() - 60
+    check("just after the start it polls at the live cadence",
+          waking._idle_live_interval() == waking.update_interval)
+    waking._next_scheduled_start_ts = time.time() - 3600
+    check("an hour past the start the back-off is back",
+          waking._idle_live_interval() == 900)
+    live_now = _Live()
+    live_now._note_scheduled_start_candidate(
+        {"is_live": True, "is_halftime": False,
+         "start_time_utc": now + timedelta(seconds=240)})
+    check("a bout already live is not a start to wake for",
+          getattr(live_now, "_next_scheduled_start_ts", None) is None)
 
     print("\nintervals from config are clamped, never trusted raw")
     check("a sane value is used", sports._clamp_seconds(120, 300) == 120)

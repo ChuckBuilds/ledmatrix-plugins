@@ -1,5 +1,45 @@
 # Changelog
 
+## [1.16.0] - 2026-09-28
+
+### Changed
+- Requires LEDMatrix core 3.5.0 (`ledmatrix_min_version` and
+  `compatible_versions`), the first release that ships
+  `src/common/espn_dates.py` and `src/common/sports_helpers.py`. The store
+  refuses to install or update this version onto an older core.
+- New UFC cards are noticed on time. With no fight live, the live check backs
+  off as empty looks mount, up to `live_idle_max_interval_seconds` (15 minutes
+  by default), and the back-off had no notion of the schedule: an idle night
+  reached the ceiling, and the first bout of a card could go unnoticed for up
+  to 15 minutes. The idle wait is now clamped to the next card start the live
+  fetch has already seen, and held at the live update interval for 15 minutes
+  after that start in case ESPN is slow to flip the status. This is core's fix
+  (ChuckBuilds/LEDMatrix#599), arriving with core's `_idle_live_interval`
+  below. 1.14.2 described it, but it never took effect here: this plugin's own
+  copy lacked the clamp. No extra request is made.
+
+### Removed
+- `sports.py`'s private copies of core's shared sports code (650 lines).
+  `SportsCore`, `SportsLive` and `SportsRecent` now inherit core's
+  `SportsCoreSharedMixin`, `SportsHelpersMixin`, `SportsLiveSharedMixin` and
+  `SportsRecentSharedMixin`, as the eight team scoreboards do. Deleted: 20
+  methods whose bodies are identical to core's; `_get_weeks_data` and
+  `_round_robin_favorites`, which behave identically but are written
+  differently; `_idle_live_interval` (the change above);
+  `_DWELL_REENTRY_GAP_SECONDS`; and the module helpers `_clamp_window`,
+  `_clamp_seconds` and `_logo_needs_refresh`, now imported from core under the
+  same names. The overrides that behave differently from core's
+  (`_draw_scorebug_layout`, `_get_layout_offset`, `_draw_text_with_outline`)
+  are kept.
+- `ufc_espn_dates.py`, the bundled copy of core's ESPN date-range helper.
+  `src.common.espn_dates` is now imported plainly; on a 3.5.0 core the plugin
+  already ran core's copy.
+
+### Tests
+- A safety-harness fixture (`test/harness.json`, `test/fixtures/mock.json`)
+  and 16 golden renders, recent and upcoming at eight sizes, taken before this
+  change. Every render is byte-identical after it.
+
 ## [1.15.1] - 2026-09-28
 
 ### Fixed
