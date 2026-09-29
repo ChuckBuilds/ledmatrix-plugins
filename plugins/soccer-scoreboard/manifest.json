@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.35.1",
+  "version": "2.36.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -53,6 +53,12 @@
     "soccer_usa.1_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.36.0",
+      "released": "2026-09-29",
+      "ledmatrix_min_version": "3.6.1",
+      "notes": "Requires LEDMatrix core 3.6.1, the floor the sports scoreboards share (3.6.0 is the first release with src.common.sports_timezone). The fallback timezone resolver in soccer_timezone.py is removed: the plugin now always runs core's, as it already did on a 3.6.x core. No behaviour change there: the timezone chosen and every log message are the same, and every safety-harness render is byte-identical."
+    },
     {
       "version": "2.35.1",
       "released": "2026-09-29",
@@ -672,6 +678,6 @@
     }
   ],
   "compatible_versions": [
-    ">=3.5.0"
+    ">=3.6.1"
   ]
 }

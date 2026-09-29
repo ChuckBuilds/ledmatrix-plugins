@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.52.0] - 2026-09-29
+
+### Changed
+- Requires LEDMatrix core 3.6.1 (`ledmatrix_min_version` and
+  `compatible_versions`). 3.6.0 is the first release that ships
+  `src/common/favorite_team_check.py` and `src/common/sports_timezone.py`;
+  3.6.1 is the first whose favourite-team check has the finished-season fix
+  this plugin shipped in 1.51.3. The store refuses to install or update this
+  version onto an older core.
+- `baseball_timezone.py` is now a thin binding: `resolve_timezone_name()` and
+  `resolve_timezone()` call core's `src.common.sports_timezone` with this
+  plugin's label, write-back release and logger, as they already did on a
+  3.6.x core.
+
+### Removed
+- `baseball_favorite_check.py`, the bundled copy of core's favourite-team check.
+  `manager.py` imports `src.common.favorite_team_check` plainly; on a 3.6.x
+  core the plugin already ran core's copy.
+- The fallback resolver in `baseball_timezone.py`, kept for cores without
+  `src.common.sports_timezone`.
+
+No behaviour change on a 3.6.x core: the timezone chosen and every log
+message are the same, and every safety-harness render is byte-identical.
+
 ## [1.51.2] - 2026-09-29
 
 ### Fixed

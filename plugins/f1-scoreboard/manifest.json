@@ -1,7 +1,7 @@
 {
   "id": "f1-scoreboard",
   "name": "F1 Scoreboard",
-  "version": "1.9.6",
+  "version": "1.10.0",
   "author": "ChuckBuilds",
   "class_name": "F1ScoreboardPlugin",
   "entry_point": "manager.py",
@@ -29,6 +29,12 @@
     "f1_calendar"
   ],
   "versions": [
+    {
+      "version": "1.10.0",
+      "released": "2026-09-29",
+      "ledmatrix_min_version": "3.6.1",
+      "notes": "Requires LEDMatrix core 3.6.1, the floor the sports scoreboards share (3.6.0 is the first release with src.common.sports_timezone). The fallback timezone resolver in f1_timezone.py is removed: the plugin now always runs core's, as it already did on a 3.6.x core. No behaviour change there: the timezone chosen and every log message are the same, and every safety-harness render is byte-identical."
+    },
     {
       "version": "1.9.6",
       "released": "2026-09-29",
@@ -353,6 +359,6 @@
   "screenshot": "",
   "config_schema": "config_schema.json",
   "compatible_versions": [
-    ">=3.4.0"
+    ">=3.6.1"
   ]
 }

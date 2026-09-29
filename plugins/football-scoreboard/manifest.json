@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "3.15.3",
+  "version": "3.16.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "3.16.0",
+      "released": "2026-09-29",
+      "ledmatrix_min_version": "3.6.1",
+      "notes": "Requires LEDMatrix core 3.6.1, the first release whose favourite-team check has the finished-season fix this plugin shipped in 3.15.3. The bundled football_favorite_check.py and the fallback timezone resolver in football_timezone.py are removed: the plugin now always runs core's src.common.favorite_team_check and src.common.sports_timezone, as it already did on a 3.6.x core. No behaviour change there: the timezone chosen and every log message are the same, and every safety-harness render is byte-identical."
+    },
     {
       "version": "3.15.3",
       "released": "2026-09-29",
@@ -895,7 +901,7 @@
   "config_schema": "config_schema.json",
   "entry_point": "manager.py",
   "compatible_versions": [
-    ">=3.5.0"
+    ">=3.6.1"
   ],
   "display": {
     "design_size": {

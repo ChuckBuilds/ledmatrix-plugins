@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.17.0] - 2026-09-29
+
+### Changed
+- Requires LEDMatrix core 3.6.1 (`ledmatrix_min_version` and
+  `compatible_versions`), the floor the sports scoreboards share; 3.6.0 is the
+  first release that ships `src/common/sports_timezone.py`. The store refuses
+  to install or update this version onto an older core.
+- `ufc_timezone.py` is now a thin binding: `resolve_timezone_name()` and
+  `resolve_timezone()` call core's `src.common.sports_timezone` with this
+  plugin's label, write-back release and logger, as they already did on a
+  3.6.x core.
+
+### Removed
+- The fallback resolver in `ufc_timezone.py`, kept for cores without
+  `src.common.sports_timezone`.
+
+No behaviour change on a 3.6.x core: the timezone chosen and every log
+message are the same, and every safety-harness render is byte-identical.
+
 ## [1.16.1] - 2026-09-29
 
 ### Changed

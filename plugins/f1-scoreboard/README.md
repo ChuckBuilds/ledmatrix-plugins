@@ -46,7 +46,7 @@ Data is sourced from public ESPN F1 endpoints, Jolpica/Ergast, and OpenF1.
 
 ## Display Modes
 
-The plugin registers eight granular modes. The display controller rotates through any that are enabled in your config; turning a mode on or off takes effect without a restart. Requires LEDMatrix core 3.4.0 or newer.
+The plugin registers eight granular modes. The display controller rotates through any that are enabled in your config; turning a mode on or off takes effect without a restart. Requires LEDMatrix core 3.6.1 or newer.
 
 | Mode | What it shows |
 |---|---|
