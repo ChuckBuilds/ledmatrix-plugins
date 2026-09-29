@@ -8,11 +8,11 @@ downloader again -- one transient failure costs that team its logo forever.
 
 The check lives in `_logo_needs_refresh`. Core 3.5.0 ships it as
 `src.common.sports_helpers.logo_needs_refresh`; the scoreboards that floor on
-3.5.0 import it under the private name, and the rest (ufc) still carry a
-*copied* helper. These tests pin the behaviour -- of each remaining copy and,
-when a core checkout is found (LEDMATRIX_CORE, or ../LEDMatrix), of core's --
-and hold every copy byte-identical, so a fix to one cannot silently skip the
-others. A loader must either define the helper or import core's.
+3.5.0 -- all nine, since ufc's 1.16.0 -- import it under the private name
+rather than carry a *copied* helper. These tests pin the behaviour -- of any
+copy that remains and, when a core checkout is found (LEDMATRIX_CORE, or
+../LEDMatrix), of core's -- and hold every copy byte-identical, so a fix to
+one cannot silently skip the others. A loader must either define the helper or import core's.
 
 Run from the repo root:
 

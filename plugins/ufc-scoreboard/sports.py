@@ -22,18 +22,21 @@ from urllib3.util.retry import Retry
 # takes no cache_manager, made every UFC manager fail with TypeError).
 from base_odds_manager import BaseOddsManager
 from data_sources import ESPNDataSource
-# Prefer core's ESPN date-range helper, which core keeps current (orjson
-# parsing, giving way to the Vegas render thread); fall back to the bundled
-# copy on cores that don't ship src.common.espn_dates yet.
-try:
-    from src.common.espn_dates import ESPN_MAX_LIMIT, fetch_espn_scoreboard
-except ModuleNotFoundError as exc:
-    # Fall back only when the CORE module is absent; an import failure from
-    # inside it should surface, not be masked.
-    if exc.name not in {"src", "src.common", "src.common.espn_dates"}:
-        raise
-    from ufc_espn_dates import ESPN_MAX_LIMIT, fetch_espn_scoreboard
+# ESPN date-range helper: core ships it from 3.5.0, the manifest's floor.
+from src.common.espn_dates import ESPN_MAX_LIMIT, fetch_espn_scoreboard
 from ufc_timezone import resolve_timezone
+from src.common.sports_shared import (
+    SportsCoreSharedMixin, SportsLiveSharedMixin, SportsRecentSharedMixin)
+# Helpers every scoreboard carried a private copy of; core ships them from
+# 3.5.0 (the manifest's floor). The private aliases keep this module's names.
+from src.common.sports_helpers import (
+    MAX_WINDOW_DAYS as _MAX_WINDOW_DAYS,
+    MIN_WINDOW_DAYS as _MIN_WINDOW_DAYS,
+    SportsHelpersMixin,
+    clamp_seconds as _clamp_seconds,
+    clamp_window as _clamp_window,
+    logo_needs_refresh as _logo_needs_refresh,
+)
 
 # Import main logo downloader (same as football plugin).
 # This used to be a bare `from logo_downloader import ...`, but ufc-scoreboard
@@ -96,18 +99,6 @@ def _resolve_font_path(path: str) -> str:
 
 _DEFAULT_LOOKBACK_DAYS = 14
 _DEFAULT_LOOKAHEAD_DAYS = 7
-_MIN_WINDOW_DAYS = 1
-_MAX_WINDOW_DAYS = 60
-
-
-def _clamp_window(value: Any, fallback: int) -> int:
-    """Days for one side of the schedule window, or the default if unusable."""
-    try:
-        days = int(value)
-    except (TypeError, ValueError, OverflowError):
-        # OverflowError: json parses bare Infinity by default, and int(inf) raises.
-        return fallback
-    return max(_MIN_WINDOW_DAYS, min(_MAX_WINDOW_DAYS, days))
 
 
 # Backing off the live poll while a league has nothing on. Gentle at first --
@@ -118,18 +109,6 @@ _IDLE_SHORT_FACTOR = 2
 _IDLE_LONG_STREAK = 24
 _IDLE_LONG_FACTOR = 6
 _DEFAULT_LIVE_IDLE_MAX_SECONDS = 900
-
-
-def _clamp_seconds(value: Any, fallback: int, low: int = 5,
-                   high: int = 86400) -> int:
-    """An interval in seconds, or the fallback when the value is unusable."""
-    try:
-        seconds = int(value)
-    except (TypeError, ValueError, OverflowError):
-        # OverflowError: json parses bare Infinity by default and int(inf)
-        # raises -- the same gap _clamp_window above already covers.
-        return fallback
-    return max(low, min(high, seconds))
 
 
 #: ESPN status names that arrive with state "post" but are not results. A
@@ -164,38 +143,7 @@ def _status_is_final(status_type: Dict[str, Any]) -> bool:
     return status_type.get("completed", True) is not False
 
 
-def _logo_needs_refresh(logo_file) -> bool:
-    """True if this file is a placeholder stale enough to retry the real logo.
-
-    A failed logo download is cached as a placeholder wearing the real logo's
-    filename, so "the file exists" is not proof the logo was ever fetched.
-    Without this check one transient failure leaves a team a grey box forever.
-
-    Returns False on a core that predates placeholder marking, which keeps the
-    previous behaviour rather than breaking the load.
-    """
-    # Imported from the core by its full path, never as a bare name: a
-    # deferred bare-name import can bind another plugin's vendored
-    # logo_downloader once the core isolates top-level plugin modules.
-    try:
-        from src.logo_downloader import (
-            PLACEHOLDER_RETRY_SECONDS,
-            is_placeholder_logo,
-            placeholder_age_seconds,
-        )
-    except ImportError:
-        return False
-
-    try:
-        if not is_placeholder_logo(logo_file):
-            return False
-        age = placeholder_age_seconds(logo_file)
-        return age is None or age >= PLACEHOLDER_RETRY_SECONDS
-    except Exception:
-        return False
-
-
-class SportsCore(ABC):
+class SportsCore(SportsCoreSharedMixin, SportsHelpersMixin, ABC):
     def __init__(
         self,
         config: Dict[str, Any],
@@ -514,52 +462,6 @@ class SportsCore(ABC):
         except Exception as e:
             self.logger.error(f"Error loading default font: {e}")
             return ImageFont.load_default()
-
-    def _mode_customization(self) -> dict:
-        """``customization`` with this mode's overrides merged over it.
-
-        SportsUpcoming / SportsRecent / SportsLive are separate instances
-        with their own SKIN_MODE, so merging once here makes every
-        per-element lookup mode-aware without changing one of them.
-
-        ``None`` in a mode block means "inherit", which is what lets a user
-        restyle one element on live cards and leave everything else
-        following the settings above. It has to stay distinct from 0: a mode
-        y_offset of 0 means "sit at the base position", not "no preference".
-        """
-        customization = self.config.get('customization', {})
-        if not isinstance(customization, dict):
-            return {}
-        mode = getattr(self, 'SKIN_MODE', None)
-        if not mode:
-            return customization
-        modes = customization.get('modes')
-        block = modes.get(mode) if isinstance(modes, dict) else None
-        if not isinstance(block, dict):
-            return customization
-
-        merged = dict(customization)
-        for element, override in block.items():
-            if element == 'layout' or not isinstance(override, dict):
-                continue
-            base = merged.get(element)
-            base = dict(base) if isinstance(base, dict) else {}
-            base.update({k: v for k, v in override.items() if v is not None})
-            merged[element] = base
-
-        mode_layout = block.get('layout')
-        if isinstance(mode_layout, dict):
-            base_layout = merged.get('layout')
-            new_layout = dict(base_layout) if isinstance(base_layout, dict) else {}
-            for element, axes in mode_layout.items():
-                if not isinstance(axes, dict):
-                    continue
-                current = new_layout.get(element)
-                current = dict(current) if isinstance(current, dict) else {}
-                current.update({k: v for k, v in axes.items() if v is not None})
-                new_layout[element] = current
-            merged['layout'] = new_layout
-        return merged
 
     def _get_layout_offset(self, element: str, axis: str, default: int = 0) -> int:
         """
@@ -1056,14 +958,6 @@ class SportsCore(ABC):
             log=self.logger,
         )
 
-    def _should_log(self, warning_type: str, cooldown: int = 60) -> bool:
-        """Check if we should log a warning based on cooldown period."""
-        current_time = time.time()
-        if current_time - self._last_warning_time > cooldown:
-            self._last_warning_time = current_time
-            return True
-        return False
-
     # Which ranking block the badge reads. ESPN answers /rankings with more
     # than one block for several leagues, and the FIRST is not always a poll:
     # men's and women's college hockey front "NCAA Men's/Women's Hockey
@@ -1412,41 +1306,6 @@ class SportsCore(ABC):
             )
             return None
 
-    def _get_weeks_data(self) -> Optional[Dict]:
-        """Games in the lookback/lookahead window, shown while the season loads.
-
-        The window is a date range, which ESPN has answered with 400 since
-        2026-09-15; fetch_espn_scoreboard re-asks it in months and days. The
-        other scoreboards carry this same body as an override of the core
-        mixin's copy.
-        """
-        date_str = ""
-        try:
-            now = datetime.now(pytz.utc)
-            start_date = now - timedelta(days=self.schedule_lookback_days)
-            end_date = now + timedelta(days=self.schedule_lookahead_days)
-            date_str = f"{start_date.strftime('%Y%m%d')}-{end_date.strftime('%Y%m%d')}"
-            url = f"https://site.api.espn.com/apis/site/v2/sports/{self.sport}/{self.league}/scoreboard"
-            data = fetch_espn_scoreboard(
-                self.session,
-                url,
-                params={"dates": date_str, "limit": ESPN_MAX_LIMIT},
-                headers=self.headers,
-                timeout=10,
-                logger=self.logger,
-            )
-            immediate_events = data.get("events", [])
-
-            if immediate_events:
-                self.logger.info(f"Fetched {len(immediate_events)} events {date_str}")
-                return {"events": immediate_events}
-
-        except requests.exceptions.RequestException as e:
-            self.logger.warning(
-                f"Error fetching this weeks games for {self.sport} - {self.league} - {date_str}: {e}"
-            )
-        return None
-
     def _background_fetches_espn_ranges(self) -> bool:
         """Can the core's background service fetch an ESPN date range?
 
@@ -1489,24 +1348,6 @@ class SportsCore(ABC):
             f"Fetched {label} schedule: {len(data.get('events', []))} events"
         )
         return data
-
-    def _custom_scorebug_layout(self, game: dict, draw_overlay: ImageDraw.ImageDraw):
-        pass
-
-    def cleanup(self):
-        """Clean up resources when plugin is unloaded."""
-        # Close HTTP session
-        if hasattr(self, 'session') and self.session:
-            try:
-                self.session.close()
-            except Exception as e:
-                self.logger.warning(f"Error closing session: {e}")
-
-        # Clear caches
-        if hasattr(self, '_logo_cache'):
-            self._logo_cache.clear()
-
-        self.logger.info(f"{self.__class__.__name__} cleanup completed")
 
     def _is_favorite_game(self, game: Dict) -> bool:
         """Does either side of this game belong to a favourite team?"""
@@ -1617,86 +1458,6 @@ class SportsCore(ABC):
             self._division_team_ids[name] = ids
         return self._division_team_ids
 
-    def _game_divisions(self, game: Dict) -> Optional[set]:
-        """Divisions of BOTH sides, or None when they cannot be told.
-
-        Both sides are collected, but the caller only needs ONE of them to sit
-        in a checked division. Requiring every participant read as "FBS games
-        only" and removed a ranked side hosting an FCS school -- which is still
-        a game involving a team the viewer checked the box for, and on a real
-        Week 2 slate it silently dropped five of the twenty ranked matchups.
-        What the checkbox is for is keeping FCS-versus-FCS out of a board
-        configured for FBS, and that still holds: a game with no checked
-        division on either side is dropped.
-        """
-        divisions = self._load_division_team_ids()
-        if not any(divisions.values()):
-            return None
-        try:
-            ids = [int(game.get("home_id")), int(game.get("away_id"))]
-        except (TypeError, ValueError):
-            return None
-        present = set()
-        for team_id in ids:
-            for name in ("fbs", "fcs"):
-                if team_id in divisions.get(name, set()):
-                    present.add(name)
-                    break
-            else:
-                present.add("other")
-        return present
-
-    def _league_has_rankings(self) -> bool:
-        """Only college leagues publish a poll; everyone else 404s.
-
-        This gate matters more than it looks. _fetch_team_rankings only
-        short-circuits when the cache is non-empty, so a failed fetch leaves it
-        empty and the next update tries again -- at a 30s interval that is
-        ~2,900 pointless requests a day, per league, all of them 404s.
-        """
-        league = (self.league or "").lower()
-        return "college" in league or "ncaa" in league
-
-    @staticmethod
-    def _normalise_divisions(raw) -> List[str]:
-        """Division names from config, in the shape the filter expects.
-
-        A hand-edited config can hold "fbs" where the schema says ["fbs"], and
-        list("fbs") is ['f', 'b', 's'] -- three names that match no division, so
-        every non-favourite game is rejected by a setting the user believes says
-        the opposite. An empty list is left empty: that means "no division
-        filter" and is a legitimate choice, not a mistake to correct.
-        """
-        if isinstance(raw, str):
-            raw = [raw]
-        try:
-            items = list(raw or [])
-        except TypeError:
-            return []
-        return [str(d).strip().lower() for d in items if str(d).strip()]
-
-    def _setting_int(self, key: str, default: int, low: int, high: int) -> int:
-        """A count from config, clamped to the range its schema declares.
-
-        The schema constrains these, but config.json can be hand-edited or
-        written by an older tool, and a string or a negative here does not
-        raise where anyone would see it -- it raises inside update()'s own
-        try/except, which shows up as a mode that silently renders nothing.
-        Same shape as the favorite_live_boost clamp above.
-        """
-        try:
-            return max(low, min(high, int(self.mode_config.get(key, default))))
-        except (TypeError, ValueError, OverflowError):
-            # OverflowError: json parses a bare Infinity, and int(inf) raises
-            # -- from __init__, outside any try/except, so the manager would
-            # fail to construct instead of falling back.
-            self.logger.warning(
-                "%s: ignoring unusable %s=%r, using %s",
-                getattr(self, "league", "?"), key,
-                self.mode_config.get(key), default,
-            )
-            return default
-
     def _is_ranked_game(self, game: Dict) -> bool:
         rankings = getattr(self, "_team_rankings_cache", None) or {}
         if not rankings:
@@ -1714,64 +1475,6 @@ class SportsCore(ABC):
         ranked = [r for r in (rankings.get(game.get("home_abbr"), 0),
                               rankings.get(game.get("away_abbr"), 0)) if r]
         return min(ranked) if ranked else 99
-
-    def _round_robin_favorites(self, games: List[Dict], limit: int) -> List[Dict]:
-        """Each favourite team's next game before any team's second one.
-
-        Taking the soonest N favourite games spends the slots on whoever plays
-        most often. Walked across a real season with two favourites and a limit
-        of 2, nine days of it showed Auburn twice and Georgia not at all --
-        Auburn played either side of a Georgia bye, so both slots went to
-        Auburn. The other-games pool already refuses to do this; favourites
-        were still doing it.
-
-        Depth is kept where there is room: one favourite with three slots still
-        gets its next three games, because the round-robin only comes back for
-        a team's second game once every team has had a first.
-
-        A game between two favourites is picked once and counts for both.
-        """
-        if limit <= 0 or not games:
-            return []
-        wanted = [t for t in (self.favorite_teams or []) if t]
-        if len(wanted) < 2:
-            return games[:limit]        # nothing to share the slots between
-
-        # Which side of a game belongs to which favourite is a per-lineage
-        # question: NRL matches on ESPN team IDs because its abbreviations are
-        # not unique ("NEW" is both Newcastle and New Zealand), while the rest
-        # match on abbreviation. Ask for the lineage's own matcher rather than
-        # assuming, or this silently groups nothing and every slot goes empty.
-        team_in = getattr(self, "_team_in", None)
-        if callable(team_in):
-            def belongs(game, team):
-                return bool(team_in(game.get("home_id"), [team])
-                            or team_in(game.get("away_id"), [team]))
-        else:
-            def belongs(game, team):
-                return team in (game.get("home_abbr"), game.get("away_abbr"))
-
-        queues = {team: [] for team in wanted}
-        for game in games:              # already in kickoff order
-            for team in wanted:
-                if belongs(game, team):
-                    queues[team].append(game)
-
-        picked, taken = [], set()
-        while len(picked) < limit:
-            progressed = False
-            for team in wanted:
-                queue = queues[team]
-                while queue and queue[0].get("id") in taken:
-                    queue.pop(0)
-                if queue and len(picked) < limit:
-                    game = queue.pop(0)
-                    taken.add(game.get("id"))
-                    picked.append(game)
-                    progressed = True
-            if not progressed:
-                break                   # every queue is empty
-        return picked
 
     def _by_importance(self, games: List[Dict], newest_first: bool = False) -> List[Dict]:
         """Non-favourite games, best matchup first.
@@ -1837,35 +1540,6 @@ class SportsCore(ABC):
     #: migrates to "ranked" -- see _normalise_quality.
     _QUALITY_CHOICES: ClassVar[frozenset] = frozenset({"any", "ranked"})
 
-    def _normalise_quality(self, raw) -> str:
-        """other_games_min_quality, as one of the values the code implements.
-
-        An unusable value used to fall through every branch of
-        _passes_other_filters and silently mean "any" -- a quality bar the
-        board believes it has and does not.
-        """
-        value = str(raw or "").strip().lower()
-        if value in self._QUALITY_CHOICES:
-            return value
-        if value == "broadcast":
-            # Retired in football-scoreboard 3.0.0 and now here. Measured
-            # against a real Week 1 and Week 2 college slate it passed 174 of
-            # 175 games: ESPN publishes a broadcaster for nearly everything
-            # now, ESPN+ included, so the tier read as a quality bar and
-            # behaved as "any". Boards holding it get the bar they thought
-            # they were getting.
-            self.logger.warning(
-                "%s: other_games_min_quality 'broadcast' has been retired -- "
-                "it let through nearly every game -- using 'ranked'. Change "
-                "the setting to clear this.", getattr(self, "sport_key", "?"),
-            )
-            return "ranked"
-        self.logger.warning(
-            "%s: ignoring unusable other_games_min_quality=%r, using 'ranked'",
-            getattr(self, "sport_key", "?"), raw,
-        )
-        return "ranked"
-
     def _passes_other_filters(self, game: Dict) -> bool:
         """Is this non-favourite game worth one of the remaining slots?
 
@@ -1903,45 +1577,6 @@ class SportsCore(ABC):
         kept = [g for g in games if self._passes_other_filters(g)]
         self._check_ranking_coverage(games)
         return kept or games
-
-
-    def _check_ranking_coverage(self, games: List[Dict]) -> None:
-        """Say so when a loaded poll matches nothing on the schedule.
-
-        The table is keyed by the abbreviation the RANKINGS endpoint returns and
-        matched against the one the SCOREBOARD endpoint returns. Nothing
-        guarantees the two agree, and if they ever stop agreeing the filter
-        quietly removes every non-favourite game -- no exception, no log line,
-        just a shorter board. That is the same shape as the bug where rankings
-        were never loading at all, which survived until someone went looking.
-
-        Throttled to once an hour: selection runs on every update.
-        """
-        if self.other_games_min_quality != "ranked":
-            return
-        rankings = getattr(self, "_team_rankings_cache", None) or {}
-        if not rankings or not games:
-            return
-        if any(self._is_ranked_game(g) for g in games):
-            return
-        now = time.monotonic()
-        # Zero means never logged, not "logged at the epoch". monotonic() counts
-        # from an arbitrary origin -- on a freshly booted board it is a few
-        # hundred seconds -- so comparing against 0 swallowed the first warning
-        # for the first hour of uptime, which is exactly when a misconfigured
-        # board is being watched. CI caught this; a machine with days of uptime
-        # cannot.
-        if (self._ranking_coverage_logged_at
-                and now - self._ranking_coverage_logged_at < self._RANKING_COVERAGE_SECONDS):
-            return
-        self._ranking_coverage_logged_at = now
-        self.logger.warning(
-            "%s: %d ranked teams loaded, but none of the %d other games match "
-            "one -- the quality filter is removing every non-favourite game. "
-            "Ranked abbreviations look like: %s",
-            self.league, len(rankings), len(games),
-            ", ".join(sorted(rankings)[:8]),
-        )
 
     def _other_games_window(self, others: List[Dict], limit: int) -> List[Dict]:
         """A rotating slice of the non-favourite games.
@@ -1981,98 +1616,6 @@ class SportsCore(ABC):
             window += others[:limit - len(window)]
         return window
 
-    def _favorites_first(
-        self,
-        processed_games: List[Dict],
-        favorite_limit: int,
-        other_limit: int,
-        newest_first: bool = False,
-    ) -> List[Dict]:
-        """Favourite games first, then a bounded number of everything else.
-
-        This is the middle setting the plugin was missing. `show_favorite_teams_only`
-        used to be the whole story: on, and you saw nothing but your teams; off,
-        and your teams were ignored entirely -- the selection just took the next
-        N games league-wide, so a UGA fan with 946 upcoming college games in the
-        window saw UGA about as often as chance allowed.
-
-        Both counts are TOTALS here, not per-team. In favourites-only mode
-        `upcoming_games_to_show` is a per-team budget, which is reasonable when
-        the list is your own teams; applied to a dynamic group it is not. With
-        AP_TOP_10 resolving to a dozen teams, three games each is 28 distinct
-        cards before a single non-favourite is added. A total keeps the rotation
-        the length the user asked for.
-        """
-        if newest_first:
-            def key(g):
-                return g.get("start_time_utc") or datetime.min.replace(tzinfo=timezone.utc)
-            ordered = sorted(processed_games, key=key, reverse=True)
-        else:
-            def key(g):
-                return g.get("start_time_utc") or datetime.max.replace(tzinfo=timezone.utc)
-            ordered = sorted(processed_games, key=key)
-
-        favorites, others, unfiltered = [], [], []
-        for game in ordered:
-            if self._is_favorite_game(game):
-                favorites.append(game)          # never filtered: your team is your team
-                continue
-            unfiltered.append(game)
-            if self._passes_other_filters(game):
-                others.append(game)
-        self._check_ranking_coverage(unfiltered)
-
-        self._selection_pools = {
-            "favorites": favorites,
-            "others": self._by_importance(others, newest_first),
-            "unfiltered": self._by_importance(unfiltered, newest_first),
-            "favorite_limit": favorite_limit,
-            "other_limit": other_limit,
-            "newest_first": newest_first,
-        }
-        return self._compose_selection()
-
-    def _compose_selection(self) -> List[Dict]:
-        """Favourites plus the current slice of others, in schedule order.
-
-        Split out of _favorites_first so the slice can be re-cut between
-        fetches. The pools are settled -- which games exist, and which of them
-        are worth a slot -- while WHICH of the others is on screen is a display
-        decision, and gating it on the fetch made the rotation interval a lie:
-        update() returns early until upcoming_update_interval has passed, so a
-        four-minute rotation actually stepped fifteen windows once an hour.
-        Same lesson as _advance_live_game_if_due further down this file.
-        """
-        pools = self._selection_pools
-        favorites, others = pools["favorites"], pools["others"]
-        favorite_limit, other_limit = pools["favorite_limit"], pools["other_limit"]
-        newest_first = pools["newest_first"]
-        if newest_first:
-            def key(g):
-                return g.get("start_time_utc") or datetime.min.replace(tzinfo=timezone.utc)
-        else:
-            def key(g):
-                return g.get("start_time_utc") or datetime.max.replace(tzinfo=timezone.utc)
-
-        selected = self._round_robin_favorites(favorites, max(0, favorite_limit))
-        selected.extend(self._other_games_window(others, max(0, other_limit)))
-        if not selected and other_limit > 0:
-            # Nothing survived at all: your teams are not playing inside the
-            # schedule window AND the filters removed every other game. Each
-            # check fails open on missing data, but a filter working exactly as
-            # asked can still match nothing on a given day, and with no
-            # favourite game left there is nothing to carry the mode -- an empty
-            # list is a blank panel, not a short one. Same whole-list fallback
-            # `_filtered_or_all` makes for a board with no favourites at all.
-            # `other_limit` of 0 is an explicit "favourites only", so that one
-            # is left to go quiet as asked.
-            selected = self._other_games_window(pools["unfiltered"], max(0, other_limit))
-        # Re-sort so the card order still reads as a schedule. Selection decides
-        # WHICH games; it should not reorder them into favourites-then-others,
-        # which would show next week's UGA game before tonight's.
-        selected.sort(key=key, reverse=newest_first)
-        return selected
-
     def _rotate_other_games_on_display(self) -> bool:
         """Swap in a freshly cut slice when the rotation interval has passed.
 
@@ -2108,68 +1651,6 @@ class SportsCore(ABC):
             )
         return True
 
-    @staticmethod
-    def _spread_weighted_order(weights: List[int]) -> List[int]:
-        """Indices into ``weights``, each repeated by its weight and spread out.
-
-        Each index keeps its own slot and places its extra turns at even
-        fractions of the rotation after it, wrapping round. That keeps the
-        list's schedule order for everything else and spaces a favourite's
-        repeats evenly *around the loop* -- the live rotation's smooth
-        weighted round-robin schedules a boosted game first and last, so a
-        rotation that wraps shows it back to back. Equal weights come back in
-        plain order, so a boost that applies to no card changes nothing.
-
-        Repeats are kept apart only where the ratio leaves room: once one
-        weight exceeds all the others combined, no cyclic order can separate
-        its turns ([3, 1, 1] gives [0, 1, 0, 2, 0]). Each index still gets
-        exactly its weight in turns -- the configured ratio wins over spacing.
-        """
-        count = len(weights)
-        slots = []
-        for index, weight in enumerate(weights):
-            for turn in range(weight):
-                slots.append(((index + turn * count / weight) % count, turn > 0, index))
-        return [index for _, _, index in sorted(slots)]
-
-    def _next_switch_index(self) -> int:
-        """The games_list index switch mode shows next.
-
-        favorite_rotation_boost gives a favourite's card that many turns for
-        every one turn another card gets, spread through the rotation and kept
-        apart wherever the other cards leave room (a boost above the number of
-        other cards makes some repeats adjacent; the ratio is kept either way).
-        games_list itself stays one entry per game -- the
-        cycle-duration count, the scroll strip and the other-games re-cut all
-        read it -- so the weighting is an order walked over it instead.
-
-        The order is rebuilt whenever the list's games change, and the walk
-        resyncs from current_game_index whenever the two disagree: update()
-        and the other-games rotation both set the index directly when they
-        swap a list in, and the card on screen is where the walk resumes.
-
-        Called with _games_lock held and games_list non-empty.
-        """
-        count = len(self.games_list)
-        boost = getattr(self, "favorite_rotation_boost", 1)
-        if boost <= 1 or count < 2:
-            return (self.current_game_index + 1) % count
-        key = (boost, tuple(g.get("id") for g in self.games_list))
-        if getattr(self, "_switch_order_key", None) != key:
-            self._switch_order = self._spread_weighted_order(
-                [boost if self._is_favorite_game(g) else 1 for g in self.games_list]
-            )
-            self._switch_order_key = key
-            self._switch_position = -1
-        order = self._switch_order
-        position = getattr(self, "_switch_position", -1)
-        if not 0 <= position < len(order) or order[position] != self.current_game_index:
-            position = (order.index(self.current_game_index)
-                        if self.current_game_index in order else -1)
-        position = (position + 1) % len(order)
-        self._switch_position = position
-        return order[position]
-
     def _advance_other_games_if_due(self) -> List[Dict]:
         """Re-cut the non-favourite slice on the display path, or [] if not due.
 
@@ -2190,35 +1671,6 @@ class SportsCore(ABC):
         if time.monotonic() - self._other_window_rotated_at < interval:
             return []
         return self._compose_selection()
-
-    #: Longest gap between two display() calls that still counts as one
-    #: on-screen stint. Frames arrive many times a second while a mode is on
-    #: the panel; between mode blocks the gap is every other mode's block.
-    _DWELL_REENTRY_GAP_SECONDS: ClassVar[float] = 5.0
-
-    def _reset_dwell_on_reentry(self) -> bool:
-        """Give the current card a full turn when this mode (re)takes the panel.
-
-        Ported from football-scoreboard (#345). The dwell clock
-        (last_game_switch) keeps running while the mode is off screen, so on
-        re-entry it had always expired and the first display() call advanced
-        at once: the card cut off by the end of the previous block was skipped
-        instead of shown. Returns True when the dwell was reset, so the caller
-        forces a redraw.
-        """
-        # getattr, and zero treated as "never displayed": managers are also
-        # built without __init__ (the plugin tests do), and a freshly booted
-        # host can reach the first frame with time.monotonic() still small.
-        last = getattr(self, "_last_display_call_monotonic", 0.0)
-        now = time.monotonic()
-        self._last_display_call_monotonic = now
-        if last > 0.0 and now - last < self._DWELL_REENTRY_GAP_SECONDS:
-            return False
-        if getattr(self, "last_game_switch", 0) <= 0:
-            # Zero is the "no game shown yet" sentinel with its own handling.
-            return False
-        self.last_game_switch = time.time()
-        return True
 
 
 class SportsUpcoming(SportsCore):
@@ -2788,40 +2240,8 @@ class SportsUpcoming(SportsCore):
         return True
 
 
-class SportsRecent(SportsCore):
+class SportsRecent(SportsRecentSharedMixin, SportsCore):
     SKIN_MODE = "recent"
-
-    def __init__(
-        self,
-        config: Dict[str, Any],
-        display_manager,
-        cache_manager,
-        logger: logging.Logger,
-        sport_key: str,
-    ):
-        super().__init__(config, display_manager, cache_manager, logger, sport_key)
-        self.games_list = []  # Filtered list for display (favorite teams)
-        self.current_game_index = 0
-        self.last_update = 0
-        self.update_interval = self.mode_config.get(
-            "recent_update_interval", 3600
-        )  # Check for recent games every hour
-        self.last_game_switch = 0
-        self.game_display_duration = self.mode_config.get("recent_game_duration", 15)
-        self._zero_clock_timestamps: Dict[str, float] = {}  # Track games at 0:00
-
-    def _get_zero_clock_duration(self, game_id: str) -> float:
-        """Track how long a game has been at 0:00 clock."""
-        current_time = time.time()
-        if game_id not in self._zero_clock_timestamps:
-            self._zero_clock_timestamps[game_id] = current_time
-            return 0.0
-        return current_time - self._zero_clock_timestamps[game_id]
-
-    def _clear_zero_clock_tracking(self, game_id: str) -> None:
-        """Clear tracking when game clock moves away from 0:00 or game ends."""
-        if game_id in self._zero_clock_timestamps:
-            del self._zero_clock_timestamps[game_id]
 
     def _select_recent_games_for_display(
         self, processed_games: List[Dict], favorite_teams: List[str]
@@ -3388,7 +2808,7 @@ class SportsRecent(SportsCore):
         return True
 
 
-class SportsLive(SportsCore):
+class SportsLive(SportsLiveSharedMixin, SportsCore):
     SKIN_MODE = "live"
 
     def display(self, force_clear: bool = False) -> bool:
@@ -3500,76 +2920,6 @@ class SportsLive(SportsCore):
             f"[LIVE_PRIORITY_DEBUG] _is_game_really_over({game_str}): returning False"
         )
         return False
-
-    def _detect_stale_games(self, games: List[Dict]) -> None:
-        """Remove games that appear stale or haven't updated."""
-        current_time = time.time()
-
-        for game in games[:]:  # Copy list to iterate safely
-            game_id = game.get("id")
-            if not game_id:
-                continue
-
-            # Check if game data is stale
-            timestamps = self.game_update_timestamps.get(game_id, {})
-            last_seen = timestamps.get("last_seen", 0)
-
-            if last_seen > 0 and current_time - last_seen > self.stale_game_timeout:
-                self.logger.warning(
-                    f"Removing stale game {game.get('away_abbr')}@{game.get('home_abbr')} "
-                    f"(last seen {int(current_time - last_seen)}s ago)"
-                )
-                games.remove(game)
-                if game_id in self.game_update_timestamps:
-                    del self.game_update_timestamps[game_id]
-                continue
-
-            # Also check if game appears to be over
-            if self._is_game_really_over(game):
-                self.logger.debug(
-                    f"Removing game that appears over: {game.get('away_abbr')}@{game.get('home_abbr')} "
-                    f"(clock={game.get('clock')}, period={game.get('period')}, period_text={game.get('period_text')})"
-                )
-                games.remove(game)
-                if game_id in self.game_update_timestamps:
-                    del self.game_update_timestamps[game_id]
-
-    def _idle_live_interval(self) -> int:
-        """How long to wait before looking for live games again, when there are none.
-
-        Escalates the longer nothing turns up, and any live game resets it, so
-        an in-season gap between games costs at most one escalated wait while
-        an out-of-season league stops polling on a live cadence entirely.
-
-        Capped rather than unbounded: the cost of backing off is how late the
-        first game after a quiet spell is noticed, and past the cap the saving
-        stops being worth that.
-        """
-        streak = getattr(self, "_empty_live_streak", 0)
-        base = self.no_data_interval
-        ceiling = getattr(self, "live_idle_max_interval",
-                          _DEFAULT_LIVE_IDLE_MAX_SECONDS)
-        # The ceiling bounds the un-escalated interval too. The two settings are
-        # independent integers with no cross-validation, so base > ceiling is a
-        # reachable config -- and returning base unclamped there made the wait
-        # *shrink* as the streak grew (3600s at streak 0, 900s at streak 24),
-        # the opposite of what the setting named "maximum" promises.
-        if streak >= _IDLE_LONG_STREAK:
-            return min(int(base * _IDLE_LONG_FACTOR), ceiling)
-        if streak >= _IDLE_SHORT_STREAK:
-            return min(int(base * _IDLE_SHORT_FACTOR), ceiling)
-        return min(base, ceiling)
-
-    def _note_live_fetch(self, found_live: bool) -> None:
-        """Record whether a look for live games found any."""
-        if found_live:
-            if getattr(self, "_empty_live_streak", 0):
-                self.logger.info(
-                    "Live games found after %d empty check(s); back to the "
-                    "live update interval", self._empty_live_streak)
-            self._empty_live_streak = 0
-        else:
-            self._empty_live_streak = getattr(self, "_empty_live_streak", 0) + 1
 
     def update(self):
         """Update live game data and handle game switching."""

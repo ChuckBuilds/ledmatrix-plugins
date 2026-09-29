@@ -1,7 +1,7 @@
 {
   "id": "ufc-scoreboard",
   "name": "UFC Scoreboard",
-  "version": "1.15.1",
+  "version": "1.16.0",
   "author": "LegoGuy1000",
   "contributors": [
     {
@@ -32,6 +32,12 @@
   "default_duration": 15,
   "config_schema": "config_schema.json",
   "versions": [
+    {
+      "version": "1.16.0",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.5.0",
+      "notes": "Requires LEDMatrix core 3.5.0, and runs core's shared sports code instead of private copies of it. sports.py's SportsCore, SportsLive and SportsRecent now inherit core's SportsCoreSharedMixin, SportsHelpersMixin, SportsLiveSharedMixin and SportsRecentSharedMixin, as the eight team scoreboards do, and sports.py drops its private copies (650 lines): 23 methods -- 20 whose bodies are identical to core's, _get_weeks_data and _round_robin_favorites (same behaviour, written differently) and _idle_live_interval -- plus _DWELL_REENTRY_GAP_SECONDS and the module helpers _clamp_window, _clamp_seconds and _logo_needs_refresh, now imported from core under the same names. ufc_espn_dates.py, the bundled ESPN date-range helper, is deleted and src.common.espn_dates is imported plainly; on a 3.5.0 core the plugin already ran core's copy. The overrides that behave differently from core's -- _draw_scorebug_layout, _get_layout_offset and _draw_text_with_outline -- are kept. One behaviour change, deliberate: new UFC cards are noticed on time. With no fight live, the live check backs off as empty looks mount, up to live_idle_max_interval_seconds (15 minutes by default), and it had no notion of the schedule, so an idle night reached that ceiling and the first bout of a card could go unnoticed for up to 15 minutes. The idle wait is now clamped to the next card start the live fetch has already seen, and held at the live update interval for 15 minutes after that start in case ESPN is slow to flip the status -- core's fix (ChuckBuilds/LEDMatrix#599). 1.14.2 described it, but it never took effect here: this plugin's own _idle_live_interval lacked the clamp. It costs no extra request. Everything drawn is unchanged: the 16 safety-harness renders are byte-identical before and after."
+    },
     {
       "version": "1.15.1",
       "released": "2026-09-28",
@@ -331,6 +337,6 @@
   "verified": true,
   "screenshot": "",
   "compatible_versions": [
-    ">=3.4.0"
+    ">=3.5.0"
   ]
 }
