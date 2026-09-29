@@ -186,9 +186,11 @@ drift fails. See [shared sports code](./08-shared-sports-code.md).
 ### `update-registry.yml` — "Update Plugin Registry"
 
 Triggers on push to `main` touching a `plugins/*/manifest.json` or
-`update_registry.py`. Regenerates `plugins.json` and auto-commits it as
-`github-actions[bot]`. This runs **post-merge**, not as a PR gate — the
-pre-commit hook keeps the registry in sync within PRs.
+`update_registry.py`, and daily for third-party versions. Regenerates
+`plugins.json` (with full history, so each entry's `commit` names the squash
+commit on `main`) and auto-commits it as `github-actions[bot]`. This runs
+**post-merge**, not as a PR gate — the pre-commit hook keeps the registry in
+sync within PRs.
 
 ### Writing a repo-level guard
 
@@ -218,7 +220,22 @@ Top-level keys: `version` (the registry schema
 version), `last_updated`, and a `plugins` array. Each entry carries a fixed set of
 fields (`id`, `name`, `description`, `author`, `category`, `tags`, `repo`,
 `branch`, `plugin_path`, `stars`, `downloads`, `last_updated`, `verified`,
-`screenshot`, `latest_version`).
+`screenshot`, `latest_version`), plus three the core reads before it downloads
+anything, each present only when it has a value:
+
+- `ledmatrix_min_version` — the floor the manifest declares (top-level
+  `min_ledmatrix_version`, then `requires.min_ledmatrix_version`, then
+  `versions[0].ledmatrix_min_version`, the core's own order). A core below it
+  refuses the install or update up front instead of after the download.
+- `aliases` — other ids the plugin goes by: the manifest id when it differs
+  from the registry id (`weather` is `ledmatrix-weather` on disk). The core's
+  update, uninstall and reinstall paths use it to find the installed copy.
+- `commit` — the commit on `main` that introduced the manifest's current
+  `version`. Informational (the store shows it); installs still come from the
+  branch head.
+
+All three are additive: cores that predate them read entries with `.get()` and
+ignore keys they don't know. None is a trust or review signal.
 
 - **Monorepo plugins** use `repo` = this repo's URL, `branch` = `main`,
   `plugin_path` = `plugins/<id>`.
@@ -238,13 +255,24 @@ registry:
   `icon` and `last_updated` from manifest to registry when they differ. The
   registry's `last_updated` is the newer of the manifest's top-level
   `last_updated` and `versions[0].released`, so a release that forgot to bump
-  the top-level date still publishes its release date.
+  the top-level date still publishes its release date. `ledmatrix_min_version`
+  and `aliases` are synced the same way, and removed when the manifest no
+  longer implies them.
+- It records each monorepo entry's `commit` by walking the first-parent
+  history of its `manifest.json` back to where the current `version` first
+  appeared. That needs full history: in a shallow clone or outside git the
+  existing values stay, and a run that raises `latest_version` without being
+  able to name the new commit (the pre-commit hook, before the commit exists)
+  drops the old one. `--check` ignores `commit` — a PR cannot know the squash
+  commit it will become — and the Update Plugin Registry workflow fills it in
+  after the merge.
 - Third-party entries (empty `plugin_path`) are skipped by a local run. With
   `--external` it fetches `manifest.json` from the root of each one's GitHub
   repo (on the entry's `branch`) and raises `latest_version`, and sets
   `last_updated` to that version's release date (the newer of its `released`
-  date and the manifest's `last_updated`). Only those two fields move:
-  the name, description and tags stay as reviewed. It never downgrades, ignores
+  date and the manifest's `last_updated`) and `ledmatrix_min_version` to its
+  floor. Only those fields move: the name, description and tags stay as
+  reviewed, and third-party entries get no `aliases` or `commit`. It never downgrades, ignores
   a manifest whose `id` is not the entry's, and only warns on a repo it cannot
   read. The **Update Plugin Registry** workflow runs it daily and on every
   push, so a third-party release reaches the store's update badge within a day.
