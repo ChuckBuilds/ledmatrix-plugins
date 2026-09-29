@@ -97,6 +97,12 @@ Regenerate with `check_plugin.py --update-golden` and review the diff. See
 [`plugins/clock-simple/test/`](../../plugins/clock-simple/test/) for a worked
 example and the core's `docs/plugin-safety-harness.md` for the full reference.
 
+The harness only reaches the screens a plugin shows in `switch` mode. Two
+repo-level guards cover scoreboard drawing it cannot reach, with goldens next
+to each plugin: `scripts/test_scroll_card_renders.py` (the scroll/Vegas card,
+`test/golden-cards/`) and `scripts/test_celebration_renders.py` (the score/win
+celebration, `test/golden-celebration/`). Both take `--update` to regenerate.
+
 ---
 
 ## CI workflows
