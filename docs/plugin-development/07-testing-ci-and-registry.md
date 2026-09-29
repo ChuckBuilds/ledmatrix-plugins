@@ -163,6 +163,9 @@ the core.
 - `test_pixel_perfect_text.py`: text draws are 1-bit (no anti-aliasing)
 - `update_readme_previews.py --check`: the root README's Preview column matches
   the `hero.png` files on disk
+- `test_readme_lists_every_plugin.py`: every `plugins/<id>/` has a row in the
+  root README's Available Plugins tables, and each `### Category (N)` count
+  matches its rows
 - `check_secrets_template.py`: every `x-secret` schema field has a placeholder
   in the root `config_secrets.template.json`, under the plugin id
 
