@@ -268,9 +268,9 @@ else:
         "plugin_label": "UFC scoreboard",
         "writeback_fixed_in": _WRITEBACK_FIXED_IN if _HAD_WRITEBACK_BUG else None,
     }
-    system_timezone_name = _core.system_timezone_name
+    system_timezone_name = _core.system_timezone_name  # noqa: F811 -- replaces the fallback above  # pylint: disable=function-redefined
 
-    def resolve_timezone_name(  # noqa: F811 -- replaces the fallback above
+    def resolve_timezone_name(  # noqa: F811 -- replaces the fallback above  # pylint: disable=function-redefined
         config: Optional[Dict[str, Any]] = None,
         plugin_manager: Any = None,
         cache_manager: Any = None,
@@ -279,7 +279,7 @@ else:
         return _core.resolve_timezone_name(
             config, plugin_manager, cache_manager, log or logger, **_CORE_ARGS)
 
-    def resolve_timezone(  # noqa: F811 -- replaces the fallback above
+    def resolve_timezone(  # noqa: F811 -- replaces the fallback above  # pylint: disable=function-redefined
         config: Optional[Dict[str, Any]] = None,
         plugin_manager: Any = None,
         cache_manager: Any = None,
