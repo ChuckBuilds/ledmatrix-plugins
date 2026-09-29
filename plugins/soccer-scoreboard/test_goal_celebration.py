@@ -23,6 +23,7 @@ import types
 import logging
 import tempfile
 import threading
+from unittest import mock
 
 from PIL import Image, ImageChops
 
@@ -282,7 +283,6 @@ def test_has_active_celebration_window():
 # ---------------------------------------------------------------------------
 def _render_celebration(scored_side, width=128, height=32, elapsed=2.5):
     """Render a celebration screen deterministically via production fonts."""
-    import sports
     from sports import SportsCore
 
     class _FakeMatrix:
@@ -332,12 +332,10 @@ def _render_celebration(scored_side, width=128, height=32, elapsed=2.5):
     }
 
     # Freeze elapsed time so the flash/pulse animation is deterministic.
-    saved = sports.time
-    sports.time = types.SimpleNamespace(time=lambda: elapsed)
-    try:
+    # Patched on the time module itself: the drawing is core's
+    # (src.common.sports_celebration), which reads time.time from there.
+    with mock.patch("time.time", return_value=elapsed):
         live._draw_celebration_layout(celebration, force_clear=True)
-    finally:
-        sports.time = saved
     return live.display_manager.image.convert("RGB")
 
 

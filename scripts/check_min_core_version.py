@@ -143,7 +143,11 @@ MODULE_FIRST_VERSION = {
     # fix (core #667); the table records the first release shipping the module.
     "src.common.favorite_team_check": "3.6.0",  # core #665 (sports consolidation stage 2)
     "src.common.sports_timezone": "3.6.0",  # core #665 (sports consolidation stage 2)
-    # v3.6.1 adds no module.
+    # v3.6.1 and v3.6.2 add no module.
+    # v3.7.0
+    "src.common.sports_celebration": "3.7.0",  # core #672 (sports consolidation stage 3)
+    "src.common.sports_fetch": "3.7.0",  # core #672
+    "src.common.sports_card_wrappers": "3.7.0",  # core #672
     # on core main, in no tagged release yet: add as None. When the next
     # release is tagged, set each None entry here to that tag -- the test's
     # tag-verification section insists on it once the tag is in its list.

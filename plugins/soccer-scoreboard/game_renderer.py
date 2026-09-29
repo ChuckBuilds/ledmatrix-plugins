@@ -19,6 +19,7 @@ from PIL import Image, ImageDraw, ImageFont
 
 from src.common import sports_card as _card
 from src.common.sports_game_renderer import SportsGameRendererMixin
+from src.common.sports_card_wrappers import SportsCardWrappersMixin
 
 #: This plugin's own schema, for the shared font-size resolver.
 _SCHEMA_PATH = os.path.join(
@@ -71,7 +72,7 @@ def _resolve_font_path(path: str) -> str:
 logger = logging.getLogger(__name__)
 
 
-class GameRenderer(SportsGameRendererMixin):
+class GameRenderer(SportsCardWrappersMixin, SportsGameRendererMixin):
     """
     Renders individual game cards as PIL Images for display.
     
@@ -176,12 +177,6 @@ class GameRenderer(SportsGameRendererMixin):
         'press_start': 'PressStart2P-Regular.ttf',
         'four_by_six': '4x6-font.ttf',
     }
-
-    @classmethod
-    def _crisp_size(cls, font_file, desired):
-        """Delegates to src.common.sports_card, shared by every scoreboard."""
-        return _card.crisp_size(font_file, desired,
-                                cls._FONT_NAME_ALIASES, cls._FONT_PIXEL_GRID)
 
     def _schema_font_size(self, element_key):
         """Delegates to src.common.sports_card, shared by every scoreboard."""
@@ -367,14 +362,6 @@ class GameRenderer(SportsGameRendererMixin):
         "rank": "rank_text",
     }
 
-    def _unshare_element_fonts(self, fonts):
-        """Delegates to src.common.sports_card, shared by every scoreboard."""
-        return _card.unshare_element_fonts(self.logger, fonts)
-
-    def _font_color(self, font, default: Tuple[int, int, int] = (255, 255, 255)):
-        """Delegates to src.common.sports_card, shared by every scoreboard."""
-        return _card.font_color(self.config, getattr(self, "fonts", None), font, default)
-
     def _draw_text_with_outline(
         self, 
         draw: ImageDraw.Draw, 
@@ -417,33 +404,6 @@ class GameRenderer(SportsGameRendererMixin):
         "loss": (255, 0, 0),
         "tie": (255, 200, 0),
     }
-
-    @staticmethod
-    def _coerce_rgb(value, fallback):
-        """Delegates to src.common.sports_card, shared by every scoreboard."""
-        return _card.coerce_rgb(value, fallback)
-
-    @staticmethod
-    def _side_is_favorite(game: Dict[str, Any], side: str, favorites: set) -> bool:
-        """Delegates to src.common.sports_card, shared by every scoreboard."""
-        return _card.side_is_favorite(game, side, favorites)
-
-    @staticmethod
-    def _side_score(game: Dict[str, Any], side: str) -> Optional[int]:
-        """Delegates to src.common.sports_card, shared by every scoreboard."""
-        return _card.side_score(game, side)
-
-    def _favorite_result(self, game: Dict[str, Any]) -> Optional[str]:
-        """Delegates to src.common.sports_card, shared by every scoreboard."""
-        return _card.favorite_result(self.config, game)
-
-    def _score_color_for(self, game: Dict[str, Any], game_type: str, default=None):
-        """Delegates to src.common.sports_card, shared by every scoreboard."""
-        return _card.score_color_for(self.config, self.logger, game, game_type, default)
-
-    def _recent_score_color(self, game: Dict[str, Any], default):
-        """Delegates to src.common.sports_card, shared by every scoreboard."""
-        return _card.recent_score_color(self.config, self.logger, game, default)
 
     def render_game_card(
         self, 
@@ -618,38 +578,6 @@ class GameRenderer(SportsGameRendererMixin):
     _WEEKDAY_ABBR: ClassVar[Tuple[str, ...]] = (
         "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun",
     )
-
-    def _scroll_card_option(self, key: str, default: Any = None) -> Any:
-        """Delegates to src.common.sports_card, shared by every scoreboard."""
-        return _card.scroll_card_option(self.config, key, default)
-
-    def _element_color(self, element: str, default: Tuple[int, int, int] = (255, 255, 255)):
-        """Delegates to src.common.sports_card, shared by every scoreboard."""
-        return _card.element_color(self.config, element, default)
-
-    def _upcoming_center_mode(self) -> str:
-        """Delegates to src.common.sports_card, shared by every scoreboard."""
-        return _card.upcoming_center_mode(self.config)
-
-    def _vs_text(self) -> str:
-        """Delegates to src.common.sports_card, shared by every scoreboard."""
-        return _card.vs_text(self.config)
-
-    def _format_game_date(self, date_text: str, game: Optional[Dict] = None) -> str:
-        """Delegates to src.common.sports_card, shared by every scoreboard."""
-        return _card.format_game_date(self.config, self.logger, date_text, game)
-
-    def _weekday_for(self, game: Optional[Dict]) -> str:
-        """Delegates to src.common.sports_card, shared by every scoreboard."""
-        return _card.weekday_for(self.config, self.logger, game)
-
-    def _card_tzinfo(self):
-        """Delegates to src.common.sports_card, shared by every scoreboard."""
-        return _card.card_tzinfo(self.config, self.logger)
-
-    def _format_game_time(self, time_text: str) -> str:
-        """Delegates to src.common.sports_card, shared by every scoreboard."""
-        return _card.format_game_time(self.config, time_text)
 
     def _odds_color(self) -> Tuple[int, int, int]:
         """Colour for the odds text; the green it always drew unless configured.

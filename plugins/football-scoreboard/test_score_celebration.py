@@ -37,6 +37,7 @@ import types
 import logging
 import tempfile
 import threading
+from unittest import mock
 
 from PIL import Image, ImageChops
 
@@ -390,7 +391,6 @@ def _render_celebration(scored_side, width=128, height=32, elapsed=2.5,
                         motif="touchdown", kind="score", phrase="TOUCHDOWN!",
                         home="KC", away="DAL", team_colors=True, confetti=True):
     """Render a celebration screen deterministically via production fonts."""
-    import sports
     from sports import SportsCore
 
     class _FakeMatrix:
@@ -443,12 +443,10 @@ def _render_celebration(scored_side, width=128, height=32, elapsed=2.5,
     }
 
     # Freeze elapsed time so the flash/pulse animation is deterministic.
-    saved = sports.time
-    sports.time = types.SimpleNamespace(time=lambda: elapsed)
-    try:
+    # Patched on the time module itself: the drawing is core's
+    # (src.common.sports_celebration), which reads time.time from there.
+    with mock.patch("time.time", return_value=elapsed):
         live._draw_celebration_layout(celebration, force_clear=True)
-    finally:
-        sports.time = saved
     return live.display_manager.image.convert("RGB")
 
 
@@ -575,12 +573,12 @@ def test_palette_reads_the_scoring_team_off_its_crest():
     """The takeover's colours come from the crest, so a Chiefs score renders
     red where a Steelers score renders gold. Checked on the crests this plugin
     ships, which are the same files the board draws from."""
-    import sports
+    from src.common import sports_celebration
 
     for abbr, want_hue in (("KC", "red"), ("PIT", "gold"), ("GB", "gold")):
         logo = Image.open(os.path.join(_LOGOS, f"{abbr}.png")).convert("RGBA")
         logo.thumbnail((32, 32), Image.Resampling.LANCZOS)
-        palette = sports._logo_palette(logo)
+        palette = sports_celebration.logo_palette(logo)
         assert palette, f"{abbr}: no palette derived from the crest"
         r, g, b = palette["headline"]
         if want_hue == "red":
@@ -588,10 +586,10 @@ def test_palette_reads_the_scoring_team_off_its_crest():
         else:
             assert r > 150 and g > 110 and b < 110, f"{abbr} headline {palette['headline']} is not gold"
         # Every headline has to survive being shrunk to 6px of text.
-        assert sports._rgb_luminance(palette["headline"]) >= 100, (
+        assert sports_celebration.rgb_luminance(palette["headline"]) >= 100, (
             f"{abbr} headline {palette['headline']} is too dark to read on a panel")
         # And the backdrop has to stay out of its way.
-        assert sports._rgb_luminance(palette["deep"]) <= 36, (
+        assert sports_celebration.rgb_luminance(palette["deep"]) <= 36, (
             f"{abbr} backdrop {palette['deep']} is too bright to put text on")
     print("PASS: the palette reads the scoring team's colours off its crest")
 
@@ -600,11 +598,11 @@ def test_palette_prefers_a_legible_crest_colour_over_lifting_a_dark_one():
     """Green Bay's dark green only reaches legibility as a teal, and the gold
     right next to it on the same crest is just as much theirs. The ranking has
     to reach for the colour that already reads."""
-    import sports
+    from src.common import sports_celebration
 
     logo = Image.open(os.path.join(_LOGOS, "GB.png")).convert("RGBA")
     logo.thumbnail((32, 32), Image.Resampling.LANCZOS)
-    palette = sports._logo_palette(logo)
+    palette = sports_celebration.logo_palette(logo)
     r, g, b = palette["headline"]
     assert not (b > r and g > r), (
         f"GB headline {palette['headline']} came back teal -- a dark colour was "
@@ -618,17 +616,17 @@ def test_palette_prefers_a_legible_crest_colour_over_lifting_a_dark_one():
 def test_lifting_a_colour_keeps_its_hue():
     """Scaling the channels to brighten a dark saturated colour turns
     Baltimore's navy-purple into magenta. Lifting has to work in HSV."""
-    import sports
+    from src.common import sports_celebration
 
     navy_purple = (39, 15, 98)
-    lifted = sports._lift_color(navy_purple)
-    assert sports._rgb_luminance(lifted) >= 100, f"{lifted} is still too dark"
+    lifted = sports_celebration.lift_color(navy_purple)
+    assert sports_celebration.rgb_luminance(lifted) >= 100, f"{lifted} is still too dark"
     assert lifted[2] > lifted[0] > lifted[1], (
         f"{lifted} is no longer a blue-purple -- the hue moved")
     # Capping is exact on the way down, so a cap must not move the hue at all.
-    capped = sports._cap_luminance((248, 61, 1), 34)
+    capped = sports_celebration.cap_luminance((248, 61, 1), 34)
     assert capped[0] > capped[1] > capped[2], f"{capped} lost the orange"
-    assert sports._rgb_luminance(capped) <= 35, f"{capped} was not capped"
+    assert sports_celebration.rgb_luminance(capped) <= 35, f"{capped} was not capped"
     print("PASS: lifting and capping a colour both keep its hue")
 
 

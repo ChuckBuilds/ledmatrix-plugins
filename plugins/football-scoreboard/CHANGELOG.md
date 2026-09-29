@@ -1,5 +1,31 @@
 # Changelog
 
+## [3.17.0] - 2026-09-29
+
+### Changed
+- Requires LEDMatrix core 3.7.0 (`ledmatrix_min_version` and
+  `compatible_versions`), the first release that ships
+  `src/common/sports_fetch.py`, `src/common/sports_celebration.py` and `src/common/sports_card_wrappers.py`. The store refuses to
+  install or update this version onto an older core.
+
+### Removed
+- The score/win celebration drawing (`_draw_celebration_layout` and the
+  palette, backdrop, scenery, confetti and crest steps behind it,
+  `_fit_font`) and its colour helpers (`_logo_palette`, `_lift_color`,
+  ...): `SportsLive` inherits `SportsCelebrationMixin`
+  (`src.common.sports_celebration`). When to celebrate, the phrase and the
+  scenery stay in this plugin.
+- `SportsCore._fetch_season_directly`, `_background_fetches_espn_ranges`,
+  `_needs_previous_day` and `_wants_live_odds`: `SportsCore` inherits
+  `SportsFetchMixin` (`src.common.sports_fetch`).
+- The `sports_card` delegations in `game_renderer.py`: `GameRenderer`
+  inherits `SportsCardWrappersMixin` (`src.common.sports_card_wrappers`).
+  `_format_game_date` and `_upcoming_center_mode` stay: this plugin's own
+  follow the switch-mode settings, and override the mixin's.
+
+No behaviour change: the code is the same, and every safety-harness render
+and celebration golden is byte-identical.
+
 ## [3.16.0] - 2026-09-29
 
 ### Changed
