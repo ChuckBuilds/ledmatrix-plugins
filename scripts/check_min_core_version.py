@@ -141,8 +141,8 @@ MODULE_FIRST_VERSION = {
     # on core main, in no tagged release yet: add as None. When the next
     # release is tagged, set each None entry here to that tag -- the test's
     # tag-verification section insists on it once the tag is in its list.
-    "src.common.favorite_team_check": None,  # core #TBD (sports consolidation stage 2), unreleased
-    "src.common.sports_timezone": None,  # core #TBD (sports consolidation stage 2), unreleased
+    "src.common.favorite_team_check": None,  # core #665 (sports consolidation stage 2), unreleased
+    "src.common.sports_timezone": None,  # core #665 (sports consolidation stage 2), unreleased
 }
 
 #: Releases whose ``src/__init__.py`` ``__version__`` lags their tag. The
