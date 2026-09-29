@@ -143,6 +143,12 @@
           "description": "Draw the start time on the full-screen (switch mode) upcoming scoreboard. Show Time above now applies only to the scroll and Vegas cards. Before this release it also hid the full-screen time, so a config that turned it off shows the time here again until this switch is turned off.",
           "default": true
         },
+        "switch_recent_show_date": {
+          "type": "boolean",
+          "title": "Show Date (Full-Screen Recent)",
+          "description": "Draw the date along the bottom of the full-screen (switch mode) recent scoreboard. That screen has always drawn it and there was no way to turn it off, so this defaults on and nothing changes until you clear it. It is now written in the Full-Screen Date Format below, which it used to ignore - a panel set to \"Sep 19\" showed \"9/19\" here.",
+          "default": true
+        },
         "swap_date_time": {
           "type": "boolean",
           "title": "Swap Date and Time",

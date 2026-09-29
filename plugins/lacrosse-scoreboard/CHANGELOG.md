@@ -1,6 +1,6 @@
 # Changelog
 
-## [1.31.4] - 2026-09-28
+## [1.33.1] - 2026-09-29
 
 ### Fixed
 - Test fixture only, no runtime change. The harness made 112 live ESPN
@@ -13,6 +13,56 @@
   relied on. The fixture now sets other_games_min_quality 'any' and test_mode,
   so update() reads only the seeded cache and the run makes no requests.
   Rendered frames are unchanged.
+
+## [1.33.0] - 2026-09-28
+
+### Changed
+- Requires LEDMatrix core 3.5.0 (`ledmatrix_min_version` and
+  `compatible_versions`), the first release that ships
+  `src/common/espn_dates.py` and `src/common/sports_helpers.py`. The store
+  refuses to install or update this version onto an older core.
+
+### Removed
+- `lacrosse_espn_dates.py`, the bundled copy of core's ESPN date-range helper.
+  `src.common.espn_dates` is now imported plainly; on a 3.5.0 core the plugin
+  already ran core's copy.
+- `sports.py`'s private copies of the shared sports helpers: `_clamp_window`,
+  `_clamp_seconds`, `_logo_needs_refresh` (imported from core under the same
+  names) and `SportsCore`'s `_mode_customization`, `_setting_int`,
+  `_reset_dwell_on_reentry`, `_next_switch_index`, `_spread_weighted_order`,
+  `_odds_color` and `_upcoming_date_and_time_text` (inherited from core's
+  `SportsHelpersMixin`). Core's bodies are identical.
+- `SportsCore._get_weeks_data`. The override existed because older cores' mixin
+  sent ESPN a raw date range; core 3.5.0's mixin fetches the same window
+  through the same range-safe helper.
+
+No behaviour change: every safety-harness render is byte-identical.
+
+## [1.32.1] - 2026-09-28
+
+### Removed
+- Deleted the bundled `base_odds_manager.py` fallback. It could never run:
+  core has shipped `src.base_odds_manager` since v3.0.0, below this plugin's
+  3.4.0 floor, so odds already came from core's `BaseOddsManager`. The
+  import is now plain.
+- Deleted the bundled `logo_downloader.py` fallback for the same reason:
+  logos already came from core's `src.logo_downloader`.
+- Deleted the unused `MLBAPIDataSource` and `SoccerAPIDataSource`
+  data source classes; nothing referenced them.
+
+No behaviour change.
+
+## [1.31.5] - 2026-09-28
+
+### Changed
+- Removed code that nothing called. No change in behaviour.
+
+## [1.31.4] - 2026-09-28
+
+### Fixed
+- Each league's scroll settings apply to that league's scrolling strip: the
+  scroll speed and dynamic duration came from the men's-NCAA settings
+  whichever league was shown.
 
 ## [1.31.3] - 2026-09-28
 

@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.36.1",
+  "version": "1.38.0",
   "update_interval": 60,
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
@@ -19,6 +19,42 @@
   "branch": "main",
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
+    {
+      "version": "1.38.0",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.5.0",
+      "notes": "Requires LEDMatrix core 3.5.0, and drops the bundled copies of code that core now ships. basketball_espn_dates.py, the ESPN date-range helper, is deleted and src.common.espn_dates is imported plainly; on a 3.5.0 core the plugin already ran core's copy. sports.py's private copies of the shared sports helpers (_clamp_window, _clamp_seconds, _logo_needs_refresh and SportsCore's _mode_customization, _setting_int, _reset_dwell_on_reentry, _next_switch_index, _spread_weighted_order, _odds_color and _upcoming_date_and_time_text) are deleted: SportsCore inherits them from core's src.common.sports_helpers.SportsHelpersMixin, whose bodies are identical. SportsCore's _get_weeks_data override is deleted too; it existed for cores whose mixin sent ESPN a raw date range, and core 3.5.0's mixin fetches the same window through the same range-safe helper. The floor rises to 3.5.0, the release that ships both modules, and the store refuses to install or update this version onto anything older. No behaviour change: every safety-harness render is byte-identical."
+    },
+    {
+      "version": "1.37.1",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Removes the bundled base_odds_manager.py fallback. It could never run: core has shipped src.base_odds_manager since v3.0.0, below this plugin's 3.4.0 floor, and odds already came from core's BaseOddsManager. Also deletes the unused MLBAPIDataSource and SoccerAPIDataSource data source classes, which nothing referenced. No behaviour change."
+    },
+    {
+      "version": "1.37.0",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "UPCOMING NEVER BLANK: a full-screen upcoming scoreboard whose middle is 'date and time' with both Show Date (Full-Screen) and Show Time (Full-Screen) off drew two logos and 'Next Game' and nothing to say when the game is. That combination is what the core settings form left on boards saved before LEDMatrix #597 -- it drew newly added keys as unchecked boxes, so a Save wrote both as false -- and it is what a live board showed on every football and hockey upcoming card. It now draws both lines. Hiding one line, or both under 'vs' or 'none', is still honoured. RECENT DATE: the full-screen recent scoreboard now draws the date the game was played along its bottom edge, and the score moves up between the logos to make room -- the layout football, baseball, afl, nrl and soccer already use. Before, a finished game showed only 'Final' and a score, with no way to tell which game it was. Written in Full-Screen Date Format; new scroll_card.switch_recent_show_date (default true) turns it off. The tournament-only date under the round name is gone, since every recent card now has one."
+    },
+    {
+      "version": "1.36.4",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Removed code that nothing called. No change in behaviour."
+    },
+    {
+      "version": "1.36.3",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Background Service settings (request timeout, max retries, priority) reach the league managers; they were fixed at 30 s, 3 and 2 whatever was set."
+    },
+    {
+      "version": "1.36.2",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Each league's scroll settings apply to that league's scrolling strip: speed, gap, separators and card width all came from the NBA settings whichever league was shown."
+    },
     {
       "version": "1.36.1",
       "released": "2026-09-28",
@@ -461,7 +497,7 @@
     {
       "released": "2026-07-02",
       "version": "1.6.0",
-      "notes": "Add exclude_teams (hide specific teams from live rotation and recent/final scores \u2014 spoiler protection) and filtering.favorite_live_boost (tune how much more often your favorite's live game appears in rotation vs other live games) per league.",
+      "notes": "Add exclude_teams (hide specific teams from live rotation and recent/final scores — spoiler protection) and filtering.favorite_live_boost (tune how much more often your favorite's live game appears in rotation vs other live games) per league.",
       "ledmatrix_min": "2.0.0"
     },
     {
@@ -548,6 +584,6 @@
   "entry_point": "manager.py",
   "class_name": "BasketballScoreboardPlugin",
   "compatible_versions": [
-    ">=3.4.0"
+    ">=3.5.0"
   ]
 }

@@ -709,8 +709,10 @@ class CountdownPlugin(BasePlugin):
             layout_preset = current.get('layout_preset', 'image-left')
             text_align    = current.get('text_align', 'center')
 
-            # Pixel overrides (from advanced modal) take precedence over preset
-            _has_px_override = any(layout.get(k) for k in ('image_x','image_y','image_width','image_height'))
+            # An image position from the advanced modal replaces the preset's
+            # placement. A size alone does not: it used to count too, so
+            # setting just image_width moved an image-right image to x=0.
+            _has_px_override = bool(layout.get('image_x') or layout.get('image_y'))
 
             # 'image-only' draws no text beside the image, so the image area
             # is the whole display. The image-left/image-right presets reserve
@@ -748,19 +750,23 @@ class CountdownPlugin(BasePlugin):
             name_y  = layout.get('name_y')  if layout.get('name_y')  is not None else (dh // 3)
             value_y = layout.get('value_y') if layout.get('value_y') is not None else ((dh * 2) // 3)
 
-            # Horizontal position: respect pixel override, then derive from text_align
-            if layout.get('name_x') is not None:
-                name_x, value_x = layout['name_x'], layout.get('value_x', layout['name_x'])
-                _text_centered  = True
-            elif text_align == 'left':
-                name_x = value_x = text_area_x + 4
-                _text_centered  = False
-            elif text_align == 'right':
-                name_x = value_x = None  # computed per-text below
-                _text_centered  = False
-            else:  # center (default)
-                name_x = value_x = text_area_x + text_area_w // 2
-                _text_centered  = True
+            # Horizontal position, per line: text_align gives the default and
+            # a name_x / value_x override (a centre point) replaces it for that
+            # line alone. value_x used to apply only alongside name_x, and
+            # neither applied under right alignment.
+            def _line_x(text, font, override):
+                if override is not None:
+                    return override, True
+                if text_align == 'left':
+                    return text_area_x + 4, False
+                if text_align == 'right':
+                    try:
+                        bbox = self.display_manager.draw.textbbox((0, 0), text, font=font)
+                        tw = bbox[2] - bbox[0]
+                    except Exception:
+                        tw = 0
+                    return text_area_x + text_area_w - tw - 4, False
+                return text_area_x + text_area_w // 2, True
 
             # Build canvas
             canvas = Image.new('RGB', (dw, dh), eff_bg)
@@ -807,25 +813,12 @@ class CountdownPlugin(BasePlugin):
                     value_font = today_font
 
             if show_text:
-                if text_align == 'right':
-                    # Compute right-edge x per-text using PIL textbbox
-                    def _right_x(text, font):
-                        try:
-                            bbox = self.display_manager.draw.textbbox((0, 0), text, font=font)
-                            tw = bbox[2] - bbox[0]
-                        except Exception:
-                            tw = 0
-                        return text_area_x + text_area_w - tw - 4
-
-                    if name_font:
-                        self.display_manager.draw_text(cd_name, x=_right_x(cd_name, name_font),  y=name_y,  color=name_color,  font=name_font,  centered=False)
-                    if value_font:
-                        self.display_manager.draw_text(cd_text, x=_right_x(cd_text, value_font), y=value_y, color=value_color, font=value_font, centered=False)
-                else:
-                    if name_font:
-                        self.display_manager.draw_text(cd_name, x=name_x,  y=name_y,  color=name_color,  font=name_font,  centered=_text_centered)
-                    if value_font:
-                        self.display_manager.draw_text(cd_text, x=value_x, y=value_y, color=value_color, font=value_font, centered=_text_centered)
+                if name_font:
+                    x, centered = _line_x(cd_name, name_font, layout.get('name_x'))
+                    self.display_manager.draw_text(cd_name, x=x, y=name_y, color=name_color, font=name_font, centered=centered)
+                if value_font:
+                    x, centered = _line_x(cd_text, value_font, layout.get('value_x'))
+                    self.display_manager.draw_text(cd_text, x=x, y=value_y, color=value_color, font=value_font, centered=centered)
 
             self.display_manager.update_display()
             self.logger.debug(f"Displayed: {cd_name} — {cd_text} [{layout_preset}/{text_align}]")

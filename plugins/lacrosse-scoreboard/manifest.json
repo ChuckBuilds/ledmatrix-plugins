@@ -1,7 +1,7 @@
 {
   "id": "lacrosse-scoreboard",
   "name": "Lacrosse Scoreboard",
-  "version": "1.31.4",
+  "version": "1.33.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NCAA men's and women's lacrosse games with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/lacrosse-scoreboard",
@@ -17,7 +17,7 @@
   ],
   "icon": "fas fa-baseball-ball",
   "compatible_versions": [
-    ">=3.4.0"
+    ">=3.5.0"
   ],
   "requires": {
     "python": ">=3.9",
@@ -51,10 +51,40 @@
   ],
   "versions": [
     {
+      "version": "1.33.1",
+      "released": "2026-09-29",
+      "ledmatrix_min_version": "3.5.0",
+      "notes": "Test fixture only, no runtime change. The harness made 112 live ESPN requests per run and, after its frozen clock ended, fetched next season's schedule. freezegun gives the real clock to the SwitchRefresh thread display() starts, so its manager is always due and update() runs; update() fetched the NCAA poll (other_games_min_quality defaults to 'ranked') and the live manager fetched today's scoreboard, because with no live games it polls on its idle back-off rather than the huge update_intervals.live the fixture relied on. The fixture now sets other_games_min_quality 'any' and test_mode, so update() reads only the seeded cache and the run makes no requests. Rendered frames are unchanged."
+    },
+    {
+      "version": "1.33.0",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.5.0",
+      "notes": "Requires LEDMatrix core 3.5.0, and drops the bundled copies of code that core now ships. lacrosse_espn_dates.py, the ESPN date-range helper, is deleted and src.common.espn_dates is imported plainly; on a 3.5.0 core the plugin already ran core's copy. sports.py's private copies of the shared sports helpers (_clamp_window, _clamp_seconds, _logo_needs_refresh and SportsCore's _mode_customization, _setting_int, _reset_dwell_on_reentry, _next_switch_index, _spread_weighted_order, _odds_color and _upcoming_date_and_time_text) are deleted: SportsCore inherits them from core's src.common.sports_helpers.SportsHelpersMixin, whose bodies are identical. SportsCore's _get_weeks_data override is deleted too; it existed for cores whose mixin sent ESPN a raw date range, and core 3.5.0's mixin fetches the same window through the same range-safe helper. The floor rises to 3.5.0, the release that ships both modules, and the store refuses to install or update this version onto anything older. No behaviour change: every safety-harness render is byte-identical."
+    },
+    {
+      "version": "1.32.1",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Removes the bundled base_odds_manager.py fallback. It could never run: core has shipped src.base_odds_manager since v3.0.0, below this plugin's 3.4.0 floor, and odds already came from core's BaseOddsManager. Same for the bundled logo_downloader.py: logos already came from core's src.logo_downloader. Also deletes the unused MLBAPIDataSource and SoccerAPIDataSource data source classes, which nothing referenced. No behaviour change."
+    },
+    {
+      "version": "1.32.0",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "UPCOMING NEVER BLANK: a full-screen upcoming scoreboard whose middle is 'date and time' with both Show Date (Full-Screen) and Show Time (Full-Screen) off drew two logos and 'Next Game' and nothing to say when the game is. That combination is what the core settings form left on boards saved before LEDMatrix #597 -- it drew newly added keys as unchecked boxes, so a Save wrote both as false -- and it is what a live board showed on every football and hockey upcoming card. It now draws both lines. Hiding one line, or both under 'vs' or 'none', is still honoured. RECENT DATE: the full-screen recent scoreboard now draws the date the game was played along its bottom edge, and the score moves up between the logos to make room -- the layout football, baseball, afl, nrl and soccer already use. Before, a finished game showed only 'Final' and a score, with no way to tell which game it was. Written in Full-Screen Date Format; new scroll_card.switch_recent_show_date (default true) turns it off. The scroll and Vegas recent card gains the same date. LIVE PRIORITY: live_priority now defaults on for NCAA men's and women's lacrosse, as it already did for the other leagues, so a live game involving your team takes the panel instead of waiting its turn. Only configs that never saved the key change."
+    },
+    {
+      "version": "1.31.5",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Removed code that nothing called. No change in behaviour."
+    },
+    {
       "version": "1.31.4",
       "released": "2026-09-28",
       "ledmatrix_min_version": "3.4.0",
-      "notes": "Test fixture only, no runtime change. The harness made 112 live ESPN requests per run and, after its frozen clock ended, fetched next season's schedule. freezegun gives the real clock to the SwitchRefresh thread display() starts, so its manager is always due and update() runs; update() fetched the NCAA poll (other_games_min_quality defaults to 'ranked') and the live manager fetched today's scoreboard, because with no live games it polls on its idle back-off rather than the huge update_intervals.live the fixture relied on. The fixture now sets other_games_min_quality 'any' and test_mode, so update() reads only the seeded cache and the run makes no requests. Rendered frames are unchanged."
+      "notes": "Each league's scroll settings apply to that league's scrolling strip: the scroll speed and dynamic duration came from the men's-NCAA settings whichever league was shown."
     },
     {
       "version": "1.31.3",
@@ -474,7 +504,7 @@
     {
       "released": "2026-07-02",
       "version": "1.3.0",
-      "notes": "Add exclude_teams (hide specific teams from the live rotation and recent/final scores \u2014 spoiler protection, takes precedence over favorite_teams/show_all_live) and favorite_live_boost (tune how many more turns your favorite's live game gets in the rotation vs other live games, 1 = even rotation, default 2).",
+      "notes": "Add exclude_teams (hide specific teams from the live rotation and recent/final scores — spoiler protection, takes precedence over favorite_teams/show_all_live) and favorite_live_boost (tune how many more turns your favorite's live game gets in the rotation vs other live games, 1 = even rotation, default 2).",
       "ledmatrix_min": "2.0.0"
     },
     {

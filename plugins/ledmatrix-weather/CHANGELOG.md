@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.7.8] - 2026-09-28
+
+### Changed
+- Removed code that nothing called. No change in behaviour.
+
+## [2.7.7] - 2026-09-28
+
+### Fixed
+- Narrow panels: the hourly and daily forecasts show as many columns as their
+  labels fit (on 64x32, two), the metrics bar drops trailing items or spaces
+  them by width instead of overprinting, and a long condition drops leading
+  words instead of starting off the left edge. Panels where everything already
+  fit look the same.
+
 ## [2.7.6] - 2026-09-28
 
 ### Changed

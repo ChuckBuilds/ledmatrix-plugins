@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
 """Keep the scoreboards' helper copies identical to core's sports_helpers.
 
-LEDMatrix core ships ``src/common/sports_helpers.py`` (core PR #583, on core
-main since 2026-09-15): helpers every scoreboard's ``sports.py`` carries a
-byte-identical private copy of --
+LEDMatrix core ships ``src/common/sports_helpers.py`` (core PR #583, released
+in v3.5.0): helpers every scoreboard's ``sports.py`` carried a byte-identical
+private copy of --
 ``_clamp_window``, ``_clamp_seconds``, ``_logo_needs_refresh`` (with
 ``_MIN_WINDOW_DAYS`` / ``_MAX_WINDOW_DAYS``) and the ``SportsCore`` methods
 ``_mode_customization``, ``_setting_int``, ``_reset_dwell_on_reentry``,
 ``_next_switch_index``, ``_spread_weighted_order``, ``_odds_color`` and
-``_upcoming_date_and_time_text``.
+``_upcoming_date_and_time_text``. The eight team scoreboards floor on 3.5.0
+and have deleted their copies (they import the module and inherit
+``SportsHelpersMixin``); ufc still carries its eleven.
 
 Core has its own parity test, but it only runs when ``LEDMATRIX_PLUGINS`` is
 set, and core CI never sets it. This repo's CI already checks core out, so the

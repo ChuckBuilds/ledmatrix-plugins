@@ -7,7 +7,7 @@ the Olympics plugin for medals, events, and results.
 
 import re
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import List, Optional
 
 
@@ -124,43 +124,3 @@ class OlympicsData:
         if not upcoming:
             return None
         return min(upcoming, key=lambda e: e.start_time)
-
-    @property
-    def time_to_next_event(self) -> Optional[timedelta]:
-        """Get time remaining until next event."""
-        event = self.next_event
-        if not event:
-            return None
-        return event.start_time - _utcnow()
-
-    @staticmethod
-    def format_countdown(td: Optional[timedelta]) -> str:
-        """Format a timedelta as a human-readable countdown string."""
-        if td is None:
-            return ""
-
-        total_seconds = int(td.total_seconds())
-        if total_seconds < 0:
-            return "NOW"
-
-        days = total_seconds // 86400
-        hours = (total_seconds % 86400) // 3600
-        minutes = (total_seconds % 3600) // 60
-
-        if days > 0:
-            return f"{days}d {hours}h"
-        elif hours > 0:
-            return f"{hours}h {minutes}m"
-        elif minutes > 0:
-            return f"{minutes}m"
-        else:
-            return "<1m"
-
-    def get_latest_results(self, count: int = 5) -> List['EventResult']:
-        """Get the most recent event results."""
-        sorted_results = sorted(
-            self.recent_results,
-            key=lambda r: r.completed_time,
-            reverse=True
-        )
-        return sorted_results[:count]

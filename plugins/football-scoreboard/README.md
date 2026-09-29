@@ -601,6 +601,7 @@ Plugin-wide, not per league.
 | Time Format | `scroll_card.time_format` | `12h` | 12- or 24-hour clock. |
 | Show Date / Show Time | `scroll_card.show_date`, `scroll_card.show_time` | `true` | Drop either line from the scroll and Vegas cards. |
 | Full-Screen Show Date / Show Time | `scroll_card.switch_show_date`, `scroll_card.switch_show_time` | `true` | The same for the full-screen scoreboard. Separate switches because the originals predate this display reading the block, and sharing them would have changed what existing boards draw. |
+| Full-Screen Recent Date | `scroll_card.switch_recent_show_date` | `true` | Draw the date a finished game was played along the bottom of the full-screen recent scoreboard, written in the Full-Screen Date Format. |
 | Swap Date and Time | `scroll_card.swap_date_time` | `false` | Flip the two lines. Each display starts from its own order, so this flips rather than forces. |
 
 The centre-gap settings size the scroll and Vegas card's middle strip only — the

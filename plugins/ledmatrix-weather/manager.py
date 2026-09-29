@@ -1271,6 +1271,14 @@ class WeatherPlugin(BasePlugin):
                 self.COLORS['text'], self.display_manager.small_font)
             if condition_style.visible:
                 condition_font = condition_style.font
+                # Right-aligned, so a condition wider than the panel started
+                # left of x=0: "Partly Cloudy" is 104px at 8px and showed as
+                # "y Cloudy" on 64px. Drop leading words, then truncate.
+                room = width - layout['right_margin']
+                while (" " in condition
+                       and draw.textlength(condition, font=condition_font) > room):
+                    condition = condition.split(" ", 1)[1]
+                condition = self._truncate_to_width(draw, condition, condition_font, room)
                 condition_text_width = draw.textlength(condition, font=condition_font)
                 condition_x = (width - condition_text_width - layout['right_margin']
                                + condition_style.offset[0])
@@ -1344,11 +1352,26 @@ class WeatherPlugin(BasePlugin):
 
             # Single bottom bar with all (remaining) items
             if all_items and metric_style.visible:
+                widths = [draw.textlength(text, font=font) for text, _c, _d in all_items]
+                # Even packed edge to edge the row can overflow: a 64px panel
+                # cannot hold UV, H and W at this face's pitch. Drop from the
+                # end (the order above is the priority) until it fits.
+                while len(all_items) > 1 and sum(widths) + 2 * (len(widths) - 1) > width:
+                    all_items, widths = all_items[:-1], widths[:-1]
                 sec_w = width // len(all_items)
+                if all(tw <= sec_w for tw in widths):
+                    # Equal slices, each item centred: the layout this row has
+                    # always had wherever its items fit.
+                    xs = [i * sec_w + (sec_w - tw) // 2 for i, tw in enumerate(widths)]
+                else:
+                    # Some item is wider than its slice (a gusty "W:12g28NNW"
+                    # is 50px); space them by measured width instead, so no
+                    # two overlap.
+                    gap = (width - sum(widths)) / (len(widths) + 1)
+                    xs = [int(gap * (i + 1) + sum(widths[:i])) for i in range(len(widths))]
                 bar_y = layout['bottom_bar_y'] + metric_style.offset[1]
-                for i, (text, color, _drop_tag) in enumerate(all_items):
-                    tw = draw.textlength(text, font=font)
-                    x = i * sec_w + (sec_w - tw) // 2 + metric_style.offset[0]
+                for (text, color, _drop_tag), x in zip(all_items, xs):
+                    x += metric_style.offset[0]
                     # Each metric carries its own colour (UV is graded by
                     # severity), so a chosen colour replaces them all and an
                     # unchosen one leaves the grading alone.
@@ -1488,7 +1511,16 @@ class WeatherPlugin(BasePlugin):
             draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
             layout = self._get_layout()
+            small = self.display_manager.small_font
+            # As many columns as the labels fit, up to four: four 16px columns
+            # on a 64px panel ran each "80°" (24px) into its neighbours.
             hours_to_show = min(4, len(self.hourly_forecast))
+            while hours_to_show > 1 and any(
+                    max(draw.textlength(self._short_hour(f), font=small),
+                        draw.textlength(f"{f['temp']}°", font=small))
+                    > width // hours_to_show - 2
+                    for f in self.hourly_forecast[:hours_to_show]):
+                hours_to_show -= 1
             section_width = width // hours_to_show
             padding = max(2, section_width // 6)
 
@@ -1498,8 +1530,7 @@ class WeatherPlugin(BasePlugin):
                 center_x = x + (section_width - 2 * padding) // 2
 
                 # Hour at top
-                hour_text = forecast['hour']
-                hour_text = hour_text.replace(":00 ", "").replace("PM", "p").replace("AM", "a")
+                hour_text = self._short_hour(forecast)
                 hour_width = draw.textlength(hour_text, font=self.display_manager.small_font)
                 draw.text((center_x - hour_width // 2, layout['forecast_top_y']),
                          hour_text,
@@ -1525,6 +1556,11 @@ class WeatherPlugin(BasePlugin):
         except Exception:
             self.logger.exception("Error rendering hourly forecast")
             return None
+
+    @staticmethod
+    def _short_hour(forecast: Dict[str, Any]) -> str:
+        """'3:00 PM' -> '3p', the hourly column's label."""
+        return forecast['hour'].replace(":00 ", "").replace("PM", "p").replace("AM", "a")
 
     def _display_hourly_forecast(self) -> None:
         """Display hourly forecast with weather icons."""
@@ -1566,7 +1602,15 @@ class WeatherPlugin(BasePlugin):
             draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
             layout = self._get_layout()
+            # As many columns as the labels fit, up to three: "71/79" is 25px
+            # and a third of a 64px panel is 21.
             days_to_show = min(3, len(self.daily_forecast))
+            while days_to_show > 1 and any(
+                    max(draw.textlength(f['date'], font=self.display_manager.small_font),
+                        draw.textlength(f"{f['temp_low']}/{f['temp_high']}", font=self._detail_font))
+                    > width // days_to_show - 2
+                    for f in self.daily_forecast[:days_to_show]):
+                days_to_show -= 1
             if days_to_show == 0:
                 draw.text((2, 2), "No daily forecast", font=self.display_manager.small_font, fill=self.COLORS['dim'])
             else:
@@ -2003,49 +2047,6 @@ class WeatherPlugin(BasePlugin):
 
     # --- Weather Alerts Display ---
 
-    def _display_alerts(self) -> None:
-        """Display active weather alerts if any."""
-        try:
-            alerts = []
-            if self.weather_data:
-                alerts = self.weather_data.get('alerts', [])
-            if not alerts:
-                return  # No alerts — skip silently
-
-            width = self.display_manager.matrix.width
-            height = self.display_manager.matrix.height
-            img = Image.new('RGB', (width, height), (0, 0, 0))
-            draw = ImageDraw.Draw(img)
-            draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
-
-            font = self._detail_font
-            font_h = 7
-            alert = alerts[0]  # Show first alert
-
-            event = alert.get('event', 'Weather Alert')
-            sender = alert.get('sender_name', '')
-            description = alert.get('description', '')
-
-            y = 1
-            # Row 1: Alert type in red/yellow
-            draw.text((2, y), event[:30], font=font, fill=(255, 80, 0))
-            y += font_h + 1
-
-            # Row 2: Sender
-            if sender:
-                draw.text((2, y), sender[:30], font=font, fill=(200, 200, 200))
-                y += font_h + 1
-
-            # Row 3+: Description (truncated to fit)
-            if description:
-                desc_short = description.replace('\n', ' ')[:60]
-                draw.text((2, y), desc_short, font=font, fill=(180, 180, 180))
-
-            self.display_manager.image = img
-            self.display_manager.update_display()
-        except Exception:
-            self.logger.exception("Error displaying alerts")
-
     def has_live_content(self) -> bool:
         """Return True if there are active severe weather alerts."""
         if not self.show_alerts or not self.weather_data:
@@ -2245,18 +2246,6 @@ class WeatherPlugin(BasePlugin):
 
         return None
 
-    def display_weather(self, force_clear: bool = False) -> None:
-        """Display current weather (compatibility method for display controller)."""
-        self.display(force_clear=force_clear, display_mode='weather')
-
-    def display_hourly_forecast(self, force_clear: bool = False) -> None:
-        """Display hourly forecast (compatibility method for display controller)."""
-        self.display(force_clear=force_clear, display_mode='hourly_forecast')
-
-    def display_daily_forecast(self, force_clear: bool = False) -> None:
-        """Display daily forecast (compatibility method for display controller)."""
-        self.display(force_clear=force_clear, display_mode='daily_forecast')
-
     def get_info(self) -> Dict[str, Any]:
         """Return plugin info for web UI."""
         info = super().get_info()
@@ -2278,4 +2267,3 @@ class WeatherPlugin(BasePlugin):
         self.weather_data = None
         self.forecast_data = None
         self.logger.info("Weather plugin cleaned up")
-

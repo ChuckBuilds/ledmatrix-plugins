@@ -58,11 +58,16 @@ These are not general Python advice — they exist because of how *this* stack w
    that changes at random. Use continuous ramps, make every frame a finished
    screen, and declare `needs_high_fps` when it genuinely needs motion.
 6. **Guard optional core imports** (`VegasDisplayMode`, `src.adaptive_layout`,
-   `src.element_style`, core `BaseOddsManager`, …) with `try/except ImportError`
-   and a classic fallback — older cores stay loadable.
+   `src.element_style`, …) with `try/except ImportError` and a classic
+   fallback — older cores stay loadable. A module every core at or above the
+   plugin's floor ships (`src.base_odds_manager`, `src.logo_downloader`) is
+   imported plainly; a fallback behind it can never run.
 7. **Shared sports modules are copied, not shared.** Scoreboards ship divergent
    copies of `sports.py` / `scroll_display.py` / etc. A fix in one lineage must
-   be ported to siblings in the **same PR**. See
+   be ported to siblings in the **same PR**. What core already ships is not
+   copied: the eight team scoreboards (floor 3.5.0) import
+   `src.common.espn_dates` and inherit `src.common.sports_helpers`'
+   `SportsHelpersMixin` plainly — fix those in core. ufc still bundles both. See
    `docs/plugin-development/08-shared-sports-code.md` before touching those files.
 8. **Secrets never in git.** Real tokens live on the Pi / LEDMatrix runtime
    (`config_secrets.json`), not in this monorepo. Keep only

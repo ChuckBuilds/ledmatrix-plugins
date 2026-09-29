@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-flights",
   "name": "Flight Tracker",
-  "version": "1.14.5",
+  "version": "1.14.7",
   "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky/adsb.fi/adsb.lol data, map backgrounds, area mode, flight tracking, anchor airport, flight records, and optional airport weather (METAR/TAF/PIREP/SIGMET via the free NOAA Aviation Weather Center API)",
   "author": "ChuckBuilds",
   "category": "custom",
@@ -37,6 +37,18 @@
   ],
   "min_ledmatrix_version": "2.0.0",
   "versions": [
+    {
+      "version": "1.14.7",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Removed code that nothing called. No change in behaviour."
+    },
+    {
+      "version": "1.14.6",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "The FlightAware budget recovers on its own: the mid-month cap and the 95% monthly stop no longer stick past the month (they were written into daily_api_budget until a restart), the month's call count resets on the 1st, and cached flight plans are shown even when the day's budget is spent."
+    },
     {
       "version": "1.14.5",
       "released": "2026-09-28",

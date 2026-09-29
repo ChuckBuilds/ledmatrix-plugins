@@ -28,20 +28,6 @@ except ImportError:
     VegasDisplayMode = None
     get_background_service = None
 
-# Odds manager: prefer the core-shipped version, fall back to the bundled copy.
-# Kept outside the guard above so a missing odds module can never null BasePlugin.
-try:
-    from src.base_odds_manager import BaseOddsManager
-except ModuleNotFoundError as exc:
-    # Fall back only when the CORE module is absent; an import failure from
-    # inside it (missing dependency) should surface, not be masked.
-    if exc.name not in {"src", "src.base_odds_manager"}:
-        raise
-    try:
-        from base_odds_manager import BaseOddsManager
-    except ImportError:
-        BaseOddsManager = None
-
 # Import scroll display components
 try:
     from scroll_display import ScrollDisplayManager

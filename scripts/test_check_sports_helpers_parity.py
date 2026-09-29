@@ -252,12 +252,20 @@ else:
     summary = next((l for l in out.splitlines() if "comparison(s)" in l), "")
     try:
         compared = int(summary.split()[0])
+        absent = int(summary.rsplit(";", 1)[1].split()[0])
     except (IndexError, ValueError):
-        compared = 0
+        compared = absent = 0
     scanned = next((l for l in out.splitlines() if l.startswith("Scoreboards scanned")), "")
     check("at least nine scoreboards scanned", scanned.endswith(": 9") or
           (scanned.split(": ")[-1].isdigit() and int(scanned.split(": ")[-1]) >= 9), scanned)
-    check("a plausible number of comparisons were made", compared >= 100, summary)
+    # Since the core-3.5.0 sunset most names are absent (adopted) rather than
+    # compared, so count both: every promoted name in every scoreboard has to
+    # be accounted for one way or the other.
+    check("a plausible number of names were accounted for",
+          compared + absent >= 100, summary)
+    adopters = sum("imports core sports_helpers" in l for l in out.splitlines())
+    check("the eight team scoreboards import core's sports_helpers",
+          adopters >= 8, f"{adopters} adopter(s)")
     if code != 0:
         print(out)
 

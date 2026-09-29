@@ -51,8 +51,12 @@ class ScrollDisplay(_ScrollDisplayBase):
     #: unchosen, the same rule the fonts use.
     _SCHEMA_CARD_WIDTH = 128
 
+    #: The league whose scroll_settings apply: the one the current strip
+    #: shows (see prepare_scroll_content). None walks the ladder from the top.
+    _settings_league = None
+
     def _get_scroll_settings(self, league=None):
-        settings = super()._get_scroll_settings(league)
+        settings = super()._get_scroll_settings(league or self._settings_league)
         if settings.get("game_card_width") == self._SCHEMA_CARD_WIDTH:
             settings = {**settings,
                         "game_card_width": self._default_game_card_width()}
@@ -231,7 +235,16 @@ class ScrollDisplay(_ScrollDisplayBase):
         self._current_game_type = game_type
         self._current_leagues = leagues
 
-        # Get scroll settings
+        # The settings of the league this strip shows. Asked without a league,
+        # the ladder always stopped at its first key, so only nfl's
+        # scroll_settings were ever read; the core configures the helper's
+        # speed and dynamic duration the same way, so re-apply those when the
+        # league changes. A strip mixing leagues uses the first one's.
+        primary_league = leagues[0] if leagues else None
+        if primary_league != self._settings_league:
+            self._settings_league = primary_league
+            if hasattr(self, "_configure_scroll_helper"):
+                self._configure_scroll_helper()
         scroll_settings = self._get_scroll_settings()
         gap_between_games = scroll_settings.get("gap_between_games", 48)
         show_separators = scroll_settings.get("show_league_separators", True)

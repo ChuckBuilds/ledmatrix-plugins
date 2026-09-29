@@ -333,14 +333,6 @@ def format_score_to_par(score: int) -> str:
         return f"+{score}"
 
 
-def calculate_scoring_average(rounds: List[Optional[int]]) -> Optional[float]:
-    """Calculate average score from round scores."""
-    valid_rounds = [r for r in rounds if r is not None]
-    if not valid_rounds:
-        return None
-    return sum(valid_rounds) / len(valid_rounds)
-
-
 def _masters_thursday(year: int) -> datetime:
     """Return the Masters Tournament start date (Thursday) for the given year.
 
@@ -520,12 +512,6 @@ def is_featured_hole(hole_number: int) -> bool:
     return hole_number in [4, 6, 11, 12, 13, 15, 16]
 
 
-def get_hole_nickname(hole_number: int) -> Optional[str]:
-    """Get the traditional nickname for an Augusta National hole."""
-    hole = AUGUSTA_HOLES.get(hole_number)
-    return hole["name"] if hole else None
-
-
 def get_hole_info(hole_number: int) -> Dict[str, Any]:
     """Get complete hole information."""
     default = {"name": "Unknown", "par": 4, "yardage": 400}
@@ -547,11 +533,6 @@ def get_fun_fact_by_index(index: int) -> str:
     return MASTERS_FUN_FACTS[index % len(MASTERS_FUN_FACTS)]
 
 
-def get_recent_champions(count: int = 5) -> List[tuple]:
-    """Get most recent champions."""
-    return PAST_CHAMPIONS[:count]
-
-
 def get_espn_headshot_url(player_name: str) -> Optional[str]:
     """Get ESPN headshot URL for a player."""
     player_info = ESPN_PLAYER_IDS.get(player_name)
@@ -566,11 +547,6 @@ def get_player_country(player_name: str) -> Optional[str]:
     if player_info:
         return player_info["country"]
     return None
-
-
-def get_green_jacket_count(player_name: str) -> int:
-    """Get number of green jackets for a player."""
-    return MULTIPLE_WINNERS.get(player_name, 0)
 
 
 def filter_favorite_players(

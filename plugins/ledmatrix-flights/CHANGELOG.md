@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.14.7] - 2026-09-28
+
+### Changed
+- Removed code that nothing called. No change in behaviour.
+
+## [1.14.6] - 2026-09-28
+
+### Fixed
+- The FlightAware budget recovers on its own: the mid-month cap and the 95%
+  monthly stop no longer stick past the month (they were written into
+  daily_api_budget until a restart), the month's call count resets on the 1st,
+  and cached flight plans are shown even when the day's budget is spent.
+
 ## [1.14.5] - 2026-09-28
 
 ### Fixed

@@ -45,33 +45,25 @@ from dynamic_team_resolver import DynamicTeamResolver, choose_top_division_poll
 # __init__), so the two could disagree on a filename. __init__ imports
 # src.logo_downloader unguarded already, so this adds no new core requirement.
 from src.logo_downloader import LogoDownloader, download_missing_logo
-# Prefer the core-shipped odds manager (adds cache_ttl support); fall back to
-# the bundled copy for cores that don't ship src.base_odds_manager yet.
-# Both branches are module-level imports, so they are collision-safe under the
-# loader's bare-name isolation rules (see docs/plugin-development/08-*.md).
-try:
-    from src.base_odds_manager import BaseOddsManager
-except ModuleNotFoundError as exc:
-    # Fall back only when the CORE module is absent; an import failure from
-    # inside it (missing dependency) should surface, not be masked.
-    if exc.name not in {"src", "src.base_odds_manager"}:
-        raise
-    from base_odds_manager import BaseOddsManager
+# Core has shipped src.base_odds_manager since v3.0.0, below this plugin's
+# ledmatrix_min_version, so the bundled fallback copy was unreachable and is gone.
+from src.base_odds_manager import BaseOddsManager
 from data_sources import ESPNDataSource
-# Prefer core's ESPN date-range helper, which core keeps current (orjson
-# parsing, giving way to the Vegas render thread); fall back to the bundled
-# copy on cores that don't ship src.common.espn_dates yet.
-try:
-    from src.common.espn_dates import ESPN_MAX_LIMIT, fetch_espn_scoreboard
-except ModuleNotFoundError as exc:
-    # Fall back only when the CORE module is absent; an import failure from
-    # inside it should surface, not be masked.
-    if exc.name not in {"src", "src.common", "src.common.espn_dates"}:
-        raise
-    from baseball_espn_dates import ESPN_MAX_LIMIT, fetch_espn_scoreboard
+# ESPN date-range helper: core ships it from 3.5.0, the manifest's floor.
+from src.common.espn_dates import ESPN_MAX_LIMIT, fetch_espn_scoreboard
 from baseball_timezone import resolve_timezone
 from src.common.sports_shared import (
     SportsCoreSharedMixin, SportsLiveSharedMixin, SportsRecentSharedMixin)
+# Helpers every scoreboard carried a private copy of; core ships them from
+# 3.5.0 (the manifest's floor). The private aliases keep this module's names.
+from src.common.sports_helpers import (
+    MAX_WINDOW_DAYS as _MAX_WINDOW_DAYS,
+    MIN_WINDOW_DAYS as _MIN_WINDOW_DAYS,
+    SportsHelpersMixin,
+    clamp_seconds as _clamp_seconds,
+    clamp_window as _clamp_window,
+    logo_needs_refresh as _logo_needs_refresh,
+)
 
 
 def _resolve_font_path(path: str) -> str:
@@ -119,19 +111,6 @@ def _resolve_font_path(path: str) -> str:
 
 _DEFAULT_LOOKBACK_DAYS = 14
 _DEFAULT_LOOKAHEAD_DAYS = 7
-_MIN_WINDOW_DAYS = 1
-_MAX_WINDOW_DAYS = 60
-
-
-def _clamp_window(value: Any, fallback: int) -> int:
-    """Days for one side of the schedule window, or the default if unusable."""
-    try:
-        days = int(value)
-    except (TypeError, ValueError, OverflowError):
-        # OverflowError: json parses a bare Infinity, and int(inf) raises --
-        # from SportsCore.__init__, where it would stop the manager building.
-        return fallback
-    return max(_MIN_WINDOW_DAYS, min(_MAX_WINDOW_DAYS, days))
 
 
 # Backing off the live poll while a league has nothing on. Gentle at first --
@@ -144,50 +123,7 @@ _IDLE_LONG_FACTOR = 6
 _DEFAULT_LIVE_IDLE_MAX_SECONDS = 900
 
 
-def _clamp_seconds(value: Any, fallback: int, low: int = 5,
-                   high: int = 86400) -> int:
-    """An interval in seconds, or the fallback when the value is unusable."""
-    try:
-        seconds = int(value)
-    except (TypeError, ValueError, OverflowError):
-        # OverflowError: json parses bare Infinity by default and int(inf)
-        # raises -- the same gap _clamp_window above already covers.
-        return fallback
-    return max(low, min(high, seconds))
-
-
-def _logo_needs_refresh(logo_file) -> bool:
-    """True if this file is a placeholder stale enough to retry the real logo.
-
-    A failed logo download is cached as a placeholder wearing the real logo's
-    filename, so "the file exists" is not proof the logo was ever fetched.
-    Without this check one transient failure leaves a team a grey box forever.
-
-    Returns False on a core that predates placeholder marking, which keeps the
-    previous behaviour rather than breaking the load.
-    """
-    # Imported from the core by its full path, never as a bare name: a
-    # deferred bare-name import can bind another plugin's vendored
-    # logo_downloader once the core isolates top-level plugin modules.
-    try:
-        from src.logo_downloader import (
-            PLACEHOLDER_RETRY_SECONDS,
-            is_placeholder_logo,
-            placeholder_age_seconds,
-        )
-    except ImportError:
-        return False
-
-    try:
-        if not is_placeholder_logo(logo_file):
-            return False
-        age = placeholder_age_seconds(logo_file)
-        return age is None or age >= PLACEHOLDER_RETRY_SECONDS
-    except Exception:
-        return False
-
-
-class SportsCore(SportsCoreSharedMixin, ABC):
+class SportsCore(SportsCoreSharedMixin, SportsHelpersMixin, ABC):
     #: Absolute path of this plugin, handed to the shared mixin. It cannot
     #: deduce it: __file__ there is src/common/, and inferring the directory
     #: from the MRO returns None under the real plugin loader, which silently
@@ -610,24 +546,30 @@ class SportsCore(SportsCoreSharedMixin, ABC):
         "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun",
     )
 
-    def _upcoming_date_and_time_text(self, game_date: str, game_time: str,
-                                     game: Optional[Dict] = None) -> Tuple[str, str]:
-        """The formatted (date, time) pair, blanked by switch_show_date/_time.
+    def _card_option(self, key: str, default: Any = None) -> Any:
+        """Read one scroll_card key, never blanking the upcoming scorebug.
 
-        Called by the shared _draw_upcoming_center_switch for the full-screen
-        scorebug only. Deliberately not the shared show_date/show_time: those
-        governed only the scroll and Vegas cards before this display read the
-        block, so a config that had turned them off there silently blanked a
-        scorebug that has always drawn both lines. The switch keys default to
-        True for the same reason switch_upcoming_center defaults to
-        "date_time" -- an untouched panel keeps rendering what it rendered.
-        Same override as football-scoreboard (#342).
+        With the middle set to "date and time" and both of those lines
+        switched off, the full-screen upcoming scorebug is two logos and
+        "Next Game" with nothing to say when the game is. Nobody picks that
+        on purpose -- "vs" and "none" are the settings for a card without the
+        stack -- yet a whole cohort of boards has it: switch_show_date/_time
+        shipped while the core's settings form still drew keys missing from
+        the saved config as unchecked boxes, so the next Save wrote both as
+        false (fixed in LEDMatrix #597). That one combination therefore reads
+        as both on. Hiding either line alone, or both under "vs" or "none",
+        is still honoured.
         """
-        date_text = (self._format_game_date(game_date, game)
-                     if self._card_option("switch_show_date", True) else "")
-        time_text = (self._format_game_time(game_time)
-                     if self._card_option("switch_show_time", True) else "")
-        return date_text, time_text
+        # The mixin named outright, not super(): tests lift this method onto
+        # stand-in classes that are not SportsCore subclasses.
+        base = SportsCoreSharedMixin._card_option
+        keys = ("switch_show_date", "switch_show_time")
+        value = base(self, key, default)
+        if (key in keys and not value
+                and not any(base(self, k, True) for k in keys)
+                and SportsCoreSharedMixin._switch_upcoming_center(self) == "date_time"):
+            return True
+        return value
 
     def _recent_date_text(self, game: Optional[Dict]) -> str:
         """When a finished game was played, for the full-screen scorebug.
@@ -656,52 +598,6 @@ class SportsCore(SportsCoreSharedMixin, ABC):
         "status_text": ("status",),
         "records": ("record",),
     }
-
-    def _mode_customization(self) -> dict:
-        """``customization`` with this mode's overrides merged over it.
-
-        SportsUpcoming / SportsRecent / SportsLive are separate instances
-        with their own SKIN_MODE, so merging once here makes every
-        per-element lookup mode-aware without changing one of them.
-
-        ``None`` in a mode block means "inherit", which is what lets a user
-        restyle one element on live cards and leave everything else
-        following the settings above. It has to stay distinct from 0: a mode
-        y_offset of 0 means "sit at the base position", not "no preference".
-        """
-        customization = self.config.get('customization', {})
-        if not isinstance(customization, dict):
-            return {}
-        mode = getattr(self, 'SKIN_MODE', None)
-        if not mode:
-            return customization
-        modes = customization.get('modes')
-        block = modes.get(mode) if isinstance(modes, dict) else None
-        if not isinstance(block, dict):
-            return customization
-
-        merged = dict(customization)
-        for element, override in block.items():
-            if element == 'layout' or not isinstance(override, dict):
-                continue
-            base = merged.get(element)
-            base = dict(base) if isinstance(base, dict) else {}
-            base.update({k: v for k, v in override.items() if v is not None})
-            merged[element] = base
-
-        mode_layout = block.get('layout')
-        if isinstance(mode_layout, dict):
-            base_layout = merged.get('layout')
-            new_layout = dict(base_layout) if isinstance(base_layout, dict) else {}
-            for element, axes in mode_layout.items():
-                if not isinstance(axes, dict):
-                    continue
-                current = new_layout.get(element)
-                current = dict(current) if isinstance(current, dict) else {}
-                current.update({k: v for k, v in axes.items() if v is not None})
-                new_layout[element] = current
-            merged['layout'] = new_layout
-        return merged
 
     def _get_layout_offset(self, element: str, axis: str, default: int = 0) -> int:
         """
@@ -973,23 +869,6 @@ class SportsCore(SportsCoreSharedMixin, ABC):
         # narrower FACE rather than let a grown score crowd out the logos.
         return self._fit_score_font(self._scale_headline_fonts(fonts))
 
-    def _odds_color(self) -> Tuple[int, int, int]:
-        """Colour for the odds text; the green it always drew unless configured.
-
-        Guarded with getattr because not every class that reaches
-        _draw_dynamic_odds carries the element-colour helper -- the plugins'
-        own test harnesses build minimal manager objects, and a bare
-        AttributeError here is swallowed by the surrounding except, which
-        drops the odds off the card instead of failing loudly.
-        """
-        getter = getattr(self, "_element_color", None)
-        if getter is None:
-            return (0, 255, 0)
-        try:
-            return getter("odds_text", (0, 255, 0))
-        except Exception:
-            return (0, 255, 0)
-
     def _draw_dynamic_odds(
         self, draw: ImageDraw.Draw, odds: Dict[str, Any], width: int, height: int,
         top_span: Optional[Tuple[int, int]] = None,
@@ -1099,18 +978,6 @@ class SportsCore(SportsCoreSharedMixin, ABC):
 
         except Exception as e:
             self.logger.error(f"Error drawing odds: {e}", exc_info=True)
-
-    @staticmethod
-    def _centred_span(draw, text: str, font, width: int, x_offset: int = 0):
-        """(left, right) of a string centred on a `width`-wide row, or None."""
-        if not text:
-            return None
-        try:
-            text_width = draw.textlength(text, font=font)
-        except Exception:
-            return None
-        left = int((width - text_width) // 2 + x_offset)
-        return left, int(left + text_width)
 
     #: Which customization element owns each loaded face. The font loader
     #: already picks each face from exactly that element (element_key=), so
@@ -1760,41 +1627,6 @@ class SportsCore(SportsCoreSharedMixin, ABC):
         end = (now + timedelta(days=lookahead)).strftime("%Y%m%d")
         return f"{start}-{end}", f"window_{lookback}_{lookahead}"
 
-    def _get_weeks_data(self) -> Optional[Dict]:
-        """Games in the lookback/lookahead window, shown while the season loads.
-
-        Overrides the core mixin's copy, which asks ESPN for this window as a
-        date range. ESPN has answered ranges with 400 since 2026-09-15 and cores
-        from before that fix have no fallback, so without this override the
-        window fails whenever the season schedule is not cached yet.
-        """
-        date_str = ""
-        try:
-            now = datetime.now(pytz.utc)
-            start_date = now - timedelta(days=self.schedule_lookback_days)
-            end_date = now + timedelta(days=self.schedule_lookahead_days)
-            date_str = f"{start_date.strftime('%Y%m%d')}-{end_date.strftime('%Y%m%d')}"
-            url = f"https://site.api.espn.com/apis/site/v2/sports/{self.sport}/{self.league}/scoreboard"
-            data = fetch_espn_scoreboard(
-                self.session,
-                url,
-                params={"dates": date_str, "limit": ESPN_MAX_LIMIT},
-                headers=self.headers,
-                timeout=10,
-                logger=self.logger,
-            )
-            immediate_events = data.get("events", [])
-
-            if immediate_events:
-                self.logger.info(f"Fetched {len(immediate_events)} events {date_str}")
-                return {"events": immediate_events}
-
-        except requests.exceptions.RequestException as e:
-            self.logger.warning(
-                f"Error fetching this weeks games for {self.sport} - {self.league} - {date_str}: {e}"
-            )
-        return None
-
     def _background_fetches_espn_ranges(self) -> bool:
         """Can the core's background service fetch an ESPN date range?
 
@@ -1946,28 +1778,6 @@ class SportsCore(SportsCoreSharedMixin, ABC):
                 )
             self._division_team_ids[name] = ids
         return self._division_team_ids
-
-    def _setting_int(self, key: str, default: int, low: int, high: int) -> int:
-        """A count from config, clamped to the range its schema declares.
-
-        The schema constrains these, but config.json can be hand-edited or
-        written by an older tool, and a string or a negative here does not
-        raise where anyone would see it -- it raises inside update()'s own
-        try/except, which shows up as a mode that silently renders nothing.
-        Same shape as the favorite_live_boost clamp above.
-        """
-        try:
-            return max(low, min(high, int(self.mode_config.get(key, default))))
-        except (TypeError, ValueError, OverflowError):
-            # OverflowError: json parses a bare Infinity, and int(inf) raises
-            # -- from __init__, outside any try/except, so the manager would
-            # fail to construct instead of falling back.
-            self.logger.warning(
-                "%s: ignoring unusable %s=%r, using %s",
-                getattr(self, "league", "?"), key,
-                self.mode_config.get(key), default,
-            )
-            return default
 
     def _is_ranked_game(self, game: Dict) -> bool:
         rankings = getattr(self, "_team_rankings_cache", None) or {}
@@ -2204,101 +2014,6 @@ class SportsCore(SportsCoreSharedMixin, ABC):
         threading.Thread(
             target=fetch, daemon=True,
             name="%s-rotated-odds" % self.sport_key).start()
-
-    #: Longest gap between two display() calls that still counts as one
-    #: on-screen stint. Frames arrive many times a second while a mode is on
-    #: the panel; between mode blocks the gap is the length of every other
-    #: mode's block. Anything past a few seconds is a block boundary, or the
-    #: very first frame after startup.
-    _DWELL_REENTRY_GAP_SECONDS: ClassVar[float] = 5.0
-
-    def _reset_dwell_on_reentry(self) -> bool:
-        """Give the current card a full turn when this mode (re)takes the panel.
-
-        The dwell clock (last_game_switch) keeps running while the mode is off
-        screen, so on re-entry it was always long expired and the first
-        display() call advanced immediately: the card cut off at the end of
-        the previous block was skipped instead of shown. Ported from
-        football-scoreboard (#345).
-
-        Returns True when the dwell was reset, so the caller forces a redraw.
-        """
-        # getattr, and zero treated as "never displayed": the managers are
-        # built in several places -- the plugin tests among them -- not all of
-        # which set every attribute.
-        last = getattr(self, "_last_display_call_monotonic", 0.0)
-        now = time.monotonic()
-        self._last_display_call_monotonic = now
-        if last > 0.0 and now - last < self._DWELL_REENTRY_GAP_SECONDS:
-            return False
-        if getattr(self, "last_game_switch", 0) <= 0:
-            # Zero is the live screen's "no game shown yet" sentinel with its
-            # own handling; overwriting it would hide the first game's arrival.
-            return False
-        self.last_game_switch = time.time()
-        return True
-
-    @staticmethod
-    def _spread_weighted_order(weights: List[int]) -> List[int]:
-        """Indices into ``weights``, each repeated by its weight and spread out.
-
-        Each index keeps its own slot and places its extra turns at even
-        fractions of the rotation after it, wrapping round. That keeps the
-        list's schedule order for everything else and spaces a favourite's
-        repeats evenly *around the loop* -- the live rotation's smooth
-        weighted round-robin schedules a boosted game first and last, so a
-        rotation that wraps shows it back to back. Equal weights come back in
-        plain order, so a boost that applies to no card changes nothing.
-
-        Repeats are kept apart only where the ratio leaves room: once one
-        weight exceeds all the others combined, no cyclic order can separate
-        its turns ([3, 1, 1] gives [0, 1, 0, 2, 0]). Each index still gets
-        exactly its weight in turns -- the configured ratio wins over spacing.
-        """
-        count = len(weights)
-        slots = []
-        for index, weight in enumerate(weights):
-            for turn in range(weight):
-                slots.append(((index + turn * count / weight) % count, turn > 0, index))
-        return [index for _, _, index in sorted(slots)]
-
-    def _next_switch_index(self) -> int:
-        """The games_list index switch mode shows next.
-
-        favorite_rotation_boost gives a favourite's card that many turns for
-        every one turn another card gets, spread through the rotation and kept
-        apart wherever the other cards leave room (a boost above the number of
-        other cards makes some repeats adjacent; the ratio is kept either way).
-        games_list itself stays one entry per game -- the
-        cycle-duration count, the scroll strip and the other-games re-cut all
-        read it -- so the weighting is an order walked over it instead.
-
-        The order is rebuilt whenever the list's games change, and the walk
-        resyncs from current_game_index whenever the two disagree: update()
-        and the other-games rotation both set the index directly when they
-        swap a list in, and the card on screen is where the walk resumes.
-
-        Called with _games_lock held and games_list non-empty.
-        """
-        count = len(self.games_list)
-        boost = getattr(self, "favorite_rotation_boost", 1)
-        if boost <= 1 or count < 2:
-            return (self.current_game_index + 1) % count
-        key = (boost, tuple(g.get("id") for g in self.games_list))
-        if getattr(self, "_switch_order_key", None) != key:
-            self._switch_order = self._spread_weighted_order(
-                [boost if self._is_favorite_game(g) else 1 for g in self.games_list]
-            )
-            self._switch_order_key = key
-            self._switch_position = -1
-        order = self._switch_order
-        position = getattr(self, "_switch_position", -1)
-        if not 0 <= position < len(order) or order[position] != self.current_game_index:
-            position = (order.index(self.current_game_index)
-                        if self.current_game_index in order else -1)
-        position = (position + 1) % len(order)
-        self._switch_position = position
-        return order[position]
 
     def _advance_other_games_if_due(self) -> List[Dict]:
         """Re-cut the non-favourite slice on the display path, or [] if not due.

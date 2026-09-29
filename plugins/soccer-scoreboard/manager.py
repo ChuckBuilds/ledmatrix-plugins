@@ -40,20 +40,6 @@ except ImportError:
     VegasDisplayMode = None
     get_background_service = None
 
-# Odds manager: prefer the core-shipped version, fall back to the bundled copy.
-# Kept outside the guard above so a missing odds module can never null BasePlugin.
-try:
-    from src.base_odds_manager import BaseOddsManager
-except ModuleNotFoundError as exc:
-    # Fall back only when the CORE module is absent; an import failure from
-    # inside it (missing dependency) should surface, not be masked.
-    if exc.name not in {"src", "src.base_odds_manager"}:
-        raise
-    try:
-        from base_odds_manager import BaseOddsManager
-    except ImportError:
-        BaseOddsManager = None
-
 # Import scroll display components
 try:
     from scroll_display import ScrollDisplayManager
@@ -201,6 +187,17 @@ def _league_or_root(block: Dict[str, Any], root: Dict[str, Any], key: str,
     if root_value is not _MISSING and root_value != root_default:
         return root_value
     return fallback if value is _MISSING else value
+
+
+def _background_settings(config: Dict[str, Any]) -> Dict[str, Any]:
+    """Timeout, retries and priority for the managers' background fetches,
+    from the root ``background_service`` block (schema defaults if absent)."""
+    bg = config.get("background_service") or {}
+    return {
+        "request_timeout": bg.get("request_timeout", 30),
+        "max_retries": bg.get("max_retries", 3),
+        "priority": bg.get("priority", 2),
+    }
 
 
 class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
@@ -589,11 +586,9 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                     "show_favorite_teams_only": league_config.get("show_favorite_teams_only", False),
                     "show_all_live": league_config.get("show_all_live", False),
                 },
-                "background_service": {
-                    "request_timeout": 30,
-                    "max_retries": 3,
-                    "priority": 2,
-                },
+                # The root background_service settings; these were pinned
+                # at their defaults here, so changing them did nothing.
+                "background_service": _background_settings(self.config),
             }
         }
 
@@ -944,11 +939,9 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                     "show_favorite_teams_only": custom_league.get("show_favorite_teams_only", False),
                     "show_all_live": custom_league.get("show_all_live", False),
                 },
-                "background_service": {
-                    "request_timeout": 30,
-                    "max_retries": 3,
-                    "priority": 2,
-                },
+                # The root background_service settings; these were pinned
+                # at their defaults here, so changing them did nothing.
+                "background_service": _background_settings(self.config),
                 # Custom league specific
                 "league_code": league_code,
                 "league_name": league_name,

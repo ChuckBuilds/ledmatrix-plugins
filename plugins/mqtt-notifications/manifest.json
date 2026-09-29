@@ -1,7 +1,7 @@
 {
   "id": "mqtt-notifications",
   "name": "MQTT Notifications",
-  "version": "1.2.6",
+  "version": "1.2.7",
   "author": "ChuckBuilds",
   "description": "Display text or images from HomeAssistant via MQTT. Supports dynamic MQTT topics with wildcard support for flexible notification handling that interrupts the normal display rotation.",
   "category": "integration",
@@ -18,6 +18,12 @@
   "entry_point": "manager.py",
   "class_name": "MQTTNotificationsPlugin",
   "versions": [
+    {
+      "released": "2026-09-28",
+      "version": "1.2.7",
+      "changelog": "Scrolling text moves smoothly: the plugin asks the core for its fast display loop while scrolling is on (it ran once a second, so text jumped 30px at a time), and it resumes where it left off instead of jumping after the screen has been away.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-09-28",
       "version": "1.2.6",

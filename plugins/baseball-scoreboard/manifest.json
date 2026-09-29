@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.49.3",
+  "version": "1.51.1",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -32,10 +32,40 @@
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
     {
+      "version": "1.51.1",
+      "released": "2026-09-29",
+      "ledmatrix_min_version": "3.5.0",
+      "notes": "Test fixture only, no runtime change. The harness fixture still seeded mlb_schedule_2026, a key the managers stopped reading when the schedule cache moved to per-window keys, so every Recent/Upcoming render fetched the frozen July 2026 window from ESPN. Those games are all final now, so Upcoming drew nothing at any size (flagged only at the five sizes the fill check covers). The fixture now seeds mlb_schedule_window_14_7."
+    },
+    {
+      "version": "1.51.0",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.5.0",
+      "notes": "Requires LEDMatrix core 3.5.0, and drops the bundled copies of code that core now ships. baseball_espn_dates.py, the ESPN date-range helper, is deleted and src.common.espn_dates is imported plainly; on a 3.5.0 core the plugin already ran core's copy. sports.py's private copies of the shared sports helpers (_clamp_window, _clamp_seconds, _logo_needs_refresh and SportsCore's _mode_customization, _setting_int, _reset_dwell_on_reentry, _next_switch_index, _spread_weighted_order, _odds_color and _upcoming_date_and_time_text) are deleted: SportsCore inherits them from core's src.common.sports_helpers.SportsHelpersMixin, whose bodies are identical. SportsCore's _get_weeks_data override is deleted too; it existed for cores whose mixin sent ESPN a raw date range, and core 3.5.0's mixin fetches the same window through the same range-safe helper. The floor rises to 3.5.0, the release that ships both modules, and the store refuses to install or update this version onto anything older. No behaviour change: every safety-harness render is byte-identical."
+    },
+    {
+      "version": "1.50.1",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Removes the bundled base_odds_manager.py fallback. It could never run: core has shipped src.base_odds_manager since v3.0.0, below this plugin's 3.4.0 floor, and odds already came from core's BaseOddsManager. No behaviour change."
+    },
+    {
+      "version": "1.50.0",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "UPCOMING NEVER BLANK: a full-screen upcoming scoreboard whose middle is 'date and time' with both Show Date (Full-Screen) and Show Time (Full-Screen) off drew two logos and 'Next Game' and nothing to say when the game is. That combination is what the core settings form left on boards saved before LEDMatrix #597 -- it drew newly added keys as unchecked boxes, so a Save wrote both as false -- and it is what a live board showed on every football and hockey upcoming card. It now draws both lines. Hiding one line, or both under 'vs' or 'none', is still honoured. LIVE PRIORITY: live_priority now defaults on for MLB and MiLB, as it already did for the other leagues, so a live game involving your team takes the panel instead of waiting its turn. Only configs that never saved the key change."
+    },
+    {
+      "version": "1.49.4",
+      "released": "2026-09-28",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Removed code that nothing called. No change in behaviour."
+    },
+    {
       "version": "1.49.3",
       "released": "2026-09-28",
       "ledmatrix_min_version": "3.4.0",
-      "notes": "Test fixture only, no runtime change. The harness fixture still seeded mlb_schedule_2026, a key the managers stopped reading when the schedule cache moved to per-window keys, so every Recent/Upcoming render fetched the frozen July 2026 window from ESPN. Those games are all final now, so Upcoming drew nothing at any size (flagged only at the five sizes the fill check covers). The fixture now seeds mlb_schedule_window_14_7."
+      "notes": "Each league's scroll settings apply to that league's scrolling strip: speed, gap, separators and card width all came from the MLB settings whichever league was shown."
     },
     {
       "version": "1.49.2",
@@ -556,7 +586,7 @@
     {
       "released": "2026-07-08",
       "version": "1.14.2",
-      "notes": "Shrink the Traditional Scoreboard's ball/strike/out circle indicators further (they were still a bit overpowering) and move the batting-team \u25b2/\u25bc indicator out of the At Bat column into the header row's empty team-column cell, right next to the inning numbers.",
+      "notes": "Shrink the Traditional Scoreboard's ball/strike/out circle indicators further (they were still a bit overpowering) and move the batting-team ▲/▼ indicator out of the At Bat column into the header row's empty team-column cell, right next to the inning numbers.",
       "ledmatrix_min": "2.0.0"
     },
     {
@@ -574,7 +604,7 @@
     {
       "released": "2026-07-07",
       "version": "1.13.1",
-      "notes": "Fix the Traditional Scoreboard's At Bat side panel (added in 1.13.0) clipping its ball/strike/out dots off the right edge of the display -- the fit check compared leftover space against a flush-left grid, but the grid is actually centered, so it was eating into the panel's reserved space from the left too. Also account for the Outs row's extra batting-team \u25b2/\u25bc arrow, which wasn't factored into the width check at all.",
+      "notes": "Fix the Traditional Scoreboard's At Bat side panel (added in 1.13.0) clipping its ball/strike/out dots off the right edge of the display -- the fit check compared leftover space against a flush-left grid, but the grid is actually centered, so it was eating into the panel's reserved space from the left too. Also account for the Outs row's extra batting-team ▲/▼ arrow, which wasn't factored into the width check at all.",
       "ledmatrix_min": "2.0.0"
     },
     {
@@ -616,7 +646,7 @@
     {
       "released": "2026-07-02",
       "version": "1.7.0",
-      "notes": "Add exclude_teams (hide specific teams from live rotation and recent/final scores \u2014 spoiler protection) and filtering.favorite_live_boost (tune how much more often your favorite's live game appears in rotation vs other live games) per league.",
+      "notes": "Add exclude_teams (hide specific teams from live rotation and recent/final scores — spoiler protection) and filtering.favorite_live_boost (tune how much more often your favorite's live game appears in rotation vs other live games) per league.",
       "ledmatrix_min": "2.0.0"
     },
     {
@@ -742,6 +772,6 @@
   "class_name": "BaseballScoreboardPlugin",
   "entry_point": "manager.py",
   "compatible_versions": [
-    ">=3.4.0"
+    ">=3.5.0"
   ]
 }

@@ -523,10 +523,6 @@ class GameRenderer(SportsGameRendererMixin):
         """Delegates to src.common.sports_card, shared by every scoreboard."""
         return _card.coerce_rgb(value, fallback)
 
-    def _favorite_teams_for(self, game: Dict[str, Any]) -> list:
-        """Delegates to src.common.sports_card, shared by every scoreboard."""
-        return _card.favorite_teams_for(self.config, game)
-
     @staticmethod
     def _side_is_favorite(game: Dict[str, Any], side: str, favorites: set) -> bool:
         """Delegates to src.common.sports_card, shared by every scoreboard."""
@@ -762,17 +758,29 @@ class GameRenderer(SportsGameRendererMixin):
         """
         return self._league_option(league, "show_powerplay", True)
 
-    def _draw_recent_game_status(self, draw: ImageDraw.Draw, _game: Dict) -> None:
-        """Draw status elements for a recently completed hockey game.
-
-        Note: _game parameter reserved for future enhancements (e.g., OT indicator).
-        """
+    def _draw_recent_game_status(self, draw: ImageDraw.Draw, game: Dict) -> None:
+        """Draw status elements for a recently completed hockey game."""
         # Final status (Top center)
         status_text = "Final"
         status_width = draw.textlength(status_text, font=self.fonts['time'])
         status_x = (self.display_width - status_width) // 2
         status_y = 1
         self._draw_text_with_outline(draw, status_text, (status_x, status_y), self.fonts['time'])
+
+        # Game date (Bottom center), as the football, basketball, afl, nrl
+        # and soccer cards draw it -- sat on the bottom edge by its own
+        # measured height, since the detail font scales with the panel.
+        game_date = game.get("game_date", "")
+        if game_date:
+            date_width = draw.textlength(game_date, font=self.fonts['detail'])
+            date_x = (self.display_width - date_width) // 2
+            try:
+                bbox = draw.textbbox((0, 0), game_date, font=self.fonts['detail'])
+                date_h = bbox[3] - bbox[1]
+            except (AttributeError, TypeError, ValueError):
+                date_h = 6
+            date_y = max(0, self.display_height - date_h - 2)
+            self._draw_text_with_outline(draw, game_date, (date_x, date_y), self.fonts['detail'])
 
     def _upcoming_date_and_time(self, game: Dict) -> Tuple[str, str]:
         """Resolve (date, time) text for an upcoming game from any payload shape.

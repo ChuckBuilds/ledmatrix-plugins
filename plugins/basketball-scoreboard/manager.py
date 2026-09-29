@@ -20,20 +20,6 @@ except ImportError:
     VegasDisplayMode = None
     get_background_service = None
 
-# Odds manager: prefer the core-shipped version, fall back to the bundled copy.
-# Kept outside the guard above so a missing odds module can never null BasePlugin.
-try:
-    from src.base_odds_manager import BaseOddsManager
-except ModuleNotFoundError as exc:
-    # Fall back only when the CORE module is absent; an import failure from
-    # inside it (missing dependency) should surface, not be masked.
-    if exc.name not in {"src", "src.base_odds_manager"}:
-        raise
-    try:
-        from base_odds_manager import BaseOddsManager
-    except ImportError:
-        BaseOddsManager = None
-
 # Import scroll display components
 try:
     from scroll_display import ScrollDisplayManager
@@ -104,6 +90,17 @@ def _per_game_duration(league_config, mode_type, default=15):
         if seconds > 0:
             return seconds
     return default
+
+
+def _background_settings(config: Dict[str, Any]) -> Dict[str, Any]:
+    """Timeout, retries and priority for the managers' background fetches,
+    from the root ``background_service`` block (schema defaults if absent)."""
+    bg = config.get("background_service") or {}
+    return {
+        "request_timeout": bg.get("request_timeout", 30),
+        "max_retries": bg.get("max_retries", 3),
+        "priority": bg.get("priority", 2),
+    }
 
 
 class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
@@ -590,85 +587,6 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
         
         return enabled_leagues
 
-    def _apply_sticky_manager_logic(self, display_mode: str, managers_to_try: list) -> list:
-        """Apply sticky manager logic to filter managers list.
-        
-        Args:
-            display_mode: External display mode name
-            managers_to_try: List of managers to try
-            
-        Returns:
-            Filtered list of managers (only sticky manager if exists and available)
-        """
-        sticky_manager = self._sticky_manager_per_mode.get(display_mode)
-        
-        self.logger.info(
-            f"Sticky manager check for {display_mode}: "
-            f"sticky={sticky_manager.__class__.__name__ if sticky_manager else None}, "
-            f"available_managers={[m.__class__.__name__ for m in managers_to_try if m]}"
-        )
-        
-        if sticky_manager and sticky_manager in managers_to_try:
-            self.logger.info(
-                f"Using sticky manager {sticky_manager.__class__.__name__} for {display_mode} - "
-                "RESTRICTING to this manager only"
-            )
-            return [sticky_manager]
-        
-        # No sticky manager or not in list - clean up if needed
-        if sticky_manager:
-            self.logger.info(
-                f"Sticky manager {sticky_manager.__class__.__name__} no longer available for {display_mode}, "
-                f"selecting new one from {len(managers_to_try)} options"
-            )
-            self._sticky_manager_per_mode.pop(display_mode, None)
-            self._sticky_manager_start_time.pop(display_mode, None)
-        else:
-            self.logger.info(
-                f"No sticky manager yet for {display_mode}, will select from {len(managers_to_try)} available managers"
-            )
-        
-        return managers_to_try
-
-    def _get_managers_for_mode_type(self, mode_type: str) -> List:
-        """
-        Get managers in priority order for a specific mode type.
-        
-        This method returns manager instances for all enabled leagues that have
-        the specified mode type enabled, sorted by league priority.
-        
-        Args:
-            mode_type: Mode type ('live', 'recent', or 'upcoming')
-            
-        Returns:
-            List of manager instances in priority order (highest priority first)
-            Managers are filtered to only include enabled leagues with the mode enabled
-            
-        This is used by the sequential block display logic to determine which
-        leagues should be shown and in what order.
-        """
-        managers = []
-        
-        # Get enabled leagues for this mode type in priority order
-        enabled_leagues = self._get_enabled_leagues_for_mode(mode_type)
-        
-        # Get managers for each enabled league in priority order
-        for league_id in enabled_leagues:
-            manager = self._get_league_manager_for_mode(league_id, mode_type)
-            if manager:
-                managers.append(manager)
-                self.logger.debug(
-                    f"Added {league_id} {mode_type} manager to priority list "
-                    f"(priority: {self._league_registry[league_id].get('priority', 999)})"
-                )
-        
-        self.logger.debug(
-            f"Managers in priority order for {mode_type}: "
-            f"{[m.__class__.__name__ for m in managers]}"
-        )
-        
-        return managers
-
     def _get_league_manager_for_mode(self, league_id: str, mode_type: str):
         """
         Get the manager instance for a specific league and mode type.
@@ -997,11 +915,9 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
                 "show_all_live": show_all_live,
                 "filtering": filtering,
                 "march_madness": league_config.get("march_madness", {}),
-                "background_service": {
-                    "request_timeout": 30,
-                    "max_retries": 3,
-                    "priority": 2,
-                },
+                # The root background_service settings; these were pinned
+                # at their defaults here, so changing them did nothing.
+                "background_service": _background_settings(self.config),
             }
         }
 
@@ -3298,27 +3214,6 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
         # No favorite teams configured, any live game counts
         return True
 
-    def _filter_managers_by_live_content(self, managers: list, mode_type: str) -> list:
-        """Filter managers based on live content when in live mode.
-        
-        Args:
-            managers: List of manager instances
-            mode_type: 'live', 'recent', or 'upcoming'
-            
-        Returns:
-            Filtered list of managers with live content (for live mode) or original list
-        """
-        if mode_type != 'live':
-            return managers
-        
-        # For live mode, only include managers with actual live games
-        filtered = []
-        for manager in managers:
-            if self._has_live_games_for_manager(manager):
-                filtered.append(manager)
-        
-        return filtered
-
     def _resolve_managers_for_mode(self, mode_type: str) -> list:
         """
         Resolve ordered list of managers to try for a given mode type.
@@ -3360,7 +3255,7 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
             # Only include managers with live_priority enabled AND actual live games
             for league_id in enabled_leagues:
                 league_data = self._league_registry.get(league_id, {})
-                live_priority = league_data.get('live_priority', False)
+                live_priority = league_data.get('live_priority', True)
                 
                 manager = self._get_league_manager_for_mode(league_id, 'live')
                 if not manager:

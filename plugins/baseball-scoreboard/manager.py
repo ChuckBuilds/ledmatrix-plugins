@@ -217,10 +217,10 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
         self.game_display_duration = float(config.get("game_display_duration", 15))
 
         # Live priority per league
-        self.mlb_live_priority = self.config.get("mlb", {}).get("live_priority", False)
-        self.milb_live_priority = self.config.get("milb", {}).get("live_priority", False)
+        self.mlb_live_priority = self.config.get("mlb", {}).get("live_priority", True)
+        self.milb_live_priority = self.config.get("milb", {}).get("live_priority", True)
         self.ncaa_baseball_live_priority = self.config.get("ncaa_baseball", {}).get(
-            "live_priority", False
+            "live_priority", True
         )
         
         # Display mode settings per league and game type
@@ -367,9 +367,9 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
         self.ncaa_baseball_enabled = self.config.get("ncaa_baseball", {}).get("enabled", False)
         self.display_duration = float(self.config.get("display_duration", 30))
         self.game_display_duration = float(self.config.get("game_display_duration", 15))
-        self.mlb_live_priority = self.config.get("mlb", {}).get("live_priority", False)
-        self.milb_live_priority = self.config.get("milb", {}).get("live_priority", False)
-        self.ncaa_baseball_live_priority = self.config.get("ncaa_baseball", {}).get("live_priority", False)
+        self.mlb_live_priority = self.config.get("mlb", {}).get("live_priority", True)
+        self.milb_live_priority = self.config.get("milb", {}).get("live_priority", True)
+        self.ncaa_baseball_live_priority = self.config.get("ncaa_baseball", {}).get("live_priority", True)
         self._display_mode_settings = self._parse_display_mode_settings()
 
         # Tear down the existing managers (close HTTP sessions) before rebuilding.
@@ -566,7 +566,7 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
         # self._league_registry['xfl'] = {
         #     'enabled': self.config.get('xfl', {}).get('enabled', False),
         #     'priority': 3,
-        #     'live_priority': self.config.get('xfl', {}).get('live_priority', False),
+        #     'live_priority': self.config.get('xfl', {}).get('live_priority', True),
         #     'managers': {
         #         'live': getattr(self, 'xfl_live', None),
         #         'recent': getattr(self, 'xfl_recent', None),
@@ -864,7 +864,7 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
                     "upcoming_game_duration",
                     15  # Default per-game duration for upcoming games
                 ),
-                "live_priority": league_config.get("live_priority", False),
+                "live_priority": league_config.get("live_priority", True),
                 "test_mode": league_config.get("test_mode", False),
                 "show_favorite_teams_only": show_favorites_only,
                 "show_all_live": show_all_live,
@@ -3939,27 +3939,6 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
         )
         return True
 
-    def _filter_managers_by_live_content(self, managers: list, mode_type: str) -> list:
-        """Filter managers based on live content when in live mode.
-        
-        Args:
-            managers: List of manager instances
-            mode_type: 'live', 'recent', or 'upcoming'
-            
-        Returns:
-            Filtered list of managers with live content (for live mode) or original list
-        """
-        if mode_type != 'live':
-            return managers
-        
-        # For live mode, only include managers with actual live games
-        filtered = []
-        for manager in managers:
-            if self._has_live_games_for_manager(manager):
-                filtered.append(manager)
-        
-        return filtered
-
     def _resolve_managers_for_mode(self, mode_type: str) -> list:
         """
         Resolve ordered list of managers to try for a given mode type.
@@ -4001,7 +3980,7 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
             # Only include managers with live_priority enabled AND actual live games
             for league_id in enabled_leagues:
                 league_data = self._league_registry.get(league_id, {})
-                live_priority = league_data.get('live_priority', False)
+                live_priority = league_data.get('live_priority', True)
                 
                 manager = self._get_league_manager_for_mode(league_id, 'live')
                 if not manager:
