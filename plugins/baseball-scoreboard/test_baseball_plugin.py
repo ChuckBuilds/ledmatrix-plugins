@@ -215,9 +215,10 @@ def _plugin_for_pytest():
     yield built
     try:
         built.cleanup()
-    except Exception:  # pylint: disable=broad-exception-caught
+    except Exception as exc:  # pylint: disable=broad-exception-caught
         # Teardown must not fail the test; cleanup() can raise anything.
-        pass
+        # Say so rather than swallowing it, so a broken cleanup() is visible.
+        print(f"[WARN] cleanup() raised during teardown: {exc!r}")
 
 
 def test_plugin_update(plugin):
