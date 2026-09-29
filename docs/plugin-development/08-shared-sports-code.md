@@ -6,11 +6,11 @@ family of shared-shape modules:
 
 | Module | Copies | Notes |
 |---|---|---|
-| `sports.py` | 9 | `SportsCore` / `SportsUpcoming` / `SportsRecent` / `SportsLive` |
+| `sports.py` | 9 | `SportsCore` / `SportsUpcoming` / `SportsRecent` / `SportsLive`. The celebration drawing and the season-fetch / lookback / live-odds methods are core's (3.7.0, see below) |
 | `scroll_display.py` | 10 | + `f1-scoreboard` (a reduced rewrite) |
 | `data_sources.py` | 9 | soccer's copy is byte-equivalent to the core's |
 | `base_odds_manager.py` | 1 | ufc's MMA fork (athlete odds) only; the other eight import core's `src.base_odds_manager` |
-| `game_renderer.py` | 8 | |
+| `game_renderer.py` | 8 | the `sports_card` delegations are core's `SportsCardWrappersMixin` (3.7.0) |
 | `dynamic_team_resolver.py` | 8 | true forks — different constructor signatures |
 | `logo_downloader.py` | 0 | every scoreboard imports core's `src.logo_downloader` (f1-scoreboard's same-named file is an unrelated `F1LogoLoader`) |
 | `<sport>_espn_dates.py` | 0 | none left. All nine scoreboards floor on core 3.5.0 and import `src.common.espn_dates` plainly (sunset: the eight team scoreboards in stage 1a, ufc in 1b). `scripts/test_espn_dates_copies.py` fails if a plugin in its `SUNSET_PLUGINS` grows its copy or a guarded import back, and on a fetch that sends ESPN `dates` without the helper. Fix it in core |
@@ -37,7 +37,9 @@ to share a patch, while cross-lineage copies usually are not.
    scorebug (`_adaptive_scorebug`, `layout_mode` config), and is the only
    `sports.py` that imports `src.element_style` and `game_renderer`.
 3. **hockey / lacrosse / baseball / basketball / ufc** — the oldest lineage
-   (2,400–2,900 lines). No celebration code. Live rotation via
+   (2,400–2,900 lines). Only hockey celebrates (goals and wins, spelled
+   `_check_for_goal` like the soccer lineage, with its own net scenery).
+   Live rotation via
    `_build_weighted_schedule` (baseball/basketball/football) or
    `_build_rotation_schedule` (hockey). Favorite/live-duration helpers live on
    `SportsLive`.
@@ -82,6 +84,35 @@ the core actually ships:
   its own older check); each
   `<sport>_timezone.py` keeps only its binding (label, write-back release,
   logger), so its callers and tests are unchanged.
+- **Converged at 3.7.0 (sports consolidation stage 3):** three modules
+  holding code that was identical in every plugin carrying it. The nine
+  scoreboards floor on 3.7.0 and import them plainly;
+  `scripts/test_stage3_mixin_copies.py` fails if a copy, a guarded import or
+  a missing base comes back.
+  - `src.common.sports_fetch` — `SportsCore` (all nine) inherits
+    `SportsFetchMixin`: `_fetch_season_directly`,
+    `_background_fetches_espn_ranges`, `_needs_previous_day`,
+    `_wants_live_odds`.
+  - `src.common.sports_celebration` — `SportsLive` in afl, football, hockey,
+    nrl and soccer inherits `SportsCelebrationMixin`, which draws the
+    score/win takeover (`_draw_celebration_layout`, the team palette read off
+    the crest, scenery, confetti); the colour helpers are its free functions.
+    Only the drawing moved: each plugin still decides when to celebrate, the
+    phrase and the scenery (`_start_celebration`, `_check_for_goal` /
+    `_check_for_score`, `_check_for_win`, nrl matching favourites by id), and
+    keeps its own `display()`. `scripts/test_celebration_renders.py` pins the
+    takeover's pixels in all five.
+  - `src.common.sports_card_wrappers` — `GameRenderer` (the eight with one)
+    inherits `SportsCardWrappersMixin`, the `sports_card` delegations
+    `SportsGameRendererMixin` expects. football keeps its own
+    `_format_game_date` and `_upcoming_center_mode` (they follow the
+    switch-mode settings), which override the mixin's.
+
+  Identical but deliberately left in the plugins: `_get_timezone` (binds the
+  plugin's own timezone module), the abstract `_extract_game_details` /
+  `_fetch_data`, `SportsUpcoming.__init__` (no core mixin has a
+  constructor), and the renderer's `_schema_font_size` / `_resolve_font_size`
+  (they read the plugin's own `config_schema.json`).
 - **Not converging (documented forks):** `dynamic_team_resolver` (plugin copies
   take `cache_manager` in the constructor; the core's does not — different
   API), ufc's `base_odds_manager` (MMA athlete-odds fork), and — until the core

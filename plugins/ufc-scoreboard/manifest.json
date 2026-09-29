@@ -1,7 +1,7 @@
 {
   "id": "ufc-scoreboard",
   "name": "UFC Scoreboard",
-  "version": "1.17.0",
+  "version": "1.18.0",
   "author": "LegoGuy1000",
   "contributors": [
     {
@@ -32,6 +32,12 @@
   "default_duration": 15,
   "config_schema": "config_schema.json",
   "versions": [
+    {
+      "version": "1.18.0",
+      "released": "2026-09-29",
+      "ledmatrix_min_version": "3.7.0",
+      "notes": "Requires LEDMatrix core 3.7.0, the first release that ships the code this plugin carried a copy of: the season-fetch, lookback and live-odds methods (src.common.sports_fetch). The bundled copies are removed and the plugin inherits core's mixins. No behaviour change: the code is the same, every safety-harness render and celebration golden is byte-identical, and every plugin test gives the same result."
+    },
     {
       "version": "1.17.0",
       "released": "2026-09-29",
@@ -349,6 +355,6 @@
   "verified": true,
   "screenshot": "",
   "compatible_versions": [
-    ">=3.6.1"
+    ">=3.7.0"
   ]
 }

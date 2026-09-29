@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.35.0] - 2026-09-29
+
+### Changed
+- Requires LEDMatrix core 3.7.0 (`ledmatrix_min_version` and
+  `compatible_versions`), the first release that ships
+  `src/common/sports_fetch.py` and `src/common/sports_card_wrappers.py`. The store refuses to
+  install or update this version onto an older core.
+
+### Removed
+- `SportsCore._fetch_season_directly`, `_background_fetches_espn_ranges`,
+  `_needs_previous_day` and `_wants_live_odds`: `SportsCore` inherits
+  `SportsFetchMixin` (`src.common.sports_fetch`).
+- The `sports_card` delegations in `game_renderer.py`: `GameRenderer`
+  inherits `SportsCardWrappersMixin` (`src.common.sports_card_wrappers`).
+
+No behaviour change: the code is the same, and every safety-harness render
+and celebration golden is byte-identical.
+
 ## [1.34.0] - 2026-09-29
 
 ### Changed
