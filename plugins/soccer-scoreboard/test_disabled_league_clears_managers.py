@@ -93,7 +93,6 @@ def main():
     obj._active_update_threads = {}
     obj._scroll_prepared = {}
     obj._scroll_active = {}
-    obj._favorites_checked = set()
     obj._vegas_signature = None
     obj._scroll_manager = None
     obj.current_mode_index = 0

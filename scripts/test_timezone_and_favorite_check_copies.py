@@ -5,7 +5,8 @@ LEDMatrix core ships ``src/common/favorite_team_check.py`` and
 ``src/common/sports_timezone.py`` (first released in 3.6.0; 3.6.1 fixed the
 favourite check calling a started postseason a finished season). The
 scoreboards used to bundle copies: ``<sport>_favorite_check.py`` in seven,
-and the resolver inside ``<sport>_timezone.py`` in ten. The plugins below
+and the resolver inside ``<sport>_timezone.py`` in ten. (soccer never had a
+copy; it moved from its own older check straight to core's.) The plugins below
 floor on 3.6.1 and have deleted them (the sunset), so this guard checks that
 the sunset holds:
 
@@ -62,6 +63,7 @@ TIMEZONE_CORE = "src.common.sports_timezone"
 #: somebody states the sunset holds for it.
 FAVORITE_SUNSET = frozenset({
     "afl", "baseball", "basketball", "football", "hockey", "lacrosse", "nrl",
+    "soccer",
 })
 
 #: Each timezone binding's values: (plugin_label, writeback_fixed_in). The
