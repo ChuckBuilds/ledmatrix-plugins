@@ -63,16 +63,7 @@ except ImportError:
     SCROLL_AVAILABLE = False
 
 from football_timezone import resolve_timezone_name
-# Prefer core's favourite-team check; fall back to the bundled copy on cores
-# that don't ship src.common.favorite_team_check yet.
-try:
-    from src.common.favorite_team_check import FavoriteTeamCheck
-except ModuleNotFoundError as exc:
-    # Fall back only when the CORE module is absent; an import failure from
-    # inside it should surface, not be masked.
-    if exc.name not in {"src", "src.common", "src.common.favorite_team_check"}:
-        raise
-    from football_favorite_check import FavoriteTeamCheck
+from src.common.favorite_team_check import FavoriteTeamCheck
 
 
 #: Scroll display the Vegas ticker's combined live/recent/upcoming slate uses.
