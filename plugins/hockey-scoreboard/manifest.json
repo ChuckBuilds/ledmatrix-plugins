@@ -1,7 +1,7 @@
 {
   "id": "hockey-scoreboard",
   "name": "Hockey Scoreboard",
-  "version": "1.37.1",
+  "version": "1.37.2",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, and NCAA Women's hockey with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/hockey-scoreboard",
@@ -54,6 +54,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.37.2",
+      "released": "2026-09-29",
+      "ledmatrix_min_version": "3.5.0",
+      "notes": "The favourite-team check no longer says the season has finished when the postseason has started. The day after a regular season ends, ESPN's scoreboard still shows that last regular-season day, so a playoff team's fan was told the season was over while their team's playoff games were on the display. The check now says nothing in that case. Same fix as LEDMatrix core's src.common.favorite_team_check."
+    },
     {
       "version": "1.37.1",
       "released": "2026-09-29",
