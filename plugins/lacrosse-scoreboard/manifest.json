@@ -1,7 +1,7 @@
 {
   "id": "lacrosse-scoreboard",
   "name": "Lacrosse Scoreboard",
-  "version": "1.33.0",
+  "version": "1.33.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NCAA men's and women's lacrosse games with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/lacrosse-scoreboard",
@@ -50,6 +50,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.33.1",
+      "released": "2026-09-29",
+      "ledmatrix_min_version": "3.5.0",
+      "notes": "Uses LEDMatrix core's copies of two modules this plugin bundles, when the core ships them: the favourite-team check (src.common.favorite_team_check, promoted from lacrosse_favorite_check.py) and the timezone resolver (src.common.sports_timezone, promoted from lacrosse_timezone.py). On older cores the bundled copies still run, so the floor stays 3.5.0. No behaviour change: the code is the same, the timezone chosen and every log message are identical on both paths, and every safety-harness render is byte-identical."
+    },
     {
       "version": "1.33.0",
       "released": "2026-09-28",

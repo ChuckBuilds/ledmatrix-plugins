@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.51.0",
+  "version": "1.51.1",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.51.1",
+      "released": "2026-09-29",
+      "ledmatrix_min_version": "3.5.0",
+      "notes": "Uses LEDMatrix core's copies of two modules this plugin bundles, when the core ships them: the favourite-team check (src.common.favorite_team_check, promoted from baseball_favorite_check.py) and the timezone resolver (src.common.sports_timezone, promoted from baseball_timezone.py). On older cores the bundled copies still run, so the floor stays 3.5.0. No behaviour change: the code is the same, the timezone chosen and every log message are identical on both paths, and every safety-harness render is byte-identical."
+    },
     {
       "version": "1.51.0",
       "released": "2026-09-28",
