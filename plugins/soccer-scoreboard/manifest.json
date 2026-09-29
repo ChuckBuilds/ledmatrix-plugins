@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.35.0",
+  "version": "2.35.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -53,6 +53,12 @@
     "soccer_usa.1_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.35.1",
+      "released": "2026-09-29",
+      "ledmatrix_min_version": "3.5.0",
+      "notes": "Uses LEDMatrix core's timezone resolver (src.common.sports_timezone, promoted from soccer_timezone.py) when the core ships it. On older cores the bundled copy still runs, so the floor stays 3.5.0. No behaviour change: the code is the same, the timezone chosen and every log message are identical on both paths, and every safety-harness render is byte-identical."
+    },
     {
       "version": "2.35.0",
       "released": "2026-09-28",

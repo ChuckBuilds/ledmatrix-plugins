@@ -1,7 +1,7 @@
 {
   "id": "hockey-scoreboard",
   "name": "Hockey Scoreboard",
-  "version": "1.37.0",
+  "version": "1.37.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, and NCAA Women's hockey with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/hockey-scoreboard",
@@ -54,6 +54,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.37.1",
+      "released": "2026-09-29",
+      "ledmatrix_min_version": "3.5.0",
+      "notes": "Uses LEDMatrix core's copies of two modules this plugin bundles, when the core ships them: the favourite-team check (src.common.favorite_team_check, promoted from hockey_favorite_check.py) and the timezone resolver (src.common.sports_timezone, promoted from hockey_timezone.py). On older cores the bundled copies still run, so the floor stays 3.5.0. No behaviour change: the code is the same, the timezone chosen and every log message are identical on both paths, and every safety-harness render is byte-identical."
+    },
     {
       "version": "1.37.0",
       "released": "2026-09-28",

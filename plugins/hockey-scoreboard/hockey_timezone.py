@@ -250,3 +250,41 @@ def resolve_timezone(
             log=log,
         )
     )
+
+
+# On a core that ships src.common.sports_timezone, resolve through it: it is
+# the code above with this plugin's values passed in, so the answer and the
+# log messages are the same (and, with no ``log`` given, so is the logger they
+# go to). Everything above stays as the fallback for older cores until the
+# plugin floors on the core release that ships the module.
+try:
+    import src.common.sports_timezone as _core
+except ModuleNotFoundError as exc:
+    # Fall back only when the CORE module is absent; an import failure from
+    # inside it should surface, not be masked.
+    if exc.name not in {"src", "src.common", "src.common.sports_timezone"}:
+        raise
+else:
+    _CORE_ARGS: Dict[str, Any] = {
+        "plugin_label": "hockey scoreboard",
+        "writeback_fixed_in": _WRITEBACK_FIXED_IN if _HAD_WRITEBACK_BUG else None,
+    }
+    system_timezone_name = _core.system_timezone_name  # noqa: F811 -- replaces the fallback above  # pylint: disable=function-redefined
+
+    def resolve_timezone_name(  # noqa: F811 -- replaces the fallback above  # pylint: disable=function-redefined
+        config: Optional[Dict[str, Any]] = None,
+        plugin_manager: Any = None,
+        cache_manager: Any = None,
+        log: Optional[logging.Logger] = None,
+    ) -> str:
+        return _core.resolve_timezone_name(
+            config, plugin_manager, cache_manager, log or logger, **_CORE_ARGS)
+
+    def resolve_timezone(  # noqa: F811 -- replaces the fallback above  # pylint: disable=function-redefined
+        config: Optional[Dict[str, Any]] = None,
+        plugin_manager: Any = None,
+        cache_manager: Any = None,
+        log: Optional[logging.Logger] = None,
+    ):
+        return _core.resolve_timezone(
+            config, plugin_manager, cache_manager, log or logger, **_CORE_ARGS)

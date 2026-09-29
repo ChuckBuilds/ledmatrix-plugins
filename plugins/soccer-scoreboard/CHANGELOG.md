@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.35.1] - 2026-09-29
+
+### Changed
+- On a core that ships it, the timezone resolver runs core's copy:
+  `soccer_timezone.py` resolves through `src.common.sports_timezone` with this
+  plugin's values. The core module was promoted from this file, which stays as
+  the fallback on older cores (the floor stays 3.5.0).
+
+No behaviour change: the timezone chosen and every log message are identical
+on both paths, and every safety-harness render is byte-identical.
+
 ## [2.35.0] - 2026-09-28
 
 ### Changed
