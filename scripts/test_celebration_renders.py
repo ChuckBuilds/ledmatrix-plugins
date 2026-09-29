@@ -20,7 +20,11 @@ WHAT IS FIXED
 * The crests are drawn here rather than read from logo files, which differ
   between checkouts (see test_scroll_card_renders.py).
 * The fonts are the core's own, at fixed sizes, not each plugin's font
-  settings: those are not part of the takeover.
+  settings: those are not part of the takeover. They are loaded with core's
+  ``font_layout.load_truetype``, which pins Pillow's Basic layout engine:
+  with Raqm (Linux wheels have it, Windows ones do not) the 4x6 face's
+  fractional advances land differently, and the 64-wide frames, whose
+  headline falls back to that face, differed between platforms.
 * The clock: ``time.time`` is patched for the whole render, so the flash, the
   breathing digits and the confetti fall land on the same frame every run.
   Patching the ``time`` module rather than one plugin's global keeps this
@@ -130,7 +134,8 @@ def load_sports(plugin):
 def render(sports, width, height, motif, kind="score", scored_side="away",
            scorer="RED", elapsed=2.0, team_colors=True, confetti=True):
     """One frame of the takeover, drawn by this plugin's SportsLive."""
-    from PIL import Image, ImageFont
+    from PIL import Image
+    from src.common.font_layout import load_truetype
 
     class _Matrix:
         pass
@@ -158,10 +163,10 @@ def render(sports, width, height, motif, kind="score", scored_side="away",
     live.celebration_confetti = confetti
     press = os.path.join("assets", "fonts", "PressStart2P-Regular.ttf")
     live.fonts = {
-        "time": ImageFont.truetype(press, 8),
-        "status": ImageFont.truetype(os.path.join("assets", "fonts", "4x6-font.ttf"), 6),
+        "time": load_truetype(press, 8),
+        "status": load_truetype(os.path.join("assets", "fonts", "4x6-font.ttf"), 6),
         # Tall panels scale the score up (#338); 16px is what they reach.
-        "score": ImageFont.truetype(press, 16 if height >= 48 else 10),
+        "score": load_truetype(press, 16 if height >= 48 else 10),
     }
 
     def load_logo(team_id, abbr, path, url=None):
