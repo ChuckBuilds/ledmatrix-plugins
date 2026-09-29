@@ -1,5 +1,5 @@
 {
-  "_comment": "Deterministic fixture for the plugin safety harness. Seeds the NHL schedule-window cache (key nhl_schedule_window_14_7: _schedule_window()'s suffix for the default 14-day lookback and 7-day lookahead) with one final, one in-progress, and one scheduled game so recent/upcoming render real game cards without network access. Live mode is disabled: NHLLiveManager._fetch_data() -> _fetch_todays_games() is a direct network call with no cache read and no test_mode passthrough in _adapt_config_for_manager, so the live screen can never be fed from mock data and would render blank after ~30s of connection retries per render. The huge update_intervals.live keeps the always-instantiated live manager from attempting that doomed network fetch on every update() (under freeze_time, now - last_update stays below it), keeping CI runs fast.",
+  "_comment": "Deterministic fixture for the plugin safety harness. Seeds the NHL schedule-window cache (key nhl_schedule_window_14_7: _schedule_window()'s suffix for the default 14-day lookback and 7-day lookahead) with one final, one in-progress, and one scheduled game so recent/upcoming render real game cards without network access. test_mode makes the always-instantiated live manager simulate its game instead of fetching today's scoreboard (NHLLiveManager._fetch_data() -> _fetch_todays_games() is a direct network call with no cache read). A huge update_intervals.live used to stand in for it, but with no live games the live manager polls on its idle back-off, not that interval, so it fetched on every render. update() must stay cache-only: freezegun hands the real clock to calls made from a thread's run(), so the SwitchRefresh thread display() starts always finds its manager due and runs update(), and a fetch still in flight when freeze_time ends reads the real date. Live display stays off so the screens under test and their goldens are unchanged.",
   "config": {
     "enabled": true,
     "timezone": "UTC",
@@ -18,14 +18,12 @@
         "favorite_teams_only": false,
         "show_all_live": true
       },
-      "update_intervals": {
-        "live": 9999999999
-      },
       "display_options": {
         "show_records": false,
         "show_ranking": false,
         "show_odds": false
-      }
+      },
+      "test_mode": true
     },
     "ncaa_mens": {
       "enabled": false
