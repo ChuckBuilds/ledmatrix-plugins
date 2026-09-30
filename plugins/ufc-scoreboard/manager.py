@@ -40,6 +40,13 @@ except ImportError:
 
 from ufc_timezone import resolve_timezone_name
 
+# Live Vegas cards (LEDMatrix 3.8.0). Guarded: the manifest floor is advisory,
+# and without the module the ticker simply keeps using get_vegas_content().
+try:
+    from src.common import sports_vegas
+except ImportError:
+    sports_vegas = None
+
 
 _ROOT_CONFIG_KEYS = (
     "schedule_lookback_days",
@@ -222,7 +229,8 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
         self._initialize_managers()
         self._initialize_league_registry()
 
-        # Rebuild the scroll display manager so it sees the new config.
+        # Rebuild the scroll display manager so it sees the new config. The
+        # live Vegas cards are cached there too, so they are redrawn with it.
         self._scroll_manager = None
         if SCROLL_AVAILABLE and ScrollDisplayManager:
             try:
@@ -1512,6 +1520,41 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
                 bool(fight.get("odds")),
             ))
         return tuple(fingerprint)
+
+    def get_vegas_elements(self) -> Optional[List[Any]]:
+        """Live Vegas cards: one per fight, swapped in place when its fight changes.
+
+        The slate get_vegas_content() shows, plus fights that have just ended,
+        so a card on its way across the panel turns to its result instead of
+        keeping its last round clock. A card is drawn again only when its
+        fight's data changed (ScrollDisplayManager.build_vegas_elements). None
+        -- no live cards in this core, or nothing to show -- and the ticker
+        uses get_vegas_content() instead. Like it, no update() and no network.
+        """
+        scroll_manager = getattr(self, "_scroll_manager", None)
+        build = getattr(scroll_manager, "build_vegas_elements", None)
+        if build is None or sports_vegas is None:
+            return None
+        try:
+            fights, _leagues = self.vegas_slate()
+        except Exception:
+            self.logger.exception("[UFC Vegas] Failed to collect fights")
+            return None
+        if not fights:
+            return None
+        try:
+            return build(fights)
+        except Exception:
+            # Drawn straight from feed data, like the scroll content.
+            self.logger.exception("[UFC Vegas] Error building live cards")
+            return None
+
+    def vegas_slate(self) -> Tuple[List[Dict], List[str]]:
+        """The fights the live Vegas cards show, and their leagues in order."""
+        fights, leagues = self._collect_fights_for_scroll()
+        live_manager = self._get_league_manager_for_mode("ufc", "live")
+        return sports_vegas.with_finished_games(
+            fights, leagues, sports_vegas.finished_games([("ufc", live_manager)]))
 
     def get_vegas_content_type(self) -> str:
         """Indicate the type of content for Vegas scroll."""

@@ -66,6 +66,13 @@ from soccer_managers import (
 from soccer_timezone import resolve_timezone_name
 from src.common.favorite_team_check import FavoriteTeamCheck
 
+# Live Vegas cards (LEDMatrix 3.8.0). Guarded: the manifest floor is advisory,
+# and without the module the ticker simply keeps using get_vegas_content().
+try:
+    from src.common import sports_vegas
+except ImportError:
+    sports_vegas = None
+
 
 _ROOT_CONFIG_KEYS = (
     "schedule_lookback_days",
@@ -3268,6 +3275,49 @@ class SoccerScoreboardPlugin(BasePlugin if BasePlugin else object):
                 game.get('is_final'), bool(game.get('odds')),
             ))
         return tuple(fingerprint)
+
+    def get_vegas_elements(self) -> Optional[List[Any]]:
+        """Live Vegas cards: one per game, swapped in place when its game changes.
+
+        The slate get_vegas_content() shows, plus games that have just gone
+        final, so a card on its way across the panel turns to Final instead
+        of keeping its last live score. A card is drawn again only when its
+        game's data changed, the running clock included (core's
+        build_vegas_elements). None -- no live cards in this core, or nothing
+        to show -- and the ticker uses get_vegas_content() instead.
+        """
+        scroll_manager = getattr(self, '_scroll_manager', None)
+        build = getattr(scroll_manager, 'get_vegas_elements_for', None)
+        if build is None or sports_vegas is None:
+            return None
+        try:
+            games, leagues = self.vegas_slate()
+        except Exception:
+            self.logger.exception("[Soccer Vegas] Failed to collect games")
+            return None
+        if not games:
+            return None
+        return build(_VEGAS_SCROLL_KEY, games, leagues, self._get_rankings_cache())
+
+    def vegas_slate(self) -> Tuple[List[Dict], List[str]]:
+        """The games the live Vegas cards show, and their leagues in order."""
+        games, leagues = self._collect_games_for_scroll(mode_type=None)
+        # Every league the collector reads a live list from, custom ones
+        # included -- the same union of modes it walks, so a finished game
+        # comes only from a league whose live games were on the slate.
+        slate_leagues: List[str] = []
+        for mode_type in ('live', 'recent', 'upcoming'):
+            for league in self._get_enabled_leagues_for_mode(mode_type):
+                if league not in slate_leagues:
+                    slate_leagues.append(league)
+        # In the collector's league order, so a league with nothing else on
+        # the slate adds its finished games in priority order, not mode order.
+        registry = self._league_registry
+        slate_leagues.sort(key=lambda lk: (registry.get(lk, {}).get('priority', 999), lk))
+        live_managers = [(league, self._get_league_manager_for_mode(league, 'live'))
+                         for league in slate_leagues]
+        return sports_vegas.with_finished_games(
+            games, leagues, sports_vegas.finished_games(live_managers))
 
     def get_vegas_content_type(self) -> str:
         """

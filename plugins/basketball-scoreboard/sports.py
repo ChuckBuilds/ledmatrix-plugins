@@ -3548,6 +3548,42 @@ class SportsLive(SportsLiveSharedMixin, SportsCore):
         )
         return False
 
+    def _keep_final_for_vegas(self, details: Dict) -> None:
+        """Hold a game that just went final, so its live Vegas card shows FINAL.
+
+        It leaves live_games with this poll and the recent list picks it up
+        only at that list's next refresh; in between, nothing else holds the
+        final score. getattr-guarded: _record_finished_game is core 3.8.0's
+        (SportsLiveSharedMixin), and an older core must stay loadable.
+        """
+        record = getattr(self, "_record_finished_game", None)
+        if record is not None:
+            record(details)
+
+    @staticmethod
+    def _over_as_final(details: Dict) -> Optional[Dict]:
+        """A game _is_game_really_over() dropped, as its final -- or None if it is not over.
+
+        The feed still has it live (Q4 or OT at 0:00), so held as it is its
+        Vegas card would be drawn as a final reading "Q4". Labelled the way
+        _extract_game_details labels a finished game instead. A basketball
+        game cannot end level: tied at 0:00 it is going to overtime, so it is
+        not held at all, and its card keeps its last live picture until the
+        next poll lists it live again.
+        """
+        if str(details.get("home_score")) == str(details.get("away_score")):
+            return None
+        final = dict(details)
+        period_text = final.get("period_text")
+        if not (isinstance(period_text, str) and "final" in period_text.lower()):
+            try:
+                period = int(final.get("period") or 0)
+            except (TypeError, ValueError, OverflowError):
+                period = 0
+            final["period_text"] = "Final/OT" if period > 4 else "Final"
+        final["is_final"] = True
+        return final
+
     def update(self):
         """Update live game data and handle game switching."""
         if not self.is_enabled:
@@ -3637,9 +3673,13 @@ class SportsLive(SportsLiveSharedMixin, SportsCore):
 
                         # Filter out final games and games that appear to be over
                         if details.get("is_final", False):
+                            self._keep_final_for_vegas(details)
                             continue
 
                         if self._is_game_really_over(details):
+                            final = self._over_as_final(details)
+                            if final is not None:
+                                self._keep_final_for_vegas(final)
                             self.logger.info(
                                 f"Skipping game that appears final: {details.get('away_abbr')}@{details.get('home_abbr')} "
                                 f"(clock={details.get('clock')}, period={details.get('period')}, period_text={details.get('period_text')})"

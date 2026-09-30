@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.53.1",
+  "version": "1.54.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.54.0",
+      "released": "2026-09-30",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "Live Vegas cards (requires LEDMatrix core 3.8.0): in the Vegas ticker each game is its own card, and a card already scrolling across the panel updates in place when its game changes -- the score, inning, count, bases, FINAL -- instead of showing what it was when it was drawn. Only the card whose game changed is redrawn. A game that goes final keeps its card, now showing FINAL, until the recent list picks it up. A league whose update finishes in the background after update() returns tells the ticker itself, so its cards do not wait for the next update. Nothing changes outside Vegas, and get_vegas_content() is unchanged for older cores and multi-display sync."
+    },
     {
       "version": "1.53.1",
       "released": "2026-09-29",
@@ -794,7 +800,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-28",
+  "last_updated": "2026-09-30",
   "stars": 0,
   "downloads": 0,
   "verified": true,
@@ -802,6 +808,6 @@
   "class_name": "BaseballScoreboardPlugin",
   "entry_point": "manager.py",
   "compatible_versions": [
-    ">=3.7.0"
+    ">=3.8.0"
   ]
 }

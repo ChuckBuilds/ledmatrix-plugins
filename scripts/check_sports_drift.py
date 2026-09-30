@@ -216,6 +216,8 @@ def divergent(index):
 DISPLAY_PATH_FUNCTIONS = frozenset({
     "has_live_content", "display", "get_vegas_content", "get_live_modes",
     "get_all_vegas_content_items",
+    # Live Vegas cards (core 3.8.0): asked again after every update().
+    "get_vegas_elements", "vegas_slate",
 })
 
 #: A guard mentioning any of these reads as a deliberate throttle.

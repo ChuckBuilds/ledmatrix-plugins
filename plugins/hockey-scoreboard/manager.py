@@ -47,6 +47,13 @@ from ncaaw_hockey_managers import (
 from hockey_timezone import resolve_timezone_name
 from src.common.favorite_team_check import FavoriteTeamCheck
 
+# Live Vegas cards (LEDMatrix 3.8.0). Guarded: the manifest floor is advisory,
+# and without the module the ticker simply keeps using get_vegas_content().
+try:
+    from src.common import sports_vegas
+except ImportError:
+    sports_vegas = None
+
 # Scroll display key Vegas renders its combined live/recent/upcoming slate into.
 VEGAS_SCROLL_KEY = 'mixed'
 
@@ -3863,6 +3870,51 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
             len(games), summary or 'unclassified', ', '.join(leagues)
         )
         return True
+
+    def get_vegas_elements(self) -> Optional[List[Any]]:
+        """Live Vegas cards: one per game, swapped in place when its game changes.
+
+        The slate get_vegas_content() shows, plus games that have just gone
+        final, so a card on its way across the panel turns to Final instead of
+        keeping its last live score. A card is drawn again only when its
+        game's data changed, the live clock included (core's
+        build_vegas_elements). None -- no live cards in this core, or nothing
+        to show -- and the ticker uses get_vegas_content() instead.
+        """
+        scroll_manager = getattr(self, '_scroll_manager', None)
+        build = getattr(scroll_manager, 'get_vegas_elements_for', None)
+        if build is None or sports_vegas is None:
+            return None
+        try:
+            games, leagues = self.vegas_slate()
+        except Exception:
+            self.logger.exception("[Hockey Vegas] Failed to collect games")
+            return None
+        if not games:
+            return None
+        # No rankings, as get_vegas_content() renders its cards without them.
+        return build(VEGAS_SCROLL_KEY, games, leagues, None)
+
+    def vegas_slate(self) -> Tuple[List[Dict], List[str]]:
+        """The games the live Vegas cards show, and their leagues in order."""
+        games, leagues = self._collect_games_for_scroll()
+        # The leagues _collect_games_for_scroll reads: a disabled league's
+        # managers are never created, so its attributes may not exist.
+        live_managers = [(league, self._get_manager_for_league_mode(league, 'live'))
+                         for league, enabled in (('nhl', self.nhl_enabled),
+                                                 ('ncaam_hockey', self.ncaa_mens_enabled),
+                                                 ('ncaaw_hockey', self.ncaa_womens_enabled))
+                         if enabled]
+        games, leagues = sports_vegas.with_finished_games(
+            games, leagues, sports_vegas.finished_games(live_managers))
+        # Each game with a status dict of its own, holding only the state (all
+        # the collector puts there). GameRenderer caches what it derives from
+        # the flat fields (clock, period, status text) in that dict, in place,
+        # and never refreshes it: shared, any draw -- a card's or the scroll
+        # strip's -- would change the game's fingerprint and redraw an
+        # unchanged card, and a clock updated in place would stay frozen.
+        return [dict(game, status={'state': (game.get('status') or {}).get('state')})
+                for game in games], leagues
 
     def get_vegas_content_type(self) -> str:
         """

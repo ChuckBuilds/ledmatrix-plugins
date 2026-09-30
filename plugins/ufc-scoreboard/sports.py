@@ -2801,6 +2801,18 @@ class SportsLive(SportsLiveSharedMixin, SportsCore):
         )
         return False
 
+    def _keep_final_for_vegas(self, details: Dict) -> None:
+        """Hold a fight that just ended, so its live Vegas card shows the result.
+
+        It leaves live_games with this poll and the recent list picks it up
+        only at that list's next refresh; in between, nothing else holds the
+        result. getattr-guarded: _record_finished_game is core 3.8.0's
+        (SportsLiveSharedMixin), and an older core must stay loadable.
+        """
+        record = getattr(self, "_record_finished_game", None)
+        if record is not None:
+            record(details)
+
     def update(self):
         """Update live game data and handle game switching."""
         if not self.is_enabled:
@@ -2891,6 +2903,7 @@ class SportsLive(SportsLiveSharedMixin, SportsCore):
 
                         # Filter out final games and games that appear to be over
                         if details.get("is_final", False):
+                            self._keep_final_for_vegas(details)
                             self.logger.info(
                                 f"[{self.sport_key.upper()} Live] Filtered out final game: {details.get('away_abbr')}@{details.get('home_abbr')} "
                                 f"(is_final={details.get('is_final')}, clock={details.get('clock')}, period={details.get('period')})"
@@ -2899,6 +2912,7 @@ class SportsLive(SportsLiveSharedMixin, SportsCore):
 
                         # Additional validation: check if game appears to be over
                         if self._is_game_really_over(details):
+                            self._keep_final_for_vegas(details)
                             self.logger.info(
                                 f"[{self.sport_key.upper()} Live] Skipping game that appears final: {details.get('away_abbr')}@{details.get('home_abbr')} "
                                 f"(clock={details.get('clock')}, period={details.get('period')}, period_text={details.get('period_text')})"

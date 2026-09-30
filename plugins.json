@@ -73,10 +73,10 @@
       "plugin_path": "plugins/baseball-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-29",
+      "last_updated": "2026-09-30",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.53.1"
+      "latest_version": "1.54.0"
     },
     {
       "id": "basketball-scoreboard",
@@ -98,10 +98,10 @@
       "plugin_path": "plugins/basketball-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-29",
+      "last_updated": "2026-09-30",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.40.1"
+      "latest_version": "1.41.0"
     },
     {
       "id": "calendar",
@@ -261,10 +261,10 @@
       "plugin_path": "plugins/football-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-29",
+      "last_updated": "2026-09-30",
       "verified": true,
       "screenshot": "",
-      "latest_version": "3.17.1"
+      "latest_version": "3.18.0"
     },
     {
       "id": "geochron",
@@ -356,10 +356,10 @@
       "plugin_path": "plugins/hockey-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-29",
+      "last_updated": "2026-09-30",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.39.0",
+      "latest_version": "1.40.0",
       "icon": "fas fa-hockey-puck"
     },
     {
@@ -380,10 +380,10 @@
       "plugin_path": "plugins/lacrosse-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-29",
+      "last_updated": "2026-09-30",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.35.1",
+      "latest_version": "1.36.0",
       "icon": "fas fa-baseball-ball"
     },
     {
@@ -781,10 +781,10 @@
       "plugin_path": "plugins/soccer-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-29",
+      "last_updated": "2026-09-30",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.38.1"
+      "latest_version": "2.39.0"
     },
     {
       "id": "static-image",
@@ -929,7 +929,7 @@
       "last_updated": "2026-09-30",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.18.1",
+      "latest_version": "1.19.0",
       "icon": "fas fa-fist-raised"
     },
     {
@@ -1072,8 +1072,8 @@
       "downloads": 0,
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.34.0",
-      "last_updated": "2026-09-29"
+      "latest_version": "1.35.0",
+      "last_updated": "2026-09-30"
     },
     {
       "id": "tidbyt-baseball-scoreboard",
@@ -1116,10 +1116,10 @@
       "plugin_path": "plugins/nrl-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-29",
+      "last_updated": "2026-09-30",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.33.0"
+      "latest_version": "1.34.0"
     },
     {
       "id": "jellyfin-now-playing",
