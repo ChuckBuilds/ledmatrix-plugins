@@ -24,6 +24,12 @@ from sports import (
     _status_is_final,
 )
 
+#: ESPN status names for the minute between rounds. The MMA feed sends
+#: STATUS_END_OF_ROUND (state "in", shortDetail "End R2", displayClock "-"
+#: when the round went the distance); STATUS_END_PERIOD is what the team
+#: sports send, and all this plugin used to look for, so a break drew "R2 -".
+_ROUND_BREAK_STATUS_NAMES = frozenset({"STATUS_END_OF_ROUND", "STATUS_END_PERIOD"})
+
 #: Content types accepted as a headshot download.
 _HEADSHOT_CONTENT_TYPES = ("image/png", "image/jpeg", "image/jpg", "image/gif")
 
@@ -387,7 +393,9 @@ class MMA(SportsCore):
                 # in the feed. Without the key the first scheduled bout raised
                 # KeyError and the whole live update was abandoned.
                 "is_halftime": False,
-                "is_period_break": status["type"]["name"] == "STATUS_END_PERIOD",
+                # ESPN's MMA feed names the break STATUS_END_OF_ROUND ("End R2");
+                # STATUS_END_PERIOD is the team-sport name, kept in case.
+                "is_period_break": status["type"]["name"] in _ROUND_BREAK_STATUS_NAMES,
                 "home_score": str(fighter1_score),
                 "away_score": str(fighter2_score),
                 "period": period,
