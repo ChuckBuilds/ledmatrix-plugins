@@ -1,7 +1,7 @@
 {
   "id": "ufc-scoreboard",
   "name": "UFC Scoreboard",
-  "version": "1.18.1",
+  "version": "1.18.3",
   "author": "LegoGuy1000",
   "contributors": [
     {
@@ -32,6 +32,18 @@
   "default_duration": 15,
   "config_schema": "config_schema.json",
   "versions": [
+    {
+      "version": "1.18.3",
+      "released": "2026-09-30",
+      "ledmatrix_min_version": "3.7.0",
+      "notes": "Odds now load: every UFC odds request asked ESPN for .../events/<bout>/competitions/<bout>/odds, which answers 404, because the URL needs the card id as the event; each bout now registers its card with the odds manager. Upcoming keeps a long card's headliners: when the pool is full, a card's first-listed bouts (its early prelims) are dropped first, so the co-main and main event stay (UFC 331 with the default pool of 10 lost both). Adds a test over the recorded UFC 331 scoreboard."
+    },
+    {
+      "version": "1.18.2",
+      "released": "2026-09-30",
+      "ledmatrix_min_version": "3.7.0",
+      "notes": "The live display follows the bout in the cage. ESPN sends a whole fight card as one event whose competitions are its bouts, and the live manager read only the first one listed, an early prelim: once it was over, the card showed nothing live while the main card was on, and before the card started it showed that scheduled bout as live, because a scheduled bout's clock (\"-\") was taken for a running one. Each bout is now its own fight on the live screen, the live switch view and the Vegas cards, keyed by its competition id, and a bout that has not started has no clock. Recent and Upcoming date each bout with its own segment's start instead of the card's opening time, so Recent leads with the main card and Upcoming shows the main event at its real time. Adds a regression test over four recorded ESPN scoreboards of one fight night (UFC 331)."
+    },
     {
       "version": "1.18.1",
       "released": "2026-09-30",

@@ -49,6 +49,11 @@ class BaseOddsManager:
         self.session.mount("https://", adapter)
         self.session.mount("http://", adapter)
 
+        #: bout (competition) id -> card (event) id. ESPN's odds URL needs both,
+        #: and the shared SportsCore._fetch_odds passes only the fight's id, so
+        #: MMA registers each bout it extracts (see register_bout).
+        self._card_of_bout: Dict[str, str] = {}
+
         # Load configuration if available
         if config_manager:
             self._load_configuration()
@@ -78,6 +83,15 @@ class BaseOddsManager:
         except Exception as e:
             self.logger.warning(f"Failed to load BaseOddsManager configuration: {e}")
 
+    def register_bout(self, comp_id: str, event_id: str) -> None:
+        """Remember which card a bout belongs to, for get_odds(event_id=<bout>).
+
+        ESPN answers .../events/<bout>/competitions/<bout>/odds with 404; the
+        URL needs the card's id: .../events/<card>/competitions/<bout>/odds.
+        """
+        if comp_id and event_id:
+            self._card_of_bout[str(comp_id)] = str(event_id)
+
     def get_odds(
         self,
         sport: str,
@@ -104,7 +118,12 @@ class BaseOddsManager:
             raise ValueError("Sport, League, and event_id cannot be None")
 
         if comp_id is None:
-            comp_id = event_id
+            # A registered bout id: the card is the event, the bout the competition.
+            card_id = self._card_of_bout.get(str(event_id))
+            if card_id:
+                comp_id, event_id = event_id, card_id
+            else:
+                comp_id = event_id
 
         cache_key = f"odds_espn_{sport}_{league}_{event_id}_{comp_id}"
 
