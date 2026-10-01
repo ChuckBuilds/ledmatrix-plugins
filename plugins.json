@@ -901,7 +901,8 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "2.8.3",
-      "ledmatrix_min_version": "3.4.0"
+      "ledmatrix_min_version": "3.4.0",
+      "commit": "9826f800aa163713d7927975bb1ddaf0de121751"
     },
     {
       "id": "stocks",
