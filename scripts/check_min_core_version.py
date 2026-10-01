@@ -157,6 +157,10 @@ MODULE_FIRST_VERSION = {
     "src.plugin_system.vegas_elements": None,  # core #696
     "src.plugin_system.testing.vegas": None,  # core #696
     "src.common.sports_vegas": None,  # core #698
+    "src.common.sports_display_rules": None,  # core #705 (sports consolidation stage 4)
+    "src.common.sports_font_path": None,  # core #705
+    "src.common.sports_live_scroll": None,  # core #705
+    "src.common.sports_plugin_host": None,  # core #705
 }
 
 #: Releases whose ``src/__init__.py`` ``__version__`` lags their tag. The
