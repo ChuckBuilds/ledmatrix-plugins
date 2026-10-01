@@ -295,7 +295,7 @@ def test_split_renderer_matches_the_old_one(width, height, show_trails, backgrou
 
 
 def test_matches_the_old_renderer_on_random_skies():
-    rng = random.Random(1914)
+    rng = random.Random(1914)  # nosec B311 - reproducible test data
     for _ in range(60):
         width, height = rng.choice([(64, 32), (128, 32), (128, 64), (192, 48), (512, 64)])
         radius = rng.choice([5, 10, 40])
@@ -855,17 +855,21 @@ def test_overhead_wins_in_both():
 
 
 def test_auto_order():
-    def resolved(**case):
+    def resolved(case):
         return vegas_plugin('auto', **case)._resolve_vegas_mode()
-    everything = dict(airborne=True, overhead=True, anchor=True, mapped=True, proximity=True)
-    assert resolved(**everything) == 'flight_tracking'
-    assert resolved(**dict(everything, airborne=False)) == 'overhead'
-    assert resolved(**dict(everything, airborne=False, proximity=False)) == 'area'
-    assert resolved(**dict(everything, airborne=False, overhead=False)) == 'area'
-    assert resolved(**dict(everything, airborne=False, overhead=False, anchor=False)) == 'map'
-    assert resolved(airborne=False, overhead=False, anchor=False, mapped=False,
-                    proximity=True) == 'stats'
+    everything = {'airborne': True, 'overhead': True, 'anchor': True, 'mapped': True,
+                  'proximity': True}
+    cases = [
+        ({}, 'flight_tracking'),
+        ({'airborne': False}, 'overhead'),
+        ({'airborne': False, 'proximity': False}, 'area'),
+        ({'airborne': False, 'overhead': False}, 'area'),
+        ({'airborne': False, 'overhead': False, 'anchor': False}, 'map'),
+        ({'airborne': False, 'overhead': False, 'anchor': False, 'mapped': False}, 'stats'),
+    ]
+    for change, expected in cases:
+        assert resolved({**everything, **change}) == expected, change
     # A mode the content has no branch for falls through to stats in both.
-    p = vegas_plugin('metar', **dict(everything, airborne=False))
+    p = vegas_plugin('metar', **{**everything, 'airborne': False})
     assert p._resolve_vegas_mode() == 'stats'
     assert p.get_vegas_content_type() == 'multi'
