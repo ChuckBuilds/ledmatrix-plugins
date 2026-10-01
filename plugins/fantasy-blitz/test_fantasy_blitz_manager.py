@@ -253,6 +253,8 @@ def test_vegas_content(frozen):
     cards = plugin.get_vegas_content()
     assert cards and all(card.height == 64 for card in cards)
     assert plugin.get_vegas_content_type() == "multi"
+    wanted = {p["id"] for p in plugin._players_on_screen()}
+    assert {p["id"] for p in plugin._vegas_players()} <= wanted
 
 
 def test_espn_fallback_when_sleeper_is_down(frozen):

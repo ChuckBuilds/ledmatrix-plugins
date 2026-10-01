@@ -999,37 +999,71 @@ def matchup(ctx: RenderContext, item: Dict[str, Any], w: int, h: int, t: float) 
 # S11 Vegas ticker entries
 # ----------------------------------------------------------------------
 
-def vegas_entry(ctx: RenderContext, p: Dict[str, Any], height: int) -> Image.Image:
-    """One ticker item: chip, name, points in the tier colour, sized to ``height``.
+def _vegas_scale(height: int) -> int:
+    """Whole-number zoom of the 32-row ticker design (64 rows draw it at 2x)."""
+    return max(1, int(height) // 32)
 
-    Drawn at 1x and scaled up whole on panels 48 px and taller, so the
-    ticker reads at the same weight as the cards.
+
+def vegas_entry(ctx: RenderContext, p: Dict[str, Any], height: int) -> Image.Image:
+    """One ticker item: the short player card, cut to its natural width.
+
+    Photo (or crest, or jersey chip), name, tier, position, club, injury tag,
+    points in the tier colour, the stat line and the projection bar -- what
+    the short card shows, drawn once at 32 rows and zoomed in whole steps.
+    The ticker is a still strip, so nothing animates.
     """
-    scale_ = 2 if height >= 48 else 1
-    name = model.display_last(p)
+    scale_ = _vegas_scale(height)
     value = ctx.pts(p)
-    pts_text = model.fmt_points(value)
-    base_w = 2 + 11 + 4 + font.text_width(name) + 4 + font.text_width(pts_text) + 8
-    base = Image.new("RGB", (base_w, max(8, height // scale_)), d.BLACK)
-    y = (base.height - 7) // 2
-    x = 2
-    d.chip(base, x, y, 11, 7, team_info(p.get("team")), ctx.jersey(p))
-    x += 15
-    x += d.text(base, name, x, y + 1, d.WHITE) + 4
-    d.text(base, pts_text, x, y + 1, ctx.tier_color(value))
+    proj = ctx.proj(p)
+    tier = ctx.tier(value)
+    color = ctx.tier_color(value)
+    shown = model.fmt_points(value) if value is not None else "-"
+    name = model.display_last(p)
+    pos, club = str(p.get("pos", "")), str(p.get("team", ""))
+    code = model.injury_tag(p.get("injury"))
+    lines = model.stat_lines(p)
+    label = d.TIER_NAMES[tier]
+
+    pw, x0 = 26, 31
+    name_row = font.text_width(name) + (4 + font.text_width(code) + 4 if code else 0)
+    name_row += 6 + font.text_width(label)
+    num_w = font.text_width(shown, 2)
+    tag_row = num_w + 3 + font.text_width("PTS") + 6 + font.text_width(pos) + 6 + font.text_width(club)
+    stat_row = parts_width(lines[0]) if lines else 0
+    inner = max(name_row, tag_row, min(stat_row, 90), 44)
+    w = x0 + inner + 4
+
+    img = Image.new("RGB", (w, 32), d.BLACK)
+    d.frame(img, 0, 0, w, 32, d.scale(color, 0.9))
+    ctx.picture(img, p, 1, 1, pw, 30)
+    x = x0
+    x += d.text(img, name, x, 2, d.WHITE)
+    if code:
+        x += 3
+        x += d.injury_box(img, x, 1, code)
+    d.text(img, label, x0 + inner, 2, color, 1, "right")
+    shown_w = d.big_number(img, shown, x0, 8, color, 2)
+    d.text(img, "PTS", x0 + shown_w + 3, 13, d.scale(color, 0.75))
+    tx = x0 + shown_w + 3 + font.text_width("PTS") + 6
+    tx += d.pos_tag(img, tx, 9, pos) + 2
+    d.text(img, club, tx, 10, d.GRAY)
+    if lines:
+        draw_parts(img, lines[0], x0, 20, inner)
+    d.xp_bar(img, x0, 27, inner, 3, proj, value, 1.0)
+
     if scale_ > 1:
-        base = base.resize((base.width * scale_, base.height * scale_), Image.NEAREST)
-    out = Image.new("RGB", (base.width, height), d.BLACK)
-    out.paste(base, (0, (height - base.height) // 2))
+        img = img.resize((img.width * scale_, img.height * scale_), Image.NEAREST)
+    out = Image.new("RGB", (img.width, height), d.BLACK)
+    out.paste(img, (0, (height - img.height) // 2))
     return out
 
 
 def vegas_title(height: int, label: str = "FANTASY") -> Image.Image:
-    scale_ = 2 if height >= 48 else 1
-    w = font.text_width(label, scale_) + 16
+    scale_ = _vegas_scale(height)
+    w = font.text_width(label, scale_) + 8 * scale_ + 8
     img = Image.new("RGB", (w, height), d.BLACK)
     y = (height - font.text_height(scale_)) // 2
-    d.big_number(img, label, 4, y, d.GOLD, scale_)
+    d.big_number(img, label, 4 * scale_, y, d.GOLD, scale_)
     return img
 
 
