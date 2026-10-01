@@ -151,8 +151,9 @@ MODULE_FIRST_VERSION = {
     # on core main, in no tagged release yet: add as None. When the next
     # release is tagged, set each None entry here to that tag -- the test's
     # tag-verification section insists on it once the tag is in its list.
-    "src.common.sports_vegas": None,  # live Vegas cards (3.8.0)
-    "src.plugin_system.vegas_elements": None,  # live Vegas elements (3.8.0)
+    "src.display_watchdog": None,  # core #687
+    "src.plugin_system.plugin_catalog": None,  # core #688
+    "src.plugin_system.plugin_runtime": None,  # core #690
 }
 
 #: Releases whose ``src/__init__.py`` ``__version__`` lags their tag. The
