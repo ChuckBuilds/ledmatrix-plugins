@@ -148,24 +148,25 @@ MODULE_FIRST_VERSION = {
     "src.common.sports_celebration": "3.7.0",  # core #672 (sports consolidation stage 3)
     "src.common.sports_fetch": "3.7.0",  # core #672
     "src.common.sports_card_wrappers": "3.7.0",  # core #672
+    # 3.8.0 (core #687-#709)
+    "src.display_watchdog": "3.8.0",  # core #687
+    "src.plugin_system.plugin_catalog": "3.8.0",  # core #688
+    "src.plugin_system.plugin_runtime": "3.8.0",  # core #690
+    "src.plugin_system.vegas_elements": "3.8.0",  # core #696
+    "src.plugin_system.testing.vegas": "3.8.0",  # core #696
+    "src.common.sports_vegas": "3.8.0",  # core #698
+    "src.common.sports_display_rules": "3.8.0",  # core #705 (sports consolidation stage 4)
+    "src.common.sports_font_path": "3.8.0",  # core #705
+    "src.common.sports_live_scroll": "3.8.0",  # core #705
+    "src.common.sports_plugin_host": "3.8.0",  # core #705
+    "src.plugin_system.field_model": "3.8.0",  # core #703
+    "src.ipc": "3.8.0",  # core #706 (display control socket)
+    "src.ipc.client": "3.8.0",  # core #706
+    "src.ipc.contract": "3.8.0",  # core #706
+    "src.ipc.server": "3.8.0",  # core #706
     # on core main, in no tagged release yet: add as None. When the next
     # release is tagged, set each None entry here to that tag -- the test's
     # tag-verification section insists on it once the tag is in its list.
-    "src.display_watchdog": None,  # core #687
-    "src.plugin_system.plugin_catalog": None,  # core #688
-    "src.plugin_system.plugin_runtime": None,  # core #690
-    "src.plugin_system.vegas_elements": None,  # core #696
-    "src.plugin_system.testing.vegas": None,  # core #696
-    "src.common.sports_vegas": None,  # core #698
-    "src.common.sports_display_rules": None,  # core #705 (sports consolidation stage 4)
-    "src.common.sports_font_path": None,  # core #705
-    "src.common.sports_live_scroll": None,  # core #705
-    "src.common.sports_plugin_host": None,  # core #705
-    "src.plugin_system.field_model": None,  # core #703
-    "src.ipc": None,  # core #706 (display control socket)
-    "src.ipc.client": None,  # core #706
-    "src.ipc.contract": None,  # core #706
-    "src.ipc.server": None,  # core #706
 }
 
 #: Releases whose ``src/__init__.py`` ``__version__`` lags their tag. The
