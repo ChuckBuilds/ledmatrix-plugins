@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-09-30",
+  "last_updated": "2026-10-01",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -257,7 +257,8 @@
       "last_updated": "2026-09-26",
       "verified": false,
       "screenshot": "",
-      "latest_version": "1.8.0"
+      "latest_version": "1.8.0",
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "id": "football-scoreboard",
@@ -336,7 +337,8 @@
       "last_updated": "2026-06-17",
       "verified": false,
       "screenshot": "",
-      "latest_version": "1.0.0"
+      "latest_version": "1.0.0",
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "id": "hello-world",
@@ -500,7 +502,7 @@
       "screenshot": "",
       "latest_version": "1.15.0",
       "ledmatrix_min_version": "2.0.0",
-      "commit": "77027a6b72635c7259ab85b85f6c62b4491d7f37"
+      "commit": "bb1db84e92022b4fe57f3d6c7a57e94844dd8b5a"
     },
     {
       "id": "march-madness",
@@ -658,7 +660,7 @@
       "latest_version": "1.2.13",
       "icon": "fa-circle-dot",
       "ledmatrix_min_version": "2.0.0",
-      "commit": "77027a6b72635c7259ab85b85f6c62b4491d7f37"
+      "commit": "c695b9761d59a9379222c8abfca41c14297e6cb9"
     },
     {
       "id": "nfl-draft",
@@ -713,7 +715,7 @@
       "screenshot": "",
       "latest_version": "1.7.5",
       "ledmatrix_min_version": "3.4.0",
-      "commit": "77027a6b72635c7259ab85b85f6c62b4491d7f37"
+      "commit": "c695b9761d59a9379222c8abfca41c14297e6cb9"
     },
     {
       "id": "of-the-day",
@@ -813,7 +815,8 @@
       "last_updated": "2026-07-01",
       "verified": false,
       "screenshot": "",
-      "latest_version": "1.1.0"
+      "latest_version": "1.1.0",
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "id": "soccer-scoreboard",
@@ -1006,7 +1009,8 @@
       "screenshot": "",
       "latest_version": "1.18.3",
       "icon": "fas fa-fist-raised",
-      "ledmatrix_min_version": "3.7.0"
+      "ledmatrix_min_version": "3.7.0",
+      "commit": "e0a24e75126112e93fa404d3f418209a10ac7208"
     },
     {
       "id": "weather",
@@ -1137,7 +1141,8 @@
       "last_updated": "2026-06-02",
       "verified": false,
       "screenshot": "",
-      "latest_version": "1.0.0"
+      "latest_version": "1.0.0",
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "id": "afl-scoreboard",
@@ -1312,7 +1317,8 @@
       "last_updated": "2026-09-14",
       "verified": false,
       "screenshot": "",
-      "latest_version": "1.0.0"
+      "latest_version": "1.0.0",
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "id": "blackjack",
@@ -1364,7 +1370,8 @@
       "last_updated": "2026-09-28",
       "verified": false,
       "screenshot": "",
-      "latest_version": "0.2.7"
+      "latest_version": "0.2.7",
+      "ledmatrix_min_version": "3.4.0"
     },
     {
       "id": "nfl-stat-leaders",
