@@ -1,7 +1,7 @@
 {
   "id": "ufc-scoreboard",
   "name": "UFC Scoreboard",
-  "version": "1.18.0",
+  "version": "1.18.1",
   "author": "LegoGuy1000",
   "contributors": [
     {
@@ -32,6 +32,12 @@
   "default_duration": 15,
   "config_schema": "config_schema.json",
   "versions": [
+    {
+      "version": "1.18.1",
+      "released": "2026-09-30",
+      "ledmatrix_min_version": "3.7.0",
+      "notes": "The live scorebug shows ESPN's between-rounds text (\"End R2\") during a break instead of \"R2 -\": the break check looked for the team-sport status name, and ESPN's MMA feed sends STATUS_END_OF_ROUND. Adds a regression test, over recorded ESPN payloads, that a five-round fight stays on the live display through the round 4 break until its result posts."
+    },
     {
       "version": "1.18.0",
       "released": "2026-09-29",

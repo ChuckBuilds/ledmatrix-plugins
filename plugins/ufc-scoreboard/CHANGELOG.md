@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.18.1] - 2026-09-30
+
+### Fixed
+- The live scorebug shows ESPN's between-rounds text (`End R2`) during a break
+  instead of `R2 -`. The break check looked for `STATUS_END_PERIOD`, the
+  team-sport status name; ESPN's MMA feed sends `STATUS_END_OF_ROUND`
+  (state `in`, displayClock `-` when the round went the distance, or the
+  stoppage clock while a finish awaits its result).
+
+### Tests
+- `test_round_break_stays_live.py` runs ESPN scoreboard bouts in each state
+  (recorded payloads in `test/fixtures/espn_mma_round_states.json`) through the
+  real `UFCLiveManager.update()`. It pins that a five-round fight stays live
+  through the round 4 break and until the result posts: the shared
+  "clock `0:00` from period 4 is over" rule does not fire, because ESPN sends
+  the break's clock as `-`, not `0:00`.
+
 ## [1.18.0] - 2026-09-29
 
 ### Changed

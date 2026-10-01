@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-09-29",
+  "last_updated": "2026-09-30",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -460,10 +460,10 @@
       "plugin_path": "plugins/ledmatrix-flights",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-28",
+      "last_updated": "2026-09-30",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.14.7"
+      "latest_version": "1.15.0"
     },
     {
       "id": "march-madness",
@@ -926,10 +926,10 @@
       "plugin_path": "plugins/ufc-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-29",
+      "last_updated": "2026-09-30",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.18.0",
+      "latest_version": "1.18.1",
       "icon": "fas fa-fist-raised"
     },
     {

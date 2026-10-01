@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.15.0] - 2026-09-30
+
+### Changed
+- Every aircraft carries `pos_age` (seconds, from the data source's own clock
+  at send time: SkyAware and adsb.fi/adsb.lol `seen_pos`, else `seen`, plus the
+  payload's age; OpenSky `time_position`, else `last_contact`, against its
+  `Date` header; FlightRadar24's position timestamp), `track_valid` and
+  `pos_stale`. Nothing draws them yet; a gliding Vegas map will.
+- The map is drawn from an immutable `MapSnapshot` that `update()` publishes
+  as soon as the aircraft are in, ahead of the enrichment and detail fetches,
+  and again even when a later step raises: a slow or failing network step no
+  longer holds back or freezes the map. The renderer never reads the live
+  aircraft dicts. `_render_map_image` is `_map_layer` plus `_draw_heads`, and
+  draws exactly what it drew before.
+- The map projection is worked out once per snapshot and size, and the two
+  per-point debug messages are formatted only with debug logging on.
+- `get_vegas_content_type()` follows the same auto-mode order as
+  `get_vegas_content()`: an aircraft overhead that also matches the anchor
+  airport is reported as the single static card that is shown.
+
 ## [1.14.7] - 2026-09-28
 
 ### Changed
