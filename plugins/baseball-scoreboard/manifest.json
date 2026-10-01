@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.54.0",
+  "version": "1.54.1",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.54.1",
+      "released": "2026-10-01",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "Fix: display_options.show_series_summary no longer prints the series line (\"Series tied 1-1\") over the score on the full-screen Recent card. It now shares the bottom row with the date: date plus series when they fit between the record corners, the series alone when they do not, then a compact spelling (\"Tied 1-1\", \"NYY 2-1\") and finally the small 4x6 font, so the line is never dropped. With both records on a 64-wide panel there is still no room between the corners."
+    },
     {
       "version": "1.54.0",
       "released": "2026-09-30",

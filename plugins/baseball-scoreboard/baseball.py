@@ -6,6 +6,7 @@ with baseball-specific logic for innings, outs, bases, strikes, balls, etc.
 """
 
 import logging
+import re
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -504,19 +505,83 @@ class Baseball(SportsCore):
             )
             return None
 
-    def display_series_summary(self, game: dict, draw_overlay: ImageDraw.ImageDraw):
-        if not self.show_series_summary:
-            return
+    @staticmethod
+    def _compact_series_summary(summary: str) -> str:
+        """ESPN's series line in fewer characters, for narrow panels.
 
-        series_summary = game.get("series_summary", "")
-        bbox = draw_overlay.textbbox((0, 0), series_summary, font=self.fonts['time'])
-        height = bbox[3] - bbox[1]
-        shots_y = (self.display_height - height) // 2
-        shots_width = draw_overlay.textlength(series_summary, font=self.fonts['time'])
-        shots_x = (self.display_width - shots_width) // 2
-        self._draw_text_with_outline(
-            draw_overlay, series_summary, (shots_x, shots_y), self.fonts['time']
-        )
+        "Series tied 1-1" -> "Tied 1-1", "NYY leads series 2-1" -> "NYY 2-1",
+        "NYY wins series 4-2" -> "NYY W 4-2". Anything unrecognised just
+        loses the word "series".
+        """
+        text = re.sub(r"\bseries\s+tied\b", "Tied", summary, flags=re.I)
+        text = re.sub(r"\b(\w+)\s+leads?\s+series\b", r"\1", text, flags=re.I)
+        text = re.sub(r"\b(\w+)\s+(?:wins|won)\s+series\b", r"\1 W", text, flags=re.I)
+        return re.sub(r"\bseries\s+", "", text, flags=re.I).strip()
+
+    def _series_line(self, game: Optional[Dict]):
+        """(text, font) for the Recent card's bottom row, or None.
+
+        None means "draw the plain date as before". Otherwise the series
+        shares the date's row, since the centre of the card is the score:
+        "date - series" if that fits between the record corners, the series
+        alone if it does not, and a compact spelling of either ("Tied 1-1")
+        before the series is ever dropped. When not even that fits in the
+        time font the same candidates are tried in the small 4x6 record
+        font, so a series line always lands somewhere readable.
+        """
+        summary = str((game or {}).get("series_summary") or "").strip()
+        if not self.show_series_summary or not summary:
+            return None
+        date = SportsCore._recent_date_text(self, game)
+        compact = self._compact_series_summary(summary)
+        candidates = []
+        for text in (summary, compact):
+            if date:
+                candidates.append(f"{date} - {text}")
+            candidates.append(text)
+
+        record_font = self.fonts.get("record")
+        fonts = [self.fonts["time"]]
+        if record_font is not None:
+            fonts.append(record_font)
+        for font in fonts:
+            width = self.display_width
+            if self.show_records or self.show_ranking:
+                # Records sit in both bottom corners; the line is centred, so
+                # reserve the wider of the two on each side.
+                corner = max(
+                    self._text_width(str((game or {}).get(k) or ""), record_font or font)
+                    for k in ("away_record", "home_record")
+                )
+                width -= 2 * (corner + 1)
+            for text in candidates:
+                if self._text_width(text, font) <= width:
+                    return text, font
+        return candidates[-1], fonts[-1]
+
+    def _recent_date_text(self, game: Optional[Dict]) -> str:
+        """The full-screen Recent card's bottom line: the date, plus the
+        series when it fits in the card's usual font (see _series_line)."""
+        line = self._series_line(game)
+        if line is None:
+            return super()._recent_date_text(game)
+        text, font = line
+        return text if font is self.fonts["time"] else ""
+
+    def _custom_scorebug_layout(self, game: dict, draw_overlay: ImageDraw.ImageDraw):
+        """Draw the series line in the small font when the time font was too wide."""
+        line = self._series_line(game)
+        if line is None or line[1] is self.fonts["time"]:
+            return
+        text, font = line
+        bbox = draw_overlay.textbbox((0, 0), text, font=font)
+        x = (self.display_width - (bbox[2] - bbox[0])) // 2 - bbox[0]
+        y = self.display_height - bbox[3] + self._get_layout_offset('date', 'y_offset')
+        self._draw_text_with_outline(draw_overlay, text, (x, y), font)
+
+    def _text_width(self, text: str, font=None) -> float:
+        probe = ImageDraw.Draw(Image.new("L", (1, 1)))
+        return probe.textlength(text, font=font or self.fonts["time"])
 
     def _maybe_draw_traditional_scoreboard_screen(self, game: Dict, force_clear: bool = False) -> bool:
         """Rotate in the dedicated traditional-scoreboard screen if it's due.
@@ -1023,9 +1088,6 @@ class BaseballRecent(Baseball, SportsRecent):
         if self._maybe_draw_traditional_scoreboard_screen(game, force_clear):
             return
         super()._draw_scorebug_layout(game, force_clear)
-
-    def _custom_scorebug_layout(self, game: dict, draw_overlay: ImageDraw.ImageDraw):
-        self.display_series_summary(game, draw_overlay)
 
 
 class BaseballLive(Baseball, SportsLive):
