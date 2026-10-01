@@ -251,6 +251,11 @@ registry:
   **greater** than the registry `latest_version`, it updates `latest_version` and
   the entry's `last_updated`. It never downgrades: a registry version *ahead* of
   its manifest is warned about and left alone.
+- Versions compare numerically, so `1.2` and `1.2.0` are the same version, but
+  whitespace and control characters are not ignored: a `latest_version` of
+  `"1.5.4\r"` for a manifest's `1.5.4` is rewritten to `1.5.4`, and a manifest
+  `version` containing one is warned about and never copied into the registry
+  (fix the manifest).
 - It also force-syncs `name`, `description`, `author`, `category`, `tags`,
   `icon` and `last_updated` from manifest to registry when they differ. The
   registry's `last_updated` is the newer of the manifest's top-level
@@ -283,7 +288,8 @@ registry:
   claiming one path. A normal run warns; `--check` fails.
 - `--check` also fails when anything a normal run would write is missing from
   the committed `plugins.json`: a `latest_version` behind its manifest, one
-  ahead of it, or a synced metadata field that differs. The pre-commit hook
+  ahead of it, one with stray whitespace or a control character, a manifest
+  `version` with one, or a synced metadata field that differs. The pre-commit hook
   keeps this green; without it, run `python update_registry.py` and commit
   the result.
 

@@ -20,6 +20,14 @@ daily; local runs and the pre-commit hook stay offline.
   `version`, in either direction. Behind: the store never offers the update.
   Ahead: the store offers a version that was never shipped, and a normal run
   will not fix it (it never downgrades).
+- a monorepo entry whose `latest_version` is its manifest's version plus
+  whitespace or a control character ("1.5.4\\r" for "1.5.4"). int() strips
+  whitespace, so the versions compare equal and a normal run used to call it
+  up to date; it now rewrites it. ("1.2" for "1.2.0" is still the same
+  version and passes.)
+- a manifest `version` with whitespace or a control character in it. A normal
+  run no longer copies it into the registry: that is how #560's "1.0.10\\r"
+  bumps reached plugins.json and outlived the manifest fix.
 - a monorepo entry whose store-visible metadata (name, description, author,
   category, tags, icon, last_updated) differs from what a normal run would
   write. The pre-commit hook folds that into the commit; a PR without it
@@ -77,6 +85,8 @@ from urllib.parse import urlparse
 SYNCED_FIELDS = ("name", "description", "author", "category", "tags", "icon")
 
 _ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+_STRAY_CHARACTER = re.compile(r"[\s\x00-\x1f\x7f-\x9f]")
 
 
 def release_date(manifest: dict) -> str | None:
@@ -285,7 +295,9 @@ def parse_version(version_str: str) -> tuple:
     """Parse a version string into a comparable tuple.
 
     Padded to three parts, so "1.2" and "1.2.0" compare equal -- the store's
-    own comparator treats them as the same version.
+    own comparator treats them as the same version. int() also ignores
+    surrounding whitespace, so "1.2.0\\r" compares equal too; see
+    has_stray_characters.
     """
     version_str = (version_str or "0.0.0").lstrip("v")
     try:
@@ -293,6 +305,16 @@ def parse_version(version_str: str) -> tuple:
     except (ValueError, AttributeError):
         return (0, 0, 0)
     return parts + (0,) * (3 - len(parts))
+
+
+def has_stray_characters(version) -> bool:
+    """True if a version string contains whitespace or a control character.
+
+    parse_version cannot see these, so a registry "1.5.4\\r" passed as equal
+    to a manifest "1.5.4" while any consumer comparing strings saw another
+    version.
+    """
+    return isinstance(version, str) and bool(_STRAY_CHARACTER.search(version))
 
 
 def parse_json_with_trailing_commas(text: str) -> dict:
@@ -401,6 +423,10 @@ def sync_external_entry(plugin: dict, dry_run: bool,
         return None
 
     remote = str(manifest.get("version") or "")
+    if has_stray_characters(remote):
+        print(f"  {plugin_id}: WARNING - {url} has version {remote!r}, with "
+              f"whitespace or a control character; skipped")
+        return None
     current = plugin.get("latest_version", "")
     floor = {"ledmatrix_min_version": declared_min_version(manifest)}
     if not remote or parse_version(remote) < parse_version(current):
@@ -432,10 +458,13 @@ def update_registry(registry_path: str = "plugins.json", dry_run: bool = False,
 
     Returns one ``(kind, message)`` per disagreement found between a monorepo
     entry and its manifest: kind ``"behind"`` or ``"ahead"`` for a version
-    mismatch, ``"metadata"`` for a synced or derived field that differs.
+    mismatch, ``"stray"`` for a registry version that is the manifest's plus
+    whitespace or a control character, ``"manifest"`` for a manifest version
+    that has one, ``"metadata"`` for a synced or derived field that differs.
     Empty means the registry already matches.
     A normal run writes every fix it can; a registry version *ahead* of its
-    manifest is reported but never written, because that would be a downgrade.
+    manifest is reported but never written, because that would be a downgrade,
+    and neither is a manifest version with a stray character.
     Third-party version raises (--external) are written but are not drift, and
     neither are `commit` changes (see the module docstring). ``commits=False``
     skips the git walk entirely (--check has no use for it).
@@ -491,10 +520,18 @@ def update_registry(registry_path: str = "plugins.json", dry_run: bool = False,
             print(f"  {plugin_id}: no version in manifest")
             continue
 
-        padded = (isinstance(registry_version, str)
-                  and registry_version != registry_version.strip())
         version_changed = False
-        if parse_version(manifest_version) > parse_version(registry_version):
+        if has_stray_characters(manifest_version):
+            # Copying it is how "1.0.10\r" reached plugins.json in #560; once
+            # the manifests were fixed, the registry's copy compared equal.
+            print(f"  {plugin_id}: manifest version {manifest_version!r} has "
+                  f"whitespace or a control character, skipping")
+            drift.append(("manifest",
+                f"{plugin_id}: {_normalise_plugin_path(plugin_path)}/manifest.json "
+                f"version {manifest_version!r} contains whitespace or a control "
+                f"character, so plugins.json was not updated from it. Fix the "
+                f"manifest."))
+        elif parse_version(manifest_version) > parse_version(registry_version):
             version_changed = True
             print(f"  {plugin_id}: {registry_version} -> {manifest_version}")
             drift.append(("behind",
@@ -510,16 +547,18 @@ def update_registry(registry_path: str = "plugins.json", dry_run: bool = False,
                 f"offers a version that was never shipped. update_registry.py "
                 f"never downgrades: bump the manifest past it, or correct the "
                 f"registry entry."))
-        elif padded:
-            # "1.0.10\r" was published for ten plugins: it parses equal to its
-            # manifest's "1.0.10", so nothing above ever rewrote it, and the
-            # store showed the stray character. Same version, clean spelling.
-            version_changed = True
+        elif has_stray_characters(registry_version):
+            # The same version as the (clean) manifest's once int() has
+            # stripped it. Not a new release, so last_updated stays.
             print(f"  {plugin_id}: {registry_version!r} -> {manifest_version!r}")
-            drift.append(("metadata",
+            drift.append(("stray",
                 f"{plugin_id}: plugins.json latest_version {registry_version!r} "
-                f"has stray whitespace. Run python update_registry.py and "
-                f"commit plugins.json."))
+                f"is not the manifest's {manifest_version!r}: it has whitespace "
+                f"or a control character, which version comparison ignores. "
+                f"Run python update_registry.py and commit plugins.json."))
+            if not dry_run:
+                plugin["latest_version"] = manifest_version
+            updates_made = True
         else:
             print(f"  {plugin_id}: up to date ({registry_version})")
 
@@ -618,9 +657,10 @@ def main(argv=None) -> int:
         "--check",
         action="store_true",
         help="Dry run that exits 1 when plugins.json disagrees with the "
-             "manifests (a version in either direction, or synced metadata), a "
-             "plugin directory has no registry entry, or a registry "
-             "plugin_path has no plugin (for CI)",
+             "manifests (a version in either direction, a version with stray "
+             "whitespace or control characters on either side, or synced "
+             "metadata), a plugin directory has no registry entry, or a "
+             "registry plugin_path has no plugin (for CI)",
     )
     parser.add_argument(
         "--external",
@@ -642,10 +682,11 @@ def main(argv=None) -> int:
         return 1
 
     # A normal run has just written every drift fix except "registry ahead",
-    # which would be a downgrade. --check is about the file as committed, so
-    # it reports all of it.
+    # which would be a downgrade, and a stray character in the manifest, which
+    # only the manifest can fix. --check is about the file as committed, so it
+    # reports all of it.
     problems = [message for kind, message in drift
-                if args.check or kind == "ahead"] + problems
+                if args.check or kind in ("ahead", "manifest")] + problems
 
     if not problems:
         if args.check:

@@ -1,0 +1,2320 @@
+{
+ "_comment": "ESPN MMA scoreboard bouts in each live and finished state, for test_round_break_stays_live.py. Recorded cases are whole, unedited competitions from the source URL; the two derived cases are marked as such. Findings: the live displayClock counts DOWN (time left in the round). Between rounds ESPN sends STATUS_END_OF_ROUND, state \"in\", shortDetail \"End R<n>\", clock 0.0 and displayClock \"-\" (the Round End play clock) -- not \"0:00\". A stoppage shows the same status at the stoppage clock (e.g. \"0:51\") until the result posts. STATUS_FINAL (state \"post\") ends a fight, after which the clock is the ELAPSED finish time (5:00 for a decision).",
+ "cases": [
+  {
+   "name": "in_round_3_of_3",
+   "source": "https://web.archive.org/web/20260920014441id_/https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard",
+   "note": "UFC 331, 01:44:41 UTC. Play-by-play puts the last play before this at R3 1:34 remaining, so the live clock counts down.",
+   "expect_live": true,
+   "expect_period_break": false,
+   "event": {
+    "id": "600060963",
+    "date": "2026-09-20T01:00Z",
+    "name": "UFC 331: Van vs. Pantoja 2",
+    "competitions": [
+     {
+      "id": "401905378",
+      "uid": "s:3301~l:3321~e:600060963~c:401905378",
+      "date": "2026-09-20T01:00Z",
+      "endDate": "2026-09-20T01:00Z",
+      "type": {
+       "id": "990",
+       "abbreviation": "Light Heavyweight"
+      },
+      "timeValid": true,
+      "neutralSite": false,
+      "playByPlayAvailable": true,
+      "recent": true,
+      "venue": {
+       "id": "1841",
+       "fullName": "crypto.com Arena",
+       "address": {
+        "city": "Los Angeles",
+        "state": "CA",
+        "address1": "STAPLES CENTER,  1111 S. FIGUE",
+        "country": "USA"
+       },
+       "indoor": true
+      },
+      "competitors": [
+       {
+        "id": "3948876",
+        "uid": "s:3301~a:3948876",
+        "type": "athlete",
+        "order": 1,
+        "winner": false,
+        "athlete": {
+         "fullName": "Alonzo Menifield",
+         "displayName": "Alonzo Menifield",
+         "shortName": "A. Menifield",
+         "flag": {
+          "href": "https://a.espncdn.com/i/teamlogos/countries/500/usa.png",
+          "alt": "USA",
+          "rel": [
+           "country-flag"
+          ]
+         }
+        },
+        "statistics": [],
+        "records": [
+         {
+          "name": "overall",
+          "abbreviation": "TOT",
+          "type": "total",
+          "summary": "18-6-1"
+         }
+        ]
+       },
+       {
+        "id": "5307810",
+        "uid": "s:3301~a:5307810",
+        "type": "athlete",
+        "order": 2,
+        "winner": false,
+        "athlete": {
+         "fullName": "Iwo Baraniewski",
+         "displayName": "Iwo Baraniewski",
+         "shortName": "I. Baraniewski",
+         "flag": {
+          "href": "https://a.espncdn.com/i/teamlogos/countries/500/pol.png",
+          "alt": "Poland",
+          "rel": [
+           "country-flag"
+          ]
+         }
+        },
+        "statistics": [],
+        "records": [
+         {
+          "name": "overall",
+          "abbreviation": "TOT",
+          "type": "total",
+          "summary": "9-0-0"
+         }
+        ]
+       }
+      ],
+      "status": {
+       "clock": 81.0,
+       "displayClock": "1:21",
+       "period": 3,
+       "type": {
+        "id": "31",
+        "name": "STATUS_IN_PROGRESS_2",
+        "state": "in",
+        "completed": false,
+        "description": "In Progress",
+        "detail": "R3, 1:21",
+        "shortDetail": "R3, 1:21"
+       }
+      },
+      "broadcasts": [
+       {
+        "market": "national",
+        "names": [
+         "Paramount+"
+        ]
+       }
+      ],
+      "details": [
+       {
+        "id": "20913",
+        "type": {
+         "id": "12",
+         "text": "Takedown Attempt"
+        }
+       },
+       {
+        "id": "20868",
+        "type": {
+         "id": "12",
+         "text": "Takedown Attempt"
+        }
+       },
+       {
+        "id": "20867",
+        "type": {
+         "id": "13",
+         "text": "Takedown"
+        }
+       },
+       {
+        "id": "20866",
+        "type": {
+         "id": "12",
+         "text": "Takedown Attempt"
+        }
+       },
+       {
+        "id": "20865",
+        "type": {
+         "id": "12",
+         "text": "Takedown Attempt"
+        }
+       },
+       {
+        "id": "20864",
+        "type": {
+         "id": "5",
+         "text": "Round Start"
+        }
+       },
+       {
+        "id": "20863",
+        "type": {
+         "id": "18",
+         "text": "Round End"
+        }
+       },
+       {
+        "id": "20912",
+        "type": {
+         "id": "12",
+         "text": "Takedown Attempt"
+        }
+       },
+       {
+        "id": "20911",
+        "type": {
+         "id": "12",
+         "text": "Takedown Attempt"
+        }
+       },
+       {
+        "id": "20910",
+        "type": {
+         "id": "5",
+         "text": "Round Start"
+        }
+       }
+      ],
+      "format": {
+       "regulation": {
+        "periods": 3
+       }
+      },
+      "startDate": "2026-09-20T01:00Z",
+      "broadcast": "Paramount+",
+      "geoBroadcasts": [
+       {
+        "type": {
+         "id": "4",
+         "shortName": "Streaming"
+        },
+        "market": {
+         "id": "1",
+         "type": "National"
+        },
+        "media": {
+         "shortName": "Paramount+"
+        },
+        "lang": "en",
+        "region": "us"
+       }
+      ],
+      "highlights": []
+     }
+    ]
+   }
+  },
+  {
+   "name": "break_after_round_1",
+   "source": "https://web.archive.org/web/20260627135052id_/https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard",
+   "note": "A real break: captured 13:50:52 UTC, between R1 Round End (13:49:59, the round went the distance) and R2 Round Start (13:51:14). displayClock is \"-\" (the Round End play clock), not \"0:00\".",
+   "expect_live": true,
+   "expect_period_break": true,
+   "event": {
+    "id": "600059254",
+    "date": "2026-06-27T13:00Z",
+    "name": "UFC Fight Night: Fiziev vs. Torres",
+    "competitions": [
+     {
+      "id": "401872623",
+      "uid": "s:3301~l:3321~e:600059254~c:401872623",
+      "date": "2026-06-27T13:00Z",
+      "endDate": "2026-06-27T13:00Z",
+      "type": {
+       "id": "970",
+       "abbreviation": "Bantamweight"
+      },
+      "timeValid": true,
+      "neutralSite": false,
+      "playByPlayAvailable": true,
+      "recent": true,
+      "venue": {
+       "id": "7580",
+       "fullName": "National Gymnastics Arena",
+       "address": {
+        "city": "Baku",
+        "country": "Azerbaijan"
+       },
+       "indoor": true
+      },
+      "competitors": [
+       {
+        "id": "5149439",
+        "uid": "s:3301~a:5149439",
+        "type": "athlete",
+        "order": 2,
+        "winner": false,
+        "athlete": {
+         "fullName": "Jean Matsumoto",
+         "displayName": "Jean Matsumoto",
+         "shortName": "J. Matsumoto",
+         "flag": {
+          "href": "https://a.espncdn.com/i/teamlogos/countries/500/bra.png",
+          "alt": "Brazil",
+          "rel": [
+           "country-flag"
+          ]
+         }
+        },
+        "statistics": [],
+        "records": [
+         {
+          "name": "overall",
+          "abbreviation": "TOT",
+          "type": "total",
+          "summary": "17-2-0"
+         }
+        ]
+       },
+       {
+        "id": "5196459",
+        "uid": "s:3301~a:5196459",
+        "type": "athlete",
+        "order": 1,
+        "winner": false,
+        "athlete": {
+         "fullName": "Bekzat Almakhan",
+         "displayName": "Bekzat Almakhan",
+         "shortName": "B. Almakhan",
+         "flag": {
+          "href": "https://a.espncdn.com/i/teamlogos/countries/500/kaz.png",
+          "alt": "Kazakhstan",
+          "rel": [
+           "country-flag"
+          ]
+         }
+        },
+        "statistics": [],
+        "records": [
+         {
+          "name": "overall",
+          "abbreviation": "TOT",
+          "type": "total",
+          "summary": "12-3-0"
+         }
+        ]
+       }
+      ],
+      "status": {
+       "clock": 0.0,
+       "displayClock": "-",
+       "period": 1,
+       "type": {
+        "id": "142",
+        "name": "STATUS_END_OF_ROUND",
+        "state": "in",
+        "completed": false,
+        "description": "End of Round",
+        "detail": "End R1",
+        "shortDetail": "End R1"
+       }
+      },
+      "broadcasts": [
+       {
+        "market": "national",
+        "names": [
+         "Paramount+"
+        ]
+       }
+      ],
+      "details": [
+       {
+        "id": "17042",
+        "type": {
+         "id": "18",
+         "text": "Round End"
+        }
+       },
+       {
+        "id": "17041",
+        "type": {
+         "id": "13",
+         "text": "Takedown"
+        }
+       },
+       {
+        "id": "17040",
+        "type": {
+         "id": "12",
+         "text": "Takedown Attempt"
+        }
+       },
+       {
+        "id": "17039",
+        "type": {
+         "id": "12",
+         "text": "Takedown Attempt"
+        }
+       },
+       {
+        "id": "17038",
+        "type": {
+         "id": "12",
+         "text": "Takedown Attempt"
+        }
+       },
+       {
+        "id": "17037",
+        "type": {
+         "id": "12",
+         "text": "Takedown Attempt"
+        }
+       },
+       {
+        "id": "17036",
+        "type": {
+         "id": "17",
+         "text": "Knockdown"
+        }
+       },
+       {
+        "id": "17049",
+        "type": {
+         "id": "5",
+         "text": "Round Start"
+        }
+       },
+       {
+        "id": "17048",
+        "type": {
+         "id": "4",
+         "text": "Staredown"
+        }
+       },
+       {
+        "id": "17047",
+        "type": {
+         "id": "3",
+         "text": "Tale of the tape"
+        }
+       }
+      ],
+      "format": {
+       "regulation": {
+        "periods": 3
+       }
+      },
+      "startDate": "2026-06-27T13:00Z",
+      "broadcast": "Paramount+",
+      "geoBroadcasts": [
+       {
+        "type": {
+         "id": "4",
+         "shortName": "Streaming"
+        },
+        "market": {
+         "id": "1",
+         "type": "National"
+        },
+        "media": {
+         "shortName": "Paramount+"
+        },
+        "lang": "en",
+        "region": "us"
+       }
+      ],
+      "highlights": []
+     }
+    ]
+   }
+  },
+  {
+   "name": "end_of_round_after_stoppage",
+   "source": "https://web.archive.org/web/20260926235547id_/https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard?dates=",
+   "note": "Submission at 0:51 left in R2 (plays: Round End + Fight Over 23:55:05, Results 23:56:51). Until the result posts, ESPN shows the finish as STATUS_END_OF_ROUND, state \"in\", at the stoppage clock: the same status name as a break.",
+   "expect_live": true,
+   "expect_period_break": true,
+   "event": {
+    "id": "600061266",
+    "date": "2026-09-26T21:00Z",
+    "name": "UFC Fight Night: Rosas Jr. vs. Barcelos",
+    "competitions": [
+     {
+      "id": "401914468",
+      "uid": "s:3301~l:3321~e:600061266~c:401914468",
+      "date": "2026-09-26T21:00Z",
+      "endDate": "2026-09-26T21:00Z",
+      "type": {
+       "id": "970",
+       "abbreviation": "Bantamweight"
+      },
+      "timeValid": true,
+      "neutralSite": false,
+      "playByPlayAvailable": true,
+      "recent": true,
+      "venue": {
+       "id": "6176",
+       "fullName": "Meta APEX",
+       "address": {
+        "city": "Las Vegas",
+        "state": "NV",
+        "country": "USA"
+       },
+       "indoor": true
+      },
+      "competitors": [
+       {
+        "id": "4815974",
+        "uid": "s:3301~a:4815974",
+        "type": "athlete",
+        "order": 1,
+        "winner": false,
+        "athlete": {
+         "fullName": "Brady Hiestand",
+         "displayName": "Brady Hiestand",
+         "shortName": "B. Hiestand",
+         "flag": {
+          "href": "https://a.espncdn.com/i/teamlogos/countries/500/usa.png",
+          "alt": "USA",
+          "rel": [
+           "country-flag"
+          ]
+         }
+        },
+        "statistics": [],
+        "records": [
+         {
+          "name": "overall",
+          "abbreviation": "TOT",
+          "type": "total",
+          "summary": "9-2-0"
+         }
+        ]
+       },
+       {
+        "id": "5068624",
+        "uid": "s:3301~a:5068624",
+        "type": "athlete",
+        "order": 2,
+        "winner": false,
+        "athlete": {
+         "fullName": "Rinya Nakamura",
+         "displayName": "Rinya Nakamura",
+         "shortName": "R. Nakamura",
+         "flag": {
+          "href": "https://a.espncdn.com/i/teamlogos/countries/500/jpn.png",
+          "alt": "Japan",
+          "rel": [
+           "country-flag"
+          ]
+         }
+        },
+        "statistics": [],
+        "records": [
+         {
+          "name": "overall",
+          "abbreviation": "TOT",
+          "type": "total",
+          "summary": "10-1-0"
+         }
+        ]
+       }
+      ],
+      "status": {
+       "clock": 51.0,
+       "displayClock": "0:51",
+       "period": 2,
+       "type": {
+        "id": "142",
+        "name": "STATUS_END_OF_ROUND",
+        "state": "in",
+        "completed": false,
+        "description": "End of Round",
+        "detail": "End R2",
+        "shortDetail": "End R2"
+       }
+      },
+      "broadcasts": [
+       {
+        "market": "national",
+        "names": [
+         "Paramount+"
+        ]
+       }
+      ],
+      "details": [
+       {
+        "id": "21564",
+        "type": {
+         "id": "19",
+         "text": "Fight Over"
+        }
+       },
+       {
+        "id": "21563",
+        "type": {
+         "id": "18",
+         "text": "Round End"
+        }
+       },
+       {
+        "id": "21562",
+        "type": {
+         "id": "12",
+         "text": "Takedown Attempt"
+        }
+       },
+       {
+        "id": "21561",
+        "type": {
+         "id": "16",
+         "text": "Submission Attempt"
+        }
+       },
+       {
+        "id": "21560",
+        "type": {
+         "id": "12",
+         "text": "Takedown Attempt"
+        }
+       },
+       {
+        "id": "21559",
+        "type": {
+         "id": "12",
+         "text": "Takedown Attempt"
+        }
+       },
+       {
+        "id": "21558",
+        "type": {
+         "id": "13",
+         "text": "Takedown"
+        }
+       },
+       {
+        "id": "21557",
+        "type": {
+         "id": "12",
+         "text": "Takedown Attempt"
+        }
+       },
+       {
+        "id": "21556",
+        "type": {
+         "id": "12",
+         "text": "Takedown Attempt"
+        }
+       },
+       {
+        "id": "21555",
+        "type": {
+         "id": "16",
+         "text": "Submission Attempt"
+        }
+       }
+      ],
+      "format": {
+       "regulation": {
+        "periods": 3
+       }
+      },
+      "startDate": "2026-09-26T21:00Z",
+      "broadcast": "Paramount+",
+      "geoBroadcasts": [
+       {
+        "type": {
+         "id": "4",
+         "shortName": "Streaming"
+        },
+        "market": {
+         "id": "1",
+         "type": "National"
+        },
+        "media": {
+         "shortName": "Paramount+"
+        },
+        "lang": "en",
+        "region": "us"
+       }
+      ],
+      "highlights": []
+     }
+    ]
+   }
+  },
+  {
+   "name": "walkouts_five_rounder",
+   "source": "https://web.archive.org/web/20260426024942id_/https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard",
+   "note": "STATUS_FIGHTERS_WALKING is state \"in\" with period 0 and clock \"-\".",
+   "expect_live": true,
+   "expect_period_break": false,
+   "event": {
+    "id": "600058746",
+    "date": "2026-04-26T00:00Z",
+    "name": "UFC Fight Night: Sterling vs. Zalal",
+    "competitions": [
+     {
+      "id": "401864569",
+      "uid": "s:3301~l:3321~e:600058746~c:401864569",
+      "date": "2026-04-26T00:00Z",
+      "endDate": "2026-04-26T00:00Z",
+      "type": {
+       "id": "999",
+       "abbreviation": "Featherweight"
+      },
+      "timeValid": true,
+      "neutralSite": false,
+      "playByPlayAvailable": true,
+      "recent": true,
+      "venue": {
+       "id": "6176",
+       "fullName": "Meta APEX",
+       "address": {
+        "city": "Las Vegas",
+        "state": "NV",
+        "country": "USA"
+       },
+       "indoor": true
+      },
+      "competitors": [
+       {
+        "id": "3031559",
+        "uid": "s:3301~a:3031559",
+        "type": "athlete",
+        "order": 1,
+        "winner": false,
+        "athlete": {
+         "fullName": "Aljamain Sterling",
+         "displayName": "Aljamain Sterling",
+         "shortName": "A. Sterling",
+         "flag": {
+          "href": "https://a.espncdn.com/i/teamlogos/countries/500/usa.png",
+          "alt": "USA",
+          "rel": [
+           "country-flag"
+          ]
+         }
+        },
+        "statistics": [],
+        "records": [
+         {
+          "name": "overall",
+          "abbreviation": "TOT",
+          "type": "total",
+          "summary": "25-5-0"
+         }
+        ]
+       },
+       {
+        "id": "4351319",
+        "uid": "s:3301~a:4351319",
+        "type": "athlete",
+        "order": 2,
+        "winner": false,
+        "athlete": {
+         "fullName": "Youssef Zalal",
+         "displayName": "Youssef Zalal",
+         "shortName": "Y. Zalal",
+         "flag": {
+          "href": "https://a.espncdn.com/i/teamlogos/countries/500/mar.png",
+          "alt": "Morocco",
+          "rel": [
+           "country-flag"
+          ]
+         }
+        },
+        "statistics": [],
+        "records": [
+         {
+          "name": "overall",
+          "abbreviation": "TOT",
+          "type": "total",
+          "summary": "18-5-1"
+         }
+        ]
+       }
+      ],
+      "status": {
+       "clock": 0.0,
+       "displayClock": "-",
+       "period": 0,
+       "type": {
+        "id": "139",
+        "name": "STATUS_FIGHTERS_WALKING",
+        "state": "in",
+        "completed": false,
+        "description": "Walkouts",
+        "detail": "Walkouts",
+        "shortDetail": "Walkouts"
+       }
+      },
+      "broadcasts": [
+       {
+        "market": "national",
+        "names": [
+         "Paramount+"
+        ]
+       }
+      ],
+      "details": [
+       {
+        "id": "15061",
+        "type": {
+         "id": "2",
+         "text": "Walkout"
+        }
+       },
+       {
+        "id": "15060",
+        "type": {
+         "id": "1",
+         "text": "Fight Open"
+        }
+       }
+      ],
+      "format": {
+       "regulation": {
+        "periods": 5
+       }
+      },
+      "startDate": "2026-04-26T00:00Z",
+      "broadcast": "Paramount+",
+      "geoBroadcasts": [
+       {
+        "type": {
+         "id": "4",
+         "shortName": "Streaming"
+        },
+        "market": {
+         "id": "1",
+         "type": "National"
+        },
+        "media": {
+         "shortName": "Paramount+"
+        },
+        "lang": "en",
+        "region": "us"
+       }
+      ],
+      "highlights": []
+     }
+    ]
+   }
+  },
+  {
+   "name": "final_five_round_decision",
+   "source": "https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard?dates=202609 (fetched 2026-09-30)",
+   "note": "UFC 331 main event, a five-round decision: period 5, clock 5:00.",
+   "expect_live": false,
+   "expect_period_break": false,
+   "event": {
+    "id": "600060963",
+    "date": "2026-09-20T01:00Z",
+    "name": "UFC 331: Van vs. Pantoja 2",
+    "competitions": [
+     {
+      "id": "401903509",
+      "uid": "s:3301~l:3321~e:600060963~c:401903509",
+      "date": "2026-09-20T01:00Z",
+      "endDate": "2026-09-20T01:00Z",
+      "type": {
+       "id": "956",
+       "abbreviation": "Flyweight"
+      },
+      "timeValid": true,
+      "neutralSite": false,
+      "playByPlayAvailable": true,
+      "recent": false,
+      "venue": {
+       "id": "1841",
+       "fullName": "crypto.com Arena",
+       "address": {
+        "city": "Los Angeles",
+        "state": "CA",
+        "address1": "STAPLES CENTER,  1111 S. FIGUE",
+        "country": "USA"
+       },
+       "indoor": true
+      },
+      "competitors": [
+       {
+        "id": "2560746",
+        "uid": "s:3301~a:2560746",
+        "type": "athlete",
+        "order": 2,
+        "winner": false,
+        "athlete": {
+         "fullName": "Alexandre Pantoja",
+         "displayName": "Alexandre Pantoja",
+         "shortName": "A. Pantoja",
+         "flag": {
+          "href": "https://a.espncdn.com/i/teamlogos/countries/500/bra.png",
+          "alt": "Brazil",
+          "rel": [
+           "country-flag"
+          ]
+         }
+        },
+        "linescores": [
+         {
+          "value": 138.0,
+          "displayValue": "138.0",
+          "period": 0,
+          "linescores": [
+           {
+            "value": 46.0,
+            "displayValue": "46",
+            "period": 0
+           },
+           {
+            "value": 47.0,
+            "displayValue": "47",
+            "period": 0
+           },
+           {
+            "value": 45.0,
+            "displayValue": "45",
+            "period": 0
+           }
+          ]
+         }
+        ],
+        "statistics": [],
+        "records": [
+         {
+          "name": "overall",
+          "abbreviation": "TOT",
+          "type": "total",
+          "summary": "30-7-0"
+         }
+        ]
+       },
+       {
+        "id": "5120301",
+        "uid": "s:3301~a:5120301",
+        "type": "athlete",
+        "order": 1,
+        "winner": true,
+        "athlete": {
+         "fullName": "Joshua Van",
+         "displayName": "Joshua Van",
+         "shortName": "J. Van",
+         "flag": {
+          "href": "https://a.espncdn.com/i/teamlogos/countries/500/mya.png",
+          "alt": "Myanmar",
+          "rel": [
+           "country-flag"
+          ]
+         },
+         "accolades": [
+          {
+           "id": "711",
+           "name": "UFC Flyweight Title",
+           "type": "Belt"
+          }
+         ]
+        },
+        "linescores": [
+         {
+          "value": 147.0,
+          "displayValue": "147.0",
+          "period": 0,
+          "linescores": [
+           {
+            "value": 49.0,
+            "displayValue": "49",
+            "period": 0
+           },
+           {
+            "value": 48.0,
+            "displayValue": "48",
+            "period": 0
+           },
+           {
+            "value": 50.0,
+            "displayValue": "50",
+            "period": 0
+           }
+          ]
+         }
+        ],
+        "statistics": [],
+        "records": [
+         {
+          "name": "overall",
+          "abbreviation": "TOT",
+          "type": "total",
+          "summary": "18-2-0"
+         }
+        ]
+       }
+      ],
+      "status": {
+       "clock": 300.0,
+       "displayClock": "5:00",
+       "period": 5,
+       "type": {
+        "id": "3",
+        "name": "STATUS_FINAL",
+        "state": "post",
+        "completed": true,
+        "description": "Final",
+        "detail": "Final",
+        "shortDetail": "Final"
+       },
+       "featured": true
+      },
+      "broadcasts": [
+       {
+        "market": "national",
+        "names": [
+         "Paramount+"
+        ]
+       }
+      ],
+      "details": [
+       {
+        "id": "21001",
+        "type": {
+         "id": "22",
+         "text": "Unofficial Winner Decision"
+        }
+       },
+       {
+        "id": "21016",
+        "type": {
+         "id": "23",
+         "text": "Results"
+        }
+       },
+       {
+        "id": "21015",
+        "type": {
+         "id": "19",
+         "text": "Fight Over"
+        }
+       },
+       {
+        "id": "21014",
+        "type": {
+         "id": "18",
+         "text": "Round End"
+        }
+       },
+       {
+        "id": "21013",
+        "type": {
+         "id": "12",
+         "text": "Takedown Attempt"
+        }
+       },
+       {
+        "id": "21012",
+        "type": {
+         "id": "12",
+         "text": "Takedown Attempt"
+        }
+       },
+       {
+        "id": "21011",
+        "type": {
+         "id": "16",
+         "text": "Submission Attempt"
+        }
+       },
+       {
+        "id": "21010",
+        "type": {
+         "id": "17",
+         "text": "Knockdown"
+        }
+       },
+       {
+        "id": "20929",
+        "type": {
+         "id": "5",
+         "text": "Round Start"
+        }
+       },
+       {
+        "id": "20928",
+        "type": {
+         "id": "18",
+         "text": "Round End"
+        }
+       }
+      ],
+      "format": {
+       "regulation": {
+        "periods": 5
+       }
+      },
+      "startDate": "2026-09-20T01:00Z",
+      "broadcast": "Paramount+",
+      "geoBroadcasts": [
+       {
+        "type": {
+         "id": "4",
+         "shortName": "Streaming"
+        },
+        "market": {
+         "id": "1",
+         "type": "National"
+        },
+        "media": {
+         "shortName": "Paramount+"
+        },
+        "lang": "en",
+        "region": "us"
+       }
+      ],
+      "highlights": []
+     }
+    ]
+   }
+  },
+  {
+   "name": "final_five_round_stoppage",
+   "source": "https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard?dates=202609 (fetched 2026-09-30)",
+   "note": "Five-round fight stopped in R5 (plays: 3:21 remaining), status clock 1:38 elapsed.",
+   "expect_live": false,
+   "expect_period_break": false,
+   "event": {
+    "id": "600061266",
+    "date": "2026-09-27T00:00Z",
+    "name": "UFC Fight Night: Rosas Jr. vs. Barcelos",
+    "competitions": [
+     {
+      "id": "401911630",
+      "uid": "s:3301~l:3321~e:600061266~c:401911630",
+      "date": "2026-09-27T00:00Z",
+      "endDate": "2026-09-27T00:00Z",
+      "type": {
+       "id": "970",
+       "abbreviation": "Bantamweight"
+      },
+      "timeValid": true,
+      "neutralSite": false,
+      "playByPlayAvailable": true,
+      "recent": false,
+      "venue": {
+       "id": "6176",
+       "fullName": "Meta APEX",
+       "address": {
+        "city": "Las Vegas",
+        "state": "NV",
+        "country": "USA"
+       },
+       "indoor": true
+      },
+      "competitors": [
+       {
+        "id": "3075570",
+        "uid": "s:3301~a:3075570",
+        "type": "athlete",
+        "order": 2,
+        "winner": false,
+        "athlete": {
+         "fullName": "Raoni Barcelos",
+         "displayName": "Raoni Barcelos",
+         "shortName": "R. Barcelos",
+         "flag": {
+          "href": "https://a.espncdn.com/i/teamlogos/countries/500/bra.png",
+          "alt": "Brazil",
+          "rel": [
+           "country-flag"
+          ]
+         }
+        },
+        "statistics": [],
+        "records": [
+         {
+          "name": "overall",
+          "abbreviation": "TOT",
+          "type": "total",
+          "summary": "22-6-0"
+         }
+        ]
+       },
+       {
+        "id": "5088844",
+        "uid": "s:3301~a:5088844",
+        "type": "athlete",
+        "order": 1,
+        "winner": true,
+        "athlete": {
+         "fullName": "Raul Rosas Jr.",
+         "displayName": "Raul Rosas Jr.",
+         "shortName": "R. Rosas Jr.",
+         "flag": {
+          "href": "https://a.espncdn.com/i/teamlogos/countries/500/mex.png",
+          "alt": "Mexico",
+          "rel": [
+           "country-flag"
+          ]
+         }
+        },
+        "statistics": [],
+        "records": [
+         {
+          "name": "overall",
+          "abbreviation": "TOT",
+          "type": "total",
+          "summary": "13-1-0"
+         }
+        ]
+       }
+      ],
+      "status": {
+       "clock": 98.0,
+       "displayClock": "1:38",
+       "period": 5,
+       "type": {
+        "id": "3",
+        "name": "STATUS_FINAL",
+        "state": "post",
+        "completed": true,
+        "description": "Final",
+        "detail": "Final",
+        "shortDetail": "Final"
+       },
+       "featured": true
+      },
+      "broadcasts": [
+       {
+        "market": "national",
+        "names": [
+         "Paramount+"
+        ]
+       }
+      ],
+      "details": [
+       {
+        "id": "22011",
+        "type": {
+         "id": "23",
+         "text": "Results"
+        }
+       },
+       {
+        "id": "22010",
+        "type": {
+         "id": "21",
+         "text": "Unofficial Winner Kotko"
+        }
+       },
+       {
+        "id": "21996",
+        "type": {
+         "id": "19",
+         "text": "Fight Over"
+        }
+       },
+       {
+        "id": "21995",
+        "type": {
+         "id": "18",
+         "text": "Round End"
+        }
+       },
+       {
+        "id": "21994",
+        "type": {
+         "id": "13",
+         "text": "Takedown"
+        }
+       },
+       {
+        "id": "21993",
+        "type": {
+         "id": "12",
+         "text": "Takedown Attempt"
+        }
+       },
+       {
+        "id": "21992",
+        "type": {
+         "id": "12",
+         "text": "Takedown Attempt"
+        }
+       },
+       {
+        "id": "21991",
+        "type": {
+         "id": "12",
+         "text": "Takedown Attempt"
+        }
+       },
+       {
+        "id": "21990",
+        "type": {
+         "id": "12",
+         "text": "Takedown Attempt"
+        }
+       },
+       {
+        "id": "21989",
+        "type": {
+         "id": "12",
+         "text": "Takedown Attempt"
+        }
+       }
+      ],
+      "format": {
+       "regulation": {
+        "periods": 5
+       }
+      },
+      "startDate": "2026-09-27T00:00Z",
+      "broadcast": "Paramount+",
+      "geoBroadcasts": [
+       {
+        "type": {
+         "id": "4",
+         "shortName": "Streaming"
+        },
+        "market": {
+         "id": "1",
+         "type": "National"
+        },
+        "media": {
+         "shortName": "Paramount+"
+        },
+        "lang": "en",
+        "region": "us"
+       }
+      ],
+      "highlights": []
+     }
+    ]
+   }
+  },
+  {
+   "name": "final_three_round_decision",
+   "source": "https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard?dates=202609 (fetched 2026-09-30)",
+   "note": "The in_round_3_of_3 bout after it ended: period 3, clock 5:00.",
+   "expect_live": false,
+   "expect_period_break": false,
+   "event": {
+    "id": "600060963",
+    "date": "2026-09-20T01:00Z",
+    "name": "UFC 331: Van vs. Pantoja 2",
+    "competitions": [
+     {
+      "id": "401905378",
+      "uid": "s:3301~l:3321~e:600060963~c:401905378",
+      "date": "2026-09-20T01:00Z",
+      "endDate": "2026-09-20T01:00Z",
+      "type": {
+       "id": "990",
+       "abbreviation": "Light Heavyweight"
+      },
+      "timeValid": true,
+      "neutralSite": false,
+      "playByPlayAvailable": true,
+      "recent": false,
+      "venue": {
+       "id": "1841",
+       "fullName": "crypto.com Arena",
+       "address": {
+        "city": "Los Angeles",
+        "state": "CA",
+        "address1": "STAPLES CENTER,  1111 S. FIGUE",
+        "country": "USA"
+       },
+       "indoor": true
+      },
+      "competitors": [
+       {
+        "id": "3948876",
+        "uid": "s:3301~a:3948876",
+        "type": "athlete",
+        "order": 1,
+        "winner": true,
+        "athlete": {
+         "fullName": "Alonzo Menifield",
+         "displayName": "Alonzo Menifield",
+         "shortName": "A. Menifield",
+         "flag": {
+          "href": "https://a.espncdn.com/i/teamlogos/countries/500/usa.png",
+          "alt": "USA",
+          "rel": [
+           "country-flag"
+          ]
+         }
+        },
+        "linescores": [
+         {
+          "value": 86.0,
+          "displayValue": "86.0",
+          "period": 0,
+          "linescores": [
+           {
+            "value": 29.0,
+            "displayValue": "29",
+            "period": 0
+           },
+           {
+            "value": 28.0,
+            "displayValue": "28",
+            "period": 0
+           },
+           {
+            "value": 29.0,
+            "displayValue": "29",
+            "period": 0
+           }
+          ]
+         }
+        ],
+        "statistics": [],
+        "records": [
+         {
+          "name": "overall",
+          "abbreviation": "TOT",
+          "type": "total",
+          "summary": "19-6-1"
+         }
+        ]
+       },
+       {
+        "id": "5307810",
+        "uid": "s:3301~a:5307810",
+        "type": "athlete",
+        "order": 2,
+        "winner": false,
+        "athlete": {
+         "fullName": "Iwo Baraniewski",
+         "displayName": "Iwo Baraniewski",
+         "shortName": "I. Baraniewski",
+         "flag": {
+          "href": "https://a.espncdn.com/i/teamlogos/countries/500/pol.png",
+          "alt": "Poland",
+          "rel": [
+           "country-flag"
+          ]
+         }
+        },
+        "linescores": [
+         {
+          "value": 85.0,
+          "displayValue": "85.0",
+          "period": 0,
+          "linescores": [
+           {
+            "value": 28.0,
+            "displayValue": "28",
+            "period": 0
+           },
+           {
+            "value": 29.0,
+            "displayValue": "29",
+            "period": 0
+           },
+           {
+            "value": 28.0,
+            "displayValue": "28",
+            "period": 0
+           }
+          ]
+         }
+        ],
+        "statistics": [],
+        "records": [
+         {
+          "name": "overall",
+          "abbreviation": "TOT",
+          "type": "total",
+          "summary": "9-1-0"
+         }
+        ]
+       }
+      ],
+      "status": {
+       "clock": 300.0,
+       "displayClock": "5:00",
+       "period": 3,
+       "type": {
+        "id": "3",
+        "name": "STATUS_FINAL",
+        "state": "post",
+        "completed": true,
+        "description": "Final",
+        "detail": "Final",
+        "shortDetail": "Final"
+       },
+       "featured": false
+      },
+      "broadcasts": [
+       {
+        "market": "national",
+        "names": [
+         "Paramount+"
+        ]
+       }
+      ],
+      "details": [
+       {
+        "id": "20869",
+        "type": {
+         "id": "22",
+         "text": "Unofficial Winner Decision"
+        }
+       },
+       {
+        "id": "20916",
+        "type": {
+         "id": "23",
+         "text": "Results"
+        }
+       },
+       {
+        "id": "20915",
+        "type": {
+         "id": "19",
+         "text": "Fight Over"
+        }
+       },
+       {
+        "id": "20914",
+        "type": {
+         "id": "18",
+         "text": "Round End"
+        }
+       },
+       {
+        "id": "20913",
+        "type": {
+         "id": "12",
+         "text": "Takedown Attempt"
+        }
+       },
+       {
+        "id": "20868",
+        "type": {
+         "id": "12",
+         "text": "Takedown Attempt"
+        }
+       },
+       {
+        "id": "20867",
+        "type": {
+         "id": "13",
+         "text": "Takedown"
+        }
+       },
+       {
+        "id": "20866",
+        "type": {
+         "id": "12",
+         "text": "Takedown Attempt"
+        }
+       },
+       {
+        "id": "20865",
+        "type": {
+         "id": "12",
+         "text": "Takedown Attempt"
+        }
+       },
+       {
+        "id": "20864",
+        "type": {
+         "id": "5",
+         "text": "Round Start"
+        }
+       }
+      ],
+      "format": {
+       "regulation": {
+        "periods": 3
+       }
+      },
+      "startDate": "2026-09-20T01:00Z",
+      "broadcast": "Paramount+",
+      "geoBroadcasts": [
+       {
+        "type": {
+         "id": "4",
+         "shortName": "Streaming"
+        },
+        "market": {
+         "id": "1",
+         "type": "National"
+        },
+        "media": {
+         "shortName": "Paramount+"
+        },
+        "lang": "en",
+        "region": "us"
+       }
+      ],
+      "highlights": []
+     }
+    ]
+   }
+  },
+  {
+   "name": "final_three_round_stoppage",
+   "source": "https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard?dates=202609 (fetched 2026-09-30)",
+   "note": "The end_of_round_after_stoppage bout after the result posted: period 2, clock 4:07 elapsed.",
+   "expect_live": false,
+   "expect_period_break": false,
+   "event": {
+    "id": "600061266",
+    "date": "2026-09-26T21:00Z",
+    "name": "UFC Fight Night: Rosas Jr. vs. Barcelos",
+    "competitions": [
+     {
+      "id": "401914468",
+      "uid": "s:3301~l:3321~e:600061266~c:401914468",
+      "date": "2026-09-26T21:00Z",
+      "endDate": "2026-09-26T21:00Z",
+      "type": {
+       "id": "970",
+       "abbreviation": "Bantamweight"
+      },
+      "timeValid": true,
+      "neutralSite": false,
+      "playByPlayAvailable": true,
+      "recent": false,
+      "venue": {
+       "id": "6176",
+       "fullName": "Meta APEX",
+       "address": {
+        "city": "Las Vegas",
+        "state": "NV",
+        "country": "USA"
+       },
+       "indoor": true
+      },
+      "competitors": [
+       {
+        "id": "4815974",
+        "uid": "s:3301~a:4815974",
+        "type": "athlete",
+        "order": 1,
+        "winner": true,
+        "athlete": {
+         "fullName": "Brady Hiestand",
+         "displayName": "Brady Hiestand",
+         "shortName": "B. Hiestand",
+         "flag": {
+          "href": "https://a.espncdn.com/i/teamlogos/countries/500/usa.png",
+          "alt": "USA",
+          "rel": [
+           "country-flag"
+          ]
+         }
+        },
+        "statistics": [],
+        "records": [
+         {
+          "name": "overall",
+          "abbreviation": "TOT",
+          "type": "total",
+          "summary": "10-2-0"
+         }
+        ]
+       },
+       {
+        "id": "5068624",
+        "uid": "s:3301~a:5068624",
+        "type": "athlete",
+        "order": 2,
+        "winner": false,
+        "athlete": {
+         "fullName": "Rinya Nakamura",
+         "displayName": "Rinya Nakamura",
+         "shortName": "R. Nakamura",
+         "flag": {
+          "href": "https://a.espncdn.com/i/teamlogos/countries/500/jpn.png",
+          "alt": "Japan",
+          "rel": [
+           "country-flag"
+          ]
+         }
+        },
+        "statistics": [],
+        "records": [
+         {
+          "name": "overall",
+          "abbreviation": "TOT",
+          "type": "total",
+          "summary": "10-2-0"
+         }
+        ]
+       }
+      ],
+      "status": {
+       "clock": 247.0,
+       "displayClock": "4:07",
+       "period": 2,
+       "type": {
+        "id": "3",
+        "name": "STATUS_FINAL",
+        "state": "post",
+        "completed": true,
+        "description": "Final",
+        "detail": "Final",
+        "shortDetail": "Final"
+       },
+       "featured": false
+      },
+      "broadcasts": [
+       {
+        "market": "national",
+        "names": [
+         "Paramount+"
+        ]
+       }
+      ],
+      "details": [
+       {
+        "id": "21565",
+        "type": {
+         "id": "20",
+         "text": "Unofficial Winner Submission"
+        }
+       },
+       {
+        "id": "21566",
+        "type": {
+         "id": "23",
+         "text": "Results"
+        }
+       },
+       {
+        "id": "21564",
+        "type": {
+         "id": "19",
+         "text": "Fight Over"
+        }
+       },
+       {
+        "id": "21563",
+        "type": {
+         "id": "18",
+         "text": "Round End"
+        }
+       },
+       {
+        "id": "21562",
+        "type": {
+         "id": "12",
+         "text": "Takedown Attempt"
+        }
+       },
+       {
+        "id": "21561",
+        "type": {
+         "id": "16",
+         "text": "Submission Attempt"
+        }
+       },
+       {
+        "id": "21560",
+        "type": {
+         "id": "12",
+         "text": "Takedown Attempt"
+        }
+       },
+       {
+        "id": "21559",
+        "type": {
+         "id": "12",
+         "text": "Takedown Attempt"
+        }
+       },
+       {
+        "id": "21558",
+        "type": {
+         "id": "13",
+         "text": "Takedown"
+        }
+       },
+       {
+        "id": "21557",
+        "type": {
+         "id": "12",
+         "text": "Takedown Attempt"
+        }
+       }
+      ],
+      "format": {
+       "regulation": {
+        "periods": 3
+       }
+      },
+      "startDate": "2026-09-26T21:00Z",
+      "broadcast": "Paramount+",
+      "geoBroadcasts": [
+       {
+        "type": {
+         "id": "4",
+         "shortName": "Streaming"
+        },
+        "market": {
+         "id": "1",
+         "type": "National"
+        },
+        "media": {
+         "shortName": "Paramount+"
+        },
+        "lang": "en",
+        "region": "us"
+       }
+      ],
+      "highlights": []
+     }
+    ]
+   }
+  },
+  {
+   "name": "break_after_round_4_of_5",
+   "source": "derived: competition 401903509 from https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard?dates=202609 (fetched 2026-09-30), with the status of break_after_round_1 at period 4",
+   "note": "The case #680 flagged. Between rounds 4 and 5 of the UFC 331 main event (plays: R4 Round End 03:52:34 UTC, R5 Round Start 03:53:43 UTC).",
+   "expect_live": true,
+   "expect_period_break": true,
+   "event": {
+    "id": "600060963",
+    "date": "2026-09-20T01:00Z",
+    "name": "UFC 331: Van vs. Pantoja 2",
+    "competitions": [
+     {
+      "id": "401903509",
+      "uid": "s:3301~l:3321~e:600060963~c:401903509",
+      "date": "2026-09-20T01:00Z",
+      "endDate": "2026-09-20T01:00Z",
+      "type": {
+       "id": "956",
+       "abbreviation": "Flyweight"
+      },
+      "timeValid": true,
+      "neutralSite": false,
+      "playByPlayAvailable": true,
+      "recent": false,
+      "venue": {
+       "id": "1841",
+       "fullName": "crypto.com Arena",
+       "address": {
+        "city": "Los Angeles",
+        "state": "CA",
+        "address1": "STAPLES CENTER,  1111 S. FIGUE",
+        "country": "USA"
+       },
+       "indoor": true
+      },
+      "competitors": [
+       {
+        "id": "2560746",
+        "uid": "s:3301~a:2560746",
+        "type": "athlete",
+        "order": 2,
+        "winner": false,
+        "athlete": {
+         "fullName": "Alexandre Pantoja",
+         "displayName": "Alexandre Pantoja",
+         "shortName": "A. Pantoja",
+         "flag": {
+          "href": "https://a.espncdn.com/i/teamlogos/countries/500/bra.png",
+          "alt": "Brazil",
+          "rel": [
+           "country-flag"
+          ]
+         }
+        },
+        "linescores": [
+         {
+          "value": 138.0,
+          "displayValue": "138.0",
+          "period": 0,
+          "linescores": [
+           {
+            "value": 46.0,
+            "displayValue": "46",
+            "period": 0
+           },
+           {
+            "value": 47.0,
+            "displayValue": "47",
+            "period": 0
+           },
+           {
+            "value": 45.0,
+            "displayValue": "45",
+            "period": 0
+           }
+          ]
+         }
+        ],
+        "statistics": [],
+        "records": [
+         {
+          "name": "overall",
+          "abbreviation": "TOT",
+          "type": "total",
+          "summary": "30-7-0"
+         }
+        ]
+       },
+       {
+        "id": "5120301",
+        "uid": "s:3301~a:5120301",
+        "type": "athlete",
+        "order": 1,
+        "winner": false,
+        "athlete": {
+         "fullName": "Joshua Van",
+         "displayName": "Joshua Van",
+         "shortName": "J. Van",
+         "flag": {
+          "href": "https://a.espncdn.com/i/teamlogos/countries/500/mya.png",
+          "alt": "Myanmar",
+          "rel": [
+           "country-flag"
+          ]
+         },
+         "accolades": [
+          {
+           "id": "711",
+           "name": "UFC Flyweight Title",
+           "type": "Belt"
+          }
+         ]
+        },
+        "linescores": [
+         {
+          "value": 147.0,
+          "displayValue": "147.0",
+          "period": 0,
+          "linescores": [
+           {
+            "value": 49.0,
+            "displayValue": "49",
+            "period": 0
+           },
+           {
+            "value": 48.0,
+            "displayValue": "48",
+            "period": 0
+           },
+           {
+            "value": 50.0,
+            "displayValue": "50",
+            "period": 0
+           }
+          ]
+         }
+        ],
+        "statistics": [],
+        "records": [
+         {
+          "name": "overall",
+          "abbreviation": "TOT",
+          "type": "total",
+          "summary": "18-2-0"
+         }
+        ]
+       }
+      ],
+      "status": {
+       "clock": 0.0,
+       "displayClock": "-",
+       "period": 4,
+       "type": {
+        "id": "142",
+        "name": "STATUS_END_OF_ROUND",
+        "state": "in",
+        "completed": false,
+        "description": "End of Round",
+        "detail": "End R4",
+        "shortDetail": "End R4"
+       }
+      },
+      "broadcasts": [
+       {
+        "market": "national",
+        "names": [
+         "Paramount+"
+        ]
+       }
+      ],
+      "details": [
+       {
+        "id": "21001",
+        "type": {
+         "id": "22",
+         "text": "Unofficial Winner Decision"
+        }
+       },
+       {
+        "id": "21016",
+        "type": {
+         "id": "23",
+         "text": "Results"
+        }
+       },
+       {
+        "id": "21015",
+        "type": {
+         "id": "19",
+         "text": "Fight Over"
+        }
+       },
+       {
+        "id": "21014",
+        "type": {
+         "id": "18",
+         "text": "Round End"
+        }
+       },
+       {
+        "id": "21013",
+        "type": {
+         "id": "12",
+         "text": "Takedown Attempt"
+        }
+       },
+       {
+        "id": "21012",
+        "type": {
+         "id": "12",
+         "text": "Takedown Attempt"
+        }
+       },
+       {
+        "id": "21011",
+        "type": {
+         "id": "16",
+         "text": "Submission Attempt"
+        }
+       },
+       {
+        "id": "21010",
+        "type": {
+         "id": "17",
+         "text": "Knockdown"
+        }
+       },
+       {
+        "id": "20929",
+        "type": {
+         "id": "5",
+         "text": "Round Start"
+        }
+       },
+       {
+        "id": "20928",
+        "type": {
+         "id": "18",
+         "text": "Round End"
+        }
+       }
+      ],
+      "format": {
+       "regulation": {
+        "periods": 5
+       }
+      },
+      "startDate": "2026-09-20T01:00Z",
+      "broadcast": "Paramount+",
+      "geoBroadcasts": [
+       {
+        "type": {
+         "id": "4",
+         "shortName": "Streaming"
+        },
+        "market": {
+         "id": "1",
+         "type": "National"
+        },
+        "media": {
+         "shortName": "Paramount+"
+        },
+        "lang": "en",
+        "region": "us"
+       }
+      ],
+      "highlights": []
+     }
+    ]
+   }
+  },
+  {
+   "name": "end_of_round_5_awaiting_decision",
+   "source": "derived: competition 401903509 from https://site.api.espn.com/apis/site/v2/sports/mma/ufc/scoreboard?dates=202609 (fetched 2026-09-30), with the status of break_after_round_1 at period 5",
+   "note": "After the final horn of a five-round fight (plays: R5 Round End 03:58:44 UTC), before the scorecards are read and STATUS_FINAL posts.",
+   "expect_live": true,
+   "expect_period_break": true,
+   "event": {
+    "id": "600060963",
+    "date": "2026-09-20T01:00Z",
+    "name": "UFC 331: Van vs. Pantoja 2",
+    "competitions": [
+     {
+      "id": "401903509",
+      "uid": "s:3301~l:3321~e:600060963~c:401903509",
+      "date": "2026-09-20T01:00Z",
+      "endDate": "2026-09-20T01:00Z",
+      "type": {
+       "id": "956",
+       "abbreviation": "Flyweight"
+      },
+      "timeValid": true,
+      "neutralSite": false,
+      "playByPlayAvailable": true,
+      "recent": false,
+      "venue": {
+       "id": "1841",
+       "fullName": "crypto.com Arena",
+       "address": {
+        "city": "Los Angeles",
+        "state": "CA",
+        "address1": "STAPLES CENTER,  1111 S. FIGUE",
+        "country": "USA"
+       },
+       "indoor": true
+      },
+      "competitors": [
+       {
+        "id": "2560746",
+        "uid": "s:3301~a:2560746",
+        "type": "athlete",
+        "order": 2,
+        "winner": false,
+        "athlete": {
+         "fullName": "Alexandre Pantoja",
+         "displayName": "Alexandre Pantoja",
+         "shortName": "A. Pantoja",
+         "flag": {
+          "href": "https://a.espncdn.com/i/teamlogos/countries/500/bra.png",
+          "alt": "Brazil",
+          "rel": [
+           "country-flag"
+          ]
+         }
+        },
+        "linescores": [
+         {
+          "value": 138.0,
+          "displayValue": "138.0",
+          "period": 0,
+          "linescores": [
+           {
+            "value": 46.0,
+            "displayValue": "46",
+            "period": 0
+           },
+           {
+            "value": 47.0,
+            "displayValue": "47",
+            "period": 0
+           },
+           {
+            "value": 45.0,
+            "displayValue": "45",
+            "period": 0
+           }
+          ]
+         }
+        ],
+        "statistics": [],
+        "records": [
+         {
+          "name": "overall",
+          "abbreviation": "TOT",
+          "type": "total",
+          "summary": "30-7-0"
+         }
+        ]
+       },
+       {
+        "id": "5120301",
+        "uid": "s:3301~a:5120301",
+        "type": "athlete",
+        "order": 1,
+        "winner": false,
+        "athlete": {
+         "fullName": "Joshua Van",
+         "displayName": "Joshua Van",
+         "shortName": "J. Van",
+         "flag": {
+          "href": "https://a.espncdn.com/i/teamlogos/countries/500/mya.png",
+          "alt": "Myanmar",
+          "rel": [
+           "country-flag"
+          ]
+         },
+         "accolades": [
+          {
+           "id": "711",
+           "name": "UFC Flyweight Title",
+           "type": "Belt"
+          }
+         ]
+        },
+        "linescores": [
+         {
+          "value": 147.0,
+          "displayValue": "147.0",
+          "period": 0,
+          "linescores": [
+           {
+            "value": 49.0,
+            "displayValue": "49",
+            "period": 0
+           },
+           {
+            "value": 48.0,
+            "displayValue": "48",
+            "period": 0
+           },
+           {
+            "value": 50.0,
+            "displayValue": "50",
+            "period": 0
+           }
+          ]
+         }
+        ],
+        "statistics": [],
+        "records": [
+         {
+          "name": "overall",
+          "abbreviation": "TOT",
+          "type": "total",
+          "summary": "18-2-0"
+         }
+        ]
+       }
+      ],
+      "status": {
+       "clock": 0.0,
+       "displayClock": "-",
+       "period": 5,
+       "type": {
+        "id": "142",
+        "name": "STATUS_END_OF_ROUND",
+        "state": "in",
+        "completed": false,
+        "description": "End of Round",
+        "detail": "End R5",
+        "shortDetail": "End R5"
+       }
+      },
+      "broadcasts": [
+       {
+        "market": "national",
+        "names": [
+         "Paramount+"
+        ]
+       }
+      ],
+      "details": [
+       {
+        "id": "21001",
+        "type": {
+         "id": "22",
+         "text": "Unofficial Winner Decision"
+        }
+       },
+       {
+        "id": "21016",
+        "type": {
+         "id": "23",
+         "text": "Results"
+        }
+       },
+       {
+        "id": "21015",
+        "type": {
+         "id": "19",
+         "text": "Fight Over"
+        }
+       },
+       {
+        "id": "21014",
+        "type": {
+         "id": "18",
+         "text": "Round End"
+        }
+       },
+       {
+        "id": "21013",
+        "type": {
+         "id": "12",
+         "text": "Takedown Attempt"
+        }
+       },
+       {
+        "id": "21012",
+        "type": {
+         "id": "12",
+         "text": "Takedown Attempt"
+        }
+       },
+       {
+        "id": "21011",
+        "type": {
+         "id": "16",
+         "text": "Submission Attempt"
+        }
+       },
+       {
+        "id": "21010",
+        "type": {
+         "id": "17",
+         "text": "Knockdown"
+        }
+       },
+       {
+        "id": "20929",
+        "type": {
+         "id": "5",
+         "text": "Round Start"
+        }
+       },
+       {
+        "id": "20928",
+        "type": {
+         "id": "18",
+         "text": "Round End"
+        }
+       }
+      ],
+      "format": {
+       "regulation": {
+        "periods": 5
+       }
+      },
+      "startDate": "2026-09-20T01:00Z",
+      "broadcast": "Paramount+",
+      "geoBroadcasts": [
+       {
+        "type": {
+         "id": "4",
+         "shortName": "Streaming"
+        },
+        "market": {
+         "id": "1",
+         "type": "National"
+        },
+        "media": {
+         "shortName": "Paramount+"
+        },
+        "lang": "en",
+        "region": "us"
+       }
+      ],
+      "highlights": []
+     }
+    ]
+   }
+  }
+ ]
+}

@@ -1,7 +1,7 @@
 {
   "id": "odds-ticker",
   "name": "Odds Ticker",
-  "version": "1.7.4",
+  "version": "1.7.5",
   "description": "Displays scrolling odds and betting lines for upcoming games across multiple sports leagues including NFL, NBA, MLB, NCAA Football, and more",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -20,6 +20,12 @@
   "branch": "main",
   "plugin_path": "plugins/odds-ticker",
   "versions": [
+    {
+      "version": "1.7.5",
+      "released": "2026-09-29",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Changelog text only: the arrows in the 1.1.7 notes (LA\u2192LAR and the other corrected abbreviations) showed as three garbled characters each, from UTF-8 text that had been decoded as Windows-1252 and saved back. No change in behaviour."
+    },
     {
       "version": "1.7.4",
       "released": "2026-09-28",
@@ -150,7 +156,7 @@
     {
       "released": "2026-07-18",
       "version": "1.1.7",
-      "notes": "Fix config save failing with a 400 validation error. The per-league favorite-team pickers hardcoded several wrong team abbreviations that didn't match ESPN's (Rams LA\u00e2\u2020\u2019LAR, White Sox CWS\u00e2\u2020\u2019CHW, A's OAK\u00e2\u2020\u2019ATH, Warriors GSW\u00e2\u2020\u2019GS, Pelicans NOP\u00e2\u2020\u2019NO, Knicks NYK\u00e2\u2020\u2019NY, Spurs SAS\u00e2\u2020\u2019SA, Jazz UTA\u00e2\u2020\u2019UTAH, Wizards WAS\u00e2\u2020\u2019WSH, NHL Kings LAK\u00e2\u2020\u2019LA, Capitals WAS\u00e2\u2020\u2019WSH), so valid favorites were rejected on save and never matched games. Also removed the overly strict regex on the NCAA/MiLB free-text team fields so documented values like AP_TOP_25 are accepted.",
+      "notes": "Fix config save failing with a 400 validation error. The per-league favorite-team pickers hardcoded several wrong team abbreviations that didn't match ESPN's (Rams LA\u2192LAR, White Sox CWS\u2192CHW, A's OAK\u2192ATH, Warriors GSW\u2192GS, Pelicans NOP\u2192NO, Knicks NYK\u2192NY, Spurs SAS\u2192SA, Jazz UTA\u2192UTAH, Wizards WAS\u2192WSH, NHL Kings LAK\u2192LA, Capitals WAS\u2192WSH), so valid favorites were rejected on save and never matched games. Also removed the overly strict regex on the NCAA/MiLB free-text team fields so documented values like AP_TOP_25 are accepted.",
       "ledmatrix_min": "2.0.0"
     },
     {

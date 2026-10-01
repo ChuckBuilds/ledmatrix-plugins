@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-09-29",
+  "last_updated": "2026-09-30",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -495,12 +495,11 @@
       "plugin_path": "plugins/ledmatrix-flights",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-28",
+      "last_updated": "2026-09-30",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.14.7",
-      "ledmatrix_min_version": "2.0.0",
-      "commit": "62fa95853476715b833abfe0b207d4f50876b6b4"
+      "latest_version": "1.15.0",
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "id": "march-madness",
@@ -636,7 +635,7 @@
     {
       "id": "on-air",
       "name": "On Air Light",
-      "description": "Retro broadcast ON AIR tally light. Activate remotely via MQTT or Home Assistant to signal you're on a call, recording, or live â€” stays on until you turn it off.",
+      "description": "Retro broadcast ON AIR tally light. Activate remotely via MQTT or Home Assistant to signal you're on a call, recording, or live — stays on until you turn it off.",
       "author": "ChuckBuilds",
       "category": "utility",
       "tags": [
@@ -652,13 +651,12 @@
       "plugin_path": "plugins/on-air",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-28",
+      "last_updated": "2026-09-29",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.12",
+      "latest_version": "1.2.13",
       "icon": "fa-circle-dot",
-      "ledmatrix_min_version": "2.0.0",
-      "commit": "53e42a489c235fc99246c309a44980cdf50a5b9e"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "id": "nfl-draft",
@@ -708,12 +706,11 @@
       "plugin_path": "plugins/odds-ticker",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-28",
+      "last_updated": "2026-09-29",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.7.4",
-      "ledmatrix_min_version": "3.4.0",
-      "commit": "62fa95853476715b833abfe0b207d4f50876b6b4"
+      "latest_version": "1.7.5",
+      "ledmatrix_min_version": "3.4.0"
     },
     {
       "id": "of-the-day",
@@ -1001,13 +998,12 @@
       "plugin_path": "plugins/ufc-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-29",
+      "last_updated": "2026-09-30",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.18.0",
+      "latest_version": "1.18.1",
       "icon": "fas fa-fist-raised",
-      "ledmatrix_min_version": "3.7.0",
-      "commit": "858ad75273a7016e9ea8b7c4194eb79380de4fd8"
+      "ledmatrix_min_version": "3.7.0"
     },
     {
       "id": "weather",

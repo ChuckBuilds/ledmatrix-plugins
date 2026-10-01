@@ -12,6 +12,10 @@ the 40-odd plugins, not an empty directory).
 its manifest, or a synced metadata field differs. It used to discard that
 result and print PASS.
 
+A version with whitespace or a control character in it is drift too:
+parse_version's int() strips it, so "1.0.10\\r" in plugins.json passed as the
+manifest's "1.0.10" for 11 entries.
+
 Exit codes: 0 pass, 1 fail.
 """
 
@@ -157,6 +161,61 @@ check(f"--check after a normal run fails only on the entry it could not fix (exi
       and "FAIL a:" not in out)
 shutil.rmtree(root, ignore_errors=True)
 
+print("\nstray whitespace and control characters in versions")
+# #560 bumped 20 manifests to "x.y.z\r" and a normal run copied that into
+# plugins.json. Fixing the manifests left the registry's copies behind: int()
+# strips the \r, so every check called them up to date.
+check("parse_version still cannot tell '1.0.10\\r' from '1.0.10'",
+      reg.parse_version("1.0.10\r") == reg.parse_version("1.0.10"))
+for version, stray in [("1.0.10", False), ("1.0.10\r", True), ("1.0.10\n", True),
+                       (" 1.0.10", True), ("1.0.10\t", True), ("1.0.\x0010", True),
+                       ("1.0.10\x85", True), ("1.0.10-beta.1", False), (None, False)]:
+    check(f"has_stray_characters({version!r}) is {stray}",
+          reg.has_stray_characters(version) is stray)
+case("a registry version with a trailing \\r fails",
+     [{**entry("a", "plugins/a"), "latest_version": "1.0.0\r"}], ["a"], 1,
+     "latest_version '1.0.0\\r' is not the manifest's '1.0.0'")
+case("a registry version with a leading space fails",
+     [{**entry("a", "plugins/a"), "latest_version": " 1.0.0"}], ["a"], 1,
+     "latest_version ' 1.0.0' is not the manifest's")
+case("'1.0\\r' for '1.0.0' fails on the \\r, not the missing part",
+     [{**entry("a", "plugins/a"), "latest_version": "1.0\r"}], ["a"], 1,
+     "latest_version '1.0\\r' is not the manifest's '1.0.0'")
+case("'1.0.0' for a manifest's '1.0' is still the same version",
+     [entry("a", "plugins/a")], ["a"], 0,
+     manifests={"a": {"id": "a", "version": "1.0"}})
+case("--dry-run alone reports the \\r without failing",
+     [{**entry("a", "plugins/a"), "latest_version": "1.0.0\r"}], ["a"], 0,
+     "'1.0.0\\r' -> '1.0.0'", extra=("--dry-run",))
+case("a manifest version with a trailing \\r fails --check",
+     [entry("a", "plugins/a")], ["a"], 1,
+     "plugins/a/manifest.json version '1.1.0\\r' contains whitespace",
+     manifests={"a": {"id": "a", "version": "1.1.0\r"}})
+case("without --check a manifest \\r warns",
+     [entry("a", "plugins/a")], ["a"], 0, "WARNING a: plugins/a/manifest.json",
+     extra=(), manifests={"a": {"id": "a", "version": "1.1.0\r"}})
+
+# A normal run rewrites a registry \r (without calling it a new release), and
+# never copies a manifest \r, however far ahead the manifest is.
+root = make_tree([{**entry("a", "plugins/a"), "latest_version": "1.0.0\r",
+                   "last_updated": "2026-01-01"},
+                  entry("b", "plugins/b")],
+                 ["a", "b"],
+                 {"a": {"id": "a", "version": "1.0.0", "last_updated": "2026-01-01"},
+                  "b": {"id": "b", "version": "1.1.0\r"}})
+code, out = run_check(root)
+written = {p["id"]: p for p in json.loads((root / "plugins.json").read_text())["plugins"]}
+check(f"a normal run rewrites '1.0.0\\r' to the manifest's '1.0.0' (exit {code})",
+      code == 0 and written["a"]["latest_version"] == "1.0.0")
+check("... and leaves that entry's last_updated alone",
+      written["a"]["last_updated"] == "2026-01-01")
+check("a normal run does not copy a manifest's '1.1.0\\r'",
+      written["b"]["latest_version"] == "1.0.0" and "WARNING b:" in out)
+code, out = run_check(root, "--check")
+check(f"--check after it fails only on the manifest it could not fix (exit {code})",
+      code == 1 and "FAIL b:" in out and "FAIL a:" not in out)
+shutil.rmtree(root, ignore_errors=True)
+
 print("\nlast_updated is the newer of last_updated and versions[0].released")
 # 27+ manifests had a top-level last_updated older than their newest release,
 # and the registry copied the stale date.
@@ -254,6 +313,9 @@ check("a manifest with another id is ignored", after[0]["latest_version"] == "1.
 after, _ = run_external([ext_entry()], error=urllib.error.URLError("404"))
 check("an unreadable repo is skipped, not fatal", after[0]["latest_version"] == "1.0.0")
 
+after, _ = run_external([ext_entry()], dict(newer, version="1.2.0\r"))
+check("a version with a stray \\r is not copied", after[0]["latest_version"] == "1.0.0")
+
 after, _ = run_external([ext_entry()], "<html>not json</html>")
 check("a manifest that is not JSON is skipped", after[0]["latest_version"] == "1.0.0")
 
@@ -329,15 +391,15 @@ check("a normal run removes them",
       "ledmatrix_min_version" not in written["a"] and "aliases" not in written["weather"])
 shutil.rmtree(root, ignore_errors=True)
 
-print("\na latest_version with stray whitespace")
-# Ten plugins were published as "1.0.10\r": parse_version reads it as equal to
-# the manifest, so neither a normal run nor --check ever noticed.
-case("--check fails on it",
-     [{**entry("a", "plugins/a"), "latest_version": "1.0.0\r"}], ["a"], 1, "stray whitespace")
-root = make_tree([{**entry("a", "plugins/a"), "latest_version": "1.0.0\r"}], ["a"])
+print("\na stray-character fix keeps the commit")
+# #577 rewrites "1.0.0\r" to "1.0.0" without calling it a new release, so the
+# commit that introduced 1.0.0 still names it and must survive the rewrite.
+root = make_tree([{**entry("a", "plugins/a"), "latest_version": "1.0.0\r",
+                   "commit": "0" * 40}], ["a"])
 run_check(root)
 written = json.loads((root / "plugins.json").read_text())["plugins"][0]
-check("a normal run writes the manifest's spelling", written["latest_version"] == "1.0.0")
+check("a normal run writes the manifest's spelling and keeps commit",
+      written["latest_version"] == "1.0.0" and written.get("commit") == "0" * 40)
 shutil.rmtree(root, ignore_errors=True)
 
 print("\nthird-party floors (--external)")
@@ -471,6 +533,24 @@ problems = reg.find_consistency_problems(registry, REPO / "plugins")
 for p in problems:
     print(f"        {p}")
 check("plugins.json and plugins/ agree", not problems)
+
+
+def strings(value):
+    if isinstance(value, dict):
+        for v in value.values():
+            yield from strings(v)
+    elif isinstance(value, list):
+        for v in value:
+            yield from strings(v)
+    elif isinstance(value, str):
+        yield value
+
+
+# Every field, third-party entries included: the store renders these as they
+# stand, and the drift checks above only compare the ones a manifest syncs.
+controls = sorted({repr(s) for s in strings(registry)
+                   if any(ord(c) < 0x20 or 0x7f <= ord(c) <= 0x9f for c in s)})
+check(f"no plugins.json string has a control character {controls or ''}", not controls)
 
 print("\n%s" % ("FAILED: %d" % len(failures) if failures else "All checks passed"))
 sys.exit(1 if failures else 0)
