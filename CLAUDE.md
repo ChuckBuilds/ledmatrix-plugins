@@ -158,9 +158,10 @@ Cold-start facts that are easy to rediscover the hard way:
   `cp scripts/pre-commit .git/hooks/pre-commit`
 - **Secrets:** core/runtime `config_secrets.json` (not this repo); plugin-local
   `plugins/**/config_secrets.json` is gitignored. Never commit real tokens.
-- **Registry:** `update_registry.py` only updates `latest_version` from local
-  manifests for monorepo plugins; third-party entries keep their own `repo` URL
-  and empty `plugin_path`.
+- **Registry:** `update_registry.py` syncs `latest_version`, store metadata and
+  the core-facing `ledmatrix_min_version` / `aliases` / `commit` from local
+  manifests (and git history) for monorepo plugins; third-party entries keep
+  their own `repo` URL and empty `plugin_path`. Details → docs topic 07.
 
 More: [CONTRIBUTING.md](./CONTRIBUTING.md), [SUBMISSION.md](./SUBMISSION.md),
 [VERIFICATION.md](./VERIFICATION.md).

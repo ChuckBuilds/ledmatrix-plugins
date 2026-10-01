@@ -8,6 +8,62 @@
 ### Changed
 - Requires LEDMatrix core 3.8.0 (`ledmatrix_min_version` and `compatible_versions`), the first release with live Vegas elements (`src.common.sports_vegas`). The store refuses to install or update this version onto an older core.
 
+## [1.18.3] - 2026-09-30
+
+### Fixed
+- Odds load. Every UFC odds request was `.../events/<bout>/competitions/<bout>/odds`,
+  which ESPN answers with 404 (recorded as "no odds" and cached), because the URL
+  needs the card's id as the event: `.../events/<card>/competitions/<bout>/odds`
+  returns the DraftKings line. Each extracted bout now registers its card with
+  the odds manager (`register_bout`), which builds the right URL and cache key
+  (`odds_espn_mma_ufc_<card>_<bout>`; the harness mock is rekeyed to match).
+- Upcoming keeps a long card's headliners. ESPN lists a card's bouts main event
+  last and the main card shares one start time, so the soonest `upcoming_games_to_show`
+  by time alone dropped the co-main and main event of UFC 331 (10 of 12 shown).
+  When the pool is full its first-listed bouts are dropped first; the sooner card
+  still fills first, and the pool is shown in start order.
+
+### Tests
+- `test_odds_and_headliners.py`: the odds URL and cache key, and the pool, over
+  the recorded UFC 331 scoreboard.
+
+## [1.18.2] - 2026-09-30
+
+### Fixed
+- The live display follows the bout in the cage. ESPN's MMA scoreboard sends
+  a whole fight card as ONE event whose competitions are its bouts, early
+  prelims first, and the live manager read only `competitions[0]`. So
+  `live_games`, the live switch view, the Vegas cards and the finished-fight
+  capture all followed that one early prelim: once it was over, the card
+  showed nothing live while the main card was on. The live fetch now splits
+  each card into its bouts (as Recent and Upcoming already did), and each
+  bout is its own fight, keyed by its competition id, with the card as its
+  `event_id`.
+- A bout that has not started, or ended without a result, has no clock.
+  ESPN sends a scheduled bout's `displayClock` as `-`, and the shared live
+  update counts any clock but `0:00` as a running one: on fight day the first
+  bout sat on the live screen, claiming live priority, until the card began,
+  and with the card split every scheduled bout would have joined it. A bout
+  in progress keeps ESPN's clock (`-` during walkouts and round breaks), and
+  a finished one keeps its finish time.
+- Each bout is dated with its own start, ESPN's per-bout `date` (its
+  segment: early prelims, prelims, main card), instead of the card's opening
+  time. Upcoming showed the main event at the early prelims' start, hours
+  early, and Recent, newest first among bouts that all tied, showed the
+  first five listed (the early prelims) instead of the main card. A bout
+  without a date of its own still takes the card's.
+
+Checked against all 103 Wayback captures of ESPN's UFC scoreboard from 2026
+(1,259 bouts): the old live manager held exactly the bouts in progress in 31
+of them, this one in all 103.
+
+### Tests
+- `test_every_bout_is_its_own_fight.py` replays UFC 331 from four recorded
+  ESPN scoreboards of the night (`test/fixtures/espn_mma_fight_night.json`:
+  fight-day morning, main card walkouts, round 3, card over) through the real
+  live, recent and upcoming managers, with the network stubbed at
+  `fetch_espn_scoreboard`.
+
 ## [1.18.1] - 2026-09-30
 
 ### Fixed

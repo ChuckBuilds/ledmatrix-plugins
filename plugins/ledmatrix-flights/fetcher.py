@@ -13,7 +13,11 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
-from utils import haversine_miles, altitude_to_color
+from utils import (
+    haversine_miles, altitude_to_color, epoch_age, fr24_pos_age, is_number,
+    is_real_track, payload_lag, position_age, seen_pos_age, source_send_time,
+    FR24_MAX_AGE_SECONDS,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -135,6 +139,12 @@ class SkyAwareFetcher(AircraftFetcher):
         # wrote 55KB per update_interval to the SD card for nothing.
         self._last_payload = None
         self._last_payload_at = 0.0
+        # When that payload arrived (time.monotonic()), and how long it had
+        # sat between its own `now` and being sent (see payload_lag). A
+        # fallback's positions are as old as its receipt, not as old as the
+        # poll that reused it.
+        self._last_payload_mono = 0.0
+        self._last_payload_lag = 0.0
 
     def fetch_raw(self) -> Optional[Dict]:
         """Fetch the raw JSON payload from SkyAware."""
@@ -155,6 +165,9 @@ class SkyAwareFetcher(AircraftFetcher):
             data = response.json()
             self._last_payload = data
             self._last_payload_at = time.time()
+            self._last_payload_mono = time.monotonic()
+            self._last_payload_lag = payload_lag(
+                data.get('now'), source_send_time(response, self._last_payload_at))
             logger.debug(f"[Flight Tracker] SkyAware: {len(data.get('aircraft', []))} aircraft")
             return data
         except requests.exceptions.RequestException as e:
@@ -176,6 +189,9 @@ class SkyAwareFetcher(AircraftFetcher):
         data = self.fetch_raw()
         if not data or 'aircraft' not in data:
             return None
+        # fetch_raw() hands back _last_payload, fresh or as a fallback.
+        received_mono = self._last_payload_mono
+        lag = self._last_payload_lag
 
         current_time = time.time()
         result: Dict[str, Dict] = {}
@@ -201,12 +217,14 @@ class SkyAwareFetcher(AircraftFetcher):
             callsign = ac.get('flight', '').strip() or icao
             speed = ac.get('gs', 0)
             heading = ac.get('track', ac.get('heading', 0))
+            track_valid = is_real_track(ac.get('track', ac.get('heading')))
             registration = ac.get('r', '')
             aircraft_type = ac.get('t', 'Unknown')
             # SkyAware includes vertical rate in ft/min (baro_rate) or geom_rate
             vertical_rate = ac.get('baro_rate', ac.get('geom_rate'))
 
             color = altitude_to_color(altitude, altitude_colors)
+            pos_age, pos_stale = position_age(seen_pos_age(ac, lag))
 
             result[icao] = {
                 'icao': icao,
@@ -222,6 +240,11 @@ class SkyAwareFetcher(AircraftFetcher):
                 'color': color,
                 'last_seen': current_time,
                 'vertical_rate': vertical_rate,
+                'on_ground': ac.get('alt_baro') == 'ground',
+                'pos_age': pos_age,
+                'pos_stale': pos_stale,
+                'track_valid': track_valid,
+                'received_mono': received_mono,
             }
 
         logger.info(f"[Flight Tracker] SkyAware: {len(result)} aircraft in range ({radius_miles}mi)")
@@ -285,7 +308,7 @@ class FR24Fetcher(AircraftFetcher):
             "bounds": bounds,
             "faa": 1, "satellite": 1, "mlat": 1, "flarm": 1,
             "adsb": 1, "gnd": 0, "air": 1, "vehicles": 0,
-            "estimated": 1, "maxage": 14400, "gliders": 0, "stats": 1,
+            "estimated": 1, "maxage": FR24_MAX_AGE_SECONDS, "gliders": 0, "stats": 1,
         }
         if self._throttle.should_skip():
             return None
@@ -305,6 +328,7 @@ class FR24Fetcher(AircraftFetcher):
             self._throttle.note_error()
             logger.exception("[Flight Tracker] FR24 feed fetch failed")
             return None
+        received_mono = time.monotonic()
         self._throttle.note_success()
 
         current_time = time.time()
@@ -328,6 +352,7 @@ class FR24Fetcher(AircraftFetcher):
                 continue
 
             heading = entry[3] if len(entry) > 3 else 0
+            track_valid = is_real_track(heading)
             altitude = entry[4] if len(entry) > 4 else 0
             speed = entry[5] if len(entry) > 5 else 0
             aircraft_type_code = entry[8] if len(entry) > 8 else ''
@@ -346,6 +371,8 @@ class FR24Fetcher(AircraftFetcher):
 
             color = altitude_to_color(altitude, altitude_colors)
             airline_name = _AIRLINE_ICAO_NAMES.get(airline_icao, '')
+            # entry[10] is the position's epoch time; see fr24_pos_age.
+            pos_age, pos_stale = position_age(fr24_pos_age(entry, current_time))
 
             result[icao] = {
                 'icao': icao,
@@ -365,6 +392,11 @@ class FR24Fetcher(AircraftFetcher):
                 'distance_miles': distance_miles_val,
                 'color': color,
                 'last_seen': current_time,
+                'on_ground': on_ground,
+                'pos_age': pos_age,
+                'pos_stale': pos_stale,
+                'track_valid': track_valid,
+                'received_mono': received_mono,
             }
 
         logger.info(f"[Flight Tracker] FR24: {len(result)} aircraft in range ({radius_miles}mi)")
@@ -475,6 +507,8 @@ class OpenSkyFetcher(AircraftFetcher):
             self._throttle.note_error()
             logger.exception("[Flight Tracker] OpenSky fetch failed")
             return None
+        received_mono = time.monotonic()
+        sent_wall = source_send_time(response, time.time())
         self._throttle.note_success()
 
         states = data.get("states")
@@ -482,6 +516,14 @@ class OpenSkyFetcher(AircraftFetcher):
             logger.info("[Flight Tracker] OpenSky: no aircraft in bounding box")
             return {}
 
+        # Ages are counted by OpenSky's clock, from when it sent the answer,
+        # so a skewed Pi clock cannot age (or rejuvenate) every position.
+        # ``time`` is the instant the vectors describe, rounded down to the
+        # 5/10 s resolution, and the send trails it by that and more (5-15 s
+        # measured); the Date header puts that gap back.
+        states_time = data.get("time")
+        ref_time = (states_time + payload_lag(states_time, sent_wall)
+                    if is_number(states_time) else None)
         current_time = time.time()
         result: Dict[str, Dict] = {}
 
@@ -528,6 +570,13 @@ class OpenSkyFetcher(AircraftFetcher):
                 callsign = str(sv[1]).strip() if sv[1] else icao
                 category = str(sv[17]) if len(sv) > 17 and sv[17] is not None else ""
 
+                # time_position, else last_contact: the latter is any message,
+                # so it can only make a position look younger than it is.
+                raw_age = epoch_age(ref_time, sv[3])
+                if raw_age is None:
+                    raw_age = epoch_age(ref_time, sv[4])
+                pos_age, pos_stale = position_age(raw_age)
+
                 color = altitude_to_color(altitude_ft, altitude_colors)
 
                 result[icao] = {
@@ -546,6 +595,10 @@ class OpenSkyFetcher(AircraftFetcher):
                     'aircraft_type': 'Unknown',
                     'registration': '',
                     'last_seen': current_time,
+                    'pos_age': pos_age,
+                    'pos_stale': pos_stale,
+                    'track_valid': is_real_track(true_track),
+                    'received_mono': received_mono,
                 }
             except (IndexError, TypeError, ValueError) as e:
                 logger.debug(f"[Flight Tracker] OpenSky: skipping malformed state vector: {e}")
@@ -609,6 +662,8 @@ class AdsbNetFetcher(AircraftFetcher):
             self._throttle.note_error()
             logger.exception(f"[Flight Tracker] {self.provider} fetch failed")
             return None
+        received_mono = time.monotonic()
+        sent_wall = source_send_time(response, time.time())
         self._throttle.note_success()
 
         # adsb.lol returns aircraft under "ac"; adsb.fi's opendata API uses
@@ -620,6 +675,8 @@ class AdsbNetFetcher(AircraftFetcher):
 
         current_time = time.time()
         result: Dict[str, Dict] = {}
+        # seen_pos counts back from the payload's `now`; the send came later.
+        lag = payload_lag(data.get("now"), sent_wall)
 
         for ac in aircraft_list:
             icao = (ac.get("hex") or "").upper().strip()
@@ -649,11 +706,13 @@ class AdsbNetFetcher(AircraftFetcher):
             callsign = (ac.get("flight") or "").strip() or icao
             speed = ac.get("gs", 0) or 0
             heading = ac.get("track", ac.get("true_heading", 0)) or 0
+            track_valid = is_real_track(ac.get("track", ac.get("true_heading")))
             registration = (ac.get("r") or "").strip()
             aircraft_type = (ac.get("t") or "").strip() or "Unknown"
             vertical_rate = ac.get("baro_rate", ac.get("geom_rate"))
 
             color = altitude_to_color(altitude, altitude_colors)
+            pos_age, pos_stale = position_age(seen_pos_age(ac, lag))
 
             result[icao] = {
                 "icao": icao,
@@ -673,6 +732,11 @@ class AdsbNetFetcher(AircraftFetcher):
                 # aircraft_categories filter hid every aircraft on these
                 # sources, since the filter found no category to match.
                 "category": (ac.get("category") or "").strip(),
+                "on_ground": alt_baro == "ground",
+                "pos_age": pos_age,
+                "pos_stale": pos_stale,
+                "track_valid": track_valid,
+                "received_mono": received_mono,
             }
 
         logger.info(
