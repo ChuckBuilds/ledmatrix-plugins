@@ -542,7 +542,7 @@ def random_sky(rng, radius, now):
 def test_a_glide_render_at_the_position_time_is_the_ordinary_render(background):
     """at == pos_mono and nothing left to ease: byte for byte what at=None draws,
     at every size, with trails, including the render width the ticker asks for."""
-    rng = random.Random(2026)
+    rng = random.Random(2026)  # nosec B311 - reproducible test data
     for _ in range(30):
         width, height = rng.choice([(64, 32), (128, 32), (128, 64), (192, 48), (512, 64)])
         radius = rng.choice([5, 10, 40])
@@ -971,7 +971,7 @@ def test_redraws_alongside_publishing_update():
     stop = threading.Event()
 
     def publisher():
-        rng = random.Random(7)
+        rng = random.Random(7)  # nosec B311 - reproducible test data
         while not stop.is_set():
             for icao in list(p.aircraft_data):
                 p.aircraft_data[icao]['lat'] += rng.uniform(-0.002, 0.002)
