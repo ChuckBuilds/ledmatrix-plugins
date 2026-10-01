@@ -73,6 +73,8 @@ CASES = [
     (("header_color",), lambda p: list(p._renderer.header_color)),
     (("show_aircraft_icon",), lambda p: p._renderer.show_aircraft_icon),
     (("live_update_interval",), lambda p: p.live_update_interval),
+    (("map_glide",), lambda p: p.map_glide),
+    (("map_glide_hz",), lambda p: p.map_glide_hz),
 ]
 
 # Deliberately omits every key under test (and the sections that hold them).

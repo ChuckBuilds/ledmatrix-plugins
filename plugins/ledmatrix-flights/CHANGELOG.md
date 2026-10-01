@@ -1,5 +1,31 @@
 # Changelog
 
+## [1.16.0] - 2026-09-30
+
+### Added
+- Gliding map in Vegas mode (LEDMatrix 3.8.0 live Vegas elements): while the
+  flight map scrolls through the ticker, aircraft move smoothly between
+  position reports. Each is dead-reckoned along its track at its ground speed
+  from its own position time (up to 20 s); a small disagreement at the next
+  report eases out over 1.5 s, a large one (over 6 px) or a new aircraft
+  snaps, and an aircraft that stops reporting holds where it was drawn.
+  Trails end at the drawn aircraft. The map is redrawn without the plugin's
+  lock from the published snapshot and the background the last full render
+  used, so no tile or network work happens per frame. `map_glide` (default
+  on) and `map_glide_hz` (default 4, 1-10; the ticker caps it at its
+  `live_max_hz`, and at 1 Hz without the GIL-releasing rgbmatrix binding).
+- A partial map background (tiles still missing) is kept for 10 s instead of
+  being recomposed on every render, and replaced as soon as a missing tile
+  arrives.
+
+### Changed
+- While the plugin is in the Vegas ticker it counts as visible, so FR24
+  enrichment and flight-plan lookups keep running there; weather (METAR) still
+  runs only when the plugin is on screen in normal rotation.
+- Requires LEDMatrix core 3.8.0 (`ledmatrix_min_version` and
+  `compatible_versions`), the first release with live Vegas elements. The
+  store refuses to install or update this version onto an older core.
+
 ## [1.15.0] - 2026-09-30
 
 ### Changed

@@ -168,6 +168,8 @@ under `ledmatrix-flights`. The full schema is
 | `show_aircraft_icon` | `true` | Show the airline logo on area-mode cards. Flight detail and stats cards always show it when one is available (52 airlines are bundled as PNG assets). Advanced. |
 | `show_trails` | `true` | Show aircraft movement trails. Advanced. |
 | `trail_length` | `10` | Number of trail points to display per aircraft (0–50; 0 draws no trail). Advanced. |
+| `map_glide` | `true` | In Vegas mode, move the map's aircraft smoothly between position reports. See [Gliding map in Vegas mode](#gliding-map-in-vegas-mode). |
+| `map_glide_hz` | `4` | Redraws per second of the gliding Vegas map (1–10); the ticker caps it too. Advanced. |
 | `scroll_speed` | `2` | **Hidden (still declared); has no effect.** No flight tracker view scrolls text. |
 | `overhead_alt_interval` | `4` | On the overhead (live-priority) card, the route (e.g. SEA>PHX) and the aircraft model share one text row and alternate. This is how many seconds each stays up before swapping. Set to 0 to disable alternation (route always wins). The model is shown as a friendly name (e.g. 'Boeing 737-900') when the type is known. Advanced. |
 
@@ -338,6 +340,35 @@ Shows a geographic map with:
 - Aircraft trails (if enabled)
 - Center position marker
 - Aircraft count indicator
+
+### Gliding map in Vegas mode
+
+When the map scrolls by in the Vegas ticker, its aircraft move between
+position reports instead of jumping once per poll. Each one is carried along
+its track at its ground speed from the moment its position was reported, for
+up to 20 seconds, and then waits there for the next report; when that
+arrives, a small difference is eased out over a second and a half rather
+than shown as a jump. An aircraft that stops reporting stops where it got to
+(it is never pulled back to its last report) until it drops off the map.
+Aircraft on the ground, slower than 30 knots, without a track, or whose
+position was already more than 30 seconds old when it arrived stay where they
+were reported. The normal rotation is unchanged.
+
+The 20 seconds count from when the position was true, not from when it
+arrived. A local receiver's positions are a second or two old, so with the
+usual 5-second polls the aircraft glide continuously. OpenSky's positions are
+often 10-25 seconds old on arrival, so with OpenSky (or an `update_interval`
+over about 15 seconds) aircraft can reach the limit, pause, and catch up when
+the next poll lands.
+
+- `map_glide` (default `true`) turns it on or off.
+- `map_glide_hz` (default `4`, 1–10) is how often the map is redrawn while it
+  is on screen. The ticker caps it with `display.vegas_scroll.live_max_hz`
+  (5 by default).
+
+It needs LEDMatrix 3.8.0 or newer (live Vegas elements); an older core shows
+the map as before. It is smoother on a display running the GIL-releasing
+rgbmatrix binding: without it the ticker redraws at most once a second.
 
 ### Overhead Mode (`display_mode: "overhead"`)
 
