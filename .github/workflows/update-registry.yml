@@ -28,6 +28,11 @@ jobs:
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          # Full history: each entry's `commit` is the commit that introduced
+          # the manifest's current version, found by walking its history. A
+          # shallow clone cannot see that far, and update_registry.py then
+          # leaves every commit as it was instead of guessing.
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v4

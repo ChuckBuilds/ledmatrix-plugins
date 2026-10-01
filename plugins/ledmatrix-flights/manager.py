@@ -5,6 +5,7 @@ Real-time aircraft tracking with ADS-B data, map backgrounds, flight plans, and 
 Migrated from feature/flight-tracker-manager branch with flattened configuration structure for plugin compatibility.
 """
 
+import dataclasses
 import hashlib
 import json
 import logging
@@ -14,7 +15,7 @@ import time
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 import requests
 
@@ -54,12 +55,16 @@ from src.plugin_system.base_plugin import BasePlugin
 from aircraft_database import AircraftDatabase
 
 # Import extracted utility modules
-from utils import haversine_miles, altitude_to_color, categorize_aircraft, is_callsign_worth_fetching
+from utils import (
+    haversine_miles, altitude_to_color, categorize_aircraft, is_callsign_worth_fetching,
+    fr24_pos_age, is_real_track, payload_lag, position_age, seen_pos_age,
+    source_send_time, FR24_MAX_AGE_SECONDS,
+)
 from units import format_distance
 from fetcher import create_fetcher, FR24DetailFetcher, FALLBACK_MAX_AGE_SECONDS
 from enrichment import create_enrichment_provider
 from renderer import FlightRenderer
-from data_model import TrackedFlight
+from data_model import MapSnapshot, TrackedFlight
 from metar_fetcher import MetarFetcher
 
 logger = logging.getLogger(__name__)
@@ -69,6 +74,21 @@ logger = logging.getLogger(__name__)
 
 #: The tile server the plugin ships with; see _tile_source_tag.
 DEFAULT_TILE_SERVER = 'https://maps.chuck-builds.com'
+
+#: Map sizes whose projection is kept at once. Rotation and the ticker ask for
+#: two; the bound only matters if something keeps asking for new ones.
+_MAX_MAP_PROJECTIONS = 8
+
+
+class _MapProjection(NamedTuple):
+    """Where one snapshot's points land at one size. None is off-screen.
+
+    ``heads`` and ``trails`` are indexed like ``MapSnapshot.aircraft``; a
+    trail keeps only its on-screen points, as the drawing always has.
+    """
+    centre: Optional[Tuple[int, int]]
+    heads: Tuple[Optional[Tuple[int, int]], ...]
+    trails: Tuple[Tuple[Tuple[int, int], ...], ...]
 
 
 class FlightTrackerPlugin(BasePlugin):
@@ -246,6 +266,11 @@ class FlightTrackerPlugin(BasePlugin):
         # default 5s). See _fetch_aircraft_data.
         self._last_raw_payload = None
         self._last_raw_payload_at = 0.0
+        # Its receipt as time.monotonic(), and how long it had sat between its
+        # own `now` and being sent (see payload_lag): a fallback's positions
+        # are as old as that receipt, not as old as the poll that reuses it.
+        self._last_raw_payload_mono = 0.0
+        self._last_raw_payload_lag = 0.0
 
         # Consecutive SkyAware fetch failures, and the time before which we do
         # not try again. See _FETCH_BACKOFF_BASE_SECONDS.
@@ -271,6 +296,16 @@ class FlightTrackerPlugin(BasePlugin):
         self.aircraft_trails = {}  # ICAO -> list of (lat, lon, timestamp) tuples
         self.last_update = 0
         self.last_fetch = 0
+
+        # What the map draws, frozen (data_model.MapSnapshot). update() swaps
+        # in a new one with a single store; the map renders from it alone,
+        # because update() edits the two dicts above in place and the map can
+        # be drawn from another thread meanwhile. The lock only serialises
+        # publishers (update() and on_config_change()); readers never take it.
+        self._map_snapshot: Optional[MapSnapshot] = None
+        self._map_snapshot_lock = threading.Lock()
+        # (width, height) -> (snapshot, _MapProjection); see _map_projection.
+        self._map_projection_cache: Dict[Tuple[int, int], Tuple[MapSnapshot, _MapProjection]] = {}
         
         # Cost monitoring
         self.monthly_api_calls = 0
@@ -412,6 +447,10 @@ class FlightTrackerPlugin(BasePlugin):
         self.modes = self._get_available_modes()
         self.logger.info(f"[Flight Tracker] Rotation modes: {self.modes}")
 
+        # An empty sky, published now: the first frame can come before the
+        # first update(), and must not have to read the dicts it is filling.
+        self._publish_map_snapshot()
+
     def on_config_change(self, new_config: Dict[str, Any]) -> None:
         """Apply config edits live, without restarting the display.
 
@@ -537,6 +576,10 @@ class FlightTrackerPlugin(BasePlugin):
         self.last_map_center = None
         self.last_map_zoom = None
         self.cached_pixels_per_mile = None
+
+        # Centre, radius, zoom and show_trails are drawn from the snapshot, and
+        # this is the one path that changes them outside update().
+        self._publish_map_snapshot(geometry_only=True)
 
         # Rebuild the rotation slots in case enabled views changed.
         self.modes = self._get_available_modes()
@@ -1045,6 +1088,9 @@ class FlightTrackerPlugin(BasePlugin):
 
             self._last_raw_payload = data
             self._last_raw_payload_at = time.time()
+            self._last_raw_payload_mono = time.monotonic()
+            self._last_raw_payload_lag = payload_lag(
+                data.get('now'), source_send_time(response, self._last_raw_payload_at))
 
             self.logger.debug(f"[Flight Tracker] Fetched data: {len(data.get('aircraft', []))} aircraft")
             return data
@@ -1126,7 +1172,7 @@ class FlightTrackerPlugin(BasePlugin):
             "bounds": bounds,
             "faa": 1, "satellite": 1, "mlat": 1, "flarm": 1,
             "adsb": 1, "gnd": 0, "air": 1, "vehicles": 0,
-            "estimated": 1, "maxage": 14400, "gliders": 0, "stats": 1,
+            "estimated": 1, "maxage": FR24_MAX_AGE_SECONDS, "gliders": 0, "stats": 1,
         }
         try:
             response = requests.get(url, params=params, headers=self._fr24_headers, timeout=10)
@@ -1136,6 +1182,7 @@ class FlightTrackerPlugin(BasePlugin):
             self.logger.exception("[Flight Tracker] FR24 feed fetch failed")
             return None
 
+        received_mono = time.monotonic()
         current_time = time.time()
         result: Dict[str, Dict] = {}
 
@@ -1179,6 +1226,8 @@ class FlightTrackerPlugin(BasePlugin):
 
             # Resolve a human-readable airline name from the lookup table
             airline_name = self._AIRLINE_ICAO_NAMES.get(airline_icao, '')
+            # entry[10] is the position's epoch time; see fr24_pos_age.
+            pos_age, pos_stale = position_age(fr24_pos_age(entry, current_time))
 
             result[icao] = {
                 'icao': icao,
@@ -1198,6 +1247,11 @@ class FlightTrackerPlugin(BasePlugin):
                 'distance_miles': distance_miles,
                 'color': color,
                 'last_seen': current_time,
+                'on_ground': on_ground,
+                'pos_age': pos_age,
+                'pos_stale': pos_stale,
+                'track_valid': is_real_track(heading),
+                'received_mono': received_mono,
             }
 
         self.logger.info(f"[Flight Tracker] FR24 feed returned {len(result)} aircraft in range ({self.map_radius_miles}mi)")
@@ -1884,11 +1938,20 @@ class FlightTrackerPlugin(BasePlugin):
             self.logger.warning(f"[Flight Tracker] Failed to fetch flight plan for {callsign}: {e}")
             return {'origin': 'Unknown', 'destination': 'Unknown', 'aircraft_type': 'Unknown'}
     
-    def _process_aircraft_data(self, data: Dict) -> None:
-        """Process and update aircraft data."""
+    def _process_aircraft_data(self, data: Dict, received_mono: Optional[float] = None,
+                               lag: float = 0.0) -> None:
+        """Process and update aircraft data.
+
+        ``received_mono`` is the time.monotonic() the payload arrived; each
+        aircraft's position was ``seen_pos`` seconds old at the payload's
+        ``now``, and ``lag`` seconds older by the time it was sent (payload_lag).
+        Omitted, the payload is taken to have arrived now, as it was made.
+        """
         if not data or 'aircraft' not in data:
             self.logger.warning("[Flight Tracker] No aircraft data in response")
             return
+        if received_mono is None:
+            received_mono = time.monotonic()
         
         total_aircraft = len(data['aircraft'])
         # Trace, not news: the Summary line below reports the same total, and
@@ -1934,6 +1997,7 @@ class FlightTrackerPlugin(BasePlugin):
             callsign = aircraft.get('flight', '').strip() or icao
             speed = aircraft.get('gs', 0)  # Ground speed in knots
             heading = aircraft.get('track', aircraft.get('heading', 0))
+            track_valid = is_real_track(aircraft.get('track', aircraft.get('heading')))
             registration = aircraft.get('r', '')  # Registration/tail number
             aircraft_type = aircraft.get('t', 'Unknown')
             on_ground = aircraft.get('alt_baro') == 'ground'
@@ -1943,6 +2007,7 @@ class FlightTrackerPlugin(BasePlugin):
 
             # Calculate color based on altitude
             color = self._altitude_to_color(altitude)
+            pos_age, pos_stale = position_age(seen_pos_age(aircraft, lag))
 
             # Derive airline ICAO from callsign (e.g. UAL410 -> UAL, SWA2447 -> SWA)
             airline_icao = ''
@@ -1966,7 +2031,11 @@ class FlightTrackerPlugin(BasePlugin):
                 'on_ground': on_ground,
                 'category': category,
                 'color': color,
-                'last_seen': current_time
+                'last_seen': current_time,
+                'pos_age': pos_age,
+                'pos_stale': pos_stale,
+                'track_valid': track_valid,
+                'received_mono': received_mono,
             }
             
             # Update aircraft data — all_aircraft_data for stats, aircraft_data for map/area
@@ -2072,22 +2141,33 @@ class FlightTrackerPlugin(BasePlugin):
     
     def _latlon_to_pixel(self, lat: float, lon: float) -> Optional[Tuple[int, int]]:
         """Convert lat/lon to pixel coordinates on the display."""
+        return self._project_to_pixel(
+            lat, lon, self.center_lat, self.center_lon,
+            self.map_radius_miles / self.zoom_factor,
+            self.display_width, self.display_height)
+
+    def _project_to_pixel(self, lat: float, lon: float, center_lat: float,
+                          center_lon: float, effective_radius: float,
+                          display_width: int, display_height: int) -> Optional[Tuple[int, int]]:
+        """Project lat/lon onto a display_width x display_height map.
+
+        Takes the view explicitly so a snapshot can be projected with the
+        centre and radius it was published with, at the size being drawn.
+        """
         # Calculate pixels per mile based on the DESIRED display radius
         # This ensures we show exactly map_radius_miles * 2 across the display
         
-        effective_radius = self.map_radius_miles / self.zoom_factor
-        
         # The display shows (effective_radius * 2) miles across
         # Calculate pixels per mile to fit this area
-        pixels_per_mile = self.display_width / (effective_radius * 2)
+        pixels_per_mile = display_width / (effective_radius * 2)
         
         # Calculate distance in miles from center to aircraft
-        distance_miles = self._calculate_distance(self.center_lat, self.center_lon, lat, lon)
+        distance_miles = self._calculate_distance(center_lat, center_lon, lat, lon)
         
         # Calculate bearing from center to aircraft (in radians)
-        lat1_rad = math.radians(self.center_lat)
+        lat1_rad = math.radians(center_lat)
         lat2_rad = math.radians(lat)
-        delta_lon_rad = math.radians(lon - self.center_lon)
+        delta_lon_rad = math.radians(lon - center_lon)
         
         x = math.sin(delta_lon_rad) * math.cos(lat2_rad)
         y = math.cos(lat1_rad) * math.sin(lat2_rad) - math.sin(lat1_rad) * math.cos(lat2_rad) * math.cos(delta_lon_rad)
@@ -2099,15 +2179,17 @@ class FlightTrackerPlugin(BasePlugin):
         offset_y = -pixel_distance * math.cos(bearing_rad)  # Negative because screen Y increases downward
         
         # Map to display coordinates (center is at display_width/2, display_height/2)
-        x_pixel = int(self.display_width / 2 + offset_x)
-        y_pixel = int(self.display_height / 2 + offset_y)
+        x_pixel = int(display_width / 2 + offset_x)
+        y_pixel = int(display_height / 2 + offset_y)
         
-        # Debug logging
-        self.logger.debug(f"[Flight Tracker] Converting ({lat:.6f}, {lon:.6f}) to pixel ({x_pixel}, {y_pixel})")
-        self.logger.debug(f"[Flight Tracker] Distance: {distance_miles:.2f}mi, Bearing: {math.degrees(bearing_rad):.1f}°, Pixels/mile: {pixels_per_mile:.2f}, Radius: {effective_radius:.1f}mi")
+        # Debug logging. Guarded: an f-string is formatted even with DEBUG off,
+        # and this runs for every point the map projects.
+        if self.logger.isEnabledFor(logging.DEBUG):
+            self.logger.debug(f"[Flight Tracker] Converting ({lat:.6f}, {lon:.6f}) to pixel ({x_pixel}, {y_pixel})")
+            self.logger.debug(f"[Flight Tracker] Distance: {distance_miles:.2f}mi, Bearing: {math.degrees(bearing_rad):.1f}°, Pixels/mile: {pixels_per_mile:.2f}, Radius: {effective_radius:.1f}mi")
         
         # Check if within display bounds
-        if 0 <= x_pixel < self.display_width and 0 <= y_pixel < self.display_height:
+        if 0 <= x_pixel < display_width and 0 <= y_pixel < display_height:
             return (x_pixel, y_pixel)
         
         # Rate limit bounds warnings to prevent spam
@@ -2116,7 +2198,7 @@ class FlightTrackerPlugin(BasePlugin):
         
         if coord_key not in self.bounds_warning_cache or \
            current_time - self.bounds_warning_cache[coord_key] > self.bounds_warning_interval:
-            self.logger.debug(f"[Flight Tracker] Coordinate ({lat}, {lon}) -> pixel ({x_pixel}, {y_pixel}) is outside display bounds {self.display_width}x{self.display_height}")
+            self.logger.debug(f"[Flight Tracker] Coordinate ({lat}, {lon}) -> pixel ({x_pixel}, {y_pixel}) is outside display bounds {display_width}x{display_height}")
             self.bounds_warning_cache[coord_key] = current_time
 
         # Every new off-screen position adds a key, so drop the expired ones
@@ -2705,58 +2787,78 @@ class FlightTrackerPlugin(BasePlugin):
         # altitude/distance stay current; fall back to update_interval when idle.
         fetch_interval = self.live_update_interval if self._lock_icao is not None else self.update_interval
 
-        if current_time - self.last_fetch >= fetch_interval:
-            self.last_fetch = current_time
+        # The map is published as soon as the aircraft are in, ahead of the
+        # enrichment and FR24 detail fetches here and the flight-plan, METAR
+        # and tile work below: those are network calls that can take seconds,
+        # and none of them changes what the map draws. The finally publishes
+        # whatever the dicts hold even when a step raises, so a failing step
+        # cannot freeze the map (before the snapshot it drew them live).
+        try:
+            if current_time - self.last_fetch >= fetch_interval:
+                self.last_fetch = current_time
 
-            if self.data_source == 'flightradar24':
-                self.logger.debug("[Flight Tracker] Fetching aircraft data from FlightRadar24%s",
-                                  "" if is_visible else " (background)")
-                self._update_from_fr24()
-                self.logger.debug(f"[Flight Tracker] Currently tracking {len(self.aircraft_data)} aircraft")
-            elif self.data_source in ('adsbfi', 'adsblol', 'opensky'):
-                self.logger.debug("[Flight Tracker] Fetching aircraft data from %s%s",
-                                  self.data_source, "" if is_visible else " (background)")
-                self._update_from_fetcher()
-                self.logger.debug(f"[Flight Tracker] Currently tracking {len(self.aircraft_data)} aircraft")
-                if self.fr24_enrichment and is_visible:
-                    self._maybe_refresh_fr24_enrichment()
-                if is_visible:
-                    self._queue_interesting_callsigns()
-                else:
-                    self.pending_fr24_details.clear()
-                    self.pending_flight_plans.clear()
-                self._enrich_from_offline_db()
-            else:
-                self.logger.debug("[Flight Tracker] Fetching aircraft data from %s%s",
-                                  self.skyaware_url, "" if is_visible else " (background)")
-                data = self._fetch_aircraft_data()
-                if data:
-                    self.logger.debug("[Flight Tracker] Received data, processing aircraft...")
-                    self._process_aircraft_data(data)
+                if self.data_source == 'flightradar24':
+                    self.logger.debug("[Flight Tracker] Fetching aircraft data from FlightRadar24%s",
+                                      "" if is_visible else " (background)")
+                    self._update_from_fr24()
+                    self._publish_map_snapshot_safely()
                     self.logger.debug(f"[Flight Tracker] Currently tracking {len(self.aircraft_data)} aircraft")
-                    # Queue interesting callsigns for background FlightAware fetching
+                elif self.data_source in ('adsbfi', 'adsblol', 'opensky'):
+                    self.logger.debug("[Flight Tracker] Fetching aircraft data from %s%s",
+                                      self.data_source, "" if is_visible else " (background)")
+                    self._update_from_fetcher()
+                    self._publish_map_snapshot_safely()
+                    self.logger.debug(f"[Flight Tracker] Currently tracking {len(self.aircraft_data)} aircraft")
+                    if self.fr24_enrichment and is_visible:
+                        self._maybe_refresh_fr24_enrichment()
                     if is_visible:
                         self._queue_interesting_callsigns()
                     else:
                         self.pending_fr24_details.clear()
                         self.pending_flight_plans.clear()
+                    self._enrich_from_offline_db()
                 else:
-                    self.logger.warning("[Flight Tracker] No data received from SkyAware")
+                    self.logger.debug("[Flight Tracker] Fetching aircraft data from %s%s",
+                                      self.skyaware_url, "" if is_visible else " (background)")
+                    data = self._fetch_aircraft_data()
+                    if data:
+                        self.logger.debug("[Flight Tracker] Received data, processing aircraft...")
+                        # A fallback payload is the last good one, received earlier:
+                        # its receipt and lag are the ones recorded with it.
+                        if data is getattr(self, '_last_raw_payload', None):
+                            received_mono = getattr(self, '_last_raw_payload_mono', None)
+                            lag = getattr(self, '_last_raw_payload_lag', 0.0)
+                        else:
+                            received_mono, lag = None, 0.0
+                        self._process_aircraft_data(data, received_mono=received_mono, lag=lag)
+                        self._publish_map_snapshot_safely()
+                        self.logger.debug(f"[Flight Tracker] Currently tracking {len(self.aircraft_data)} aircraft")
+                        # Queue interesting callsigns for background FlightAware fetching
+                        if is_visible:
+                            self._queue_interesting_callsigns()
+                        else:
+                            self.pending_fr24_details.clear()
+                            self.pending_flight_plans.clear()
+                    else:
+                        self.logger.warning("[Flight Tracker] No data received from SkyAware")
 
-                # FR24 enrichment for SkyAware users — only when on screen
-                if self.fr24_enrichment and is_visible:
-                    self._maybe_refresh_fr24_enrichment()
+                    # FR24 enrichment for SkyAware users — only when on screen
+                    if self.fr24_enrichment and is_visible:
+                        self._maybe_refresh_fr24_enrichment()
 
-                # Enrich remaining aircraft with offline DB (aircraft type)
-                self._enrich_from_offline_db()
+                    # Enrich remaining aircraft with offline DB (aircraft type)
+                    self._enrich_from_offline_db()
 
-            self.last_update = current_time
+                self.last_update = current_time
 
-        # Background FR24 detail fetches (airline name, timing, airport positions) — only when on screen
-        if (self.data_source == 'flightradar24' or self.fr24_enrichment) and is_visible:
-            self._background_fetch_fr24_details()
-        elif not is_visible:
-            self.pending_fr24_details.clear()
+            # Background FR24 detail fetches (airline name, timing, airport positions) — only when on screen
+            if (self.data_source == 'flightradar24' or self.fr24_enrichment) and is_visible:
+                self._background_fetch_fr24_details()
+            elif not is_visible:
+                self.pending_fr24_details.clear()
+        finally:
+            # On a cycle without a fetch too: can_extrapolate lapses with time.
+            self._publish_map_snapshot_safely()
 
         # Background service for FlightAware flight plan data (SkyAware mode, no FR24 enrichment) — only when on screen
         if (self.data_source == 'skyaware' and
@@ -2955,25 +3057,41 @@ class FlightTrackerPlugin(BasePlugin):
         closest = min(self.aircraft_data.values(), key=lambda a: a['distance_miles'])
         return closest
     
+    #: The views get_vegas_content() renders; any other mode falls through to stats.
+    _VEGAS_VIEWS = ('map', 'overhead', 'area', 'flight_tracking', 'stats')
+
+    def _resolve_vegas_mode(self) -> str:
+        """The view Vegas shows: display_mode, with 'auto' resolved.
+
+        get_vegas_content() and get_vegas_content_type() each resolved 'auto'
+        on their own and disagreed: the type had no overhead case, so with a
+        plane in the proximity radius it could call 'multi' (area cards) what
+        the content returned as one overhead card. This is the content's order,
+        since that is what is shown.
+        """
+        mode = self.display_mode
+        if mode != 'auto':
+            return mode if mode in self._VEGAS_VIEWS else 'stats'
+        if any(tf.status == "AIRBORNE" for tf in self.tracked_flight_data.values()):
+            return 'flight_tracking'
+        _, prox_ac = (
+            self._closest_in_radius() if self.proximity_enabled else (None, None)
+        )
+        if prox_ac is not None:
+            return 'overhead'
+        if self.anchor_airport and self._get_anchor_aircraft():
+            return 'area'
+        if self.aircraft_data:
+            return 'map'
+        return 'stats'
+
     def get_vegas_content_type(self) -> str:
         """Return Vegas scroll content type based on effective display mode.
 
         Area, stats, and flight_tracking modes produce multiple cards.
         Map and overhead are single static blocks.
         """
-        mode = self.display_mode
-        if mode == 'auto':
-            # Resolve auto to the effective mode
-            has_airborne = any(tf.status == "AIRBORNE" for tf in self.tracked_flight_data.values())
-            if has_airborne:
-                mode = 'flight_tracking'
-            elif self.anchor_airport and self._get_anchor_aircraft():
-                mode = 'area'
-            elif self.aircraft_data:
-                mode = 'map'
-            else:
-                mode = 'stats'
-        if mode in ('area', 'stats', 'flight_tracking'):
+        if self._resolve_vegas_mode() in ('area', 'stats', 'flight_tracking'):
             return 'multi'
         return 'static'
 
@@ -2986,24 +3104,7 @@ class FlightTrackerPlugin(BasePlugin):
         Flight tracking returns one card per tracked flight.
         """
         try:
-            mode = self.display_mode
-            if mode == 'auto':
-                has_airborne_tracked = any(
-                    tf.status == "AIRBORNE" for tf in self.tracked_flight_data.values()
-                )
-                _, prox_ac = (
-                    self._closest_in_radius() if self.proximity_enabled else (None, None)
-                )
-                if has_airborne_tracked:
-                    mode = 'flight_tracking'
-                elif prox_ac is not None:
-                    mode = 'overhead'
-                elif self.anchor_airport and self._get_anchor_aircraft():
-                    mode = 'area'
-                elif self.aircraft_data:
-                    mode = 'map'
-                else:
-                    mode = 'stats'
+            mode = self._resolve_vegas_mode()
 
             if mode == 'map':
                 # Shared with _display_map so the ticker gets the same map the
@@ -3346,10 +3447,109 @@ class FlightTrackerPlugin(BasePlugin):
         self._renderer.render_flight_tracking(tracked_list[idx])
 
     # -------------------------------------------------------------------------
+    # Map snapshot: what the map draws, frozen (see data_model.MapSnapshot)
+    # -------------------------------------------------------------------------
+
+    def _map_geometry(self) -> Dict[str, Any]:
+        """The settings the map is drawn with, as MapSnapshot fields."""
+        return {
+            'center_lat': self.center_lat,
+            'center_lon': self.center_lon,
+            'map_radius_miles': self.map_radius_miles,
+            'zoom_factor': self.zoom_factor,
+            'show_trails': self.show_trails,
+        }
+
+    def _publish_map_snapshot(self, geometry_only: bool = False) -> None:
+        """Publish what the map should draw now, in one attribute store.
+
+        __init__ calls this for the empty sky and update() as soon as each
+        poll's aircraft are in (and again after the rest of its aircraft
+        work, which stores nothing when nothing changed). on_config_change() calls
+        it with ``geometry_only``, which puts the new view into the last
+        snapshot instead of re-reading aircraft_data, so it can never catch a
+        poll half-applied. seq rises only when the drawing would change;
+        otherwise the published snapshot, and every projection cached against
+        it, stays.
+        """
+        lock = getattr(self, '_map_snapshot_lock', None) or threading.Lock()
+        with lock:
+            prev = getattr(self, '_map_snapshot', None)
+            seq = (prev.seq if prev is not None else 0) + 1
+            if geometry_only:
+                if prev is None:
+                    return  # nothing published yet; the next update() will
+                snap = dataclasses.replace(prev, seq=seq, **self._map_geometry())
+            else:
+                snap = MapSnapshot.build(seq, self.aircraft_data, self.aircraft_trails,
+                                         **self._map_geometry())
+            if prev is not None and snap.draw_key() == prev.draw_key():
+                return
+            self._map_snapshot = snap
+
+    def _publish_map_snapshot_safely(self) -> None:
+        """_publish_map_snapshot() for update(): a failure keeps the last
+        snapshot on screen rather than failing the update."""
+        try:
+            self._publish_map_snapshot()
+        except Exception as e:  # pylint: disable=broad-except
+            self.logger.warning("[Flight Tracker] Could not publish the map snapshot: %s", e)
+
+    def _current_map_snapshot(self) -> MapSnapshot:
+        """The snapshot to draw: the published one, or a one-off until there is one.
+
+        __init__ publishes one, so a real tracker always has it. The one-off
+        is for a tracker built without __init__ (a test's hand-built sky),
+        which must still draw its data; it is never stored, so it could not
+        overwrite a newer snapshot published meanwhile.
+        """
+        snap = getattr(self, '_map_snapshot', None)
+        if snap is None:
+            snap = MapSnapshot.build(0, self.aircraft_data, self.aircraft_trails,
+                                     **self._map_geometry())
+        return snap
+
+    def _map_projection(self, snap: MapSnapshot, width: int, height: int) -> _MapProjection:
+        """Every point of ``snap`` projected at width x height, computed once.
+
+        The snapshot fixes the centre, radius and positions and the size fixes
+        the rest, so the answer cannot change until one of them does, while
+        the map may be redrawn several times a second. Keyed on the snapshot
+        object itself: seq is 0 for every one-off snapshot.
+        """
+        cache = getattr(self, '_map_projection_cache', None)
+        if cache is None:
+            cache = self._map_projection_cache = {}
+        key = (width, height)
+        hit = cache.get(key)
+        if hit is not None and hit[0] is snap:
+            return hit[1]
+
+        effective_radius = snap.map_radius_miles / snap.zoom_factor
+
+        def project(lat, lon):
+            return self._project_to_pixel(lat, lon, snap.center_lat, snap.center_lon,
+                                          effective_radius, width, height)
+
+        projection = _MapProjection(
+            centre=project(snap.center_lat, snap.center_lon),
+            heads=tuple(project(ac.lat, ac.lon) for ac in snap.aircraft),
+            # Trails are only drawn with show_trails on; don't project them otherwise.
+            trails=tuple(
+                tuple(pixel for pixel in (project(lat, lon) for lat, lon in ac.trail) if pixel)
+                if snap.show_trails else ()
+                for ac in snap.aircraft),
+        )
+        if len(cache) >= _MAX_MAP_PROJECTIONS:
+            cache.clear()
+        cache[key] = (snap, projection)
+        return projection
+
+    # -------------------------------------------------------------------------
     # Original display modes (kept in manager.py for backward compatibility)
     # -------------------------------------------------------------------------
 
-    def _render_map_image(self) -> Image.Image:
+    def _render_map_image(self, at: Optional[float] = None) -> Image.Image:
         """Render the flight map: background, centre marker, trails, aircraft, count.
 
         The single source of truth for the map view, shared by ``_display_map``
@@ -3360,77 +3560,98 @@ class FlightTrackerPlugin(BasePlugin):
 
         Sizing comes from ``display_width``/``display_height``, which are
         properties over ``matrix``. Vegas narrows the display manager while it
-        requests content, so the projection in ``_latlon_to_pixel`` scales to
-        whatever width the ticker asked for without any extra plumbing.
+        requests content, so the projection scales to whatever width the
+        ticker asked for without any extra plumbing.
+
+        Everything drawn comes from the published MapSnapshot -- never from
+        aircraft_data or aircraft_trails, which update() edits in place --
+        as ``_map_layer`` (what stays put) under ``_draw_heads`` (the
+        aircraft). ``at`` goes to ``_draw_heads``; None draws the last
+        reported positions.
 
         Returns:
             The composed map as a new RGB image at the current display size
         """
-        # Get map background if enabled
+        snap = self._current_map_snapshot()
+        width, height = self.display_width, self.display_height
         # Render path: cache only. update() prefetches on the worker thread.
-        map_bg = self._get_map_background(self.center_lat, self.center_lon,
+        map_bg = self._get_map_background(snap.center_lat, snap.center_lon,
                                           allow_network=False)
+        img = self._map_layer(snap, width, height, map_bg)
+        self._draw_heads(img, snap, at=at)
+        return img
 
-        # Create image with background
-        if map_bg:
-            img = map_bg.copy()
+    def _map_layer(self, snap: MapSnapshot, width: int, height: int,
+                   background: Optional[Image.Image] = None) -> Image.Image:
+        """The map under the aircraft: background, centre marker and trails.
+
+        It depends on the snapshot and the size only, never on the time.
+        ``background`` is the tile composite at this size, or None for solid
+        black; it is handed in rather than fetched here so the render path's
+        one tile lookup stays in _render_map_image, where it is cache-only.
+        """
+        if background is not None and background.size == (width, height):
+            img = background.copy()
         else:
-            self.logger.debug("[Flight Tracker] Map background unavailable; using solid background")
-            img = Image.new('RGB', (self.display_width, self.display_height), (0, 0, 0))
+            if background is not None:
+                self.logger.debug("[Flight Tracker] Map background is %sx%s, not %sx%s; using solid background",
+                                  background.size[0], background.size[1], width, height)
+            else:
+                self.logger.debug("[Flight Tracker] Map background unavailable; using solid background")
+            img = Image.new('RGB', (width, height), (0, 0, 0))
 
         draw = ImageDraw.Draw(img)
-        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
+        projection = self._map_projection(snap, width, height)
 
         # Draw center position marker (white dot at our lat/lon)
-        center_pixel = self._latlon_to_pixel(self.center_lat, self.center_lon)
-        if center_pixel:
-            x, y = center_pixel
-            # Draw white center dot
-            draw.point((x, y), fill=(255, 255, 255))
+        if projection.centre:
+            draw.point(projection.centre, fill=(255, 255, 255))
 
-        # Draw aircraft trails if enabled
-        if self.show_trails:
-            for icao, trail in self.aircraft_trails.items():
-                if icao not in self.aircraft_data:
-                    continue
-
-                aircraft = self.aircraft_data[icao]
-                trail_pixels = []
-
-                for lat, lon, timestamp in trail:
-                    pixel = self._latlon_to_pixel(lat, lon)
-                    if pixel:
-                        trail_pixels.append(pixel)
+        # Draw aircraft trails if enabled, in aircraft_trails order as before
+        if snap.show_trails:
+            for index in snap.trail_order:
+                trail_pixels = projection.trails[index]
+                base_color = snap.aircraft[index].color
 
                 # Draw trail with fading effect
                 if len(trail_pixels) >= 2:
                     for i in range(len(trail_pixels) - 1):
                         # Fade from dim to bright
                         alpha = int(255 * (i + 1) / len(trail_pixels))
-                        color = tuple(int(c * alpha / 255) for c in aircraft['color'])
+                        color = tuple(int(c * alpha / 255) for c in base_color)
                         draw.line([trail_pixels[i], trail_pixels[i + 1]], fill=color, width=1)
 
+        return img
+
+    def _draw_heads(self, img: Image.Image, snap: MapSnapshot,
+                    at: Optional[float] = None) -> None:  # pylint: disable=unused-argument
+        """Draw the aircraft dots and the count/icon onto ``img``, in place.
+
+        ``at`` is the time.monotonic() the pixels are for. None draws every
+        aircraft where its last report put it, and for now so does any other
+        value: carrying an aircraft on between reports (from pos_mono,
+        speed_kt and track_deg) is still to come.
+        """
+        projection = self._map_projection(snap, img.size[0], img.size[1])
+        draw = ImageDraw.Draw(img)
+        draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
+
         # Draw aircraft
-        for aircraft in self.aircraft_data.values():
-            pixel = self._latlon_to_pixel(aircraft['lat'], aircraft['lon'])
+        for aircraft, pixel in zip(snap.aircraft, projection.heads):
             if not pixel:
                 continue
 
-            x, y = pixel
-            # Brighten the plane colors by boosting RGB values.
-            # Every other read of this field uses .get with a fallback; a record
-            # that reached the map without one took the whole mode to ERR: map
-            # while the other modes rendered it fine.
-            base_color = aircraft.get('color') or (255, 255, 255)
-            color = tuple(min(255, int(c * 1.3)) for c in base_color)
+            # Brighten the plane colors by boosting RGB values. The snapshot
+            # has already swapped a missing colour for white.
+            color = tuple(min(255, int(c * 1.3)) for c in aircraft.color)
 
             # Draw single pixel for each aircraft
-            draw.point((x, y), fill=color)
+            draw.point(pixel, fill=color)
 
         # Draw info text with pixel-perfect rendering for better readability
-        if len(self.aircraft_data) > 0:
+        if len(snap.aircraft) > 0:
             # Draw aircraft count
-            info_text = f"{len(self.aircraft_data)}"
+            info_text = f"{len(snap.aircraft)}"
             self._draw_text_smart(draw, info_text, (2, 2), self.fonts['small'],
                                 fill=(200, 200, 200), use_outline=False)
 
@@ -3440,8 +3661,6 @@ class FlightTrackerPlugin(BasePlugin):
 
             # Draw airplane icon after the count (with 2px spacing)
             self._draw_airplane_icon(draw, 2 + text_width + 2, 2, color=(200, 200, 200))
-
-        return img
 
     def _display_map(self, force_clear: bool = False) -> None:
         """Display the flight map with aircraft and geographical background."""
