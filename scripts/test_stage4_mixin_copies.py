@@ -92,6 +92,10 @@ KEEP = {
     # A different method on a different class: the scroll card's own date
     # line, not SportsCore's scorebug one.
     ("baseball", "game_renderer.py", "_recent_date_text"),
+    # An override, not a copy: with a series line the full-screen Recent
+    # card draws its own bottom row (#588), so this blanks the date there and
+    # otherwise defers to core's via super().
+    ("baseball", "baseball.py", "_recent_date_text"),
     # A standalone asset generator run by hand, with no core on its path.
     ("ufc", "generate_placeholder_icon.py", FONT_NAME),
 }
