@@ -1,7 +1,7 @@
 {
   "id": "geochron",
   "name": "Geochron World Clock",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "author": "ChuckBuilds",
   "description": "High-fidelity world map clock showing the real-time day/night terminator with civil/nautical/astronomical twilight bands, the subsolar point, configurable city markers, and a digital UTC/local clock - a classic Geochron, reimagined for LED matrix panels of any size.",
   "entry_point": "manager.py",
@@ -24,6 +24,12 @@
     ">=3.4.0"
   ],
   "versions": [
+    {
+      "version": "1.2.3",
+      "released": "2026-10-01",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "A city's short label is optional when saving. The schema no longer rejects an empty or longer-than-4 label; the renderer already falls back to initials and cuts to 4 characters."
+    },
     {
       "version": "1.2.2",
       "released": "2026-09-28",
