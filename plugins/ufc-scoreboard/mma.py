@@ -6,7 +6,7 @@ import threading
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterator, Optional, Tuple
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -50,6 +50,26 @@ _headshot_failures: Dict[str, Tuple[int, float]] = {}
 #: from the core scheduler and a draw-time refresh thread at once).
 _headshot_inflight: set = set()
 _headshot_lock = threading.Lock()
+
+
+def _bouts_as_events(events) -> List[Dict]:
+    """One scoreboard event per bout, for code that reads competitions[0].
+
+    ESPN's MMA scoreboard sends a whole fight card as ONE event whose
+    competitions are its bouts, early prelims first. _extract_game_details and
+    the shared live update both read competitions[0], so an unsplit card is its
+    first bout only: once that one was final, the live screen dropped the whole
+    card for the rest of the night. Each copy keeps the card's own keys (id,
+    name, date) and holds just its bout; the bout's competition id is the
+    fight's id everywhere downstream.
+    """
+    return [
+        {**{k: v for k, v in event.items() if k != "competitions"},
+         "competitions": [comp]}
+        for event in events or []
+        if isinstance(event, dict)
+        for comp in event.get("competitions") or []
+    ]
 
 
 class MMA(SportsCore):
@@ -278,7 +298,10 @@ class MMA(SportsCore):
             competition = game_event["competitions"][0]
             status = competition["status"]
             competitors = competition["competitors"]
-            game_date_str = game_event["date"]
+            # The bout's own start, not the card's: ESPN dates each bout with
+            # its segment (early prelims, prelims, main card), hours apart,
+            # and the event date is the card's opening time.
+            game_date_str = competition.get("date") or game_event["date"]
             start_time_utc = None
             try:
                 start_time_utc = datetime.fromisoformat(
@@ -366,10 +389,23 @@ class MMA(SportsCore):
             fighter1_score = fighter1.get("score", "0")
             fighter2_score = fighter2.get("score", "0")
 
-            # Extract round/clock for live fights
+            # Not state alone: a cancelled or postponed bout is "post" too,
+            # and showed on Recent as a finished fight.
+            is_final = _status_is_final(status["type"])
+
+            # Extract round/clock for live fights. Only a bout in progress, or
+            # finished, has a clock. ESPN sends a scheduled bout's as "-", and
+            # the shared live update takes any clock but 0:00 for a live game,
+            # so a card's scheduled bouts would have joined the live screen.
             period = status.get("period", 0)
-            clock = status.get("displayClock", "")
+            clock = (status.get("displayClock", "")
+                     if status["type"]["state"] == "in" or is_final else "")
             period_text = f"R{period}" if period else ""
+
+            # ESPN's odds URL needs the card id as well as the bout id.
+            register = getattr(getattr(self, "odds_manager", None), "register_bout", None)
+            if register is not None:
+                register(competition.get("id"), game_event.get("id"))
 
             details = {
                 "event_id": game_event.get("id"),
@@ -380,9 +416,7 @@ class MMA(SportsCore):
                 "start_time_utc": start_time_utc,
                 "status_text": status["type"]["shortDetail"],
                 "is_live": status["type"]["state"] == "in",
-                # Not state alone: a cancelled or postponed bout is "post" too,
-                # and showed on Recent as a finished fight.
-                "is_final": _status_is_final(status["type"]),
+                "is_final": is_final,
                 "is_upcoming": (
                     status["type"]["state"] == "pre"
                     or status["type"]["name"].lower()
@@ -569,15 +603,7 @@ class MMARecent(MMA, SportsRecent):
 
             # Process games and filter for final fights within date range
             processed_games = []
-            flattened_events = [
-                {
-                    **{k: v for k, v in event.items() if k != "competitions"},
-                    "competitions": [comp],
-                }
-                for event in events
-                for comp in event.get("competitions", [])
-            ]
-            for event in flattened_events:
+            for event in _bouts_as_events(events):
                 game = self._extract_game_details(event)
                 if game and game["is_final"]:
                     game_time = game.get("start_time_utc")
@@ -837,6 +863,34 @@ class MMAUpcoming(MMA, SportsUpcoming):
                 f"Error displaying upcoming fight: {e}", exc_info=True
             )
 
+    @staticmethod
+    def _trim_to_headliners(games: List[Dict], limit: int) -> List[Dict]:
+        """At most `limit` fights, soonest first, dropping a card's openers first.
+
+        ESPN lists a card's bouts in running order, the main event last, and
+        the main card's bouts share one start time. Keeping the soonest `limit`
+        by start time alone cut a long card off before its co-main and main
+        event (10 of UFC 331's 12 bouts were its prelims and the first three
+        main card bouts). So when the pool is full, the bouts dropped are each
+        card's first-listed ones, and a card is cut from the front; the
+        soonest card still fills the pool first. What stays is shown in start
+        order, ties in the order ESPN lists them.
+        """
+        far = datetime.max.replace(tzinfo=timezone.utc)
+        order = {id(g): i for i, g in enumerate(games)}
+        card_start: Dict[Any, datetime] = {}
+        for g in games:
+            card = g.get("event_id")
+            start = g.get("start_time_utc") or far
+            if card not in card_start or start < card_start[card]:
+                card_start[card] = start
+        kept = sorted(
+            games,
+            key=lambda g: (card_start[g.get("event_id")], -order[id(g)]),
+        )[: max(limit, 0)]
+        return sorted(
+            kept, key=lambda g: (g.get("start_time_utc") or far, order[id(g)]))
+
     def update(self):
         """Update upcoming games data."""
         if not self.is_enabled:
@@ -861,21 +915,13 @@ class MMAUpcoming(MMA, SportsUpcoming):
             processed_games = []
             all_upcoming_games = 0
             favorite_games_found = 0
-            flattened_events = [
-                {
-                    **{k: v for k, v in event.items() if k != "competitions"},
-                    "competitions": [comp],
-                }
-                for event in events
-                for comp in event.get("competitions", [])
-            ]
             # How far ahead this screen looks (#345). The fetch is season-wide
             # (Jan-Dec), so without a cutoff every fight ESPN had published was
             # eligible and Upcoming filled with cards months out, ignoring
             # schedule_lookahead_days. Mirrors the lookback cutoff on Recent.
             upcoming_cutoff = datetime.now(timezone.utc) + timedelta(
                 days=getattr(self, "schedule_lookahead_days", _DEFAULT_LOOKAHEAD_DAYS))
-            for event in flattened_events:
+            for event in _bouts_as_events(events):
                 game = self._extract_game_details(event)
                 if game and game["is_upcoming"]:
                     all_upcoming_games += 1
@@ -908,12 +954,8 @@ class MMAUpcoming(MMA, SportsUpcoming):
                         f"  {game['fighter1_name']} vs {game['fighter2_name']} - {game['start_time_utc']}"
                     )
 
-            team_games = processed_games
-            team_games.sort(
-                key=lambda g: g.get("start_time_utc")
-                or datetime.max.replace(tzinfo=timezone.utc)
-            )
-            team_games = team_games[: self.upcoming_games_to_show]
+            team_games = self._trim_to_headliners(
+                processed_games, self.upcoming_games_to_show)
 
             should_log = (
                 current_time - self.last_log_time >= self.log_interval
@@ -988,6 +1030,19 @@ class MMALive(MMA, SportsLive):
         sport_key: str,
     ):
         super().__init__(config, display_manager, cache_manager, logger, sport_key)
+
+    def _fetch_todays_games(self) -> Optional[Dict]:
+        """Today's scoreboard with each card split into its bouts.
+
+        The shared live update treats every event as one game, so without the
+        split live_games, the live switch view and the Vegas cards all held a
+        card's first-listed bout -- final early in the night -- instead of the
+        one in the cage.
+        """
+        data = super()._fetch_todays_games()
+        if not data:
+            return data
+        return {**data, "events": _bouts_as_events(data.get("events"))}
 
     def _test_mode_update(self):
         if self.current_game and self.current_game.get("is_live"):
