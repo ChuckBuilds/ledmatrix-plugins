@@ -896,12 +896,11 @@
       "plugin_path": "plugins/stock-news",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-28",
+      "last_updated": "2026-10-01",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.8.2",
-      "ledmatrix_min_version": "3.4.0",
-      "commit": "026931a925cddb96c214eb92fe2796f5a33a4b89"
+      "latest_version": "2.8.3",
+      "ledmatrix_min_version": "3.4.0"
     },
     {
       "id": "stocks",

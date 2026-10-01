@@ -106,7 +106,7 @@
         },
         "scroll_pixels_per_second": {
           "type": "number",
-          "default": 60.0,
+          "default": 50.0,
           "minimum": 5.0,
           "maximum": 100.0,
           "description": "Scroll speed in pixels per second. The LEDMatrix core moves it to the nearest speed the panel can draw in whole pixels (on a 100Hz panel e.g. 50, 66.7 or 100)."

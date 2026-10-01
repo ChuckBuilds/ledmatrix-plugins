@@ -167,7 +167,7 @@ class StockNewsTickerPlugin(BasePlugin):
         self.display_duration = gc.get('display_duration', 30)
         # The one speed setting, in pixels per second (schema default 60).
         # _configure_scroll_settings hands it to the core's resolver.
-        self.scroll_pixels_per_second = gc.get('scroll_pixels_per_second', 60.0)
+        self.scroll_pixels_per_second = gc.get('scroll_pixels_per_second', 50.0)
         self.dynamic_duration = gc.get('dynamic_duration', True)
         self.min_duration = gc.get('min_duration', 30)
         self.max_duration = gc.get('max_duration', 300)
