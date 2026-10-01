@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.54.0] - 2026-09-30
+
+### Added
+- Live Vegas cards: in the Vegas ticker each game is its own card, and a card already scrolling across the panel updates in place when its game changes -- the score, inning, count, bases, FINAL -- instead of showing what it was when it was drawn. Only the card whose game changed is redrawn. A game that goes final keeps its card, now showing FINAL, until the recent list picks it up. A league whose update finishes in the background after update() returns tells the ticker itself, so its cards do not wait for the next update. Nothing changes outside Vegas, and get_vegas_content() is unchanged for older cores and multi-display sync.
+
+### Changed
+- Requires LEDMatrix core 3.8.0 (`ledmatrix_min_version` and `compatible_versions`), the first release with live Vegas elements (`src.common.sports_vegas`). The store refuses to install or update this version onto an older core.
+
 ## [1.53.0] - 2026-09-29
 
 ### Changed

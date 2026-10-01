@@ -78,6 +78,13 @@ from milb_managers import MiLBLiveManager, MiLBRecentManager, MiLBUpcomingManage
 from baseball_timezone import resolve_timezone_name
 from src.common.favorite_team_check import FavoriteTeamCheck
 
+# Live Vegas cards (LEDMatrix 3.8.0). Guarded: the manifest floor is advisory,
+# and without the module the ticker simply keeps using get_vegas_content().
+try:
+    from src.common import sports_vegas
+except ImportError:
+    sports_vegas = None
+
 
 _ROOT_CONFIG_KEYS = (
     "schedule_lookback_days",
@@ -1313,12 +1320,22 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
         if not managers_to_update:
             return
 
+        # Set as update() returns. The Vegas ticker redraws the live cards once
+        # update() has returned, so a manager still running then lands its
+        # data after that redraw and has to ask for another itself.
+        returned = threading.Event()
+
         def _safe_update(name_and_manager):
             name, manager = name_and_manager
             try:
                 manager.update()
             except Exception as e:
                 self.logger.error(f"Error updating {name} manager: {e}")
+            if returned.is_set():
+                # getattr-guarded: notify_vegas_data_changed is core 3.8.0's.
+                notify = getattr(self, 'notify_vegas_data_changed', None)
+                if notify is not None:
+                    notify()
 
         # All managers run in parallel — they're I/O-bound (ESPN API calls)
         # so more threads than cores is fine on Pi
@@ -1339,6 +1356,7 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
         except Exception as e:
             self.logger.error(f"Error in parallel manager updates: {e}")
         finally:
+            returned.set()
             executor.shutdown(wait=False, cancel_futures=True)
 
     def _get_managers_in_priority_order(self, mode_type: str) -> list:
@@ -4669,6 +4687,39 @@ class BaseballScoreboardPlugin(BasePlugin if BasePlugin else object):
             len(games), summary or 'unclassified', ', '.join(leagues)
         )
         return True
+
+    def get_vegas_elements(self) -> Optional[List[Any]]:
+        """Live Vegas cards: one per game, swapped in place when its game changes.
+
+        The slate get_vegas_content() shows, plus games that have just gone
+        final, so a card on its way across the panel turns to FINAL instead of
+        keeping its last live score. A card is drawn again only when its
+        game's data changed, the count and bases included (core's
+        build_vegas_elements). None -- no live cards in this core, or nothing
+        to show -- and the ticker uses get_vegas_content() instead.
+        """
+        scroll_manager = getattr(self, '_scroll_manager', None)
+        if sports_vegas is None or not hasattr(scroll_manager, 'get_vegas_elements_for'):
+            return None
+        try:
+            games, leagues = self.vegas_slate()
+        except Exception:
+            self.logger.exception("[Baseball Vegas] Failed to collect games")
+            return None
+        if not games:
+            return None
+        rankings_cache = (
+            self._get_rankings_cache() if hasattr(self, '_get_rankings_cache') else None
+        )
+        return scroll_manager.get_vegas_elements_for(VEGAS_SCROLL_KEY, games, leagues, rankings_cache)
+
+    def vegas_slate(self) -> Tuple[List[Dict], List[str]]:
+        """The games the live Vegas cards show, and their leagues in order."""
+        games, leagues = self._collect_games_for_scroll(live_priority_active=False)
+        live_managers = [(league, self._get_manager_for_league_mode(league, 'live'))
+                         for league in ('mlb', 'milb', 'ncaa_baseball')]
+        return sports_vegas.with_finished_games(
+            games, leagues, sports_vegas.finished_games(live_managers))
 
     def get_vegas_content_type(self) -> str:
         """

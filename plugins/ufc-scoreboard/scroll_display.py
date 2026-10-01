@@ -8,11 +8,13 @@ Based on scroll_display.py from football-scoreboard plugin.
 UFC/MMA adaptation based on work by Alex Resnick (legoguy1000) - PR #137
 """
 
+import functools
 import logging
 import time
 import os
 from collections import OrderedDict
-from typing import Dict, Any, List, Optional
+from pathlib import Path
+from typing import Dict, Any, List, Optional, Tuple
 from PIL import Image
 
 # Pillow < 9.1.0 compat: LANCZOS was added in 9.1.0
@@ -30,6 +32,15 @@ try:
     from src.common import scroll_config as _scroll_config
 except ImportError:  # core predates the shared helper
     _scroll_config = None
+
+# Live Vegas cards (LEDMatrix 3.8.0). Guarded: the manifest floor is advisory,
+# and without them the ticker simply keeps using get_vegas_content().
+try:
+    from src.common import sports_vegas
+    from src.plugin_system.vegas_elements import VegasElement
+except ImportError:
+    sports_vegas = None
+    VegasElement = None
 
 from fight_renderer import FightRenderer
 
@@ -106,6 +117,12 @@ class ScrollDisplayManager:
 
         # Cached fight renderer (lazily initialized)
         self._renderer: Optional[FightRenderer] = None
+        # Live Vegas cards (build_vegas_elements): their renderer, kept apart
+        # from the scroll path's because it never downloads a headshot; each
+        # fight's last card; and the last odds a live poll may leave out.
+        self._vegas_renderer: Optional[FightRenderer] = None
+        self._vegas_cards = sports_vegas.VegasCardCache() if sports_vegas else None
+        self._vegas_odds = sports_vegas.StickyOdds() if sports_vegas else None
 
         # Performance tracking
         self._frame_count: int = 0
@@ -230,6 +247,126 @@ class ScrollDisplayManager:
     def get_all_vegas_content_items(self) -> list:
         """Return _vegas_content_items (flat manager, no _scroll_displays)."""
         return list(self._vegas_content_items) if self._vegas_content_items else []
+
+    # -------------------------------------------------------------------------
+    # Live Vegas cards (core 3.8.0+)
+    # -------------------------------------------------------------------------
+    # The plugin's get_vegas_elements() gives the ticker one card per fight
+    # and has it redrawn in place when the fight changes. These draw a card and
+    # a separator exactly as prepare_and_display does, minus the black padding
+    # it bakes around each card: the ticker pads a live card itself.
+
+    def make_vegas_renderer(self, card_width: int) -> FightRenderer:
+        """The renderer live Vegas cards are drawn with, built once per card width.
+
+        prepare_and_display's, except that a headshot missing from disk is left
+        off instead of downloaded: live cards are drawn on the ticker's worker,
+        which must not touch the network. update() fetches headshots, and
+        vegas_headshots() has a card redrawn when its fighter's lands.
+        """
+        renderer = self._vegas_renderer
+        if renderer is None or getattr(renderer, "display_width", None) != card_width:
+            renderer = self._vegas_renderer = FightRenderer(
+                card_width,
+                self.display_height,
+                self.config,
+                headshot_cache=self._headshot_cache,
+                custom_logger=self.logger,
+                download_missing=False,
+            )
+        return renderer
+
+    def render_vegas_card(self, renderer: FightRenderer, fight: Dict) -> Image.Image:
+        """Draw one fight's live card.
+
+        Raises when the renderer drew nothing (it logs why), so an empty card
+        is never cached; the caller leaves that fight out, as the scroll does.
+        """
+        display_options = self.config.get("ufc", {}).get("display_options", {})
+        card = renderer.render_fight_card(
+            fight, fight_type=self._determine_fight_type(fight),
+            display_options=display_options,
+        )
+        if card is None:
+            raise ValueError(
+                f"no card drawn for {fight.get('fighter2_name', '?')} vs "
+                f"{fight.get('fighter1_name', '?')}"
+            )
+        return card
+
+    def vegas_separator(self, league: str) -> Optional[Image.Image]:
+        """The separator prepare_and_display puts before a league's fights, if it has an icon."""
+        separator = self._separator_icons.get(league)
+        if not separator:
+            return None
+        sep_img = Image.new(
+            "RGB", (separator.width + 8, self.display_height), (0, 0, 0)
+        )
+        y_offset = (self.display_height - separator.height) // 2
+        sep_img.paste(separator, (4, y_offset), separator)
+        return sep_img
+
+    @staticmethod
+    def vegas_headshots(fight: Dict) -> Tuple[bool, ...]:
+        """Which of the fight's headshots are on disk.
+
+        Part of a live card's version: a card drawn before update() fetched a
+        headshot is redrawn once it lands, though the fight itself is unchanged.
+        """
+        return tuple(
+            bool(path) and Path(path).exists()
+            for path in (fight.get("fighter1_image_path"), fight.get("fighter2_image_path"))
+        )
+
+    def build_vegas_elements(
+        self, fights: List[Dict], now: Optional[float] = None
+    ) -> Optional[List[Any]]:
+        """The fights as live Vegas elements: one card each, separators between leagues.
+
+        Core's SportsScrollDisplay.build_vegas_elements for this flat manager.
+        Only a card whose version changed is drawn; the rest come from the
+        cache, which lives as long as this manager -- the plugin builds a new
+        one on a config change, so no card outlives the settings it was drawn
+        with. None when no card could be drawn.
+        """
+        fights = sports_vegas.dedupe_games(fights)
+        if not fights:
+            return None
+        scroll_settings = self._get_scroll_settings()
+        show_separators = scroll_settings.get("show_league_separators", True)
+        card_width = scroll_settings.get("game_card_width", 128)
+        renderer = self.make_vegas_renderer(card_width)
+
+        elements: List[Any] = []
+        keys: List[str] = []
+        current_league = None
+        separators = 0
+        for fight in fights:
+            fight_league = fight.get("league", "ufc")
+            if show_separators and fight_league != current_league:
+                separator = self.vegas_separator(fight_league)
+                if separator is not None:
+                    elements.append(VegasElement(
+                        key=f"sep:{separators}:{fight_league}", image=separator, live=False))
+                    separators += 1
+            current_league = fight_league
+
+            key = sports_vegas.game_key(fight)
+            drawn = self._vegas_odds.apply(key, fight, now)
+            version = (sports_vegas.game_fingerprint(drawn), self.vegas_headshots(drawn),
+                       card_width, self.display_height)
+            try:
+                elements.append(self._vegas_cards.element(
+                    key, version, functools.partial(self.render_vegas_card, renderer, drawn)))
+            except Exception as e:
+                # Left out, as prepare_and_display leaves out a card it could
+                # not draw; nothing is cached, so the next slate tries again.
+                self.logger.warning(f"Failed to render live Vegas card {key}: {e}")
+                continue
+            keys.append(key)
+        self._vegas_cards.retain(keys)
+        self._vegas_odds.retain(keys)
+        return elements if keys else None
 
     def prepare_and_display(
         self,

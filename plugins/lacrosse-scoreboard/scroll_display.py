@@ -193,6 +193,49 @@ class ScrollDisplay(_ScrollDisplayBase):
             # Default to upcoming if state is unknown
             return 'upcoming'
 
+    def make_vegas_renderer(self, card_width: int,
+                            rankings_cache: Optional[Dict[str, int]] = None) -> GameRenderer:
+        """The renderer live Vegas cards are drawn with (core 3.8.0+).
+
+        prepare_scroll_content's, minus the black padding it bakes around each
+        card: the ticker pads a live card itself. Core builds it once per card
+        size and draws each game with render_game_card, only when that game
+        changed (src.common.sports_scroll.build_vegas_elements).
+        """
+        renderer = GameRenderer(
+            card_width,
+            self.display_height,
+            self.config,
+            logo_cache=self._logo_cache,
+            custom_logger=self.logger
+        )
+        if rankings_cache:
+            renderer.set_rankings_cache(rankings_cache)
+        return renderer
+
+    #: Status fields GameRenderer._normalize_game_payload copies from a flat
+    #: game field (status field, flat field), and never refreshes once set.
+    _DERIVED_STATUS_FIELDS = (("detail", "status_text"), ("period", "period"),
+                              ("clock", "clock"), ("display_clock", "clock"))
+
+    def render_vegas_card(self, renderer: GameRenderer, game: Dict) -> Image.Image:
+        """Draw one live Vegas card, on a copy of the game's status dict.
+
+        render_game_card's _normalize_game_payload fills the game's own status
+        dict (clock, period) and never refreshes a filled one. On the game core
+        fingerprinted, that would change the fingerprint after the first draw
+        -- every card drawn twice per poll. And prepare_scroll_content (the
+        ticker's first strip) has already filled the dict of a game updated in
+        place (test_mode ticks its clock), so the copy leaves out what the
+        renderer derives from a flat field and it is derived afresh: kept, the
+        card would redraw on every tick with the clock the strip was built at.
+        """
+        status = game.get('status')
+        if isinstance(status, dict):
+            derived = {field for field, flat in self._DERIVED_STATUS_FIELDS if flat in game}
+            game = dict(game, status={k: v for k, v in status.items() if k not in derived})
+        return super().render_vegas_card(renderer, game)
+
     def prepare_scroll_content(
         self,
         games: List[Dict],

@@ -214,6 +214,56 @@ class ScrollDisplay(_ScrollDisplayBase):
             # Default to upcoming if state is unknown
             return 'upcoming'
 
+    def make_vegas_renderer(self, card_width: int,
+                            rankings_cache: Optional[Dict[str, int]] = None) -> GameRenderer:
+        """The renderer live Vegas cards are drawn with (core 3.8.0+).
+
+        prepare_scroll_content's, minus the black padding it bakes around each
+        card: the ticker pads a live card itself. Core builds it once per card
+        size and draws each game with render_game_card, only when that game
+        changed (src.common.sports_scroll.build_vegas_elements).
+        """
+        renderer = GameRenderer(
+            card_width,
+            self.display_height,
+            self.config,
+            logo_cache=self._logo_cache,
+            custom_logger=self.logger
+        )
+        if rankings_cache:
+            renderer.set_rankings_cache(rankings_cache)
+        return renderer
+
+    def build_vegas_elements(self, games: List[Dict], leagues: List[str],
+                             *args, **kwargs) -> Optional[List[Any]]:
+        """Core's live cards, noting first which leagues open on a tournament game.
+
+        Core asks vegas_separator() by league alone, while prepare_scroll_content
+        picks the March Madness icon by the game the separator heads.
+        """
+        heads: Dict[Any, Dict] = {}
+        for game in games:
+            heads.setdefault(game.get("league"), game)
+        self._vegas_tournament_leagues = {
+            league for league, game in heads.items() if game.get("is_tournament")
+        }
+        return super().build_vegas_elements(games, leagues, *args, **kwargs)
+
+    def vegas_separator(self, league: str) -> Optional[Image.Image]:
+        """Core's league separator, or the March Madness one ahead of tournament games.
+
+        Built as prepare_scroll_content builds it. The core ships no NCAA.png,
+        so without this a tournament slate would lose its separator altogether.
+        """
+        icon = self._separator_icons.get(f"{league}_tournament")
+        if icon is None or league not in getattr(self, "_vegas_tournament_leagues", ()):
+            return super().vegas_separator(league)
+        gap = self._get_scroll_settings(league).get("gap_between_games", 48)
+        pad = max(4, int(gap) // 2)
+        image = Image.new('RGB', (icon.width + pad * 2, self.display_height), (0, 0, 0))
+        image.paste(icon, (pad, (self.display_height - icon.height) // 2), icon)
+        return image
+
     def prepare_scroll_content(
         self,
         games: List[Dict],

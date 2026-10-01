@@ -87,6 +87,7 @@ class FightRenderer:
         config: Dict[str, Any],
         headshot_cache: Optional[Dict[str, Image.Image]] = None,
         custom_logger: Optional[logging.Logger] = None,
+        download_missing: bool = True,
     ):
         self.display_width = display_width
         self.display_height = display_height
@@ -95,6 +96,9 @@ class FightRenderer:
 
         # Shared headshot cache for performance
         self._headshot_cache = headshot_cache if headshot_cache is not None else {}
+        # False draws a fighter whose headshot is not on disk without it, for
+        # callers that must not touch the network (the live Vegas cards).
+        self.download_missing = download_missing
 
         # Load fonts
         self.fonts = self._load_fonts()
@@ -214,6 +218,8 @@ class FightRenderer:
 
         try:
             if not headshot_path.exists():
+                if not self.download_missing:
+                    return None
                 from headshot_downloader import download_missing_headshot
                 download_missing_headshot(fighter_id, fighter_name, headshot_path, headshot_url)
 

@@ -18,7 +18,7 @@ import logging
 from contextlib import contextmanager
 import time
 import threading
-from typing import Dict, Any, Set, Optional, List
+from typing import Dict, Any, Set, Optional, List, Tuple
 
 try:
     from src.plugin_system.base_plugin import BasePlugin, VegasDisplayMode
@@ -41,6 +41,13 @@ from afl_managers import create_afl_managers
 
 from afl_timezone import resolve_timezone_name
 from src.common.favorite_team_check import FavoriteTeamCheck
+
+# Live Vegas cards (LEDMatrix 3.8.0). Guarded: the manifest floor is advisory,
+# and without the module the ticker simply keeps using get_vegas_content().
+try:
+    from src.common import sports_vegas
+except ImportError:
+    sports_vegas = None
 
 
 _ROOT_CONFIG_KEYS = (
@@ -1786,6 +1793,37 @@ class AflScoreboardPlugin(BasePlugin if BasePlugin else object):
         displays = getattr(manager, "_scroll_displays", None) or {}
         display = displays.get(self._VEGAS_SCROLL_KEY)
         return list(getattr(display, "_vegas_content_items", None) or [])
+
+    def get_vegas_elements(self) -> Optional[List[Any]]:
+        """Live Vegas cards: one per game, swapped in place when its game changes.
+
+        The slate get_vegas_content() shows, plus games that have just gone
+        final, so a card on its way across the panel turns to Final instead of
+        keeping its last live score. A card is drawn again only when its
+        game's data changed, the live clock included (core's
+        build_vegas_elements). None -- no live cards in this core, or nothing
+        to show -- and the ticker uses get_vegas_content() instead.
+        """
+        scroll_manager = getattr(self, "_scroll_manager", None)
+        if sports_vegas is None or not hasattr(scroll_manager, "get_vegas_elements_for"):
+            return None
+        try:
+            games, leagues = self.vegas_slate()
+        except Exception:
+            self.logger.exception("[AFL Vegas] Failed to collect games")
+            return None
+        if not games:
+            return None
+        # No rankings cache, as for get_vegas_content()'s cards
+        # (_ensure_scroll_content_for_vegas): both paths draw the same card.
+        return scroll_manager.get_vegas_elements_for(self._VEGAS_SCROLL_KEY, games, leagues, None)
+
+    def vegas_slate(self) -> Tuple[List[Dict], List[str]]:
+        """The games the live Vegas cards show, and their leagues in order."""
+        live_managers = [(AFL_LEAGUE_KEY, self._get_manager("live"))]
+        return sports_vegas.with_finished_games(
+            self._collect_vegas_games(), [AFL_LEAGUE_KEY],
+            sports_vegas.finished_games(live_managers))
 
     def get_vegas_content_type(self) -> str:
         """Plugin provides multiple scrollable items (games)."""
