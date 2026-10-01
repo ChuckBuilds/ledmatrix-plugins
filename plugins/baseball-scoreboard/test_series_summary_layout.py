@@ -80,10 +80,10 @@ def main():
           compact("NYY wins series 4-2"))
 
     wide = Bug(192)
-    text = wide._recent_date_text(GAME)
+    text = wide._series_line(GAME)[0]
     check("192 wide: date and full series share the line",
           text == "9/28 - Series tied 1-1", text)
-    text = Bug(128)._recent_date_text(GAME)
+    text = Bug(128)._series_line(GAME)[0]
     check("128 wide: the full series alone beats a clipped date",
           text == "Series tied 1-1", text)
 
@@ -91,10 +91,27 @@ def main():
     check("setting off: date only", off._recent_date_text(GAME) == "9/28")
     check("no series from ESPN: date only",
           wide._recent_date_text(dict(GAME, series_summary="")) == "9/28")
+    check("a series line takes over the row, so nothing else draws a date",
+          wide._recent_date_text(GAME) == "")
 
     from PIL import Image, ImageDraw
 
-    for width in (64, 96, 128, 192):
+    def score_rows(bug, game):
+        """(top, bottom) rows the centred score occupies."""
+        probe = ImageDraw.Draw(Image.new("L", (1, 1)))
+        box = probe.textbbox((0, 0), "3-5", font=bug.fonts["score"])
+        y = 16 - max(3, bug._score_font_size() // 2 - 1)
+        return y + box[1], y + box[3]
+
+    def lit(bug, game, width):
+        image = Image.new("RGB", (width, 32), (0, 0, 0))
+        bug._custom_scorebug_layout(game, ImageDraw.Draw(image))
+        pixels = image.load()
+        pts = [(x, y) for y in range(32) for x in range(width)
+               if pixels[x, y] != (0, 0, 0)]
+        return pts
+
+    for width in (64, 96, 128, 192, 320):
         for records in (False, True):
             bug = Bug(width, show_records=records)
             for summary in ("Series tied 1-1", "NYY leads series 2-1",
@@ -110,30 +127,37 @@ def main():
                 if not (width == 64 and records):
                     check(label + ": %r fits its row" % text,
                           bug._text_width(text, font) <= avail)
-                # The row it lands on holds the series and nothing at the
-                # centre: the old code drew it over the score.
-                image = Image.new("RGB", (width, 32), (0, 0, 0))
-                draw = ImageDraw.Draw(image)
-                if font is not bug.fonts["time"]:
-                    check(label + ": date row is cleared for the small font",
-                          bug._recent_date_text(game) == "")
-                    bug._custom_scorebug_layout(game, draw)
-                    pixels = image.load()
-                    rows = [y for y in range(32) for x in range(width)
-                            if pixels[x, y] != (0, 0, 0)]
-                    cols = [x for y in range(32) for x in range(width)
-                            if pixels[x, y] != (0, 0, 0)]
-                    check(label + ": small-font line is on the bottom edge",
-                          rows and min(rows) >= 32 - 8 and max(rows) == 31,
-                          (min(rows), max(rows)) if rows else None)
-                    check(label + ": and inside the panel",
-                          cols and min(cols) >= 0 and max(cols) < width)
-                else:
-                    check(label + ": time-font line is the date row's text",
-                          bug._recent_date_text(game) == text)
-                    bug._custom_scorebug_layout(game, draw)
-                    check(label + ": hook draws nothing extra",
-                          not image.getbbox())
+                check(label + ": the plain date row is left to the series line",
+                      bug._recent_date_text(game) == "")
+                pts = lit(bug, game, width)
+                room_top = score_rows(bug, game)[1]
+                check(label + ": drawn on the panel, under the score",
+                      pts and min(p[0] for p in pts) >= 0
+                      and max(p[0] for p in pts) < width
+                      and min(p[1] for p in pts) > room_top - 2
+                      and max(p[1] for p in pts) <= 31,
+                      (min(p[1] for p in pts), room_top) if pts else None)
+
+    # A large time face (period_text.font_size) cannot sit under the score at
+    # full size: it must step down rather than print over it. This is the
+    # panel from the bug report, 5 x 64x32 with a big status face.
+    big = Bug(320, config={"customization": {"period_text": {"font_size": 17}}})
+    big_game = dict(GAME, series_summary="Series tied 1-1")
+    check("a 17px time face really is large here", big.fonts["time"].size == 17,
+          big.fonts["time"].size)
+    top, bottom = score_rows(big, big_game)
+    faces = big._series_fonts(big_game)
+    check("a 17px time face is stepped down to one that leaves the score clear",
+          faces[0].size < 17, [f.size for f in faces])
+    probe = ImageDraw.Draw(Image.new("L", (1, 1)))
+    box = probe.textbbox((0, 0), "9/30 Final/10 Sg", font=faces[0])
+    check("status row (from y=1) ends above the score", 1 + box[3] - box[1] <= top,
+          (1 + box[3] - box[1], top))
+    text, font = big._series_line(big_game)
+    big.fonts["time"] = faces[0]   # as _draw_scorebug_layout swaps it in
+    pts = lit(big, big_game, 320)
+    check("the series row starts below the score (row %d vs %d)"
+          % (min(p[1] for p in pts), bottom), min(p[1] for p in pts) > bottom - 1)
 
     if failures:
         print("\n%d check(s) failed" % len(failures))

@@ -10,7 +10,7 @@ import re
 import time
 from typing import Any, Dict, List, Optional, Tuple
 
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 
 from data_sources import ESPNDataSource
 from sports import (
@@ -518,6 +518,49 @@ class Baseball(SportsCore):
         text = re.sub(r"\b(\w+)\s+(?:wins|won)\s+series\b", r"\1 W", text, flags=re.I)
         return re.sub(r"\bseries\s+", "", text, flags=re.I).strip()
 
+    def _series_fonts(self, game: Optional[Dict]) -> list:
+        """Faces the series card can use, biggest first.
+
+        "Final/10" (top), the score (middle) and the series line (bottom)
+        all have to fit the panel's height, and the status and series rows
+        are both drawn in the card's time face. A large period_text font
+        therefore cannot be kept: the face is the time face, then that face
+        stepped down a pixel at a time to 8, then the 4x6 record face, and
+        any that would overlap the score are left out. The smallest is
+        always kept so the line is drawn somewhere.
+        """
+        time_font = self.fonts["time"]
+        faces = [time_font]
+        path, size = getattr(time_font, "path", None), getattr(time_font, "size", 0)
+        cache = self.__dict__.setdefault("_series_font_cache", {})
+        if path and size > 8:
+            for step in range(int(size) - 1, 7, -1):
+                try:
+                    if (path, step) not in cache:
+                        cache[(path, step)] = ImageFont.truetype(path, step)
+                    faces.append(cache[(path, step)])
+                except (OSError, ValueError):
+                    break
+        if self.fonts.get("record") is not None:
+            faces.append(self.fonts["record"])
+
+        probe = ImageDraw.Draw(Image.new("L", (1, 1)))
+        score = f"{(game or {}).get('away_score', '0')}-{(game or {}).get('home_score', '0')}"
+        box = probe.textbbox((0, 0), score, font=self.fonts["score"])
+        score_y = (self.display_height // 2
+                   - max(3, self._score_font_size() // 2 - 1)
+                   + self._get_layout_offset('score', 'y_offset'))
+        score_top, score_bottom = score_y + box[1], score_y + box[3]
+        status_y = 1 + self._get_layout_offset('status_text', 'y_offset')
+
+        def fits(font):
+            box = probe.textbbox((0, 0), "9/30 Final/10 Sg", font=font)
+            height = box[3] - box[1]
+            return (status_y + height <= score_top
+                    and height <= self.display_height - score_bottom - 1)
+
+        return [f for f in faces if fits(f)] or faces[-1:]
+
     def _series_line(self, game: Optional[Dict]):
         """(text, font) for the Recent card's bottom row, or None.
 
@@ -525,9 +568,10 @@ class Baseball(SportsCore):
         shares the date's row, since the centre of the card is the score:
         "date - series" if that fits between the record corners, the series
         alone if it does not, and a compact spelling of either ("Tied 1-1")
-        before the series is ever dropped. When not even that fits in the
-        time font the same candidates are tried in the small 4x6 record
-        font, so a series line always lands somewhere readable.
+        before the series is ever dropped. Both directions are checked: the
+        line must be narrow enough for the row and short enough to sit under
+        the score, so a large time face steps down instead of overprinting
+        it, and 4x6 is the last resort.
         """
         summary = str((game or {}).get("series_summary") or "").strip()
         if not self.show_series_summary or not summary:
@@ -541,9 +585,7 @@ class Baseball(SportsCore):
             candidates.append(text)
 
         record_font = self.fonts.get("record")
-        fonts = [self.fonts["time"]]
-        if record_font is not None:
-            fonts.append(record_font)
+        fonts = self._series_fonts(game)
         for font in fonts:
             width = self.display_width
             if self.show_records or self.show_ranking:
@@ -560,18 +602,17 @@ class Baseball(SportsCore):
         return candidates[-1], fonts[-1]
 
     def _recent_date_text(self, game: Optional[Dict]) -> str:
-        """The full-screen Recent card's bottom line: the date, plus the
-        series when it fits in the card's usual font (see _series_line)."""
-        line = self._series_line(game)
-        if line is None:
+        """The full-screen Recent card's bottom line. With a series line it
+        is drawn by _custom_scorebug_layout in a face that fits under the
+        score, so the date row is left empty here."""
+        if self._series_line(game) is None:
             return super()._recent_date_text(game)
-        text, font = line
-        return text if font is self.fonts["time"] else ""
+        return ""
 
     def _custom_scorebug_layout(self, game: dict, draw_overlay: ImageDraw.ImageDraw):
-        """Draw the series line in the small font when the time font was too wide."""
+        """Draw the series line, bottom-aligned, in the face _series_line chose."""
         line = self._series_line(game)
-        if line is None or line[1] is self.fonts["time"]:
+        if line is None:
             return
         text, font = line
         bbox = draw_overlay.textbbox((0, 0), text, font=font)
@@ -1087,7 +1128,17 @@ class BaseballRecent(Baseball, SportsRecent):
     def _draw_scorebug_layout(self, game: Dict, force_clear: bool = False) -> None:
         if self._maybe_draw_traditional_scoreboard_screen(game, force_clear):
             return
-        super()._draw_scorebug_layout(game, force_clear)
+        if self._series_line(game) is None:
+            super()._draw_scorebug_layout(game, force_clear)
+            return
+        # The status row and the series row share the time face; draw the
+        # card in the one that leaves the score visible between them.
+        original = self.fonts["time"]
+        self.fonts["time"] = self._series_fonts(game)[0]
+        try:
+            super()._draw_scorebug_layout(game, force_clear)
+        finally:
+            self.fonts["time"] = original
 
 
 class BaseballLive(Baseball, SportsLive):

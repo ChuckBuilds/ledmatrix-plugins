@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.54.1",
+  "version": "1.54.2",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.54.2",
+      "released": "2026-10-01",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "Fix: the series line on the full-screen Recent card now fits vertically as well as horizontally. A large period_text font made the Final/N row and the series row tall enough to print over the score, so when the time face would overlap the score the card is drawn in the largest smaller face that keeps the status row, score and series row apart (stepping down to 8 px, then the 4x6 face). Panels with the default font are unchanged."
+    },
     {
       "version": "1.54.1",
       "released": "2026-10-01",
