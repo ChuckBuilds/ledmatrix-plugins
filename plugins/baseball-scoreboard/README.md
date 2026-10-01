@@ -421,7 +421,7 @@ plugin and has no per-league setting.
 | `display_options.show_records` | `false` | **Advanced.** Each team's win-loss record in the bottom corners |
 | `display_options.show_odds` | `true` | Draw the betting line when ESPN has one |
 | `display_options.show_ranking` | `false` | **Hidden.** Rank badge, in place of the record. No baseball league publishes a poll, so the badge was always empty — and because it *replaces* the record, turning it on erased the record `show_records` was drawing |
-| `display_options.show_series_summary` | `false` | **Advanced.** Where the teams stand in the current series |
+| `display_options.show_series_summary` | `false` | **Advanced.** Where the teams stand in the current series, on the finished-game scorebug. Shares the bottom row with the date and shortens ("Tied 1-1") to fit |
 | `display_options.show_innings` | `true` | **Advanced.** The ▲/▼ inning at the top of the live scorebug (and the batting-half arrow on the traditional scoreboard). A finished game's `FINAL` always shows |
 | `display_options.show_bases` | `true` | **Advanced.** The base-runner diamonds on the live scorebug |
 | `display_options.show_outs` | `true` | **Advanced.** The outs dots on the live scorebug, and the `O` row of the traditional scoreboard's at-bat panel |
