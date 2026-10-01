@@ -6,11 +6,12 @@ family of shared-shape modules:
 
 | Module | Copies | Notes |
 |---|---|---|
-| `sports.py` | 9 | `SportsCore` / `SportsUpcoming` / `SportsRecent` / `SportsLive`. The celebration drawing and the season-fetch / lookback / live-odds methods are core's (3.7.0, see below) |
+| `sports.py` | 9 | `SportsCore` / `SportsUpcoming` / `SportsRecent` / `SportsLive`. The celebration drawing and the season-fetch / lookback / live-odds methods are core's (3.7.0, see below), and so are the scorebug date options, the no-favourites filter, the non-favourite live dwell and the font-path resolver (3.8.0) |
 | `scroll_display.py` | 10 | + `f1-scoreboard` (a reduced rewrite) |
 | `data_sources.py` | 9 | soccer's copy is byte-equivalent to the core's |
 | `base_odds_manager.py` | 1 | ufc's MMA fork (athlete odds) only; the other eight import core's `src.base_odds_manager` |
-| `game_renderer.py` | 8 | the `sports_card` delegations are core's `SportsCardWrappersMixin` (3.7.0) |
+| `game_renderer.py` | 8 | the `sports_card` delegations are core's `SportsCardWrappersMixin` (3.7.0); `_resolve_font_path` is core's `resolve_font_path` (3.8.0) |
+| `manager.py` | 9 | the plugin class. Its Vegas weighting, off-thread switch refresh and dynamic-duration helpers are core's `SportsPluginHostMixin`, and the live scroll strip's mid-cycle rebuild is `SportsLiveScrollMixin` (3.8.0, see below); everything else has drifted |
 | `dynamic_team_resolver.py` | 8 | true forks — different constructor signatures |
 | `logo_downloader.py` | 0 | every scoreboard imports core's `src.logo_downloader` (f1-scoreboard's same-named file is an unrelated `F1LogoLoader`) |
 | `<sport>_espn_dates.py` | 0 | none left. All nine scoreboards floor on core 3.5.0 and import `src.common.espn_dates` plainly (sunset: the eight team scoreboards in stage 1a, ufc in 1b). `scripts/test_espn_dates_copies.py` fails if a plugin in its `SUNSET_PLUGINS` grows its copy or a guarded import back, and on a fetch that sends ESPN `dates` without the helper. Fix it in core |
@@ -113,6 +114,40 @@ the core actually ships:
   `_fetch_data`, `SportsUpcoming.__init__` (no core mixin has a
   constructor), and the renderer's `_schema_font_size` / `_resolve_font_size`
   (they read the plugin's own `config_schema.json`).
+- **Converged at 3.8.0 (sports consolidation stage 4, the identical sweep):**
+  four modules holding the method families every carrying plugin had as an
+  identical copy, `manager.py` included. The nine scoreboards floor on 3.8.0
+  and import them plainly; `scripts/test_stage4_mixin_copies.py` fails if a
+  copy, a guarded import or a missing base comes back.
+  - `src.common.sports_plugin_host` -- the plugin class in `manager.py` (all
+    nine) inherits `SportsPluginHostMixin`, listed before `BasePlugin`:
+    `get_vegas_priority_weight` and the favourite-is-live scan behind it,
+    `_dispatch_switch_refresh`, `get_vegas_content_type`,
+    `_dynamic_feature_enabled`, `_get_total_games_for_manager`,
+    `_build_manager_key`.
+  - `src.common.sports_live_scroll` -- the plugin class in the eight with a
+    live strip (not ufc) inherits `SportsLiveScrollMixin`: the fingerprint,
+    the rate-limited rebuild and `_preserving_scroll_position`. Each plugin
+    keeps its own `LIVE_VOLATILE_FIELDS` (afl, nrl and soccer also ignore
+    `period_text`, which carries the clock in those sports) and creates the
+    three `_live_scroll_*` dicts in `__init__`.
+  - `src.common.sports_display_rules` -- `SportsCore` inherits
+    `SportsCardOptionsMixin` (`_card_option`, `_recent_date_text`; the eight
+    team scoreboards), which must come before `SportsCoreSharedMixin`, and
+    `SportsGameRulesMixin` (`_filtered_or_all`, `_effective_live_duration`;
+    all nine, though football never had the first and ufc never had the
+    second).
+  - `src.common.sports_font_path` -- `resolve_font_path`, imported as
+    `_resolve_font_path` in `sports.py` and `game_renderer.py` (ufc:
+    `sports.py`, `fight_renderer.py`, `headshot_downloader.py`). ufc's
+    `generate_placeholder_icon.py`, a hand-run tool with no core on its path,
+    keeps its own copy.
+
+  Identical but deliberately left in the plugins: the families seven
+  plugins or fewer carry (one lineage's helpers, such as afl/nrl/soccer's
+  `_swrr_advance` and `_refresh_switch_mode_managers`, or the multi-league
+  plugins' `_resolve_managers_for_mode` and `_extract_mode_type`). They go
+  when the code around them is reconciled.
 - **Not converging (documented forks):** `dynamic_team_resolver` (plugin copies
   take `cache_manager` in the constructor; the core's does not — different
   API), ufc's `base_odds_manager` (MMA athlete-odds fork), and — until the core

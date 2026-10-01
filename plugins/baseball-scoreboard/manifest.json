@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.54.2",
+  "version": "1.54.3",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.54.3",
+      "released": "2026-10-01",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "Uses LEDMatrix core 3.8.0's shared copy of code this plugin carried its own copy of: the plugin class's Vegas weighting, off-thread switch refresh and dynamic-duration helpers (src.common.sports_plugin_host), the mid-cycle live scroll rebuild (src.common.sports_live_scroll), the scorebug date options, the no-favourites game filter and the non-favourite live dwell (src.common.sports_display_rules) and the bundled-font path resolver (src.common.sports_font_path). The bundled copies are removed and the plugin inherits core's mixins. The core floor is unchanged (3.8.0 already ships these modules). No behaviour change: the code is the same, every safety-harness render, scroll card and celebration golden is pixel-identical, and every plugin test gives the same result."
+    },
     {
       "version": "1.54.2",
       "released": "2026-10-01",

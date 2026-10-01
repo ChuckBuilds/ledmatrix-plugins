@@ -39,6 +39,8 @@ from game_renderer import GameRenderer
 from src.common.sports_shared import (
     SportsCoreSharedMixin, SportsLiveSharedMixin, SportsRecentSharedMixin)
 from src.common.sports_fetch import SportsFetchMixin
+from src.common.sports_display_rules import SportsCardOptionsMixin, SportsGameRulesMixin
+from src.common.sports_font_path import resolve_font_path as _resolve_font_path
 from src.common.sports_celebration import SportsCelebrationMixin
 # Helpers every scoreboard carried a private copy of; core ships them from
 # 3.5.0 (the manifest's floor). The private aliases keep this module's names.
@@ -50,49 +52,6 @@ from src.common.sports_helpers import (
     clamp_window as _clamp_window,
     logo_needs_refresh as _logo_needs_refresh,
 )
-
-
-def _resolve_font_path(path: str) -> str:
-    """Resolve a bundled font path without depending on the process cwd.
-
-    These fonts ship with the LEDMatrix core, and every call site here named
-    them relative to the working directory. That holds under the packaged
-    systemd unit, whose WorkingDirectory is the install root, and breaks
-    everywhere else -- the plugin safety harness, a manual run from $HOME, a
-    unit file written without WorkingDirectory. The failure is quiet: the
-    load raises, the caller falls back, and the scoreboard renders in PIL's
-    default face instead of the pixel font it was laid out for.
-
-    Resolution order matches the core's own resolver: the path as given
-    first, so behaviour is unchanged wherever it already worked and a
-    configured absolute path is returned untouched, then the core install
-    root, then the original string so callers still raise and fall back
-    exactly as they do today.
-    """
-    if os.path.exists(path):
-        return path
-    try:
-        import src.font_manager as _core_fonts
-
-        # The core grew this resolver in ChuckBuilds/LEDMatrix#425. Use it
-        # when it is there so both repos stay on one definition of "install
-        # root"; older cores fall through to the equivalent derivation below.
-        manager = getattr(_core_fonts, "FontManager", None)
-        resolver = getattr(manager, "_resolve_asset_path", None)
-        if resolver is not None:
-            resolved = resolver(path)
-            if resolved and os.path.exists(resolved):
-                return resolved
-        root = os.path.dirname(os.path.dirname(os.path.abspath(_core_fonts.__file__)))
-        candidate = os.path.join(root, path)
-        if os.path.exists(candidate):
-            return candidate
-    except (ImportError, AttributeError, OSError):
-        # No core on the path (standalone tooling), a core laid out
-        # differently, or an unreadable install. Returning the original keeps
-        # the caller's existing fallback intact.
-        return path
-    return path
 
 
 # Shared element-style resolver (newer cores); older cores use the local
@@ -221,7 +180,8 @@ class _LogoFetcher:
         return fetched
 
 
-class SportsCore(SportsFetchMixin, SportsCoreSharedMixin, SportsHelpersMixin, ABC):
+class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
+                 SportsCoreSharedMixin, SportsHelpersMixin, ABC):
     #: Absolute path of this plugin, handed to the shared mixin. It cannot
     #: deduce it: __file__ there is src/common/, and inferring the directory
     #: from the MRO returns None under the real plugin loader, which silently
@@ -631,43 +591,6 @@ class SportsCore(SportsFetchMixin, SportsCoreSharedMixin, SportsHelpersMixin, AB
     _WEEKDAY_ABBR: ClassVar[Tuple[str, ...]] = (
         "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun",
     )
-
-    def _card_option(self, key: str, default: Any = None) -> Any:
-        """Read one scroll_card key, never blanking the upcoming scorebug.
-
-        With the middle set to "date and time" and both of those lines
-        switched off, the full-screen upcoming scorebug is two logos and
-        "Next Game" with nothing to say when the game is. Nobody picks that
-        on purpose -- "vs" and "none" are the settings for a card without the
-        stack -- yet a whole cohort of boards has it: switch_show_date/_time
-        shipped while the core's settings form still drew keys missing from
-        the saved config as unchecked boxes, so the next Save wrote both as
-        false (fixed in LEDMatrix #597). That one combination therefore reads
-        as both on. Hiding either line alone, or both under "vs" or "none",
-        is still honoured.
-        """
-        # The mixin named outright, not super(): tests lift this method onto
-        # stand-in classes that are not SportsCore subclasses.
-        base = SportsCoreSharedMixin._card_option
-        keys = ("switch_show_date", "switch_show_time")
-        value = base(self, key, default)
-        if (key in keys and not value
-                and not any(base(self, k, True) for k in keys)
-                and SportsCoreSharedMixin._switch_upcoming_center(self) == "date_time"):
-            return True
-        return value
-
-    def _recent_date_text(self, game: Optional[Dict]) -> str:
-        """When a finished game was played, for the full-screen scorebug.
-
-        Formatted by switch_date_format, like the upcoming scorebug, so the
-        two dates on this display agree; its "numeric" default returns the
-        extractor's "9/23" unchanged. ``switch_recent_show_date`` (default
-        true) is the off switch. Same as baseball-scoreboard's copy.
-        """
-        if not self._card_option("switch_recent_show_date", True):
-            return ""
-        return self._format_game_date(str((game or {}).get("game_date") or ""), game)
 
     def _upcoming_top_row_span(self, draw, game: Dict, game_date: str,
                                game_time: str, width: int):
@@ -3383,24 +3306,6 @@ class SportsLive(SportsCelebrationMixin, SportsLiveSharedMixin, SportsCore):
 
     def _is_favorite_game(self, game: Dict[str, Any]) -> bool:
         return self._is_favorite(game.get("home_abbr")) or self._is_favorite(game.get("away_abbr"))
-
-    def _effective_live_duration(self, game: Optional[Dict[str, Any]]) -> float:
-        """How long the given live game should stay on screen before rotating.
-
-        Non-favorite live games use non_favorite_live_game_duration, but only
-        when it is set (> 0) AND favorite teams are configured. With no favorites
-        (or the knob at 0) every live game uses game_display_duration - identical
-        to the prior single-duration behavior. When show_favorite_teams_only is
-        on, non-favorite games are never shown, so this naturally never fires."""
-        non_fav = getattr(self, "non_favorite_live_game_duration", 0) or 0
-        if (
-            non_fav > 0
-            and self.favorite_teams
-            and game is not None
-            and not self._is_favorite_game(game)
-        ):
-            return non_fav
-        return self.game_display_duration
 
     def _advance_live_game_if_due(self) -> None:
         """Rotate to the next live game once the current one has had its time.
