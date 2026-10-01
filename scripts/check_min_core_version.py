@@ -156,6 +156,7 @@ MODULE_FIRST_VERSION = {
     "src.plugin_system.plugin_runtime": None,  # core #690
     "src.plugin_system.vegas_elements": None,  # core #696
     "src.plugin_system.testing.vegas": None,  # core #696
+    "src.common.sports_vegas": None,  # core #698
 }
 
 #: Releases whose ``src/__init__.py`` ``__version__`` lags their tag. The
