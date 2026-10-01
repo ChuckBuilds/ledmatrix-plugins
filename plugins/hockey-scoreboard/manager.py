@@ -3882,8 +3882,7 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
         to show -- and the ticker uses get_vegas_content() instead.
         """
         scroll_manager = getattr(self, '_scroll_manager', None)
-        build = getattr(scroll_manager, 'get_vegas_elements_for', None)
-        if build is None or sports_vegas is None:
+        if sports_vegas is None or not hasattr(scroll_manager, 'get_vegas_elements_for'):
             return None
         try:
             games, leagues = self.vegas_slate()
@@ -3893,7 +3892,7 @@ class HockeyScoreboardPlugin(BasePlugin if BasePlugin else object):
         if not games:
             return None
         # No rankings, as get_vegas_content() renders its cards without them.
-        return build(VEGAS_SCROLL_KEY, games, leagues, None)
+        return scroll_manager.get_vegas_elements_for(VEGAS_SCROLL_KEY, games, leagues, None)
 
     def vegas_slate(self) -> Tuple[List[Dict], List[str]]:
         """The games the live Vegas cards show, and their leagues in order."""

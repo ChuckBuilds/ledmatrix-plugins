@@ -1532,8 +1532,7 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
         uses get_vegas_content() instead. Like it, no update() and no network.
         """
         scroll_manager = getattr(self, "_scroll_manager", None)
-        build = getattr(scroll_manager, "build_vegas_elements", None)
-        if build is None or sports_vegas is None:
+        if sports_vegas is None or not hasattr(scroll_manager, "build_vegas_elements"):
             return None
         try:
             fights, _leagues = self.vegas_slate()
@@ -1543,7 +1542,7 @@ class UFCScoreboardPlugin(BasePlugin if BasePlugin else object):
         if not fights:
             return None
         try:
-            return build(fights)
+            return scroll_manager.build_vegas_elements(fights)
         except Exception:
             # Drawn straight from feed data, like the scroll content.
             self.logger.exception("[UFC Vegas] Error building live cards")

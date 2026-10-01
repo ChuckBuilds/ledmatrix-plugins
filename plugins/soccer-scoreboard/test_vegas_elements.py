@@ -110,8 +110,9 @@ def no_network(monkeypatch):
     monkeypatch.setattr(socket.socket, "connect", connect)
 
 
-def _make_plugin(width=W, height=H, config=CARD_CONFIG):
+def _make_plugin(width=W, height=H, config=None):
     """The plugin on a width x height panel, nothing polled yet."""
+    config = CARD_CONFIG if config is None else config
     dm = VisualTestDisplayManager(width=width, height=height)
     plugin = _instantiate("soccer-scoreboard", load_manifest(PLUGIN_DIR), PLUGIN_DIR,
                           build_full_config(PLUGIN_DIR, SPEC, copy.deepcopy(config)),
