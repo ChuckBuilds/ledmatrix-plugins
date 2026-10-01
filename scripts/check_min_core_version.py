@@ -161,6 +161,7 @@ MODULE_FIRST_VERSION = {
     "src.common.sports_font_path": None,  # core #705
     "src.common.sports_live_scroll": None,  # core #705
     "src.common.sports_plugin_host": None,  # core #705
+    "src.plugin_system.field_model": None,  # core #703
 }
 
 #: Releases whose ``src/__init__.py`` ``__version__`` lags their tag. The
