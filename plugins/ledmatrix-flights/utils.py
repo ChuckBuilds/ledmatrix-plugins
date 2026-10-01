@@ -32,6 +32,7 @@ def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return haversine_miles(lat1, lon1, lat2, lon2) * 1.60934
 
 
+<<<<<<< HEAD
 def plane_offset_miles(center_lat: float, center_lon: float,
                        lat: float, lon: float) -> Tuple[float, float]:
     """(east, north) statute miles from the centre to lat/lon, as the map places it.
@@ -50,6 +51,8 @@ def plane_offset_miles(center_lat: float, center_lon: float,
     return distance * math.sin(bearing), distance * math.cos(bearing)
 
 
+=======
+>>>>>>> origin/main
 # ---------------------------------------------------------------------------
 # Position time
 #
