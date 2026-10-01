@@ -502,7 +502,7 @@
       "screenshot": "",
       "latest_version": "1.16.0",
       "ledmatrix_min_version": "3.8.0",
-      "commit": "90423a2e81d3c64aa99434ebf1e77341fb8e4880"
+      "commit": "bc7a582d097a443657463173022be27dbe0f9501"
     },
     {
       "id": "march-madness",
@@ -660,7 +660,7 @@
       "latest_version": "1.2.13",
       "icon": "fa-circle-dot",
       "ledmatrix_min_version": "2.0.0",
-      "commit": "c695b9761d59a9379222c8abfca41c14297e6cb9"
+      "commit": "11b08475f6ffeb1fe377cab1f53f3fe5064a7c06"
     },
     {
       "id": "nfl-draft",
@@ -715,7 +715,7 @@
       "screenshot": "",
       "latest_version": "1.7.5",
       "ledmatrix_min_version": "3.4.0",
-      "commit": "c695b9761d59a9379222c8abfca41c14297e6cb9"
+      "commit": "11b08475f6ffeb1fe377cab1f53f3fe5064a7c06"
     },
     {
       "id": "of-the-day",
@@ -1032,17 +1032,17 @@
       "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
       "branch": "main",
       "plugin_path": "plugins/ledmatrix-weather",
-      "latest_version": "2.7.9",
+      "latest_version": "2.8.0",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-29",
+      "last_updated": "2026-09-30",
       "verified": true,
       "screenshot": "",
-      "ledmatrix_min_version": "2.0.0",
+      "ledmatrix_min_version": "3.8.0",
       "aliases": [
         "ledmatrix-weather"
       ],
-      "commit": "843588025a81197056f8d96779ccb2be19337ab8"
+      "commit": "db6e00dec3e1c4411eef9aa5e818349a9daac108"
     },
     {
       "id": "web-ui-info",
@@ -1429,7 +1429,7 @@
       "screenshot": "",
       "latest_version": "1.1.0",
       "ledmatrix_min_version": "3.0.0",
-      "commit": "90fb3f26f67ccfe17e8c4380480a3c09fd25a7ac"
+      "commit": "bc7a582d097a443657463173022be27dbe0f9501"
     }
   ]
 }

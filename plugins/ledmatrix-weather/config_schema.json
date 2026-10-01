@@ -108,6 +108,12 @@
       "description": "Show precipitation radar imagery from RainViewer (free, no API key needed)",
       "title": "Show Radar"
     },
+    "radar_in_vegas": {
+      "type": "boolean",
+      "default": true,
+      "description": "Also show the radar in the Vegas scroll ticker, animated as it scrolls past (needs LEDMatrix 3.8.0; on an older core the ticker shows the forecast cards only).",
+      "title": "Radar in Vegas Mode"
+    },
     "show_alerts": {
       "type": "boolean",
       "default": true,
