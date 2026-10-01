@@ -14,12 +14,8 @@ renderer reads that alone. These pin:
     later step raises; __init__ publishes an empty one;
   * the renderer never touches aircraft_data or aircraft_trails once a
     snapshot is published;
-<<<<<<< HEAD
   * can_extrapolate holds only for a position still fresh when published
     (or, test_glide.py, one held from the last snapshot);
-=======
-  * can_extrapolate holds only for a position still fresh when published;
->>>>>>> origin/main
   * _map_layer + _draw_heads(at=None) is byte-identical to the renderer as it
     was before the split (a verbatim copy of it is kept below as the reference);
   * the projection is computed once per snapshot and size;
@@ -326,13 +322,9 @@ def test_matches_the_old_renderer_on_random_skies():
         assert new._render_map_image().tobytes() == legacy_render_map_image(old).tobytes()
 
 
-<<<<<<< HEAD
 def test_at_is_threaded_through_and_moves_nothing_that_cannot_extrapolate():
     # sky() has no receipt times, so nothing in it can be carried on; the
     # gliding itself is pinned in test_glide.py.
-=======
-def test_at_is_threaded_through_and_does_not_move_anything_yet():
->>>>>>> origin/main
     aircraft, trails = sky()
     p = make_plugin(aircraft, trails)
     p._publish_map_snapshot()
@@ -571,15 +563,10 @@ def test_seq_moves_only_when_the_drawing_would():
     assert unchanged(re_reported('PARKED', pos_age=5.0))
     # A moving one re-reported: its position is true at a different moment.
     assert bumped(re_reported('AAA111'))
-<<<<<<< HEAD
     # One that has become too old to move on from, still at the same spot, is
     # held as it was being carried (MapSnapshot.held_from, test_glide.py):
     # the same pixels at any time.
     assert unchanged(lambda p: p.aircraft_data['AAA111'].update(pos_stale=True))
-=======
-    # ...or has become too old to move on from.
-    assert bumped(lambda p: p.aircraft_data['AAA111'].update(pos_stale=True))
->>>>>>> origin/main
     assert bumped(lambda p: p.aircraft_data['AAA111'].update(lat=CENTER[0]))
     assert bumped(lambda p: p.aircraft_data['AAA111'].update(color=(1, 2, 3)))
     assert bumped(lambda p: p.aircraft_trails['AAA111'].append((CENTER[0], CENTER[1] + 0.01, 2.0)))
