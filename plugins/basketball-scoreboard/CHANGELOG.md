@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.41.1] - 2026-10-01
+
+### Changed
+- Uses `src/common/sports_plugin_host.py`, `src/common/sports_live_scroll.py`, `src/common/sports_display_rules.py` and `src/common/sports_font_path.py`,
+  which LEDMatrix core 3.8.0 ships. The core floor is unchanged.
+
+### Removed
+- `BasketballScoreboardPlugin`'s Vegas weighting (`get_vegas_priority_weight`,
+  `_favorite_team_is_live` and its scan helpers), the off-thread switch
+  refresh (`_dispatch_switch_refresh`, `_SWITCH_REFRESH_MIN_GAP_SECONDS`),
+  `get_vegas_content_type` and the dynamic-duration helpers
+  (`_dynamic_feature_enabled`, `_get_total_games_for_manager`,
+  `_build_manager_key`): it inherits `SportsPluginHostMixin`
+  (`src.common.sports_plugin_host`).
+- The live scroll strip's mid-cycle rebuild (`_live_scroll_needs_rebuild`,
+  `_preserving_scroll_position`, the fingerprint helpers and the two
+  `LIVE_SCROLL_REBUILD_*` constants): the plugin class inherits
+  `SportsLiveScrollMixin` (`src.common.sports_live_scroll`).
+  `LIVE_VOLATILE_FIELDS` stays here.
+- `_card_option`, `_recent_date_text`, `_filtered_or_all`, `_effective_live_duration`: `SportsCore` inherits `SportsCardOptionsMixin` and `SportsGameRulesMixin`
+  (`src.common.sports_display_rules`).
+- `_resolve_font_path` in `sports.py` and `game_renderer.py`: imported from
+  `src.common.sports_font_path` under the same name.
+
+No behaviour change: the code is the same, and every safety-harness render,
+scroll card and celebration golden is pixel-identical.
+
 ## [1.41.0] - 2026-09-30
 
 ### Added

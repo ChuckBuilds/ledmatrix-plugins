@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.19.1] - 2026-10-01
+
+### Changed
+- Uses `src/common/sports_plugin_host.py`, `src/common/sports_display_rules.py` and `src/common/sports_font_path.py`,
+  which LEDMatrix core 3.8.0 ships. The core floor is unchanged.
+
+### Removed
+- `UFCScoreboardPlugin`'s Vegas weighting (`get_vegas_priority_weight`,
+  `_favorite_team_is_live` and its scan helpers), the off-thread switch
+  refresh (`_dispatch_switch_refresh`, `_SWITCH_REFRESH_MIN_GAP_SECONDS`),
+  `get_vegas_content_type` and the dynamic-duration helpers
+  (`_dynamic_feature_enabled`, `_get_total_games_for_manager`,
+  `_build_manager_key`): it inherits `SportsPluginHostMixin`
+  (`src.common.sports_plugin_host`).
+- `_filtered_or_all`: `SportsCore` inherits `SportsGameRulesMixin`
+  (`src.common.sports_display_rules`).
+- `_resolve_font_path` in `sports.py`, `fight_renderer.py` and `headshot_downloader.py`: imported from
+  `src.common.sports_font_path` under the same name.
+
+No behaviour change: the code is the same, and every safety-harness render,
+scroll card and celebration golden is pixel-identical.
+
 ## [1.19.0] - 2026-09-30
 
 ### Added

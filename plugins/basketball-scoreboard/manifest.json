@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.41.0",
+  "version": "1.41.1",
   "update_interval": 60,
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
@@ -19,6 +19,12 @@
   "branch": "main",
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
+    {
+      "version": "1.41.1",
+      "released": "2026-10-01",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "Uses LEDMatrix core 3.8.0's shared copy of code this plugin carried its own copy of: the plugin class's Vegas weighting, off-thread switch refresh and dynamic-duration helpers (src.common.sports_plugin_host), the mid-cycle live scroll rebuild (src.common.sports_live_scroll), the scorebug date options, the no-favourites game filter and the non-favourite live dwell (src.common.sports_display_rules) and the bundled-font path resolver (src.common.sports_font_path). The bundled copies are removed and the plugin inherits core's mixins. The core floor is unchanged (3.8.0 already ships these modules). No behaviour change: the code is the same, every safety-harness render, scroll card and celebration golden is pixel-identical, and every plugin test gives the same result."
+    },
     {
       "version": "1.41.0",
       "released": "2026-09-30",
