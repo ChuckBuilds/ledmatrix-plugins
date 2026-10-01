@@ -500,9 +500,9 @@
       "last_updated": "2026-09-30",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.15.0",
-      "ledmatrix_min_version": "2.0.0",
-      "commit": "bb1db84e92022b4fe57f3d6c7a57e94844dd8b5a"
+      "latest_version": "1.16.0",
+      "ledmatrix_min_version": "3.8.0",
+      "commit": "5968ddb8842152a1a8e5d3ede1bd07a861dcf2d9"
     },
     {
       "id": "march-madness",
@@ -660,7 +660,7 @@
       "latest_version": "1.2.13",
       "icon": "fa-circle-dot",
       "ledmatrix_min_version": "2.0.0",
-      "commit": "c695b9761d59a9379222c8abfca41c14297e6cb9"
+      "commit": "bb3db67b4374266dde7fadff495dca821240d67c"
     },
     {
       "id": "nfl-draft",
@@ -715,7 +715,7 @@
       "screenshot": "",
       "latest_version": "1.7.5",
       "ledmatrix_min_version": "3.4.0",
-      "commit": "c695b9761d59a9379222c8abfca41c14297e6cb9"
+      "commit": "bb3db67b4374266dde7fadff495dca821240d67c"
     },
     {
       "id": "of-the-day",
@@ -1010,7 +1010,7 @@
       "latest_version": "1.18.3",
       "icon": "fas fa-fist-raised",
       "ledmatrix_min_version": "3.7.0",
-      "commit": "e0a24e75126112e93fa404d3f418209a10ac7208"
+      "commit": "bb3db67b4374266dde7fadff495dca821240d67c"
     },
     {
       "id": "weather",

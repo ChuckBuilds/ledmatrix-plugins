@@ -131,6 +131,19 @@
       "maximum": 50,
       "default": 10
     },
+    "map_glide": {
+      "type": "boolean",
+      "description": "In Vegas mode, move the map's aircraft smoothly between position reports instead of jumping at every poll. Needs LEDMatrix 3.8.0 or newer; older versions show the map as before.",
+      "default": true
+    },
+    "map_glide_hz": {
+      "x-advanced": true,
+      "type": "number",
+      "description": "How many times a second the gliding Vegas map is redrawn (1-10). The ticker also caps it: vegas_scroll.live_max_hz (5 by default), and 1 on a display without the GIL-releasing rgbmatrix binding.",
+      "minimum": 1,
+      "maximum": 10,
+      "default": 4
+    },
     "map_background": {
       "type": "object",
       "description": "Map background tile configuration",
@@ -991,6 +1004,8 @@
     "map_background",
     "show_trails",
     "trail_length",
+    "map_glide",
+    "map_glide_hz",
     "proximity_alert",
     "flight_records",
     "use_offline_database",

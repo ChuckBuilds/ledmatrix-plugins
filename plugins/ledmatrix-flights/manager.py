@@ -51,13 +51,19 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', '..'))
 from src.plugin_system.base_plugin import BasePlugin
 
+# Live Vegas elements are LEDMatrix 3.8.0; an older core never calls the hooks.
+try:
+    from src.plugin_system.vegas_elements import VegasElement
+except ImportError:
+    VegasElement = None
+
 # Import aircraft database
 from aircraft_database import AircraftDatabase
 
 # Import extracted utility modules
 from utils import (
     haversine_miles, altitude_to_color, categorize_aircraft, is_callsign_worth_fetching,
-    fr24_pos_age, is_real_track, payload_lag, position_age, seen_pos_age,
+    fr24_pos_age, is_number, is_real_track, payload_lag, position_age, seen_pos_age,
     source_send_time, FR24_MAX_AGE_SECONDS,
 )
 from units import format_distance
@@ -79,16 +85,63 @@ DEFAULT_TILE_SERVER = 'https://maps.chuck-builds.com'
 #: two; the bound only matters if something keeps asking for new ones.
 _MAX_MAP_PROJECTIONS = 8
 
+#: A new poll's correction wider than this (pixels, at the size drawn) is a
+#: real change of mind, not jitter: the dot moves at once instead of easing.
+_GLIDE_SNAP_PX = 6.0
+
+#: map_glide_hz when the config has none (or nonsense), and its bounds.
+_GLIDE_HZ_DEFAULT = 4
+_GLIDE_HZ_MIN, _GLIDE_HZ_MAX = 1, 10
+
+#: How long a partial tile composite (tiles still missing) is reused. It is
+#: never cached for good, so without this every locked render -- one after
+#: each update() while the map glides in the ticker -- repeated the decode
+#: and LANCZOS resize of every tile it did have.
+_PARTIAL_BG_TTL_SECONDS = 10.0
+
+#: The key of the one live Vegas element this plugin has: the gliding map.
+_VEGAS_KEY_MAP = 'map'
+
 
 class _MapProjection(NamedTuple):
     """Where one snapshot's points land at one size. None is off-screen.
 
     ``heads`` and ``trails`` are indexed like ``MapSnapshot.aircraft``; a
-    trail keeps only its on-screen points, as the drawing always has.
+    trail keeps only its on-screen points, as the drawing always has, and
+    ``trail_colors`` holds the colour of each of its segments (the fade), so
+    a map redrawn several times a second does not recompute them.
+    ``exact`` is each head before truncation to a pixel, on screen or not,
+    and ``pixels_per_mile`` the scale: the gliding map moves a head from
+    there, so a head carried off-screen can glide back on.
     """
     centre: Optional[Tuple[int, int]]
     heads: Tuple[Optional[Tuple[int, int]], ...]
     trails: Tuple[Tuple[Tuple[int, int], ...], ...]
+    exact: Tuple[Tuple[float, float], ...] = ()
+    pixels_per_mile: float = 0.0
+    trail_colors: Tuple[Tuple[Tuple[int, ...], ...], ...] = ()
+
+
+class _GlideBackground(NamedTuple):
+    """What the last locked Vegas map render drew under the aircraft.
+
+    The lock-free redraw must not read the tile cache (disk, and update() may
+    be writing it), so it reuses this: the composite (None for solid black)
+    at that size, and the snapshot it was drawn with, whose view it matches.
+    """
+    width: int
+    height: int
+    snap: MapSnapshot
+    image: Optional[Image.Image]
+
+
+class _PartialBackground(NamedTuple):
+    """A partial tile composite, reused for _PARTIAL_BG_TTL_SECONDS."""
+    key: tuple
+    made: float
+    missing: Tuple[Tuple[int, int], ...]
+    zoom: int
+    image: Image.Image
 
 
 class FlightTrackerPlugin(BasePlugin):
@@ -210,13 +263,20 @@ class FlightTrackerPlugin(BasePlugin):
         self.last_map_center = None
         self.last_map_zoom = None
         self.cached_pixels_per_mile = None  # Actual scale of the cached map
-        
+        # A partial composite, briefly reused (_PartialBackground), and the
+        # background the last locked Vegas map render used (_GlideBackground).
+        self._partial_map_bg: Optional[_PartialBackground] = None
+        self._glide_bg: Optional[_GlideBackground] = None
+
         # Display configuration — read dynamically via properties so any matrix
         # resize is picked up without restarting the plugin.
         self._display_manager_ref = display_manager
         self.show_trails = self.config.get('show_trails', True)
         self.trail_length = self.config.get('trail_length', 10)
-        
+        # Vegas: carry the map's aircraft on between polls (live elements).
+        self.map_glide = self.config.get('map_glide', True)
+        self.map_glide_hz = self._glide_hz(self.config.get('map_glide_hz', _GLIDE_HZ_DEFAULT))
+
         # Logging rate limiting for bounds warnings
         self.bounds_warning_cache = {}
         self.bounds_warning_interval = 30  # Only log each unique coordinate once every 30 seconds
@@ -330,6 +390,9 @@ class FlightTrackerPlugin(BasePlugin):
         # Visibility tracking — set by display(), used to gate enrichment API calls and log verbosity
         self._last_displayed_time: float = 0.0
         self._display_idle_threshold: float = 30.0
+        # The same for the Vegas ticker, which never calls display(): set when
+        # it asks for this plugin's content. See _is_visible().
+        self._vegas_seen_at: float = 0.0
         # Cache of FR24 data keyed by ICAO hex (for enrichment mode)
         self.fr24_enrichment_cache: Dict[str, Dict] = {}
         # Cache of FR24 detail data keyed by FR24 flight ID (for airline name / timing)
@@ -502,6 +565,10 @@ class FlightTrackerPlugin(BasePlugin):
         self.show_trails = self.config.get('show_trails', True)
         self.trail_length = self.config.get('trail_length', 10)
 
+        # Vegas map glide
+        self.map_glide = self.config.get('map_glide', True)
+        self.map_glide_hz = self._glide_hz(self.config.get('map_glide_hz', _GLIDE_HZ_DEFAULT))
+
         # Proximity alert / overhead live-priority
         self.proximity_config = self.config.get('proximity_alert', {})
         self.proximity_enabled = self.proximity_config.get('enabled', True)
@@ -576,6 +643,11 @@ class FlightTrackerPlugin(BasePlugin):
         self.last_map_center = None
         self.last_map_zoom = None
         self.cached_pixels_per_mile = None
+        # Likewise the partial composite, and the background the lock-free
+        # Vegas redraw reuses: it returns nothing until a locked render has
+        # drawn the map with the new settings.
+        self._partial_map_bg = None
+        self._glide_bg = None
 
         # Centre, radius, zoom and show_trails are drawn from the snapshot, and
         # this is the one path that changes them outside update().
@@ -588,6 +660,22 @@ class FlightTrackerPlugin(BasePlugin):
             f"center=({self.center_lat}, {self.center_lon}), radius={self.map_radius_miles}mi, "
             f"modes={self.modes}"
         )
+
+        # A map already in the Vegas ticker is redrawn with the new settings now
+        # rather than at the next update(). Core 3.8.0; guarded for older ones.
+        notify = getattr(self, 'notify_vegas_data_changed', None)
+        if callable(notify):
+            try:
+                notify()
+            except Exception as e:  # pylint: disable=broad-except
+                self.logger.debug("[Flight Tracker] notify_vegas_data_changed failed: %s", e)
+
+    @staticmethod
+    def _glide_hz(value) -> float:
+        """map_glide_hz within the schema's range; anything unusable is the default."""
+        if not is_number(value):
+            return _GLIDE_HZ_DEFAULT
+        return min(max(value, _GLIDE_HZ_MIN), _GLIDE_HZ_MAX)
 
     def _apply_metar_config(self) -> None:
         """Read the optional ``metar`` (airport weather) config block and (re)build
@@ -2154,34 +2242,13 @@ class FlightTrackerPlugin(BasePlugin):
         Takes the view explicitly so a snapshot can be projected with the
         centre and radius it was published with, at the size being drawn.
         """
-        # Calculate pixels per mile based on the DESIRED display radius
-        # This ensures we show exactly map_radius_miles * 2 across the display
-        
-        # The display shows (effective_radius * 2) miles across
-        # Calculate pixels per mile to fit this area
-        pixels_per_mile = display_width / (effective_radius * 2)
-        
-        # Calculate distance in miles from center to aircraft
-        distance_miles = self._calculate_distance(center_lat, center_lon, lat, lon)
-        
-        # Calculate bearing from center to aircraft (in radians)
-        lat1_rad = math.radians(center_lat)
-        lat2_rad = math.radians(lat)
-        delta_lon_rad = math.radians(lon - center_lon)
-        
-        x = math.sin(delta_lon_rad) * math.cos(lat2_rad)
-        y = math.cos(lat1_rad) * math.sin(lat2_rad) - math.sin(lat1_rad) * math.cos(lat2_rad) * math.cos(delta_lon_rad)
-        bearing_rad = math.atan2(x, y)
-        
-        # Convert distance and bearing to pixel offset from center
-        pixel_distance = distance_miles * pixels_per_mile
-        offset_x = pixel_distance * math.sin(bearing_rad)
-        offset_y = -pixel_distance * math.cos(bearing_rad)  # Negative because screen Y increases downward
-        
+        x, y, distance_miles, bearing_rad, pixels_per_mile = self._project_exact(
+            lat, lon, center_lat, center_lon, effective_radius, display_width, display_height)
+
         # Map to display coordinates (center is at display_width/2, display_height/2)
-        x_pixel = int(display_width / 2 + offset_x)
-        y_pixel = int(display_height / 2 + offset_y)
-        
+        x_pixel = int(x)
+        y_pixel = int(y)
+
         # Debug logging. Guarded: an f-string is formatted even with DEBUG off,
         # and this runs for every point the map projects.
         if self.logger.isEnabledFor(logging.DEBUG):
@@ -2196,22 +2263,62 @@ class FlightTrackerPlugin(BasePlugin):
         coord_key = f"{lat:.6f},{lon:.6f}"
         current_time = time.time()
         
-        if coord_key not in self.bounds_warning_cache or \
-           current_time - self.bounds_warning_cache[coord_key] > self.bounds_warning_interval:
+        last_warned = self.bounds_warning_cache.get(coord_key)
+        if last_warned is None or current_time - last_warned > self.bounds_warning_interval:
             self.logger.debug(f"[Flight Tracker] Coordinate ({lat}, {lon}) -> pixel ({x_pixel}, {y_pixel}) is outside display bounds {display_width}x{display_height}")
             self.bounds_warning_cache[coord_key] = current_time
 
         # Every new off-screen position adds a key, so drop the expired ones
         # (they would log again anyway). At most once per interval: this runs
-        # on the render path for every trail point.
+        # on the render path for every trail point. It iterates a copy -- the
+        # Vegas redraw projects without the plugin lock, and another thread
+        # adding a key mid-iteration would raise.
         if current_time - getattr(self, '_bounds_warning_pruned_at', 0.0) > self.bounds_warning_interval:
             self.bounds_warning_cache = {
-                k: t for k, t in self.bounds_warning_cache.items()
+                k: t for k, t in dict(self.bounds_warning_cache).items()
                 if current_time - t <= self.bounds_warning_interval
             }
             self._bounds_warning_pruned_at = current_time
 
         return None
+
+    def _project_exact(self, lat: float, lon: float, center_lat: float,
+                       center_lon: float, effective_radius: float,
+                       display_width: int, display_height: int) -> Tuple[float, float, float, float, float]:
+        """Where lat/lon falls on the map, unrounded and on screen or not.
+
+        Returns ``(x, y, distance_miles, bearing_rad, pixels_per_mile)``.
+        _project_to_pixel truncates x and y; the gliding map adds a
+        displacement first. One computation for both, so an aircraft carried
+        on by nothing lands on exactly the pixel it always did.
+        """
+        # Calculate pixels per mile based on the DESIRED display radius
+        # This ensures we show exactly map_radius_miles * 2 across the display
+
+        # The display shows (effective_radius * 2) miles across
+        # Calculate pixels per mile to fit this area
+        pixels_per_mile = display_width / (effective_radius * 2)
+
+        # Calculate distance in miles from center to aircraft
+        distance_miles = self._calculate_distance(center_lat, center_lon, lat, lon)
+
+        # Calculate bearing from center to aircraft (in radians)
+        lat1_rad = math.radians(center_lat)
+        lat2_rad = math.radians(lat)
+        delta_lon_rad = math.radians(lon - center_lon)
+
+        x = math.sin(delta_lon_rad) * math.cos(lat2_rad)
+        y = math.cos(lat1_rad) * math.sin(lat2_rad) - math.sin(lat1_rad) * math.cos(lat2_rad) * math.cos(delta_lon_rad)
+        bearing_rad = math.atan2(x, y)
+
+        # Convert distance and bearing to pixel offset from center
+        pixel_distance = distance_miles * pixels_per_mile
+        offset_x = pixel_distance * math.sin(bearing_rad)
+        offset_y = -pixel_distance * math.cos(bearing_rad)  # Negative because screen Y increases downward
+
+        # Center is at display_width/2, display_height/2
+        return (display_width / 2 + offset_x, display_height / 2 + offset_y,
+                distance_miles, bearing_rad, pixels_per_mile)
     
     def _latlon_to_tile_coords(self, lat: float, lon: float, zoom: int) -> Tuple[int, int]:
         """Convert lat/lon to tile coordinates for a given zoom level."""
@@ -2526,6 +2633,14 @@ class FlightTrackerPlugin(BasePlugin):
                 # Same view at a size we've already composed, reuse it
                 return cached
 
+        # A partial composite from moments ago, while none of the tiles it
+        # went without has arrived since: composing again would decode and
+        # resize every tile it does have into the same picture.
+        if not allow_network:
+            partial = self._reusable_partial_bg((current_center, zoom, current_size))
+            if partial is not None:
+                return partial
+
         # Calculate tile coordinates for center
         center_x, center_y = self._latlon_to_tile_coords(center_lat, center_lon, zoom)
         
@@ -2703,16 +2818,22 @@ class FlightTrackerPlugin(BasePlugin):
         # returned unchanged for the rest of the session, and the prefetch
         # filling the tile cache would have no way to dislodge it. Leaving an
         # incomplete map uncached costs one recomposition per frame from
-        # already-cached tiles, and only until the prefetch catches up.
+        # already-cached tiles, and only until the prefetch catches up -- and
+        # at most once per _PARTIAL_BG_TTL_SECONDS while no missing tile has
+        # arrived (_reusable_partial_bg).
         if deferred_tiles or failed_tiles:
             self.logger.debug(
                 "[Flight Tracker] Composed a partial map (%d deferred, %d failed) "
                 "- not caching it so it recomposes once the tiles arrive",
                 len(deferred_tiles), len(failed_tiles))
+            self._partial_map_bg = _PartialBackground(
+                key=(current_center, zoom, current_size), made=time.monotonic(),
+                missing=tuple(deferred_tiles + failed_tiles), zoom=zoom, image=cropped)
         else:
             self.cached_map_bgs[current_size] = cropped
             self.last_map_center = current_center
             self.last_map_zoom = zoom
+            self._partial_map_bg = None
         
         # Calculate the geographic height coverage
         desired_miles_high = crop_height_needed / pixels_per_mile_at_zoom
@@ -2750,6 +2871,22 @@ class FlightTrackerPlugin(BasePlugin):
         
         return cropped
     
+    def _reusable_partial_bg(self, key: tuple) -> Optional[Image.Image]:
+        """The remembered partial composite for ``key`` (centre, zoom, size), if
+        it is under _PARTIAL_BG_TTL_SECONDS old and none of its missing tiles
+        has reached the cache since. Checked through _fetch_tile, cache only,
+        which also re-queues each one still missing for the prefetch, as a
+        recompose would have."""
+        memo = getattr(self, '_partial_map_bg', None)
+        if memo is None or memo.key != key:
+            return None
+        if time.monotonic() - memo.made >= _PARTIAL_BG_TTL_SECONDS:
+            return None
+        for x, y in memo.missing:
+            if self._fetch_tile(x, y, memo.zoom, allow_network=False) is not None:
+                return None
+        return memo.image
+
     def _tile_to_lat(self, y: int, zoom: int) -> float:
         """Convert tile Y coordinate to latitude."""
         n = 2.0 ** zoom
@@ -2761,6 +2898,31 @@ class FlightTrackerPlugin(BasePlugin):
         n = 2.0 ** zoom
         return x / n * 360.0 - 180.0
     
+    def _is_visible(self, now: float) -> bool:
+        """Whether the plugin has been on screen within _display_idle_threshold.
+
+        display() marks the rotation; the Vegas ticker never calls it, so its
+        requests for content mark that (_vegas_seen_at). Without the second,
+        a board in Vegas mode ran as hidden and never fetched routes or flight
+        plans for what it showed. (Weather is gated on the rotation alone: the
+        ticker has no weather view.)
+        """
+        seen = max(getattr(self, '_last_displayed_time', 0.0),
+                   getattr(self, '_vegas_seen_at', 0.0))
+        return (now - seen) < getattr(self, '_display_idle_threshold', 30.0)
+
+    def _mark_vegas_seen(self) -> None:
+        """The ticker asked for this plugin's content: it is on screen (_is_visible).
+
+        Coming back from hidden, FR24 enrichment is due at the next update(),
+        as display() makes it for the rotation, rather than a full refresh
+        interval later.
+        """
+        now = time.time()
+        if getattr(self, 'fr24_enrichment', False) and not self._is_visible(now):
+            self.last_fr24_enrichment = 0.0
+        self._vegas_seen_at = now
+
     # No get_update_interval() hook, deliberately. The manifest's 5s is already
     # the fastest the core will call update() (it clamps any plugin-requested
     # interval to 5s or more), so a hook could only slow the cycle -- and each
@@ -2771,7 +2933,7 @@ class FlightTrackerPlugin(BasePlugin):
     def update(self) -> None:
         """Update aircraft data from the configured data source."""
         current_time = time.time()
-        is_visible = (current_time - self._last_displayed_time) < self._display_idle_threshold
+        is_visible = self._is_visible(current_time)
 
         # Expire a timed-out live lock here too, mirroring _evaluate_proximity()'s
         # release. The render path normally advances the state machine, but if the
@@ -2857,7 +3019,8 @@ class FlightTrackerPlugin(BasePlugin):
             elif not is_visible:
                 self.pending_fr24_details.clear()
         finally:
-            # On a cycle without a fetch too: can_extrapolate lapses with time.
+            # On a cycle without a fetch too; it stores nothing unless the
+            # drawing changed (an aircraft aging out is held: see held_from).
             self._publish_map_snapshot_safely()
 
         # Background service for FlightAware flight plan data (SkyAware mode, no FR24 enrichment) — only when on screen
@@ -2878,8 +3041,10 @@ class FlightTrackerPlugin(BasePlugin):
         # Airport weather (METAR/TAF/PIREP/SIGMET): serviced incrementally — at most
         # one HTTP request per cycle (see _service_metar) — and only while on screen,
         # so a slow or failing weather request can never stall the aircraft loop for
-        # more than a single request.
-        if self.metar_enabled and self.metar_airports and is_visible:
+        # more than a single request. On screen in the rotation, that is: the
+        # weather pages are display()'s alone, the Vegas ticker has no view of them.
+        if (self.metar_enabled and self.metar_airports
+                and (current_time - self._last_displayed_time) < self._display_idle_threshold):
             self._service_metar(current_time)
 
         # The render path never waits on the network for a tile; anything it
@@ -3103,6 +3268,7 @@ class FlightTrackerPlugin(BasePlugin):
         Stats mode returns one image per stat card.
         Flight tracking returns one card per tracked flight.
         """
+        self._mark_vegas_seen()  # on screen, for update(); see _is_visible
         try:
             mode = self._resolve_vegas_mode()
 
@@ -3179,6 +3345,69 @@ class FlightTrackerPlugin(BasePlugin):
 
         except Exception as e:
             self.logger.warning(f"[Flight Tracker] get_vegas_content() failed: {e}")
+            return None
+
+    def get_vegas_elements(self) -> Optional[list]:
+        """The map as one live Vegas element whose aircraft glide between polls.
+
+        Only with map_glide on, on a core with live elements (3.8.0), and when
+        the ticker would show the map; otherwise None, and the ticker uses
+        get_vegas_content() as before. The core calls this under the plugin
+        lock after every update(), told its render width. The map is drawn
+        through the normal path at the current time, remembering the
+        background it used for redraw_vegas_element(), which runs without the
+        lock and so must not touch the tile cache. Its width is the render
+        width, never the data's: the ticker refuses a redraw of another width.
+        """
+        self._mark_vegas_seen()  # on screen, for update(); see _is_visible
+        if VegasElement is None or not getattr(self, 'map_glide', False):
+            return None
+        try:
+            if self._resolve_vegas_mode() != 'map':
+                return None
+            snap = self._current_map_snapshot()
+            image = self._render_map_image(at=time.monotonic(), keep_background=True)
+            return [VegasElement(key=_VEGAS_KEY_MAP, image=image,
+                                 version=(snap.seq, image.width, image.height),
+                                 refresh_hz=float(self.map_glide_hz))]
+        except Exception as e:  # pylint: disable=broad-except
+            self.logger.warning("[Flight Tracker] get_vegas_elements() failed: %s", e)
+            return None
+
+    def redraw_vegas_element(self, key: str, width: int, height: int,
+                             at: float) -> Optional[Image.Image]:
+        """The gliding map at ``at`` (time.monotonic()), exactly width x height.
+
+        Called by the ticker a few times a second WITHOUT the plugin lock, so
+        update() may be running meanwhile. It reads two attributes, each
+        replaced in a single store: the published MapSnapshot (never
+        aircraft_data, which update() edits in place) and the background the
+        last locked render used (never the tile cache or the network). With
+        no background remembered at this size, or one drawn for another view,
+        it returns None -- nothing to redraw this tick -- until the next
+        locked render. Never raises.
+        """
+        try:
+            if key != _VEGAS_KEY_MAP:
+                return None
+            remembered = getattr(self, '_glide_bg', None)
+            snap = getattr(self, '_map_snapshot', None)
+            if remembered is None or snap is None:
+                return None
+            if (remembered.width, remembered.height) != (width, height):
+                return None
+            if self._map_view(snap) != self._map_view(remembered.snap):
+                return None
+            img = self._map_layer(snap, width, height, remembered.image)
+            self._draw_heads(img, snap, at=at)
+            return img
+        except Exception as e:  # pylint: disable=broad-except
+            # Up to a few times a second: say so once, then quietly.
+            if not getattr(self, '_glide_redraw_warned', False):
+                self._glide_redraw_warned = True
+                self.logger.warning("[Flight Tracker] Vegas map redraw failed: %s", e, exc_info=True)
+            else:
+                self.logger.debug("[Flight Tracker] Vegas map redraw failed: %s", e)
             return None
 
     def display(self, force_clear: bool = False, *, display_mode: Optional[str] = None) -> bool:
@@ -3476,15 +3705,25 @@ class FlightTrackerPlugin(BasePlugin):
         with lock:
             prev = getattr(self, '_map_snapshot', None)
             seq = (prev.seq if prev is not None else 0) + 1
+            now_mono = time.monotonic()
             if geometry_only:
                 if prev is None:
                     return  # nothing published yet; the next update() will
+                # The aircraft, and their corrections, stay as they were.
                 snap = dataclasses.replace(prev, seq=seq, **self._map_geometry())
             else:
+                # A report that aged out while unchanged keeps the motion it was
+                # drawn with, so its dot holds instead of jumping back -- and,
+                # being the same drawing, publishes nothing.
                 snap = MapSnapshot.build(seq, self.aircraft_data, self.aircraft_trails,
-                                         **self._map_geometry())
+                                         now_mono=now_mono,
+                                         **self._map_geometry()).held_from(prev)
             if prev is not None and snap.draw_key() == prev.draw_key():
                 return
+            if not geometry_only:
+                # Where the last snapshot was gliding each aircraft, so the
+                # gliding map eases to the new report rather than jumping.
+                snap = snap.with_corrections(prev, now_mono)
             self._map_snapshot = snap
 
     def _publish_map_snapshot_safely(self) -> None:
@@ -3531,25 +3770,49 @@ class FlightTrackerPlugin(BasePlugin):
             return self._project_to_pixel(lat, lon, snap.center_lat, snap.center_lon,
                                           effective_radius, width, height)
 
+        exact = tuple(
+            self._project_exact(ac.lat, ac.lon, snap.center_lat, snap.center_lon,
+                                effective_radius, width, height)[:2]
+            for ac in snap.aircraft)
+        # Trails are only drawn with show_trails on; don't project them otherwise.
+        trails = tuple(
+            tuple(pixel for pixel in (project(lat, lon) for lat, lon in ac.trail) if pixel)
+            if snap.show_trails else ()
+            for ac in snap.aircraft)
+
+        def fade(base_color, count):
+            # Dim to bright towards the head: segment i of a trail of count points.
+            colors = []
+            for i in range(count - 1):
+                alpha = int(255 * (i + 1) / count)
+                colors.append(tuple(int(c * alpha / 255) for c in base_color))
+            return tuple(colors)
+
         projection = _MapProjection(
             centre=project(snap.center_lat, snap.center_lon),
             heads=tuple(project(ac.lat, ac.lon) for ac in snap.aircraft),
-            # Trails are only drawn with show_trails on; don't project them otherwise.
-            trails=tuple(
-                tuple(pixel for pixel in (project(lat, lon) for lat, lon in ac.trail) if pixel)
-                if snap.show_trails else ()
-                for ac in snap.aircraft),
+            trails=trails,
+            exact=exact,
+            pixels_per_mile=width / (effective_radius * 2),
+            trail_colors=tuple(fade(ac.color, len(pixels))
+                               for ac, pixels in zip(snap.aircraft, trails)),
         )
         if len(cache) >= _MAX_MAP_PROJECTIONS:
             cache.clear()
         cache[key] = (snap, projection)
         return projection
 
+    @staticmethod
+    def _map_view(snap: MapSnapshot) -> tuple:
+        """What a snapshot's tile background depends on: where, and how far out."""
+        return (snap.center_lat, snap.center_lon, snap.map_radius_miles, snap.zoom_factor)
+
     # -------------------------------------------------------------------------
     # Original display modes (kept in manager.py for backward compatibility)
     # -------------------------------------------------------------------------
 
-    def _render_map_image(self, at: Optional[float] = None) -> Image.Image:
+    def _render_map_image(self, at: Optional[float] = None, *,
+                          keep_background: bool = False) -> Image.Image:
         """Render the flight map: background, centre marker, trails, aircraft, count.
 
         The single source of truth for the map view, shared by ``_display_map``
@@ -3566,8 +3829,12 @@ class FlightTrackerPlugin(BasePlugin):
         Everything drawn comes from the published MapSnapshot -- never from
         aircraft_data or aircraft_trails, which update() edits in place --
         as ``_map_layer`` (what stays put) under ``_draw_heads`` (the
-        aircraft). ``at`` goes to ``_draw_heads``; None draws the last
-        reported positions.
+        aircraft and their trails). ``at`` goes to ``_draw_heads``; None
+        draws the last reported positions.
+
+        ``keep_background`` (the locked Vegas render) remembers the
+        background and snapshot used, for the lock-free redraw
+        (redraw_vegas_element), which may not read the tile cache itself.
 
         Returns:
             The composed map as a new RGB image at the current display size
@@ -3579,16 +3846,22 @@ class FlightTrackerPlugin(BasePlugin):
                                           allow_network=False)
         img = self._map_layer(snap, width, height, map_bg)
         self._draw_heads(img, snap, at=at)
+        if keep_background:
+            # One store: the redraw reads it without the lock.
+            self._glide_bg = _GlideBackground(width, height, snap, map_bg)
         return img
 
     def _map_layer(self, snap: MapSnapshot, width: int, height: int,
                    background: Optional[Image.Image] = None) -> Image.Image:
-        """The map under the aircraft: background, centre marker and trails.
+        """The map under the aircraft: background and centre marker.
 
         It depends on the snapshot and the size only, never on the time.
         ``background`` is the tile composite at this size, or None for solid
         black; it is handed in rather than fetched here so the render path's
         one tile lookup stays in _render_map_image, where it is cache-only.
+        It is copied, never drawn on: the lock-free Vegas redraw reuses it.
+        The trails are _draw_heads', since on the gliding map they end
+        where each aircraft is drawn.
         """
         if background is not None and background.size == (width, height):
             img = background.copy()
@@ -3607,37 +3880,33 @@ class FlightTrackerPlugin(BasePlugin):
         if projection.centre:
             draw.point(projection.centre, fill=(255, 255, 255))
 
-        # Draw aircraft trails if enabled, in aircraft_trails order as before
-        if snap.show_trails:
-            for index in snap.trail_order:
-                trail_pixels = projection.trails[index]
-                base_color = snap.aircraft[index].color
-
-                # Draw trail with fading effect
-                if len(trail_pixels) >= 2:
-                    for i in range(len(trail_pixels) - 1):
-                        # Fade from dim to bright
-                        alpha = int(255 * (i + 1) / len(trail_pixels))
-                        color = tuple(int(c * alpha / 255) for c in base_color)
-                        draw.line([trail_pixels[i], trail_pixels[i + 1]], fill=color, width=1)
-
         return img
 
     def _draw_heads(self, img: Image.Image, snap: MapSnapshot,
-                    at: Optional[float] = None) -> None:  # pylint: disable=unused-argument
-        """Draw the aircraft dots and the count/icon onto ``img``, in place.
+                    at: Optional[float] = None) -> None:
+        """Draw the trails, the aircraft dots and the count/icon onto ``img``, in place.
 
         ``at`` is the time.monotonic() the pixels are for. None draws every
-        aircraft where its last report put it, and for now so does any other
-        value: carrying an aircraft on between reports (from pos_mono,
-        speed_kt and track_deg) is still to come.
+        aircraft where its last report put it (the rotation, and Vegas without
+        live elements). A time glides each aircraft there: see _glide_heads.
         """
         projection = self._map_projection(snap, img.size[0], img.size[1])
         draw = ImageDraw.Draw(img)
         draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
 
+        heads = projection.heads
+        if at is not None:
+            heads = self._glide_heads(snap, projection, img.size[0], img.size[1], at)
+
+        # Draw aircraft trails if enabled, in aircraft_trails order as before,
+        # and all before any head so the heads win.
+        if snap.show_trails:
+            for index in snap.trail_order:
+                self._draw_trail(draw, projection, index, heads[index],
+                                 snap.aircraft[index].color)
+
         # Draw aircraft
-        for aircraft, pixel in zip(snap.aircraft, projection.heads):
+        for aircraft, pixel in zip(snap.aircraft, heads):
             if not pixel:
                 continue
 
@@ -3648,19 +3917,106 @@ class FlightTrackerPlugin(BasePlugin):
             # Draw single pixel for each aircraft
             draw.point(pixel, fill=color)
 
-        # Draw info text with pixel-perfect rendering for better readability
+        # The aircraft count and icon, drawn once per count and size and pasted:
+        # outlined text is most of a redraw's cost (~4.5 ms of ~8 on a Pi 4),
+        # and the gliding map redraws several times a second.
         if len(snap.aircraft) > 0:
-            # Draw aircraft count
-            info_text = f"{len(snap.aircraft)}"
-            self._draw_text_smart(draw, info_text, (2, 2), self.fonts['small'],
-                                fill=(200, 200, 200), use_outline=False)
+            offset, patch = self._count_overlay(len(snap.aircraft), img.size)
+            img.paste(patch, offset, patch)
 
-            # Get text width to position the airplane icon
-            bbox = draw.textbbox((0, 0), info_text, font=self.fonts['small'])
-            text_width = bbox[2] - bbox[0]
+    def _count_overlay(self, count: int, size: Tuple[int, int]) -> Tuple[Tuple[int, int], Image.Image]:
+        """(offset, RGBA patch) of the count and airplane icon, as _draw_heads draws them.
 
-            # Draw airplane icon after the count (with 2px spacing)
-            self._draw_airplane_icon(draw, 2 + text_width + 2, 2, color=(200, 200, 200))
+        Drawn on a transparent canvas with the same 1-bit, fully opaque calls
+        the map used to make directly, so pasting it through its own alpha
+        gives the same pixels. Memoised per count and size; the redraw thread
+        may read it without the plugin's lock, so entries are only added
+        (dict stores are atomic) and the memo is replaced, never cleared.
+        """
+        memo = getattr(self, '_count_overlays', None)
+        if memo is None or len(memo) > 64:
+            memo = self._count_overlays = {}
+        key = (count, size, id(self.fonts['small']))
+        cached = memo.get(key)
+        if cached is not None:
+            return cached
+        canvas = Image.new('RGBA', size, (0, 0, 0, 0))
+        draw = ImageDraw.Draw(canvas)
+        draw.fontmode = "1"
+        info_text = f"{count}"
+        self._draw_text_smart(draw, info_text, (2, 2), self.fonts['small'],
+                              fill=(200, 200, 200), use_outline=False)
+        # Get text width to position the airplane icon
+        bbox = draw.textbbox((0, 0), info_text, font=self.fonts['small'])
+        text_width = bbox[2] - bbox[0]
+        # Draw airplane icon after the count (with 2px spacing)
+        self._draw_airplane_icon(draw, 2 + text_width + 2, 2, color=(200, 200, 200))
+        box = canvas.getbbox() or (0, 0, 1, 1)
+        cached = ((box[0], box[1]), canvas.crop(box))
+        memo[key] = cached
+        return cached
+
+    @staticmethod
+    def _draw_trail(draw: ImageDraw.ImageDraw, projection: _MapProjection, index: int,
+                    head: Optional[Tuple[int, int]], base_color: Tuple[int, ...]) -> None:
+        """Aircraft ``index``'s trail, fading from dim to bright towards its head.
+
+        A trail ends on the report, so when the gliding map draws the dot
+        somewhere else that end moves to the dot, and the trail runs up to it
+        and stops there. A poll can ease a dot in from behind its report, so
+        trail points it has not reached yet (ahead of it along the trail's
+        last direction) are left out rather than drawn in front of it. Where
+        the dot is on its report this is exactly the ordinary trail. One that
+        does not end on the report (off screen, or a trail that missed it) is
+        joined to a moved dot instead, at full brightness.
+        """
+        pixels = projection.trails[index]
+        colors = projection.trail_colors[index]
+        report = projection.heads[index]
+        moved = head is not None and head != report
+        ends_on_report = bool(pixels) and pixels[-1] == report
+        if moved and ends_on_report:
+            kept = list(pixels[:-1])
+            # The way the trail was going into the report (repeats skipped:
+            # a report that stopped moving is appended again every poll).
+            before = next((p for p in reversed(kept) if p != report), None)
+            if before is not None:
+                dx, dy = report[0] - before[0], report[1] - before[1]
+                while kept and (kept[-1][0] - head[0]) * dx + (kept[-1][1] - head[1]) * dy > 0:
+                    kept.pop()
+            pixels = tuple(kept) + (head,)
+        for i in range(len(pixels) - 1):
+            draw.line([pixels[i], pixels[i + 1]], fill=colors[i], width=1)
+        if moved and pixels and not ends_on_report:
+            draw.line([pixels[-1], head], fill=tuple(int(c) for c in base_color), width=1)
+
+    def _glide_heads(self, snap: MapSnapshot, projection: _MapProjection, width: int,
+                     height: int, at: float) -> Tuple[Optional[Tuple[int, int]], ...]:
+        """Each aircraft's pixel at ``at``, indexed like snap.aircraft; None off-screen.
+
+        The unrounded projection of the report, plus dead reckoning
+        (MapAircraft.glide_miles) and what is left of the snapshot's
+        correction, in miles scaled by the projection's pixels per mile (the
+        map has one scale on both axes). A correction wider than
+        _GLIDE_SNAP_PX at this size is a real change of position, not jitter,
+        and is not eased: the dot goes there at once. Truncated to whole
+        pixels as the projection is, so an aircraft carried on by nothing is
+        drawn exactly where it always was.
+        """
+        ppm = projection.pixels_per_mile
+        heads = []
+        for index, aircraft in enumerate(snap.aircraft):
+            east, north = aircraft.glide_miles(at)
+            if index < len(snap.corrections) and \
+                    math.hypot(*snap.corrections[index]) * ppm <= _GLIDE_SNAP_PX:
+                corr_east, corr_north = snap.eased_correction(index, at)
+                east, north = east + corr_east, north + corr_north
+            x, y = projection.exact[index]
+            x_pixel = int(x + east * ppm)
+            y_pixel = int(y - north * ppm)      # screen y grows southwards
+            heads.append((x_pixel, y_pixel)
+                         if 0 <= x_pixel < width and 0 <= y_pixel < height else None)
+        return tuple(heads)
 
     def _display_map(self, force_clear: bool = False) -> None:
         """Display the flight map with aircraft and geographical background."""
