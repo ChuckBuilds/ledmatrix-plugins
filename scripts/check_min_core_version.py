@@ -167,6 +167,7 @@ MODULE_FIRST_VERSION = {
     # on core main, in no tagged release yet: add as None. When the next
     # release is tagged, set each None entry here to that tag -- the test's
     # tag-verification section insists on it once the tag is in its list.
+    "src.common.fetch_service": None,  # core #702 (shared fetch service)
 }
 
 #: Releases whose ``src/__init__.py`` ``__version__`` lags their tag. The
