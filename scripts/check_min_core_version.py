@@ -162,6 +162,10 @@ MODULE_FIRST_VERSION = {
     "src.common.sports_live_scroll": None,  # core #705
     "src.common.sports_plugin_host": None,  # core #705
     "src.plugin_system.field_model": None,  # core #703
+    "src.ipc": None,  # core #706 (display control socket)
+    "src.ipc.client": None,  # core #706
+    "src.ipc.contract": None,  # core #706
+    "src.ipc.server": None,  # core #706
 }
 
 #: Releases whose ``src/__init__.py`` ``__version__`` lags their tag. The
