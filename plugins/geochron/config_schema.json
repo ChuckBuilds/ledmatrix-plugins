@@ -122,10 +122,9 @@
             "maxLength": 20
           },
           "label": {
-            "type": "string",
+            "type": ["string", "null"],
             "title": "Short Label",
-            "maxLength": 4,
-            "description": "Up to 4 characters for the timezone list (e.g. NYC). Blank uses initials for multi-word names (New York -> NY) or the first three letters (Tokyo -> TOK)."
+            "description": "Optional. Shown in the timezone list, cut to 4 characters (e.g. NYC). Blank uses initials for multi-word names (New York -> NY) or the first three letters (Tokyo -> TOK)."
           },
           "lat": {
             "type": "number",

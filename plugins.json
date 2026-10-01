@@ -308,13 +308,12 @@
       "plugin_path": "plugins/geochron",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-28",
+      "last_updated": "2026-10-01",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.2",
+      "latest_version": "1.2.3",
       "icon": "fa-globe",
-      "ledmatrix_min_version": "3.4.0",
-      "commit": "486ab56fc75fbf7c2d3047b5734f52b102acf1bb"
+      "ledmatrix_min_version": "3.4.0"
     },
     {
       "id": "gif-player",
