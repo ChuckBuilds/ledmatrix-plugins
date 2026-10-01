@@ -1211,6 +1211,17 @@ class BaseballLive(Baseball, SportsLive):
             return True
         return super()._is_game_really_over(game)
 
+    def _keep_final_for_vegas(self, details: Dict) -> None:
+        """Not for a suspended/postponed game: it is not over, only paused.
+
+        Such a game leaves the live list through _is_game_really_over above.
+        Held, it would stay on the Vegas ticker as a finished game for the
+        core's FINISHED_GAME_TTL, and would read FINAL if its details said so.
+        """
+        if str(details.get("status") or "").lower() in self._NOT_PLAYED_STATUSES:
+            return
+        super()._keep_final_for_vegas(details)
+
     def _count_bdf_font(self):
         """A private 7px 5x7 BDF face for the balls-strikes count.
 

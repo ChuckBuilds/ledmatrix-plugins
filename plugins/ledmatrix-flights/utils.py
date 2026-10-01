@@ -32,6 +32,24 @@ def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     return haversine_miles(lat1, lon1, lat2, lon2) * 1.60934
 
 
+def plane_offset_miles(center_lat: float, center_lon: float,
+                       lat: float, lon: float) -> Tuple[float, float]:
+    """(east, north) statute miles from the centre to lat/lon, as the map places it.
+
+    The map projection's own math (distance along the initial bearing), before
+    it is scaled to pixels, so a difference of two of these is a displacement
+    on the map at any panel size.
+    """
+    distance = haversine_miles(center_lat, center_lon, lat, lon)
+    lat1 = math.radians(center_lat)
+    lat2 = math.radians(lat)
+    delta_lon = math.radians(lon - center_lon)
+    x = math.sin(delta_lon) * math.cos(lat2)
+    y = math.cos(lat1) * math.sin(lat2) - math.sin(lat1) * math.cos(lat2) * math.cos(delta_lon)
+    bearing = math.atan2(x, y)
+    return distance * math.sin(bearing), distance * math.cos(bearing)
+
+
 # ---------------------------------------------------------------------------
 # Position time
 #

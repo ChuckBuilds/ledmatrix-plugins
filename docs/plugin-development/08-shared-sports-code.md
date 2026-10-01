@@ -284,6 +284,74 @@ Two things to watch when you do this:
   guards inherited from the old copy are dead. Harmless, but delete them rather
   than leaving a check that can never fire.
 
+### Live Vegas cards (core 3.8.0)
+
+Core 3.8.0 lets the Vegas ticker swap a card in place while it scrolls: a
+plugin returns one keyed element per game from `get_vegas_elements()`, and
+after every `update()` the ticker asks again and patches in the cards whose
+pixels changed (see "Live Vegas elements" in the core's
+`docs/PLUGIN_API_REFERENCE.md`). The shared part lives in core:
+`SportsScrollDisplay.build_vegas_elements()` and
+`SportsScrollDisplayManager.get_vegas_elements_for()` in `sports_scroll`, and
+`src/common/sports_vegas.py` (`game_key`, `game_fingerprint`, `dedupe_games`,
+`VegasCardCache`, `StickyOdds`, `finished_games`, `with_finished_games`).
+A scoreboard adopts it in three places:
+
+```python
+# scroll_display.py -- the renderer prepare_scroll_content builds, minus the
+# per-card padding (the ticker pads live cards itself)
+class ScrollDisplay(SportsScrollDisplay):
+    def make_vegas_renderer(self, card_width, rankings_cache=None):
+        renderer = GameRenderer(card_width, self.display_height, self.config,
+                                logo_cache=self._logo_cache, custom_logger=self.logger)
+        if rankings_cache:
+            renderer.set_rankings_cache(rankings_cache)
+        return renderer
+
+# manager.py -- the same slate get_vegas_content() shows, plus games that just
+# went final (guarded import: a core without sports_vegas keeps the old path)
+def get_vegas_elements(self):
+    build = getattr(self._scroll_manager, 'get_vegas_elements_for', None)
+    if build is None or sports_vegas is None:
+        return None
+    games, leagues = self.vegas_slate()
+    return build('mixed', games, leagues, self._get_rankings_cache()) if games else None
+
+def vegas_slate(self):
+    games, leagues = self._collect_games_for_scroll(live_priority_active=False)
+    live = [(league, self._get_manager_for_league_mode(league, 'live')) for league in LEAGUES]
+    return sports_vegas.with_finished_games(games, leagues, sports_vegas.finished_games(live))
+
+# sports.py -- at EVERY branch of SportsLive.update that drops a game as final
+# or over, so its card turns to FINAL instead of freezing on its last score
+self._keep_final_for_vegas(details)   # getattr-guarded _record_finished_game
+```
+
+What core takes care of, so a plugin does not:
+
+- **A card is drawn only when its game changed.** The version is the whole
+  game dict (`game_fingerprint`) plus the teams' ranks, so no drawn field can
+  be missed; the live clock is in the dict, so a live card redraws each poll
+  and nothing else does.
+- **Width never changes.** Every card is exactly `game_card_width` wide; a
+  redraw of another width would be refused by the ticker, which is why the
+  renderer must not size anything from the data.
+- **Odds that a live poll left out stay drawn** for up to ten minutes
+  (`StickyOdds`): live odds are fetched only near the rotation front, so they
+  come and go between polls.
+- **A game that just went final keeps its card**, after the league's live
+  games, until the recent list (refreshed about hourly) takes it over. A game
+  a heuristic only *judged* over keeps its live state, so a tied end of
+  regulation never shows FINAL early.
+
+`get_vegas_content()` stays exactly as it was: it is what an older core, the
+ticker's first strip and multi-display sync use. Test the adoption with a
+`test_vegas_elements.py` like football-scoreboard's (one card per game keyed
+by id, a clock tick redraws one card, widths constant, FINAL in place, core's
+`check_vegas_elements` contract) and `scripts/check_plugin.py` in the core,
+whose "vegas elements" row runs the same contract checks. UFC, whose scroll
+display is its own, uses `sports_vegas` directly.
+
 ## Rules for future changes
 
 - **Fix all lineage members in one PR.** Grep every copy of the file you're

@@ -167,3 +167,13 @@ def test_vegas_entries_match_the_panel_height():
         entry = render.vegas_entry(ctx(), JSN, height)
         assert entry.height == height and entry.width > 40
         assert render.vegas_title(height).height == height
+
+
+def test_vegas_entry_is_the_full_card_not_a_chip():
+    entry = render.vegas_entry(ctx(), JSN, 32)
+    assert entry.width > 90
+    top_bar = entry.getpixel((entry.width // 2, 0))
+    assert top_bar != (0, 0, 0)          # the tier-colour frame
+    assert entry.getpixel((10, 20)) != (0, 0, 0)   # the picture box
+    assert render.vegas_entry(ctx(), JSN, 64).size == (entry.width * 2, 64)
+    assert render.vegas_entry(ctx(), JSN, 128).size == (entry.width * 4, 128)

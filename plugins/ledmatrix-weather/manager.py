@@ -24,6 +24,14 @@ from pathlib import Path
 
 from src.plugin_system.base_plugin import BasePlugin
 
+# Live Vegas elements (LEDMatrix 3.8.0): the radar animates in the ticker.
+# Guarded: the manifest floor is advisory, and without it the ticker simply
+# shows get_vegas_content(), which has no radar.
+try:
+    from src.plugin_system.vegas_elements import VegasElement
+except ImportError:
+    VegasElement = None
+
 
 def _resolve_font_path(path: str) -> str:
     """Resolve a bundled font path without depending on the process cwd.
@@ -158,7 +166,12 @@ class WeatherPlugin(BasePlugin):
         self.show_daily = config.get('show_daily_forecast', True)
         self.show_almanac = config.get('show_almanac', True)
         self.show_radar = config.get('show_radar', True)
+        self.radar_in_vegas = config.get('radar_in_vegas', True)
         self.show_alerts = config.get('show_alerts', True)
+        # The radar loop the Vegas ticker plays back (weather_radar.RadarLoop),
+        # replaced in one store; the panel size the radar is fetched for.
+        self._vegas_radar_loop = None
+        self._radar_panel_size = None
 
         # Enhanced current conditions toggles
         self.show_feels_like = config.get('show_feels_like', True)
@@ -454,6 +467,7 @@ class WeatherPlugin(BasePlugin):
         self.show_daily = new_config.get('show_daily_forecast', self.show_daily)
         self.show_almanac = new_config.get('show_almanac', self.show_almanac)
         self.show_radar = new_config.get('show_radar', self.show_radar)
+        self.radar_in_vegas = new_config.get('radar_in_vegas', self.radar_in_vegas)
         self.show_alerts = new_config.get('show_alerts', self.show_alerts)
         self.show_feels_like = new_config.get('show_feels_like', self.show_feels_like)
         self.show_dew_point = new_config.get('show_dew_point', self.show_dew_point)
@@ -620,6 +634,7 @@ class WeatherPlugin(BasePlugin):
             if hasattr(self, '_radar_fetcher') and self._radar_fetcher.needs_refresh(self.radar_update_interval):
                 width = self.display_manager.matrix.width
                 height = self.display_manager.matrix.height
+                self._radar_panel_size = (width, height)
                 self._radar_fetcher.refresh_data(width, height)
         except Exception:
             self.logger.exception("Error refreshing radar data")
@@ -2245,6 +2260,56 @@ class WeatherPlugin(BasePlugin):
             return images
 
         return None
+
+    def get_vegas_elements(self):
+        """The Vegas ticker's weather: the usual cards, then the radar, animated.
+
+        LEDMatrix 3.8.0 live elements. The cards are get_vegas_content()'s,
+        placed as plain content. The radar is one live element that the ticker
+        redraws while it scrolls (redraw_vegas_element), playing the same loop
+        as the full-screen radar. None -- radar off, not in the ticker, no
+        frames yet, or an older core -- and the ticker uses get_vegas_content().
+        """
+        if VegasElement is None or not (self.show_radar and self.radar_in_vegas):
+            return None
+        loop = self._current_radar_loop()
+        if loop is None:
+            return None
+        elements = [VegasElement(key=f"card:{index}", image=image, live=False)
+                    for index, image in enumerate(self.get_vegas_content() or [])]
+        elements.append(VegasElement(
+            key="radar", image=loop.frame_at(time.monotonic()), version=loop.key,
+            refresh_hz=1.0 / loop.frame_seconds))
+        return elements
+
+    def redraw_vegas_element(self, key, width, height, at):
+        """The radar frame showing at ``at``: a lookup in the published loop.
+
+        Called by the ticker without the plugin's lock, a few times a second,
+        so it reads only the loop get_vegas_elements() published in one store
+        and draws nothing. None for anything else, or a size it has no loop
+        for (the ticker then keeps what it shows).
+        """
+        loop = self._vegas_radar_loop
+        if key != "radar" or loop is None or loop.size != (width, height):
+            return None
+        return loop.frame_at(at)
+
+    def _current_radar_loop(self):
+        """The radar loop for the ticker, composed again only when its frames change."""
+        fetcher = getattr(self, '_radar_fetcher', None)
+        if fetcher is None or self._radar_panel_size is None:
+            return None
+        key = fetcher.loop_key()
+        loop = self._vegas_radar_loop
+        if key is None:
+            return None
+        if loop is None or loop.key != key:
+            loop = fetcher.compose_loop()
+            if loop is None:
+                return None
+            self._vegas_radar_loop = loop
+        return loop
 
     def get_info(self) -> Dict[str, Any]:
         """Return plugin info for web UI."""

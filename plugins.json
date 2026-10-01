@@ -80,8 +80,8 @@
       "last_updated": "2026-10-01",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.53.2",
-      "ledmatrix_min_version": "3.7.0"
+      "latest_version": "1.54.1",
+      "ledmatrix_min_version": "3.8.0"
     },
     {
       "id": "basketball-scoreboard",
@@ -103,12 +103,12 @@
       "plugin_path": "plugins/basketball-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-29",
+      "last_updated": "2026-09-30",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.40.1",
-      "ledmatrix_min_version": "3.7.0",
-      "commit": "843588025a81197056f8d96779ccb2be19337ab8"
+      "latest_version": "1.41.0",
+      "ledmatrix_min_version": "3.8.0",
+      "commit": "b9a9834ec4ce69f6a8bf07d95a2ddd646d641d29"
     },
     {
       "id": "calendar",
@@ -279,12 +279,12 @@
       "plugin_path": "plugins/football-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-29",
+      "last_updated": "2026-09-30",
       "verified": true,
       "screenshot": "",
-      "latest_version": "3.17.1",
-      "ledmatrix_min_version": "3.7.0",
-      "commit": "843588025a81197056f8d96779ccb2be19337ab8"
+      "latest_version": "3.18.0",
+      "ledmatrix_min_version": "3.8.0",
+      "commit": "b9a9834ec4ce69f6a8bf07d95a2ddd646d641d29"
     },
     {
       "id": "geochron",
@@ -381,13 +381,13 @@
       "plugin_path": "plugins/hockey-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-29",
+      "last_updated": "2026-09-30",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.39.0",
+      "latest_version": "1.40.0",
       "icon": "fas fa-hockey-puck",
-      "ledmatrix_min_version": "3.7.0",
-      "commit": "858ad75273a7016e9ea8b7c4194eb79380de4fd8"
+      "ledmatrix_min_version": "3.8.0",
+      "commit": "b9a9834ec4ce69f6a8bf07d95a2ddd646d641d29"
     },
     {
       "id": "lacrosse-scoreboard",
@@ -407,13 +407,13 @@
       "plugin_path": "plugins/lacrosse-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-29",
+      "last_updated": "2026-09-30",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.35.1",
+      "latest_version": "1.36.0",
       "icon": "fas fa-baseball-ball",
-      "ledmatrix_min_version": "3.7.0",
-      "commit": "843588025a81197056f8d96779ccb2be19337ab8"
+      "ledmatrix_min_version": "3.8.0",
+      "commit": "b9a9834ec4ce69f6a8bf07d95a2ddd646d641d29"
     },
     {
       "id": "birdnet-go",
@@ -499,9 +499,9 @@
       "last_updated": "2026-09-30",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.15.0",
-      "ledmatrix_min_version": "2.0.0",
-      "commit": "bb1db84e92022b4fe57f3d6c7a57e94844dd8b5a"
+      "latest_version": "1.16.0",
+      "ledmatrix_min_version": "3.8.0",
+      "commit": "90423a2e81d3c64aa99434ebf1e77341fb8e4880"
     },
     {
       "id": "march-madness",
@@ -843,12 +843,12 @@
       "plugin_path": "plugins/soccer-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-29",
+      "last_updated": "2026-09-30",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.38.1",
-      "ledmatrix_min_version": "3.7.0",
-      "commit": "843588025a81197056f8d96779ccb2be19337ab8"
+      "latest_version": "2.39.0",
+      "ledmatrix_min_version": "3.8.0",
+      "commit": "b9a9834ec4ce69f6a8bf07d95a2ddd646d641d29"
     },
     {
       "id": "static-image",
@@ -1006,10 +1006,10 @@
       "last_updated": "2026-09-30",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.18.3",
+      "latest_version": "1.19.0",
       "icon": "fas fa-fist-raised",
-      "ledmatrix_min_version": "3.7.0",
-      "commit": "e0a24e75126112e93fa404d3f418209a10ac7208"
+      "ledmatrix_min_version": "3.8.0",
+      "commit": "b9a9834ec4ce69f6a8bf07d95a2ddd646d641d29"
     },
     {
       "id": "weather",
@@ -1031,17 +1031,17 @@
       "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
       "branch": "main",
       "plugin_path": "plugins/ledmatrix-weather",
-      "latest_version": "2.7.9",
+      "latest_version": "2.8.0",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-29",
+      "last_updated": "2026-09-30",
       "verified": true,
       "screenshot": "",
-      "ledmatrix_min_version": "2.0.0",
+      "ledmatrix_min_version": "3.8.0",
       "aliases": [
         "ledmatrix-weather"
       ],
-      "commit": "843588025a81197056f8d96779ccb2be19337ab8"
+      "commit": "555e63f5c79221d206d740bea11698249ce0eb08"
     },
     {
       "id": "web-ui-info",
@@ -1163,10 +1163,10 @@
       "downloads": 0,
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.34.0",
-      "last_updated": "2026-09-29",
-      "ledmatrix_min_version": "3.7.0",
-      "commit": "858ad75273a7016e9ea8b7c4194eb79380de4fd8"
+      "latest_version": "1.35.0",
+      "last_updated": "2026-09-30",
+      "ledmatrix_min_version": "3.8.0",
+      "commit": "b9a9834ec4ce69f6a8bf07d95a2ddd646d641d29"
     },
     {
       "id": "tidbyt-baseball-scoreboard",
@@ -1209,12 +1209,12 @@
       "plugin_path": "plugins/nrl-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-29",
+      "last_updated": "2026-09-30",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.33.0",
-      "ledmatrix_min_version": "3.7.0",
-      "commit": "858ad75273a7016e9ea8b7c4194eb79380de4fd8"
+      "latest_version": "1.34.0",
+      "ledmatrix_min_version": "3.8.0",
+      "commit": "b9a9834ec4ce69f6a8bf07d95a2ddd646d641d29"
     },
     {
       "id": "jellyfin-now-playing",
@@ -1423,12 +1423,12 @@
       "plugin_path": "plugins/fantasy-blitz",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-28",
+      "last_updated": "2026-09-30",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.2",
+      "latest_version": "1.1.0",
       "ledmatrix_min_version": "3.0.0",
-      "commit": "44618443dd6e2ea581377d589864dcc9190d2114"
+      "commit": "90fb3f26f67ccfe17e8c4380480a3c09fd25a7ac"
     }
   ]
 }

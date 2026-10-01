@@ -136,6 +136,23 @@ class ScrollDisplay(_ScrollDisplayBase):
             )
         return self._game_renderer
 
+    def make_vegas_renderer(self, card_width: int,
+                            rankings_cache: Optional[Dict[str, int]] = None) -> GameRenderer:
+        """The renderer live Vegas cards are drawn with (core 3.8.0+).
+
+        prepare_scroll_content's own cached renderer, minus the black padding
+        it bakes around each card: the ticker pads a live card itself. Core
+        asks once per card size and draws each game with render_game_card,
+        only when that game changed (src.common.sports_scroll.build_vegas_elements).
+        """
+        renderer = self._get_game_renderer(card_width)
+        if renderer is None:
+            # Nothing to draw live cards with: the ticker keeps get_vegas_content().
+            raise NotImplementedError("GameRenderer not available")
+        if rankings_cache:
+            renderer.set_rankings_cache(rankings_cache)
+        return renderer
+
     def _load_separator_icon(self, icon_path: str, league_key: str, target_height: int) -> None:
         """
         Load and resize a single league separator icon.
