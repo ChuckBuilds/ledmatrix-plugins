@@ -3249,10 +3249,16 @@ class SportsLive(SportsCelebrationMixin, SportsLiveSharedMixin, SportsCore):
                             # may earn a win celebration on the way out.
                             if details.get("is_final", False):
                                 self._check_for_win(details)
+                                self._keep_final_for_vegas(details)
                                 continue
 
                             if self._is_game_really_over(details):
                                 self._check_for_win(details)
+                                if self._over_is_decided(details):
+                                    # Decided at 0:00: over, though the feed
+                                    # has not said so yet. Held as final, or
+                                    # its card would keep its live look.
+                                    self._keep_final_for_vegas(dict(details, is_final=True))
                                 self.logger.info(
                                     f"Skipping game that appears final: {details.get('away_abbr')}@{details.get('home_abbr')} "
                                     f"(clock={details.get('clock')}, period={details.get('period')}, period_text={details.get('period_text')})"
@@ -3595,6 +3601,33 @@ class SportsLive(SportsCelebrationMixin, SportsLiveSharedMixin, SportsCore):
             away_score=away,
             home_score=home,
         )
+
+    def _keep_final_for_vegas(self, details: Dict) -> None:
+        """Hold a game that just went final, so its live Vegas card shows Final.
+
+        It leaves live_games with this poll and the recent list picks it up
+        only at that list's next refresh; in between, nothing else holds the
+        final score. getattr-guarded: _record_finished_game is core 3.8.0's
+        (SportsLiveSharedMixin), and an older core must stay loadable.
+        """
+        record = getattr(self, "_record_finished_game", None)
+        if record is not None:
+            record(details)
+
+    def _over_is_decided(self, details: Dict) -> bool:
+        """Whether a game _is_game_really_over() dropped has a result to hold.
+
+        That check goes by the clock alone: P3 or later at 0:00. Level at that
+        point, the game is heading to overtime or a shootout and is live again
+        at a later poll; held as final, its Vegas card would read "Final 3-3"
+        through the intermission. A level game is not held: its card keeps
+        its last live picture until the next poll lists the game live again
+        (or final), and an NCAA game that really does end level simply is
+        not held.
+        """
+        away = self._score_to_int(details.get("away_score"))
+        home = self._score_to_int(details.get("home_score"))
+        return away is not None and home is not None and away != home
 
     def _check_for_win(self, game: Dict) -> None:
         """When a game we were tracking live goes final, arm a win celebration

@@ -1,7 +1,7 @@
 {
   "id": "ufc-scoreboard",
   "name": "UFC Scoreboard",
-  "version": "1.18.3",
+  "version": "1.19.0",
   "author": "LegoGuy1000",
   "contributors": [
     {
@@ -32,6 +32,12 @@
   "default_duration": 15,
   "config_schema": "config_schema.json",
   "versions": [
+    {
+      "version": "1.19.0",
+      "released": "2026-09-30",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "Live Vegas cards (requires LEDMatrix core 3.8.0): in the Vegas ticker each fight is its own card, and a card already scrolling across the panel updates in place when its fight changes -- the round, the clock, the result -- instead of showing what it was when it was drawn. Only the card whose fight changed is redrawn. A fight that ends keeps its card, now showing the result, until the recent list picks it up. Nothing changes outside Vegas, and get_vegas_content() is unchanged for older cores and multi-display sync."
+    },
     {
       "version": "1.18.3",
       "released": "2026-09-30",
@@ -367,12 +373,12 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-28",
+  "last_updated": "2026-09-30",
   "stars": 0,
   "downloads": 0,
   "verified": true,
   "screenshot": "",
   "compatible_versions": [
-    ">=3.7.0"
+    ">=3.8.0"
   ]
 }

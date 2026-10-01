@@ -58,6 +58,13 @@ from ncaaw_lacrosse_managers import (
 from lacrosse_timezone import resolve_timezone_name
 from src.common.favorite_team_check import FavoriteTeamCheck
 
+# Live Vegas cards (LEDMatrix 3.8.0). Guarded: the manifest floor is advisory,
+# and without the module the ticker simply keeps using get_vegas_content().
+try:
+    from src.common import sports_vegas
+except ImportError:
+    sports_vegas = None
+
 #: Scroll display the Vegas slate renders into (live + recent + upcoming).
 VEGAS_SCROLL_KEY = 'mixed'
 
@@ -3568,6 +3575,38 @@ class LacrosseScoreboardPlugin(BasePlugin if BasePlugin else object):
             ', '.join(leagues),
         )
         return True
+
+    def get_vegas_elements(self) -> Optional[List[Any]]:
+        """Live Vegas cards: one per game, swapped in place when its game changes.
+
+        The slate get_vegas_content() shows, plus games that have just gone
+        final, so a card on its way across the panel turns to Final instead of
+        keeping its last live score. A card is drawn again only when its
+        game's data changed, the live clock included (core's
+        build_vegas_elements). None -- no live cards in this core, or nothing
+        to show -- and the ticker uses get_vegas_content() instead.
+        """
+        scroll_manager = getattr(self, '_scroll_manager', None)
+        if sports_vegas is None or not hasattr(scroll_manager, 'get_vegas_elements_for'):
+            return None
+        try:
+            games, leagues = self.vegas_slate()
+        except Exception:
+            self.logger.exception("[Lacrosse Vegas] Failed to collect games")
+            return None
+        if not games:
+            return None
+        # No rankings, as get_vegas_content() draws none: a live card must
+        # look like the card it replaces on the strip.
+        return scroll_manager.get_vegas_elements_for(VEGAS_SCROLL_KEY, games, leagues, None)
+
+    def vegas_slate(self) -> Tuple[List[Dict], List[str]]:
+        """The games the live Vegas cards show, and their leagues in order."""
+        games, leagues = self._collect_games_for_scroll()
+        live_managers = [(league, self._get_manager_for_league_mode(league, 'live'))
+                         for league in ('ncaam_lacrosse', 'ncaaw_lacrosse')]
+        return sports_vegas.with_finished_games(
+            games, leagues, sports_vegas.finished_games(live_managers))
 
     def get_vegas_content_type(self) -> str:
         """

@@ -45,6 +45,13 @@ from ncaaw_basketball_managers import (
 from basketball_timezone import resolve_timezone_name
 from src.common.favorite_team_check import FavoriteTeamCheck
 
+# Live Vegas cards (LEDMatrix 3.8.0). Guarded: the manifest floor is advisory,
+# and without the module the ticker simply keeps using get_vegas_content().
+try:
+    from src.common import sports_vegas
+except ImportError:
+    sports_vegas = None
+
 
 #: Scroll display key the combined live/recent/upcoming Vegas slate renders into.
 VEGAS_SCROLL_KEY = 'mixed'
@@ -3971,6 +3978,42 @@ class BasketballScoreboardPlugin(BasePlugin if BasePlugin else object):
             len(games), summary or 'unclassified', ', '.join(leagues)
         )
         return True
+
+    def get_vegas_elements(self) -> Optional[List[Any]]:
+        """Live Vegas cards: one per game, swapped in place when its game changes.
+
+        The slate get_vegas_content() shows, plus games that have just gone
+        final, so a card on its way across the panel turns to FINAL instead of
+        keeping its last live score. A card is drawn again only when its
+        game's data changed, the live clock included (core's
+        build_vegas_elements). None -- no live cards in this core, or nothing
+        to show -- and the ticker uses get_vegas_content() instead.
+        """
+        scroll_manager = getattr(self, '_scroll_manager', None)
+        if sports_vegas is None or not hasattr(scroll_manager, 'get_vegas_elements_for'):
+            return None
+        try:
+            games, leagues = self.vegas_slate()
+        except Exception:
+            self.logger.exception("[Basketball Vegas] Failed to collect games")
+            return None
+        if not games:
+            return None
+        rankings_cache = (
+            self._get_rankings_cache() if hasattr(self, '_get_rankings_cache') else None
+        )
+        return scroll_manager.get_vegas_elements_for(VEGAS_SCROLL_KEY, games, leagues, rankings_cache)
+
+    def vegas_slate(self) -> Tuple[List[Dict], List[str]]:
+        """The games the live Vegas cards show, and their leagues in order."""
+        games, leagues = self._collect_games_for_scroll(mode_type=None)
+        # Enabled leagues only, as the collector reads them: a disabled one
+        # has no managers, and asking for them logs on every call.
+        live_managers = [(league, self._get_manager_for_league_mode(league, 'live'))
+                         for league in ('nba', 'wnba', 'ncaam', 'ncaaw')
+                         if getattr(self, f'{league}_enabled', False)]
+        return sports_vegas.with_finished_games(
+            games, leagues, sports_vegas.finished_games(live_managers))
 
     def get_vegas_content_type(self) -> str:
         """

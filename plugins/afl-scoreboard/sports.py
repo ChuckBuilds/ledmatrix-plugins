@@ -3444,6 +3444,18 @@ class SportsLive(SportsCelebrationMixin, SportsLiveSharedMixin, SportsCore):
             home_score=home,
         )
 
+    def _keep_final_for_vegas(self, details: Dict) -> None:
+        """Hold a game that just went final, so its live Vegas card shows Final.
+
+        It leaves live_games with this poll and the recent list picks it up
+        only at that list's next refresh; in between, nothing else holds the
+        final score. getattr-guarded: _record_finished_game is core 3.8.0's
+        (SportsLiveSharedMixin), and an older core must stay loadable.
+        """
+        record = getattr(self, "_record_finished_game", None)
+        if record is not None:
+            record(details)
+
     def _check_for_win(self, game: Dict) -> None:
         """When a game we were tracking live goes final, arm a win celebration
         if a favorite team won. Only fires once per game."""
@@ -3769,10 +3781,12 @@ class SportsLive(SportsCelebrationMixin, SportsLiveSharedMixin, SportsCore):
                         # celebration before it drops out of the live list.
                         if details.get("is_final", False):
                             self._check_for_win(details)
+                            self._keep_final_for_vegas(details)
                             continue
 
                         if self._is_game_really_over(details):
                             self._check_for_win(details)
+                            self._keep_final_for_vegas(details)
                             self.logger.info(
                                 f"Skipping game that appears final: {details.get('away_abbr')}@{details.get('home_abbr')} "
                                 f"(clock={details.get('clock')}, period={details.get('period')}, period_text={details.get('period_text')})"

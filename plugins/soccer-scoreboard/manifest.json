@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.38.1",
+  "version": "2.39.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -53,6 +53,12 @@
     "soccer_usa.1_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.39.0",
+      "released": "2026-09-30",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "Live Vegas cards (requires LEDMatrix core 3.8.0): in the Vegas ticker each game is its own card, and a card already scrolling across the panel updates in place when its game changes -- the score, the clock, FINAL -- instead of showing what it was when it was drawn. Only the card whose game changed is redrawn. A game that goes final keeps its card, now showing FINAL, until the recent list picks it up. Nothing changes outside Vegas, and get_vegas_content() is unchanged for older cores and multi-display sync."
+    },
     {
       "version": "2.38.1",
       "released": "2026-09-29",
@@ -681,7 +687,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-28",
+  "last_updated": "2026-09-30",
   "stars": 0,
   "downloads": 0,
   "verified": true,
@@ -696,6 +702,6 @@
     }
   ],
   "compatible_versions": [
-    ">=3.7.0"
+    ">=3.8.0"
   ]
 }

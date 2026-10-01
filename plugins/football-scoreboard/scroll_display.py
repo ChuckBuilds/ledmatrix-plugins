@@ -202,6 +202,26 @@ class ScrollDisplay(_ScrollDisplayBase):
             # Default to upcoming if state is unknown
             return 'upcoming'
 
+    def make_vegas_renderer(self, card_width: int,
+                            rankings_cache: Optional[Dict[str, int]] = None) -> GameRenderer:
+        """The renderer live Vegas cards are drawn with (core 3.8.0+).
+
+        prepare_scroll_content's, minus the black padding it bakes around each
+        card: the ticker pads a live card itself. Core builds it once per card
+        size and draws each game with render_game_card, only when that game
+        changed (src.common.sports_scroll.build_vegas_elements).
+        """
+        renderer = GameRenderer(
+            card_width,
+            self.display_height,
+            self.config,
+            logo_cache=self._logo_cache,
+            custom_logger=self.logger
+        )
+        if rankings_cache:
+            renderer.set_rankings_cache(rankings_cache)
+        return renderer
+
     def prepare_scroll_content(
         self,
         games: List[Dict],
