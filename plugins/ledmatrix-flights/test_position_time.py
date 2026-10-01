@@ -332,7 +332,8 @@ def test_payload_lag(stamp, sent, expected):
 # SkyAware: the manager's own path
 # ---------------------------------------------------------------------------
 
-def _skyaware_ingest(monkeypatch, payload=SKYAWARE, date=SKYAWARE_DATE):
+def _skyaware_ingest(monkeypatch, payload=None, date=SKYAWARE_DATE):
+    payload = SKYAWARE if payload is None else payload
     p = _plugin_shell()
     p.skyaware_url = "http://feeder.local/data/aircraft.json"
     p._fetch_failures = 0
