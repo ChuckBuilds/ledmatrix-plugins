@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-weather",
   "name": "Weather Display",
-  "version": "2.7.9",
+  "version": "2.8.0",
   "author": "ChuckBuilds",
   "class_name": "WeatherPlugin",
   "update_interval": 60,
@@ -26,6 +26,12 @@
     "radar"
   ],
   "versions": [
+    {
+      "version": "2.8.0",
+      "released": "2026-09-30",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "The radar animates in the Vegas ticker (requires LEDMatrix core 3.8.0): after the forecast cards the ticker now shows the precipitation radar, playing the same loop as the full-screen radar while it scrolls past. radar_in_vegas (on) turns it off. Every frame is composed once when new radar data arrives; the ticker only picks the frame for each moment."
+    },
     {
       "released": "2026-09-29",
       "version": "2.7.9",
@@ -240,13 +246,13 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-28",
+  "last_updated": "2026-09-30",
   "stars": 0,
   "downloads": 0,
   "verified": true,
   "screenshot": "",
   "compatible_versions": [
-    ">=2.0.0"
+    ">=3.8.0"
   ],
   "entry_point": "manager.py"
 }

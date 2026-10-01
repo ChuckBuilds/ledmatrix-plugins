@@ -152,6 +152,35 @@ class RadarFrame:
     image: Optional[Image.Image] = None  # RGBA mosaic at viewport size
 
 
+@dataclass(frozen=True)
+class RadarLoop:
+    """The whole radar animation, composed once, for a ticker to play back.
+
+    ``images`` are the finished panel images (frame over map, label, progress
+    dots), oldest first; playback timing is the full-screen radar's: each frame
+    ``frame_seconds``, the newest held ``pause_seconds`` longer. Immutable, so
+    a thread without the plugin's lock may read it while the next one is built.
+    """
+    size: Tuple[int, int]
+    images: Tuple[Image.Image, ...]
+    frame_seconds: float
+    pause_seconds: float
+    key: Tuple
+
+    @property
+    def duration(self) -> float:
+        return len(self.images) * self.frame_seconds + self.pause_seconds
+
+    def index_at(self, at: float) -> int:
+        """The frame showing ``at`` seconds into a loop that repeats from time 0."""
+        n = len(self.images)
+        t = at % self.duration
+        return min(int(t // self.frame_seconds), n - 1)
+
+    def frame_at(self, at: float) -> Image.Image:
+        return self.images[self.index_at(at)]
+
+
 class RadarFetcher:
     """Fetches and animates RainViewer radar over a shared-viewport basemap."""
 
@@ -572,10 +601,63 @@ class RadarFetcher:
             img = background.resize((width, height), Image.Resampling.LANCZOS)
             return self._add_overlay(img, None, [], width, height, viewport)
 
+        return self._compose(background, frame_image, frame, frames, width,
+                             height, viewport)
+
+    def _compose(self, background: Image.Image, frame_image: Image.Image,
+                 frame: RadarFrame, frames: List[RadarFrame], width: int,
+                 height: int, viewport: MercatorViewport) -> Image.Image:
+        """One finished panel image: the frame over the map, then the overlay."""
         composite = Image.alpha_composite(background.convert("RGBA"), frame_image)
         img = composite.convert("RGB").resize((width, height),
                                               Image.Resampling.LANCZOS)
         return self._add_overlay(img, frame, frames, width, height, viewport)
+
+    def loop_key(self) -> Optional[Tuple]:
+        """What compose_loop() would draw from; None when there is nothing to play.
+
+        Changes when a frame is built, dropped or replaced, or the map or the
+        panel size changes. Cheap: the memo check behind the Vegas ticker.
+        """
+        viewport, size = self._viewport, self._panel_size
+        frames = self._playback_frames()
+        if viewport is None or size is None or not frames:
+            return None
+        background = self._basemap if self._basemap is not None else self._vector_map
+        return (size, viewport.signature(), id(background),
+                tuple((f.ts, f.is_nowcast, id(f.image)) for f in frames))
+
+    def compose_loop(self) -> Optional[RadarLoop]:
+        """Every frame finished, at the panel size the fetcher already serves.
+
+        For the Vegas ticker, which plays the loop back a frame at a time on a
+        thread without the plugin's lock. Never changes the viewport -- a new
+        size would drop every built frame -- so it composes only at the size
+        refresh_data() last used, and returns None before that, or when a frame
+        does not match the map (the viewport changed under it; the next
+        refresh rebuilds them). Playback state is not touched.
+        """
+        viewport, size = self._viewport, self._panel_size
+        if viewport is None or size is None:
+            return None
+        # The map first: the vector fallback is built on first use, and the
+        # key names the map, so a key taken before it would never match again.
+        background = self._get_background(viewport)
+        key = self.loop_key()
+        if key is None:
+            return None
+        width, height = size
+        frames = self._playback_frames()
+        images = []
+        for frame in frames:
+            frame_image = frame.image           # one read; see get_radar_image
+            if frame_image is None or frame_image.size != background.size:
+                return None
+            images.append(self._compose(background, frame_image, frame, frames,
+                                        width, height, viewport))
+        return RadarLoop(size=(width, height), images=tuple(images),
+                         frame_seconds=self.frame_seconds,
+                         pause_seconds=self.loop_pause_seconds, key=key)
 
     #: 4x6-font rasterises cleanly only at whole multiples of its 7px design
     #: grid. At ppem 6 the mono rasteriser (fontmode "1", set in _add_overlay)

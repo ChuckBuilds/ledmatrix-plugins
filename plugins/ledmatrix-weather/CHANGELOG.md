@@ -1,5 +1,20 @@
 # Changelog
 
+## [2.8.0] - 2026-09-30
+
+### Added
+- The radar animates in the Vegas ticker (LEDMatrix 3.8.0 live Vegas
+  elements). After the forecast cards the ticker shows the precipitation
+  radar, playing the full-screen radar's loop while it scrolls past. Each
+  frame is composed once when new radar data arrives
+  (`RadarFetcher.compose_loop`); the ticker's redraws only pick the frame for
+  the moment, without the plugin's lock. `radar_in_vegas` (default on).
+
+### Changed
+- Requires LEDMatrix core 3.8.0 (`ledmatrix_min_version` and
+  `compatible_versions`). The store refuses to install or update this version
+  onto an older core.
+
 ## [2.7.8] - 2026-09-28
 
 ### Changed
