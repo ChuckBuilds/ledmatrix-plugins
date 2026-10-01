@@ -1,9 +1,9 @@
 {
   "id": "on-air",
   "name": "On Air Light",
-  "version": "1.2.12",
+  "version": "1.2.13",
   "author": "ChuckBuilds",
-  "description": "Retro broadcast ON AIR tally light. Activate remotely via MQTT or Home Assistant to signal you're on a call, recording, or live \u00e2\u20ac\u201d stays on until you turn it off.",
+  "description": "Retro broadcast ON AIR tally light. Activate remotely via MQTT or Home Assistant to signal you're on a call, recording, or live \u2014 stays on until you turn it off.",
   "entry_point": "manager.py",
   "class_name": "OnAirPlugin",
   "category": "utility",
@@ -22,6 +22,12 @@
     ">=2.0.0"
   ],
   "versions": [
+    {
+      "version": "1.2.13",
+      "released": "2026-09-29",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Store description only: the dash before \"stays on\" showed as three garbled characters (a UTF-8 em dash that had been decoded as Windows-1252 and saved back) and is now an em dash. No change in behaviour."
+    },
     {
       "version": "1.2.12",
       "released": "2026-09-28",

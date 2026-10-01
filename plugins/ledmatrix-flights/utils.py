@@ -2,10 +2,12 @@
 Utility functions for the Flight Tracker plugin.
 
 Pure functions with no state — haversine distance, altitude-to-color mapping,
-aircraft classification, and callsign filtering.
+aircraft classification, callsign filtering, and position-age parsing.
 """
 
+import email.utils
 import math
+from datetime import timezone
 from typing import Dict, List, Optional, Tuple
 
 
@@ -28,6 +30,166 @@ def haversine_miles(lat1: float, lon1: float, lat2: float, lon2: float) -> float
 def haversine_km(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
     """Calculate great-circle distance between two lat/lon points in kilometers."""
     return haversine_miles(lat1, lon1, lat2, lon2) * 1.60934
+
+
+# ---------------------------------------------------------------------------
+# Position time
+#
+# Every source says how old each position was, by its own clock: readsb /
+# SkyAware and adsb.fi / adsb.lol as seconds before the payload's ``now``,
+# OpenSky and FR24 as epoch times. Recording that age (rather than assuming
+# "now") is what lets the map later place an aircraft where it is between
+# polls. The per-source helpers return the raw age in seconds, or None when
+# the feed gave nothing usable; position_age() turns that into the recorded
+# fields. The feeds are unofficial or loosely specified, so unusable is
+# treated as fresh (0) instead of raising -- a bad age must never cost the
+# aircraft itself.
+# ---------------------------------------------------------------------------
+
+#: Ceiling on a recorded position age; anything older is recorded at this and
+#: flagged stale. A feed reporting minutes describes a stale target, not a
+#: span worth moving an aircraft across.
+MAX_POS_AGE_SECONDS = 30.0
+
+#: How far in the future an FR24 position time may sit and still be believed
+#: (as age 0): clocks drift. feed.js has no published layout; index 10 is the
+#: position time in the layout the community documents, and a time further
+#: ahead means the layout moved or a clock is wrong.
+FR24_MAX_CLOCK_SKEW_SECONDS = 120.0
+
+#: The feed.js query's ``maxage``: FR24 answers with positions up to this old,
+#: so an index-10 time that far back is a real (stale) position. Further back
+#: is not a time the query can return.
+FR24_MAX_AGE_SECONDS = 14400
+
+#: The longest a source plausibly holds a payload between stamping and sending
+#: it. OpenSky's ``time`` is rounded down to its 5/10 s resolution and trails
+#: the send by 5-15 s; readsb's ``now`` by a second or a few. A bigger gap is a
+#: disagreeing clock, not a delay, and is ignored.
+MAX_PAYLOAD_LAG_SECONDS = 60.0
+
+
+def is_number(value) -> bool:
+    """A finite int or float, not a bool (JSON true would otherwise pass)."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return False
+    try:
+        return math.isfinite(value)
+    except OverflowError:
+        # JSON integers have no size limit; one too big for a float is garbage.
+        return False
+
+
+def clamp_pos_age(value) -> float:
+    """A position age in seconds, clamped to 0..MAX_POS_AGE_SECONDS; garbage is 0."""
+    if not is_number(value):
+        return 0.0
+    return min(max(float(value), 0.0), MAX_POS_AGE_SECONDS)
+
+
+def position_age(raw) -> Tuple[float, bool]:
+    """``(pos_age, pos_stale)`` for a raw position age in seconds.
+
+    pos_age is clamped to 0..MAX_POS_AGE_SECONDS, so on its own it can no
+    longer say a position was older than that; pos_stale keeps it (too old to
+    carry the aircraft on from). Unusable (None, garbage) is ``(0.0, False)``.
+    """
+    if not is_number(raw):
+        return 0.0, False
+    return clamp_pos_age(raw), raw > MAX_POS_AGE_SECONDS
+
+
+def http_date(response) -> Optional[float]:
+    """A response's Date header as epoch seconds, or None if missing or unreadable.
+
+    That is the server's clock when it answered, truncated to the second.
+    """
+    try:
+        value = getattr(response, 'headers', None).get('Date')
+        if not value:
+            return None
+        when = email.utils.parsedate_to_datetime(value)
+        if when.tzinfo is None:
+            when = when.replace(tzinfo=timezone.utc)
+        return when.timestamp()
+    except (AttributeError, TypeError, ValueError, IndexError, OverflowError):
+        return None
+
+
+def source_send_time(response, received_wall: float) -> float:
+    """When the source sent ``response``, by its own clock where it says.
+
+    The Date header drops the fraction of a second, so half of one is put
+    back. Without a usable one, our clock at receipt stands in; payload_lag()
+    bounds what a wrong clock can do with it.
+    """
+    sent = http_date(response)
+    return sent + 0.5 if sent is not None else received_wall
+
+
+def payload_lag(payload_time, sent_wall) -> float:
+    """Seconds between a payload's own timestamp and its sending.
+
+    A payload's ages count back from its own timestamp (readsb ``now``,
+    OpenSky ``time``), so this is what they leave out. readsb's ``now`` is
+    epoch seconds from SkyAware and adsb.fi but milliseconds from adsb.lol.
+    0 when either time is unusable or the gap is not plausible.
+    """
+    if not (is_number(payload_time) and is_number(sent_wall)):
+        return 0.0
+    if payload_time > 1e11:  # epoch milliseconds (seconds reach 1e11 in the year 5138)
+        payload_time = payload_time / 1000.0
+    lag = sent_wall - payload_time
+    return lag if 0.0 < lag <= MAX_PAYLOAD_LAG_SECONDS else 0.0
+
+
+def seen_pos_age(ac: Dict, lag: float = 0.0) -> Optional[float]:
+    """Raw position age from a readsb-style record (SkyAware, adsb.fi, adsb.lol).
+
+    ``seen_pos`` is seconds since the last position message, counted back from
+    the payload's ``now``; ``seen``, since the last message of any kind, stands
+    in when a feed omits the first. ``lag`` (payload_lag) is how much older
+    they all were by the time the payload was sent. None if neither is usable.
+    """
+    for key in ('seen_pos', 'seen'):
+        value = ac.get(key)
+        if is_number(value):
+            return value + lag
+    return None
+
+
+def epoch_age(now, then) -> Optional[float]:
+    """``now - then`` as a raw position age, or None if either is unusable."""
+    if not (is_number(now) and is_number(then)):
+        return None
+    return now - then
+
+
+def fr24_pos_age(entry, received_wall: float) -> Optional[float]:
+    """Raw position age from an FR24 feed.js entry, or None if its time is implausible.
+
+    A time up to FR24_MAX_AGE_SECONDS back is a real position, however old: it
+    is recorded as stale rather than taken for fresh, so an older position can
+    never look newer than a younger one. Further back, or more than
+    FR24_MAX_CLOCK_SKEW_SECONDS ahead, is not a position time at all.
+    """
+    stamp = entry[10] if len(entry) > 10 else None
+    if not is_number(stamp):
+        return None
+    age = received_wall - stamp
+    if not -FR24_MAX_CLOCK_SKEW_SECONDS <= age <= FR24_MAX_AGE_SECONDS:
+        return None
+    return age
+
+
+def is_real_track(value) -> bool:
+    """True for a usable track/heading in degrees.
+
+    Every source falls back to 0 when it has no track, and 0 is also due
+    north, so the heading alone cannot say which it was; this is asked of the
+    raw field before that fallback.
+    """
+    return is_number(value) and 0 <= value <= 360
 
 
 def altitude_to_color(altitude: float, color_bands: Dict[str, List[int]]) -> Tuple[int, int, int]:
