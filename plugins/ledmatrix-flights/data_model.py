@@ -6,11 +6,14 @@ the immutable snapshot the map is drawn from.
 These provide type-safe alternatives to the raw dicts used internally.
 """
 
+import dataclasses
+import math
 import time
 from dataclasses import dataclass
 from typing import Any, Dict, Mapping, Optional, Tuple
 
-from utils import MAX_POS_AGE_SECONDS, clamp_pos_age, is_number, is_real_track
+from utils import (MAX_POS_AGE_SECONDS, clamp_pos_age, is_number, is_real_track,
+                   plane_offset_miles)
 
 
 @dataclass
@@ -206,6 +209,22 @@ class FlightRecord:
 #: Slower than this (knots) is taxiing, hovering or parked: not worth moving.
 MIN_EXTRAPOLATE_SPEED_KT = 30.0
 
+#: Dead reckoning carries an aircraft on for at most this long past the moment
+#: its position was true, then holds it there: one that went quiet stops
+#: rather than flying on. It counts from the position time, so the source's
+#: own delay uses it up too. A local receiver's positions arrive a second or
+#: two old, so a 5 s poll never gets near it; OpenSky's arrive 5-25 s old, and
+#: with it (or an update_interval over ~15 s) a dot can reach the cap and wait
+#: for the next poll.
+MAX_GLIDE_SECONDS = 20.0
+
+#: A new poll's correction to where the map was gliding an aircraft is spread
+#: over this long instead of landing in one frame.
+EASE_SECONDS = 1.5
+
+#: Speeds are knots; the map works in statute miles.
+_MILES_PER_NM = 1.150779
+
 _WHITE = (255, 255, 255)
 
 
@@ -232,9 +251,10 @@ class MapAircraft:
     ``pos_mono`` is the time.monotonic() the position was true at (receipt
     time less the source's own position age), or None when the record did
     not say when it was received. ``speed_kt``/``track_deg`` and
-    ``can_extrapolate`` are carried for dead reckoning between polls; the
-    map does not use them yet. ``can_extrapolate`` is decided at publish,
-    against the position's age then.
+    ``can_extrapolate`` are for dead reckoning between polls (glide_miles).
+    ``can_extrapolate`` is decided at publish, against the position's age
+    then -- or kept from the previous snapshot while the report has not
+    moved (MapSnapshot.held_from).
     """
     icao: str
     lat: float
@@ -255,6 +275,22 @@ class MapAircraft:
         return (self.icao, self.lat, self.lon, self.color,
                 self.trail if show_trails else None, motion)
 
+    def glide_miles(self, at: float) -> Tuple[float, float]:
+        """(east, north) statute miles dead reckoning carries this aircraft from
+        its reported position by ``at`` (a time.monotonic()).
+
+        Along track_deg at speed_kt for the position's age at ``at``, capped at
+        MAX_GLIDE_SECONDS, where it holds: a position that goes stale stops
+        moving, and never goes back to where it was reported. Nothing for an
+        aircraft that cannot extrapolate.
+        """
+        if not self.can_extrapolate or self.pos_mono is None:
+            return 0.0, 0.0
+        seconds = min(max(at - self.pos_mono, 0.0), MAX_GLIDE_SECONDS)
+        miles = self.speed_kt * _MILES_PER_NM * seconds / 3600.0
+        track = math.radians(self.track_deg)
+        return miles * math.sin(track), miles * math.cos(track)
+
 
 @dataclass(frozen=True)
 class MapSnapshot:
@@ -267,6 +303,13 @@ class MapSnapshot:
 
     ``seq`` rises by one each time a snapshot with a different ``draw_key()``
     is published, so a reader can tell "new sky" from "same sky again".
+
+    ``published_mono`` and ``corrections`` are set when it is published after
+    another (with_corrections): per aircraft, the (east, north) miles from
+    where this snapshot places it to where the previous one was drawing it
+    then, eased out over EASE_SECONDS from ``published_mono`` so a new poll
+    does not make a gliding dot jump. They are how it is drawn over time,
+    not what it shows, so they are not part of draw_key().
     """
     seq: int
     center_lat: float
@@ -276,6 +319,8 @@ class MapSnapshot:
     show_trails: bool
     aircraft: Tuple[MapAircraft, ...] = ()
     trail_order: Tuple[int, ...] = ()
+    published_mono: Optional[float] = None
+    corrections: Tuple[Tuple[float, float], ...] = ()
 
     def draw_key(self) -> tuple:
         """Everything the pixels depend on, seq aside: snapshots with equal
@@ -284,6 +329,95 @@ class MapSnapshot:
                 self.zoom_factor, self.show_trails,
                 self.trail_order if self.show_trails else None,
                 tuple(a.draw_key(self.show_trails) for a in self.aircraft))
+
+    def ease(self, at: float) -> float:
+        """How much of each correction still applies at ``at``: 1 at publish,
+        falling linearly to 0 over EASE_SECONDS."""
+        if self.published_mono is None:
+            return 0.0
+        return min(1.0, max(0.0, 1.0 - (at - self.published_mono) / EASE_SECONDS))
+
+    def eased_correction(self, index: int, at: float) -> Tuple[float, float]:
+        """(east, north) miles of aircraft ``index``'s correction left at ``at``."""
+        if index >= len(self.corrections):
+            return 0.0, 0.0
+        k = self.ease(at)
+        if k <= 0.0:
+            return 0.0, 0.0
+        east, north = self.corrections[index]
+        return east * k, north * k
+
+    def _offset_miles(self, index: int, at: float, center_lat: float,
+                      center_lon: float, corrected: bool) -> Tuple[float, float]:
+        """(east, north) miles from the given centre to where aircraft
+        ``index`` is placed at ``at``: reported, carried on, and (if
+        ``corrected``) plus what is left of its correction."""
+        ac = self.aircraft[index]
+        east, north = plane_offset_miles(center_lat, center_lon, ac.lat, ac.lon)
+        glide_east, glide_north = ac.glide_miles(at)
+        east, north = east + glide_east, north + glide_north
+        if corrected:
+            corr_east, corr_north = self.eased_correction(index, at)
+            east, north = east + corr_east, north + corr_north
+        return east, north
+
+    def with_corrections(self, prev: Optional["MapSnapshot"],
+                         now_mono: float) -> "MapSnapshot":
+        """This snapshot as published at ``now_mono``, after ``prev``.
+
+        For an aircraft in both, the correction is where ``prev`` was drawing
+        it at that moment -- carried on, with its own correction's remainder,
+        so two publishes close together do not jump either -- less where this
+        one puts it. A new aircraft gets none: it appears where it is. Both
+        are measured from this snapshot's centre, so a moved view cannot turn
+        into a correction.
+
+        The remainder is carried whether or not the render eased it (the map
+        snaps a correction over 6 px at the size drawn). That only matters for
+        two publishes that change the drawing within EASE_SECONDS, and those
+        come one per fetch, 5 s or more apart.
+        """
+        index = ({ac.icao: i for i, ac in enumerate(prev.aircraft)}
+                 if prev is not None else {})
+        corrections = []
+        for i, ac in enumerate(self.aircraft):
+            j = index.get(ac.icao)
+            if j is None:
+                corrections.append((0.0, 0.0))
+                continue
+            was_east, was_north = prev._offset_miles(
+                j, now_mono, self.center_lat, self.center_lon, corrected=True)
+            now_east, now_north = self._offset_miles(
+                i, now_mono, self.center_lat, self.center_lon, corrected=False)
+            corrections.append((was_east - now_east, was_north - now_north))
+        return dataclasses.replace(self, published_mono=now_mono,
+                                   corrections=tuple(corrections))
+
+    def held_from(self, prev: Optional["MapSnapshot"]) -> "MapSnapshot":
+        """This snapshot, with every aircraft ``prev`` was carrying on whose
+        report has not moved since, but which can no longer be carried on
+        itself (it went stale, or lost its speed or track), still carried as
+        ``prev`` carried it.
+
+        glide_miles stops it at MAX_GLIDE_SECONDS and holds it there. Without
+        this, the publish after a report aged out would put the dot back on
+        it: up to 20 s of flight backwards in one frame, for every aircraft
+        that drops out of the feed and for the whole sky when a fallback
+        payload ages. A report already stale when first seen has no ``prev``
+        entry to keep, so it never moves.
+        """
+        if prev is None:
+            return self
+        was = {ac.icao: ac for ac in prev.aircraft if ac.can_extrapolate}
+        aircraft = []
+        for ac in self.aircraft:
+            old = was.get(ac.icao)
+            if (old is not None and not ac.can_extrapolate
+                    and (old.lat, old.lon) == (ac.lat, ac.lon)):
+                ac = dataclasses.replace(ac, pos_mono=old.pos_mono, speed_kt=old.speed_kt,
+                                         track_deg=old.track_deg, can_extrapolate=True)
+            aircraft.append(ac)
+        return dataclasses.replace(self, aircraft=tuple(aircraft))
 
     @classmethod
     def build(cls, seq: int, aircraft_data: Mapping[str, Dict],

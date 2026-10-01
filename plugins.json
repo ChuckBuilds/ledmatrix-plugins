@@ -500,9 +500,9 @@
       "last_updated": "2026-09-30",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.15.0",
-      "ledmatrix_min_version": "2.0.0",
-      "commit": "11b08475f6ffeb1fe377cab1f53f3fe5064a7c06"
+      "latest_version": "1.16.0",
+      "ledmatrix_min_version": "3.8.0",
+      "commit": "90423a2e81d3c64aa99434ebf1e77341fb8e4880"
     },
     {
       "id": "march-madness",
@@ -1424,12 +1424,12 @@
       "plugin_path": "plugins/fantasy-blitz",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-28",
+      "last_updated": "2026-09-30",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.2",
+      "latest_version": "1.1.0",
       "ledmatrix_min_version": "3.0.0",
-      "commit": "44618443dd6e2ea581377d589864dcc9190d2114"
+      "commit": "90fb3f26f67ccfe17e8c4380480a3c09fd25a7ac"
     }
   ]
 }

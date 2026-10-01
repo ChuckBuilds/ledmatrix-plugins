@@ -574,7 +574,12 @@ class FantasyBlitzPlugin(BasePlugin):
         wanted.extend(item["player"] for item in self.content.get("dud_alert", []))
         for item in self.content.get("position_kings", []):
             wanted.extend(p for _, p in item.get("cells", []) if p)
+        wanted.extend(self._vegas_players())
         return wanted
+
+    def _vegas_players(self) -> List[Dict[str, Any]]:
+        """The ticker's scorers, best first: the photos its cards draw."""
+        return model.ranked(self._display_players(), self.scoring, self.positions, max(self.top_n, 5))
 
     def _players_in_rows(self) -> List[Dict[str, Any]]:
         """Everyone on a list screen, for jersey-number lookups (no photos)."""
@@ -773,7 +778,7 @@ class FantasyBlitzPlugin(BasePlugin):
     # ------------------------------------------------------------------
 
     def get_vegas_content(self) -> Optional[List[Any]]:
-        top = model.ranked(self._display_players(), self.scoring, self.positions, max(self.top_n, 5))
+        top = self._vegas_players()
         if not top:
             return None
         height = self.display_manager.height
