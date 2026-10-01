@@ -12,6 +12,10 @@ the 40-odd plugins, not an empty directory).
 its manifest, or a synced metadata field differs. It used to discard that
 result and print PASS.
 
+A version with whitespace or a control character in it is drift too:
+parse_version's int() strips it, so "1.0.10\\r" in plugins.json passed as the
+manifest's "1.0.10" for 11 entries.
+
 Exit codes: 0 pass, 1 fail.
 """
 
@@ -19,6 +23,7 @@ import contextlib
 import io
 import json
 import shutil
+import subprocess  # nosec B404 - runs git on temp repos the test creates
 import sys
 import tempfile
 import urllib.error
@@ -76,7 +81,8 @@ def case(label, entries, dirs, expect_code, needle=None, extra=("--check",),
 print("synthetic trees")
 case("in sync passes", [entry("a", "plugins/a")], ["a"], 0)
 case("id differs from dir, matched by plugin_path, passes",
-     [entry("weather", "plugins/ledmatrix-weather")], ["ledmatrix-weather"], 0)
+     [{**entry("weather", "plugins/ledmatrix-weather"), "aliases": ["ledmatrix-weather"]}],
+     ["ledmatrix-weather"], 0)
 case("third-party entry with empty plugin_path is ignored",
      [entry("a", "plugins/a"), entry("ext", "")], ["a"], 0)
 case("plugin dir with no registry entry fails",
@@ -153,6 +159,61 @@ code, out = run_check(root, "--check")
 check(f"--check after a normal run fails only on the entry it could not fix (exit {code})",
       code == 1 and "b: plugins.json latest_version '3.0.0' is ahead" in out
       and "FAIL a:" not in out)
+shutil.rmtree(root, ignore_errors=True)
+
+print("\nstray whitespace and control characters in versions")
+# #560 bumped 20 manifests to "x.y.z\r" and a normal run copied that into
+# plugins.json. Fixing the manifests left the registry's copies behind: int()
+# strips the \r, so every check called them up to date.
+check("parse_version still cannot tell '1.0.10\\r' from '1.0.10'",
+      reg.parse_version("1.0.10\r") == reg.parse_version("1.0.10"))
+for version, stray in [("1.0.10", False), ("1.0.10\r", True), ("1.0.10\n", True),
+                       (" 1.0.10", True), ("1.0.10\t", True), ("1.0.\x0010", True),
+                       ("1.0.10\x85", True), ("1.0.10-beta.1", False), (None, False)]:
+    check(f"has_stray_characters({version!r}) is {stray}",
+          reg.has_stray_characters(version) is stray)
+case("a registry version with a trailing \\r fails",
+     [{**entry("a", "plugins/a"), "latest_version": "1.0.0\r"}], ["a"], 1,
+     "latest_version '1.0.0\\r' is not the manifest's '1.0.0'")
+case("a registry version with a leading space fails",
+     [{**entry("a", "plugins/a"), "latest_version": " 1.0.0"}], ["a"], 1,
+     "latest_version ' 1.0.0' is not the manifest's")
+case("'1.0\\r' for '1.0.0' fails on the \\r, not the missing part",
+     [{**entry("a", "plugins/a"), "latest_version": "1.0\r"}], ["a"], 1,
+     "latest_version '1.0\\r' is not the manifest's '1.0.0'")
+case("'1.0.0' for a manifest's '1.0' is still the same version",
+     [entry("a", "plugins/a")], ["a"], 0,
+     manifests={"a": {"id": "a", "version": "1.0"}})
+case("--dry-run alone reports the \\r without failing",
+     [{**entry("a", "plugins/a"), "latest_version": "1.0.0\r"}], ["a"], 0,
+     "'1.0.0\\r' -> '1.0.0'", extra=("--dry-run",))
+case("a manifest version with a trailing \\r fails --check",
+     [entry("a", "plugins/a")], ["a"], 1,
+     "plugins/a/manifest.json version '1.1.0\\r' contains whitespace",
+     manifests={"a": {"id": "a", "version": "1.1.0\r"}})
+case("without --check a manifest \\r warns",
+     [entry("a", "plugins/a")], ["a"], 0, "WARNING a: plugins/a/manifest.json",
+     extra=(), manifests={"a": {"id": "a", "version": "1.1.0\r"}})
+
+# A normal run rewrites a registry \r (without calling it a new release), and
+# never copies a manifest \r, however far ahead the manifest is.
+root = make_tree([{**entry("a", "plugins/a"), "latest_version": "1.0.0\r",
+                   "last_updated": "2026-01-01"},
+                  entry("b", "plugins/b")],
+                 ["a", "b"],
+                 {"a": {"id": "a", "version": "1.0.0", "last_updated": "2026-01-01"},
+                  "b": {"id": "b", "version": "1.1.0\r"}})
+code, out = run_check(root)
+written = {p["id"]: p for p in json.loads((root / "plugins.json").read_text())["plugins"]}
+check(f"a normal run rewrites '1.0.0\\r' to the manifest's '1.0.0' (exit {code})",
+      code == 0 and written["a"]["latest_version"] == "1.0.0")
+check("... and leaves that entry's last_updated alone",
+      written["a"]["last_updated"] == "2026-01-01")
+check("a normal run does not copy a manifest's '1.1.0\\r'",
+      written["b"]["latest_version"] == "1.0.0" and "WARNING b:" in out)
+code, out = run_check(root, "--check")
+check(f"--check after it fails only on the manifest it could not fix (exit {code})",
+      code == 1 and "FAIL b:" in out and "FAIL a:" not in out)
 shutil.rmtree(root, ignore_errors=True)
 
 print("\nlast_updated is the newer of last_updated and versions[0].released")
@@ -252,6 +313,9 @@ check("a manifest with another id is ignored", after[0]["latest_version"] == "1.
 after, _ = run_external([ext_entry()], error=urllib.error.URLError("404"))
 check("an unreadable repo is skipped, not fatal", after[0]["latest_version"] == "1.0.0")
 
+after, _ = run_external([ext_entry()], dict(newer, version="1.2.0\r"))
+check("a version with a stray \\r is not copied", after[0]["latest_version"] == "1.0.0")
+
 after, _ = run_external([ext_entry()], "<html>not json</html>")
 check("a manifest that is not JSON is skipped", after[0]["latest_version"] == "1.0.0")
 
@@ -270,6 +334,195 @@ check("repo URLs with .git and a trailing slash resolve",
 check("a repo subpath does not resolve",
       reg.raw_manifest_url(EXT_REPO + "/tree/main/x", "main") is None)
 
+print("\nledmatrix_min_version and aliases (read by the core before downloading)")
+
+
+def floored(**over):
+    manifest = {"id": "a", "version": "1.0.0",
+                "versions": [{"version": "1.0.0", "ledmatrix_min_version": "3.5.0"}]}
+    manifest.update(over)
+    return manifest
+
+
+for label, manifest, want in [
+    ("versions[0].ledmatrix_min_version", floored(), "3.5.0"),
+    ("the deprecated versions[0].ledmatrix_min",
+     floored(versions=[{"version": "1.0.0", "ledmatrix_min": "3.1.0"}]), "3.1.0"),
+    ("a top-level min_ledmatrix_version wins", floored(min_ledmatrix_version="3.7.0"), "3.7.0"),
+    ("then requires.min_ledmatrix_version",
+     floored(requires={"min_ledmatrix_version": "3.6.0"}), "3.6.0"),
+    ("only versions[0] counts, as in the core",
+     floored(versions=[{"version": "1.0.0"}, {"version": "0.9.0", "ledmatrix_min_version": "2.0.0"}]),
+     None),
+    ("no floor at all", {"id": "a", "version": "1.0.0"}, None),
+    ("a malformed versions list", floored(versions={"1.0.0": {}}), None),
+]:
+    got = reg.declared_min_version(manifest)
+    check(f"declared_min_version: {label} ({got})", got == want)
+
+root = make_tree([entry("weather", "plugins/ledmatrix-weather"), entry("a", "plugins/a")],
+                 ["ledmatrix-weather", "a"],
+                 {"ledmatrix-weather": {"id": "ledmatrix-weather", "version": "1.0.0"},
+                  "a": floored()})
+code, out = run_check(root, "--check")
+check(f"--check fails on a missing floor and a missing alias (exit {code})",
+      code == 1 and "a: plugins.json ledmatrix_min_version differs" in out
+      and "weather: plugins.json aliases differs" in out)
+run_check(root)
+written = {p["id"]: p for p in json.loads((root / "plugins.json").read_text())["plugins"]}
+check("a normal run writes the floor",
+      written["a"].get("ledmatrix_min_version") == "3.5.0")
+check("a normal run writes the manifest id as an alias",
+      written["weather"].get("aliases") == ["ledmatrix-weather"])
+check("no alias when the ids agree, and no floor when none is declared",
+      "aliases" not in written["a"] and "ledmatrix_min_version" not in written["weather"])
+code, _ = run_check(root, "--check")
+check(f"--check passes after the normal run (exit {code})", code == 0)
+# The manifest drops its floor and its id comes into line: both keys go.
+(root / "plugins" / "a" / "manifest.json").write_text(json.dumps({"id": "a", "version": "1.0.0"}))
+(root / "plugins" / "ledmatrix-weather" / "manifest.json").write_text(
+    json.dumps({"id": "weather", "version": "1.0.0"}))
+code, out = run_check(root, "--check")
+check(f"--check fails on a floor or alias the manifest no longer implies (exit {code})",
+      code == 1 and "ledmatrix_min_version differs" in out and "aliases differs" in out)
+run_check(root)
+written = {p["id"]: p for p in json.loads((root / "plugins.json").read_text())["plugins"]}
+check("a normal run removes them",
+      "ledmatrix_min_version" not in written["a"] and "aliases" not in written["weather"])
+shutil.rmtree(root, ignore_errors=True)
+
+print("\na stray-character fix keeps the commit")
+# #577 rewrites "1.0.0\r" to "1.0.0" without calling it a new release, so the
+# commit that introduced 1.0.0 still names it and must survive the rewrite.
+root = make_tree([{**entry("a", "plugins/a"), "latest_version": "1.0.0\r",
+                   "commit": "0" * 40}], ["a"])
+run_check(root)
+written = json.loads((root / "plugins.json").read_text())["plugins"][0]
+check("a normal run writes the manifest's spelling and keeps commit",
+      written["latest_version"] == "1.0.0" and written.get("commit") == "0" * 40)
+shutil.rmtree(root, ignore_errors=True)
+
+print("\nthird-party floors (--external)")
+with_floor = dict(newer, versions=[{"version": "1.2.0", "released": "2026-09-01",
+                                    "ledmatrix_min_version": "3.6.0"}])
+after, _ = run_external([ext_entry()], with_floor)
+check("a raised version brings its floor",
+      (after[0]["latest_version"], after[0].get("ledmatrix_min_version")) == ("1.2.0", "3.6.0"))
+after, _ = run_external([ext_entry(latest_version="1.2.0")], with_floor)
+check("an entry already at the repo's version gets its floor filled in",
+      after[0].get("ledmatrix_min_version") == "3.6.0")
+after, _ = run_external([ext_entry(latest_version="1.2.0", ledmatrix_min_version="3.0.0")], newer)
+check("a floor the release no longer declares is removed",
+      "ledmatrix_min_version" not in after[0])
+after, _ = run_external([ext_entry(latest_version="2.0.0", ledmatrix_min_version="3.0.0")], with_floor)
+check("an older repo manifest leaves the floor alone (it is another release's)",
+      after[0].get("ledmatrix_min_version") == "3.0.0")
+after, _ = run_external([ext_entry()], dict(with_floor, id="someone-else"))
+check("a manifest with another id sets no floor", "ledmatrix_min_version" not in after[0])
+after, _ = run_external([ext_entry()], with_floor, dry_run=True)
+check("--dry-run writes no floor", "ledmatrix_min_version" not in after[0])
+check("third-party entries never get aliases or a commit",
+      not ({"aliases", "commit"} & set(run_external([ext_entry()], with_floor)[0][0])))
+
+print("\ncommit: the one that introduced the current version")
+GIT = ["git", "-c", "user.name=t", "-c", "user.email=t@t", "-c", "commit.gpgsign=false",
+       "-c", "core.autocrlf=false"]
+
+
+def git(root, *args):
+    return subprocess.run(GIT + list(args), cwd=root,  # nosec B603 - fixed git argv on a temp test repo, no shell  # nosemgrep
+                          capture_output=True, text=True,
+                          check=True).stdout.strip()
+
+
+def commit_manifest(root, manifest, message):
+    (root / "plugins" / "a" / "manifest.json").write_text(json.dumps(manifest))
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", message)
+    return git(root, "rev-parse", "HEAD")
+
+
+def registry_entry(root):
+    return json.loads((root / "plugins.json").read_text())["plugins"][0]
+
+
+have_git = shutil.which("git") is not None
+check("git is available for these checks", have_git)
+if have_git:
+    root = make_tree([entry("a", "plugins/a")], ["a"])
+    git(root, "init", "-q")
+    first = commit_manifest(root, {"id": "a", "version": "1.0.0"}, "a 1.0.0")
+    run_check(root)
+    check("the first version's commit is recorded", registry_entry(root).get("commit") == first)
+
+    git(root, "checkout", "-q", "-b", "side")
+    bump = commit_manifest(root, {"id": "a", "version": "1.1.0"}, "a 1.1.0")
+    commit_manifest(root, {"id": "a", "version": "1.1.0", "description": "same release"},
+                    "description only")
+    run_check(root)
+    got = registry_entry(root)
+    check("a later commit that keeps the version does not move it",
+          got.get("commit") == bump and got["latest_version"] == "1.1.0")
+
+    # Uncommitted bump: the pre-commit hook's situation. The new commit does
+    # not exist yet, and the old one belongs to 1.1.0, so it goes.
+    (root / "plugins" / "a" / "manifest.json").write_text(json.dumps({"id": "a", "version": "1.2.0"}))
+    run_check(root)
+    got = registry_entry(root)
+    check("an uncommitted bump drops the previous release's commit",
+          got["latest_version"] == "1.2.0" and "commit" not in got)
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "a 1.2.0")
+    run_check(root)
+    check("and the next run fills in the new one",
+          registry_entry(root).get("commit") == git(root, "rev-parse", "HEAD"))
+
+    # main: squash-merged history, first parent only. A merge of the side
+    # branch must be credited to the merge commit on main, not the branch.
+    git(root, "add", "-A")
+    git(root, "commit", "-q", "-m", "registry")
+    git(root, "checkout", "-q", "-")
+    git(root, "merge", "-q", "--no-ff", "-m", "merge side", "side")
+    merge = git(root, "rev-parse", "HEAD")
+    run_check(root)
+    check("a merge is credited on main's first-parent line",
+          registry_entry(root).get("commit") == merge)
+
+    before = (root / "plugins.json").read_text()
+    code, _ = run_check(root, "--check")
+    check(f"--check neither fails on nor writes commits (exit {code})",
+          code == 0 and (root / "plugins.json").read_text() == before)
+    reg_data = json.loads(before)
+    reg_data["plugins"][0]["commit"] = "0" * 40
+    (root / "plugins.json").write_text(json.dumps(reg_data))
+    code, _ = run_check(root, "--check")
+    check(f"a stale commit is not drift for --check (exit {code})", code == 0)
+
+    # A shallow clone cannot see where the version started: keep what is there.
+    shallow = Path(tempfile.mkdtemp()) / "shallow"
+    subprocess.run(  # nosec B603 - fixed git argv on a temp test repo, no shell  # nosemgrep
+        GIT + ["clone", "-q", "--depth", "1", root.as_uri(), str(shallow)],
+        capture_output=True, check=True)
+    shallow_data = json.loads((shallow / "plugins.json").read_text())
+    shallow_data["plugins"][0]["commit"] = "kept"
+    (shallow / "plugins.json").write_text(json.dumps(shallow_data))
+    check("a shallow clone gives no resolver", reg.CommitResolver.for_repo(shallow) is None)
+    run_check(shallow)
+    check("and a run there leaves the commit alone", registry_entry(shallow).get("commit") == "kept")
+    shutil.rmtree(shallow.parent, ignore_errors=True)
+    shutil.rmtree(root, ignore_errors=True)
+
+root = make_tree([{**entry("a", "plugins/a"), "commit": "kept"}], ["a"])
+check("a directory outside git gives no resolver", reg.CommitResolver.for_repo(root) is None)
+run_check(root)
+check("and a run there leaves the commit alone", registry_entry(root).get("commit") == "kept")
+(root / "plugins" / "a" / "manifest.json").write_text(json.dumps({"id": "a", "version": "2.0.0"}))
+run_check(root)
+got = registry_entry(root)
+check("but drops it when the version moves (it named the old release)",
+      got["latest_version"] == "2.0.0" and "commit" not in got)
+shutil.rmtree(root, ignore_errors=True)
+
 print("\nthe real tree")
 registry = json.loads((REPO / "plugins.json").read_text(encoding="utf-8"))
 monorepo = [p for p in registry["plugins"] if p.get("plugin_path")]
@@ -280,6 +533,24 @@ problems = reg.find_consistency_problems(registry, REPO / "plugins")
 for p in problems:
     print(f"        {p}")
 check("plugins.json and plugins/ agree", not problems)
+
+
+def strings(value):
+    if isinstance(value, dict):
+        for v in value.values():
+            yield from strings(v)
+    elif isinstance(value, list):
+        for v in value:
+            yield from strings(v)
+    elif isinstance(value, str):
+        yield value
+
+
+# Every field, third-party entries included: the store renders these as they
+# stand, and the drift checks above only compare the ones a manifest syncs.
+controls = sorted({repr(s) for s in strings(registry)
+                   if any(ord(c) < 0x20 or 0x7f <= ord(c) <= 0x9f for c in s)})
+check(f"no plugins.json string has a control character {controls or ''}", not controls)
 
 print("\n%s" % ("FAILED: %d" % len(failures) if failures else "All checks passed"))
 sys.exit(1 if failures else 0)

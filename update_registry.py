@@ -20,6 +20,14 @@ daily; local runs and the pre-commit hook stay offline.
   `version`, in either direction. Behind: the store never offers the update.
   Ahead: the store offers a version that was never shipped, and a normal run
   will not fix it (it never downgrades).
+- a monorepo entry whose `latest_version` is its manifest's version plus
+  whitespace or a control character ("1.5.4\\r" for "1.5.4"). int() strips
+  whitespace, so the versions compare equal and a normal run used to call it
+  up to date; it now rewrites it. ("1.2" for "1.2.0" is still the same
+  version and passes.)
+- a manifest `version` with whitespace or a control character in it. A normal
+  run no longer copies it into the registry: that is how #560's "1.0.10\\r"
+  bumps reached plugins.json and outlived the manifest fix.
 - a monorepo entry whose store-visible metadata (name, description, author,
   category, tags, icon, last_updated) differs from what a normal run would
   write. The pre-commit hook folds that into the commit; a PR without it
@@ -31,6 +39,27 @@ daily; local runs and the pre-commit hook stay offline.
 - a registry plugin_path that has no plugins/<dir>/manifest.json. The store
   would offer a plugin that cannot be installed.
 
+Three fields let the core decide before it downloads anything. All are
+additive: every core since 3.0.0 reads entries with dict.get and ignores keys
+it does not know.
+
+- `ledmatrix_min_version`: the floor the manifest declares, by the core's own
+  precedence (see `declared_min_version`). A core older than that refuses the
+  install before the download instead of after it. Absent when the manifest
+  declares none. Synced and checked like the metadata fields above.
+- `aliases`: other ids the plugin goes by -- for a monorepo entry, the
+  manifest id when it differs from the registry id (weather, stocks, music and
+  leaderboard install as `ledmatrix-<id>`). Absent when there are none.
+  Synced and checked like the metadata fields above.
+- `commit`: the monorepo commit that introduced the manifest's current
+  `version` (see `CommitResolver`). Informational: nothing installs from it.
+  Needs full git history, so a shallow clone or a directory outside git
+  leaves the field as it was, and a run that raises `latest_version` without
+  being able to name the new commit drops the old one rather than pair it
+  with a version it never shipped. `--check` does not compare it: in a PR the
+  commit that will introduce a bump does not exist yet (main squash-merges),
+  so the Update Plugin Registry workflow fills it in after the merge.
+
 Usage:
     python update_registry.py              # Update plugins.json (warns on the above)
     python update_registry.py --dry-run    # Show what would change
@@ -40,6 +69,7 @@ Usage:
 
 import json
 import re
+import subprocess  # nosec B404 - fixed git argv, no shell
 import sys
 import argparse
 import urllib.error
@@ -55,6 +85,8 @@ from urllib.parse import urlparse
 SYNCED_FIELDS = ("name", "description", "author", "category", "tags", "icon")
 
 _ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+_STRAY_CHARACTER = re.compile(r"[\s\x00-\x1f\x7f-\x9f]")
 
 
 def release_date(manifest: dict) -> str | None:
@@ -88,11 +120,184 @@ def synced_metadata(manifest: dict) -> dict:
     return fields
 
 
+def declared_min_version(manifest: dict) -> str | None:
+    """The oldest core this manifest says it runs on, or None.
+
+    The same precedence as the core's install gate
+    (`compatibility.declared_min_version`) and scripts/check_min_core_version.py:
+    top-level `min_ledmatrix_version`, then `requires.min_ledmatrix_version`,
+    then `versions[0].ledmatrix_min_version` or its deprecated spelling
+    `ledmatrix_min`. The registry must say what the gate will enforce after
+    the download, or the early refusal and the late one disagree.
+
+    `compatible_versions` is not folded in: the registry field is the declared
+    floor, and a range (with its possible upper bound) is still checked by the
+    core once the manifest is on disk.
+    """
+    declared = manifest.get("min_ledmatrix_version")
+    if not declared:
+        requires = manifest.get("requires")
+        if isinstance(requires, dict):
+            declared = requires.get("min_ledmatrix_version")
+    if not declared:
+        versions = manifest.get("versions")
+        if isinstance(versions, list) and versions and isinstance(versions[0], dict):
+            declared = (versions[0].get("ledmatrix_min_version")
+                        or versions[0].get("ledmatrix_min"))
+    if isinstance(declared, str) and declared.strip():
+        return declared.strip()
+    return None
+
+
+def derived_fields(manifest: dict, registry_id: str) -> dict:
+    """Registry fields computed from a monorepo manifest; None means "absent".
+
+    Unlike `synced_metadata`, a field the manifest stops implying is removed,
+    so a dropped floor or a manifest id brought back in line with the registry
+    id does not leave a stale value behind.
+    """
+    manifest_id = manifest.get("id")
+    aliases = ([manifest_id] if isinstance(manifest_id, str) and manifest_id
+               and manifest_id != registry_id else None)
+    return {
+        "ledmatrix_min_version": declared_min_version(manifest),
+        "aliases": aliases,
+    }
+
+
+def _apply_derived(plugin: dict, fields: dict, dry_run: bool) -> list[str]:
+    """Write `derived_fields` onto an entry; returns the names that changed."""
+    changed = []
+    for field, value in fields.items():
+        if value is None:
+            if field in plugin:
+                if not dry_run:
+                    del plugin[field]
+                changed.append(field)
+        elif plugin.get(field) != value:
+            if not dry_run:
+                plugin[field] = value
+            changed.append(field)
+    return changed
+
+
+class CommitResolver:
+    """Finds the commit that introduced a manifest's current `version`.
+
+    Walks the first-parent history of one manifest.json from HEAD, newest
+    first, while the committed `version` still equals the one asked about;
+    the last commit in that run is where the version appeared. First-parent,
+    because main is squash-merged: the commit that matters is the one on
+    main, not a branch commit inside a merge.
+
+    Why this commit and not HEAD at generation time: every plugin change must
+    bump the version (scripts/check_version_bump.py), so the plugin's tree at
+    this commit is the release -- only test files can differ later. HEAD
+    would change on every run for every entry, rewriting 40-odd lines of
+    plugins.json each time main moves, and would name commits that have
+    nothing to do with the plugin.
+
+    `for_repo` returns None when it cannot answer honestly: git missing, the
+    registry not at the top of a work tree, or a shallow clone, where the
+    walk would stop at the graft and call the oldest visible commit the
+    introducing one.
+    """
+
+    def __init__(self, root: Path):
+        self.root = root
+        # One `git cat-file --batch` for every manifest read: a process per
+        # read made a full run take seconds, and the pre-commit hook runs it.
+        self._batch: Optional[subprocess.Popen] = None
+
+    @classmethod
+    def for_repo(cls, root: Path) -> Optional["CommitResolver"]:
+        resolver = cls(root)
+        top = resolver._git("rev-parse", "--show-toplevel")
+        if top is None:
+            return None
+        try:
+            if Path(top.strip()).resolve() != root.resolve():
+                return None
+        except OSError:
+            return None
+        if (resolver._git("rev-parse", "--is-shallow-repository") or "").strip() != "false":
+            return None
+        return resolver
+
+    def _git(self, *args: str) -> Optional[str]:
+        try:
+            result = subprocess.run(  # nosec B603 B607 - fixed git subcommands, paths only after "--", no shell  # nosemgrep
+                ["git", *args], cwd=self.root, capture_output=True,
+                text=True, encoding="utf-8", errors="replace", timeout=60,
+                check=False)
+        except (OSError, subprocess.SubprocessError):
+            return None
+        return result.stdout if result.returncode == 0 else None
+
+    def _blob(self, spec: str) -> Optional[bytes]:
+        """Contents of `<sha>:<path>`, or None when it does not exist."""
+        if self._batch is None:
+            try:
+                self._batch = subprocess.Popen(  # nosec B603 B607 - fixed git argv, specs go over stdin, no shell  # nosemgrep
+                    ["git", "cat-file", "--batch"], cwd=self.root,
+                    stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL)
+            except OSError:
+                return None
+        proc = self._batch
+        try:
+            proc.stdin.write(spec.encode("utf-8") + b"\n")
+            proc.stdin.flush()
+            header = proc.stdout.readline().split()
+            if len(header) != 3:  # "<spec> missing" (or the process died)
+                return None
+            data = proc.stdout.read(int(header[2]))
+            proc.stdout.read(1)  # the newline after each object
+            return data
+        except (OSError, ValueError):
+            return None
+
+    def close(self) -> None:
+        if self._batch is not None:
+            try:
+                self._batch.stdin.close()
+                self._batch.wait(timeout=10)
+            except (OSError, subprocess.SubprocessError):
+                self._batch.kill()
+            self._batch = None
+
+    def _version_at(self, sha: str, relpath: str) -> Optional[str]:
+        data = self._blob(f"{sha}:{relpath}")
+        if data is None:
+            return None
+        try:
+            manifest = parse_json_with_trailing_commas(data.decode("utf-8-sig"))
+        except ValueError:  # includes UnicodeDecodeError
+            return None
+        version = manifest.get("version") if isinstance(manifest, dict) else None
+        return version.strip() if isinstance(version, str) else None
+
+    def introducing_commit(self, relpath: str, version: str) -> Optional[str]:
+        """The full SHA, or None when HEAD's manifest is not at `version`
+        (an uncommitted bump) or the file has no history."""
+        log = self._git("log", "--first-parent", "--format=%H", "HEAD", "--", relpath)
+        if not log:
+            return None
+        found = None
+        for sha in log.split():
+            if self._version_at(sha, relpath) != version.strip():
+                break
+            found = sha
+        return found
+
+
 def parse_version(version_str: str) -> tuple:
     """Parse a version string into a comparable tuple.
 
     Padded to three parts, so "1.2" and "1.2.0" compare equal -- the store's
-    own comparator treats them as the same version.
+    own comparator treats them as the same version. int() also ignores
+    surrounding whitespace, so "1.2.0\\r" compares equal too; see
+    has_stray_characters.
     """
     version_str = (version_str or "0.0.0").lstrip("v")
     try:
@@ -100,6 +305,16 @@ def parse_version(version_str: str) -> tuple:
     except (ValueError, AttributeError):
         return (0, 0, 0)
     return parts + (0,) * (3 - len(parts))
+
+
+def has_stray_characters(version) -> bool:
+    """True if a version string contains whitespace or a control character.
+
+    parse_version cannot see these, so a registry "1.5.4\\r" passed as equal
+    to a manifest "1.5.4" while any consumer comparing strings saw another
+    version.
+    """
+    return isinstance(version, str) and bool(_STRAY_CHARACTER.search(version))
 
 
 def parse_json_with_trailing_commas(text: str) -> dict:
@@ -179,11 +394,15 @@ def sync_external_entry(plugin: dict, dry_run: bool,
                         fetch: Callable[[str], str] = fetch_url) -> Optional[bool]:
     """Raise a third-party entry's latest_version from its repo's manifest.
 
-    Only the version and its date move. Name, description and the rest stay
-    as they were when the entry was reviewed: the author's repo can publish a
-    new release, but it cannot rewrite what the store says about it. A
-    manifest whose id is not the entry's is ignored, so a repo cannot publish
-    versions for some other entry.
+    Only the version, its date and its `ledmatrix_min_version` move. Name,
+    description and the rest stay as they were when the entry was reviewed:
+    the author's repo can publish a new release, but it cannot rewrite what
+    the store says about it. The floor travels with the version because it
+    describes that release, and it is compatibility information only -- the
+    core uses it to refuse an install it would refuse after downloading
+    anyway. It is also filled in for an entry already at the repo's version.
+    A manifest whose id is not the entry's is ignored, so a repo cannot
+    publish versions for some other entry.
 
     Returns True if the entry changed, False if it is current, None if the
     manifest could not be read (a dead or private repo must not fail the run).
@@ -204,34 +423,58 @@ def sync_external_entry(plugin: dict, dry_run: bool,
         return None
 
     remote = str(manifest.get("version") or "")
+    if has_stray_characters(remote):
+        print(f"  {plugin_id}: WARNING - {url} has version {remote!r}, with "
+              f"whitespace or a control character; skipped")
+        return None
     current = plugin.get("latest_version", "")
-    if not remote or parse_version(remote) <= parse_version(current):
+    floor = {"ledmatrix_min_version": declared_min_version(manifest)}
+    if not remote or parse_version(remote) < parse_version(current):
+        print(f"  {plugin_id}: up to date ({current}, external)")
+        return False
+    if parse_version(remote) == parse_version(current):
+        # Same release: only its floor can be missing or out of date.
+        if _apply_derived(plugin, floor, dry_run):
+            print(f"  {plugin_id}: up to date ({current}, external); "
+                  f"ledmatrix_min_version -> {floor['ledmatrix_min_version']}")
+            return True
         print(f"  {plugin_id}: up to date ({current}, external)")
         return False
     print(f"  {plugin_id}: {current} -> {remote} (external)")
     if not dry_run:
         plugin["latest_version"] = remote
         plugin["last_updated"] = release_date(manifest) or datetime.now().strftime("%Y-%m-%d")
+    _apply_derived(plugin, floor, dry_run)
     return True
 
 
 def update_registry(registry_path: str = "plugins.json", dry_run: bool = False,
                     external: bool = False,
-                    fetch: Callable[[str], str] = fetch_url) -> list[tuple[str, str]]:
+                    fetch: Callable[[str], str] = fetch_url,
+                    commits: bool = True) -> list[tuple[str, str]]:
     """
     Update plugins.json with version info from local plugin manifests, and
     with external=True from third-party repos' manifests too.
 
     Returns one ``(kind, message)`` per disagreement found between a monorepo
     entry and its manifest: kind ``"behind"`` or ``"ahead"`` for a version
-    mismatch, ``"metadata"`` for a synced field that differs. Empty means the
-    registry already matches.
+    mismatch, ``"stray"`` for a registry version that is the manifest's plus
+    whitespace or a control character, ``"manifest"`` for a manifest version
+    that has one, ``"metadata"`` for a synced or derived field that differs.
+    Empty means the registry already matches.
     A normal run writes every fix it can; a registry version *ahead* of its
-    manifest is reported but never written, because that would be a downgrade.
-    Third-party version raises (--external) are written but are not drift.
+    manifest is reported but never written, because that would be a downgrade,
+    and neither is a manifest version with a stray character.
+    Third-party version raises (--external) are written but are not drift, and
+    neither are `commit` changes (see the module docstring). ``commits=False``
+    skips the git walk entirely (--check has no use for it).
     """
     registry_file = Path(registry_path)
     plugins_dir = registry_file.parent / "plugins"
+    resolver = CommitResolver.for_repo(registry_file.parent) if commits else None
+    if commits and resolver is None:
+        print("Note: no full git history at the registry's root; "
+              "entry commits are left as they are\n")
 
     with open(registry_file, "r", encoding="utf-8") as f:
         registry = json.load(f)
@@ -277,19 +520,25 @@ def update_registry(registry_path: str = "plugins.json", dry_run: bool = False,
             print(f"  {plugin_id}: no version in manifest")
             continue
 
-        if parse_version(manifest_version) > parse_version(registry_version):
+        version_changed = False
+        if has_stray_characters(manifest_version):
+            # Copying it is how "1.0.10\r" reached plugins.json in #560; once
+            # the manifests were fixed, the registry's copy compared equal.
+            print(f"  {plugin_id}: manifest version {manifest_version!r} has "
+                  f"whitespace or a control character, skipping")
+            drift.append(("manifest",
+                f"{plugin_id}: {_normalise_plugin_path(plugin_path)}/manifest.json "
+                f"version {manifest_version!r} contains whitespace or a control "
+                f"character, so plugins.json was not updated from it. Fix the "
+                f"manifest."))
+        elif parse_version(manifest_version) > parse_version(registry_version):
+            version_changed = True
             print(f"  {plugin_id}: {registry_version} -> {manifest_version}")
             drift.append(("behind",
                 f"{plugin_id}: plugins.json latest_version {registry_version!r} is "
                 f"behind manifest version {manifest_version!r}, so the store "
                 f"never offers the update. Run python update_registry.py and "
                 f"commit plugins.json."))
-            if not dry_run:
-                plugin["latest_version"] = manifest_version
-                # Prefer the manifest's own release date (see release_date);
-                # fall back to today.
-                plugin["last_updated"] = release_date(manifest) or datetime.now().strftime("%Y-%m-%d")
-            updates_made = True
         elif parse_version(manifest_version) < parse_version(registry_version):
             print(f"  {plugin_id}: manifest ({manifest_version}) < registry ({registry_version}), skipping")
             drift.append(("ahead",
@@ -298,8 +547,28 @@ def update_registry(registry_path: str = "plugins.json", dry_run: bool = False,
                 f"offers a version that was never shipped. update_registry.py "
                 f"never downgrades: bump the manifest past it, or correct the "
                 f"registry entry."))
+        elif has_stray_characters(registry_version):
+            # The same version as the (clean) manifest's once int() has
+            # stripped it. Not a new release, so last_updated stays.
+            print(f"  {plugin_id}: {registry_version!r} -> {manifest_version!r}")
+            drift.append(("stray",
+                f"{plugin_id}: plugins.json latest_version {registry_version!r} "
+                f"is not the manifest's {manifest_version!r}: it has whitespace "
+                f"or a control character, which version comparison ignores. "
+                f"Run python update_registry.py and commit plugins.json."))
+            if not dry_run:
+                plugin["latest_version"] = manifest_version
+            updates_made = True
         else:
             print(f"  {plugin_id}: up to date ({registry_version})")
+
+        if version_changed:
+            if not dry_run:
+                plugin["latest_version"] = manifest_version
+                # Prefer the manifest's own release date (see release_date);
+                # fall back to today.
+                plugin["last_updated"] = release_date(manifest) or datetime.now().strftime("%Y-%m-%d")
+            updates_made = True
 
         # Sync user-visible metadata fields from the manifest. The manifest
         # is the source of truth per the module docstring, so the registry
@@ -312,6 +581,11 @@ def update_registry(registry_path: str = "plugins.json", dry_run: bool = False,
                     plugin[field] = value
                 synced_fields.append(field)
                 updates_made = True
+        # And the fields the core reads before it downloads anything.
+        derived = _apply_derived(plugin, derived_fields(manifest, plugin_id), dry_run)
+        if derived:
+            synced_fields += derived
+            updates_made = True
         if synced_fields:
             print(f"    synced fields: {', '.join(synced_fields)}")
             drift.append(("metadata",
@@ -319,6 +593,29 @@ def update_registry(registry_path: str = "plugins.json", dry_run: bool = False,
                 f"{'differs' if len(synced_fields) == 1 else 'differ'} from "
                 f"the manifest. Run python update_registry.py and commit "
                 f"plugins.json."))
+
+        # The commit that introduced this version. Not drift: see the module
+        # docstring. Unknown (no usable history, or a bump not committed
+        # yet) keeps the old value -- unless the version just moved, when the
+        # old value names a commit of the previous release.
+        commit = None
+        if resolver is not None:
+            commit = resolver.introducing_commit(
+                f"{_normalise_plugin_path(plugin_path)}/manifest.json", manifest_version)
+        if commit is not None:
+            if plugin.get("commit") != commit:
+                print(f"    commit: {commit[:12]}")
+                if not dry_run:
+                    plugin["commit"] = commit
+                updates_made = True
+        elif version_changed and "commit" in plugin:
+            print("    commit: dropped (the new version's commit is not known yet)")
+            if not dry_run:
+                del plugin["commit"]
+            updates_made = True
+
+    if resolver is not None:
+        resolver.close()
 
     if updates_made and not dry_run:
         registry["last_updated"] = datetime.now().strftime("%Y-%m-%d")
@@ -360,9 +657,10 @@ def main(argv=None) -> int:
         "--check",
         action="store_true",
         help="Dry run that exits 1 when plugins.json disagrees with the "
-             "manifests (a version in either direction, or synced metadata), a "
-             "plugin directory has no registry entry, or a registry "
-             "plugin_path has no plugin (for CI)",
+             "manifests (a version in either direction, a version with stray "
+             "whitespace or control characters on either side, or synced "
+             "metadata), a plugin directory has no registry entry, or a "
+             "registry plugin_path has no plugin (for CI)",
     )
     parser.add_argument(
         "--external",
@@ -373,7 +671,8 @@ def main(argv=None) -> int:
     args = parser.parse_args(argv)
 
     try:
-        drift = update_registry(args.registry, args.dry_run or args.check, args.external)
+        drift = update_registry(args.registry, args.dry_run or args.check, args.external,
+                                commits=not args.check)
         problems = check_consistency(args.registry)
     except FileNotFoundError:
         print(f"Error: Could not find {args.registry}")
@@ -383,10 +682,11 @@ def main(argv=None) -> int:
         return 1
 
     # A normal run has just written every drift fix except "registry ahead",
-    # which would be a downgrade. --check is about the file as committed, so
-    # it reports all of it.
+    # which would be a downgrade, and a stray character in the manifest, which
+    # only the manifest can fix. --check is about the file as committed, so it
+    # reports all of it.
     problems = [message for kind, message in drift
-                if args.check or kind == "ahead"] + problems
+                if args.check or kind in ("ahead", "manifest")] + problems
 
     if not problems:
         if args.check:

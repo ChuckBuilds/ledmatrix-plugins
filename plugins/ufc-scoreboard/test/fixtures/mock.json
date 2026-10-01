@@ -345,19 +345,19 @@
       }
     ]
   },
-  "odds_espn_mma_ufc_600050001_600050001": {
+  "odds_espn_mma_ufc_600050000_600050001": {
     "no_odds": true
   },
-  "odds_espn_mma_ufc_600050011_600050011": {
+  "odds_espn_mma_ufc_600050010_600050011": {
     "no_odds": true
   },
-  "odds_espn_mma_ufc_600050012_600050012": {
+  "odds_espn_mma_ufc_600050010_600050012": {
     "no_odds": true
   },
-  "odds_espn_mma_ufc_600050013_600050013": {
+  "odds_espn_mma_ufc_600050010_600050013": {
     "no_odds": true
   },
-  "odds_espn_mma_ufc_600050021_600050021": {
+  "odds_espn_mma_ufc_600050020_600050021": {
     "details": "COSTA -165",
     "over_under": 2.5,
     "spread": null,
@@ -370,10 +370,10 @@
       "spread_odds": null
     }
   },
-  "odds_espn_mma_ufc_600050022_600050022": {
+  "odds_espn_mma_ufc_600050020_600050022": {
     "no_odds": true
   },
-  "odds_espn_mma_ufc_600050031_600050031": {
+  "odds_espn_mma_ufc_600050030_600050031": {
     "no_odds": true
   }
 }

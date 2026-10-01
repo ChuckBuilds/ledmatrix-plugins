@@ -123,7 +123,7 @@ and, for upcoming fights, `ufc.filtering.show_favorite_fighters_only`:
 |---|---|---|
 | Recent | No | The `recent_games_to_show` most recent finished fights. |
 | Recent | Yes | The most recent finished fight for each favorite fighter and weight class. |
-| Upcoming | No, or `show_favorite_fighters_only` **off** (default) | The next `upcoming_games_to_show` fights chronologically. |
+| Upcoming | No, or `show_favorite_fighters_only` **off** (default) | The next `upcoming_games_to_show` fights chronologically. When a card has more bouts than fit, its early prelims are dropped first, so the co-main and main event stay in the pool. |
 | Upcoming | Yes, with `show_favorite_fighters_only` **on** | The next `upcoming_games_to_show` fights involving your fighters or weight classes. |
 
 `show_favorite_fighters_only` defaults to **off** here, unlike the team
