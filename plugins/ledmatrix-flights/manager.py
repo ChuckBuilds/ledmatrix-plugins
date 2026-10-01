@@ -3917,19 +3917,44 @@ class FlightTrackerPlugin(BasePlugin):
             # Draw single pixel for each aircraft
             draw.point(pixel, fill=color)
 
-        # Draw info text with pixel-perfect rendering for better readability
+        # The aircraft count and icon, drawn once per count and size and pasted:
+        # outlined text is most of a redraw's cost (~4.5 ms of ~8 on a Pi 4),
+        # and the gliding map redraws several times a second.
         if len(snap.aircraft) > 0:
-            # Draw aircraft count
-            info_text = f"{len(snap.aircraft)}"
-            self._draw_text_smart(draw, info_text, (2, 2), self.fonts['small'],
-                                fill=(200, 200, 200), use_outline=False)
+            offset, patch = self._count_overlay(len(snap.aircraft), img.size)
+            img.paste(patch, offset, patch)
 
-            # Get text width to position the airplane icon
-            bbox = draw.textbbox((0, 0), info_text, font=self.fonts['small'])
-            text_width = bbox[2] - bbox[0]
+    def _count_overlay(self, count: int, size: Tuple[int, int]) -> Tuple[Tuple[int, int], Image.Image]:
+        """(offset, RGBA patch) of the count and airplane icon, as _draw_heads draws them.
 
-            # Draw airplane icon after the count (with 2px spacing)
-            self._draw_airplane_icon(draw, 2 + text_width + 2, 2, color=(200, 200, 200))
+        Drawn on a transparent canvas with the same 1-bit, fully opaque calls
+        the map used to make directly, so pasting it through its own alpha
+        gives the same pixels. Memoised per count and size; the redraw thread
+        may read it without the plugin's lock, so entries are only added
+        (dict stores are atomic) and the memo is replaced, never cleared.
+        """
+        memo = getattr(self, '_count_overlays', None)
+        if memo is None or len(memo) > 64:
+            memo = self._count_overlays = {}
+        key = (count, size, id(self.fonts['small']))
+        cached = memo.get(key)
+        if cached is not None:
+            return cached
+        canvas = Image.new('RGBA', size, (0, 0, 0, 0))
+        draw = ImageDraw.Draw(canvas)
+        draw.fontmode = "1"
+        info_text = f"{count}"
+        self._draw_text_smart(draw, info_text, (2, 2), self.fonts['small'],
+                              fill=(200, 200, 200), use_outline=False)
+        # Get text width to position the airplane icon
+        bbox = draw.textbbox((0, 0), info_text, font=self.fonts['small'])
+        text_width = bbox[2] - bbox[0]
+        # Draw airplane icon after the count (with 2px spacing)
+        self._draw_airplane_icon(draw, 2 + text_width + 2, 2, color=(200, 200, 200))
+        box = canvas.getbbox() or (0, 0, 1, 1)
+        cached = ((box[0], box[1]), canvas.crop(box))
+        memo[key] = cached
+        return cached
 
     @staticmethod
     def _draw_trail(draw: ImageDraw.ImageDraw, projection: _MapProjection, index: int,
