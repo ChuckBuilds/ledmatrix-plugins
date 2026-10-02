@@ -1,5 +1,16 @@
 # Changelog
 
+## [3.18.2] - 2026-10-01
+
+### Fixed
+- Adaptive layout (`layout_mode: adaptive`) no longer draws one league's logo
+  on the other league's card when they share an abbreviation. NFL and NCAA FB
+  share ten (CAR CIN DAL DEN HOU LAC MIA NE TB TBD) and one scroll strip
+  carries both, but `_load_raw_logo` and the fitted-logo `cache_key` were
+  keyed by abbreviation alone, so whichever Miami was drawn first won. Both
+  are now scoped by logo directory (`_logo_scope`), as the classic cache
+  already was. Classic layout is unchanged.
+
 ## [3.18.1] - 2026-10-01
 
 ### Changed
