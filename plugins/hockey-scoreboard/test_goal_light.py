@@ -57,7 +57,6 @@ def check(name, passed, detail=None):
 def main():
     os.chdir(str(CORE))
     from PIL import Image, ImageChops
-    import hockey
     import hockey_goal_light as gl
     from manager import HockeyScoreboardPlugin
 
@@ -83,8 +82,6 @@ def main():
           all(f.get("type") == "boolean" and f.get("x-advanced") for f in found))
 
     logo_dir = CORE / "assets" / "sports" / "nhl_logos"
-    logos = {}
-
     def logo_for(abbr, h):
         p = logo_dir / ("%s.png" % abbr)
         if p.exists():
@@ -177,7 +174,6 @@ def main():
 
     ys = ((64 - (gl.SH + gl.SHADOW)) // 2)
     cy = ys + 11
-    probe = (cx, cy)
     colours = set()
     for k in range(16):
         e = k * 1000 // (gl.CYCLES_PER_SECOND_X100 * gl.STEPS // 100) / 1000.0
