@@ -420,7 +420,7 @@ Under `customization.goal_scorer`:
 
 ### Game activity pop-ups
 
-**Off by default, NHL only, panels 64 rows or taller.** Turn on
+**Off by default, NHL only, panels 32 rows or taller.** Turn on
 `nhl.display_options.show_game_activity` and the plays between goals pop up
 along the bottom of the live scorebug, so a scoreless game still shows the
 action:
@@ -445,8 +445,10 @@ the font first. Then it gives up, in order, the initial (`A. Matthews` →
 `Matthews`), the long label (`SHOT ON GOAL!` → `SHOT!`), the period ordinal,
 and last of all the clock. A 256-wide panel shows the whole line, a 128×64
 shows `Matthews SHOT ON GOAL!  2nd 12:34`, and a 64×64 is left with
-`Matthews SHOT!`. Panels under 64 rows are never drawn on: there the score
-sits right on the bottom row.
+`Matthews SHOT!`. A 128×32 shows the whole line too; a 96×48 drops the long
+label and a 64×32 also drops the clock. The banner takes the shot line's row,
+which on a 32-row panel sits below the score, so the score is never covered.
+Panels under 32 rows are never drawn on: there is no row below the score.
 
 Goals are left to the [celebration](#goal-and-win-celebrations) and the
 [goal scorer card](#goal-scorer-card), which take the whole panel.
@@ -457,7 +459,7 @@ game on screen, once per live update (`update_intervals.live`, 30 s by
 default for the NHL). That costs one extra ESPN request per live update, and
 only while the live scorebug is on screen. Polling stops while another plugin
 is showing, in `scroll` mode (the scroll and Vegas cards have no pop-ups), and
-on panels under 64 rows. It also means a pop-up can trail the play by up to that
+on panels under 32 rows. It also means a pop-up can trail the play by up to that
 interval, and the clock on it says when the play happened. The first poll of a
 game only notes where the feed is up to, so joining a game mid-period does not
 replay every shot it has had. A burst of plays keeps the newest three.
@@ -549,7 +551,7 @@ All **Advanced**.
 | `<league>.display_options.show_shots_on_goal` | boolean | `true` / `false` | Draw the shot line on live cards. |
 | `<league>.display_options.show_powerplay` | boolean | `true` / `false` | Mark live games during a power play — see [Power play](#power-play). |
 | `<league>.display_options.show_goal_scorer` | boolean | `false` | **NHL only.** A card naming the player who scored. Independent of the celebration — see [Goal scorer card](#goal-scorer-card). |
-| `<league>.display_options.show_game_activity` | boolean | `false` | **NHL only.** Pop up shots, penalties and other plays along the bottom of the live scorebug on panels 64 rows or taller — see [Game activity pop-ups](#game-activity-pop-ups). |
+| `<league>.display_options.show_game_activity` | boolean | `false` | **NHL only.** Pop up shots, penalties and other plays along the bottom of the live scorebug on panels 32 rows or taller — see [Game activity pop-ups](#game-activity-pop-ups). |
 
 ![show_records on and off](../../docs/assets/hockey-scoreboard/show-records.png)
 

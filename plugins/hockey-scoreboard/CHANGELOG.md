@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.41.0] - 2026-10-01
+
+### Changed
+- Game-activity pop-ups draw on 32- and 48-row panels, not only 64 and up.
+  The banner takes the scorebug's bottom row (the shot line), which on a
+  32-row panel sits below the score, so the score is never covered. The line
+  fits itself to the width: a 128x32 shows the whole line, a 96x48 drops the
+  long label, a 64x32 also drops the clock. Panels under 32 rows are still
+  left alone. Nothing changes unless `show_game_activity` is on.
+
 ## [1.40.1] - 2026-10-01
 
 ### Changed
