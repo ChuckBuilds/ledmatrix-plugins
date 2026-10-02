@@ -139,13 +139,9 @@
             "minimum": 0
           },
           "layout": {
-            "type": [
-              "object",
-              "string",
-              "null"
-            ],
+            "type": "object",
             "title": "Layout",
-            "description": "Pixel position and size overrides. Leave at 0 or null to use smart defaults (image on left 1/3, text on right 2/3). Accepts null or an empty string as well as an object: the array-table editor keeps non-column properties in a hidden input, and an untouched row sends that back empty.",
+            "description": "Pixel position and size overrides. Leave at 0 or blank to use smart defaults: image-left and image-right give the image a third of the display width and the full height, image-only gives it the whole display. The image is scaled to fit inside its box.",
             "properties": {
               "image_x": {
                 "x-advanced": true,
@@ -169,7 +165,7 @@
                 "title": "Image Width",
                 "default": 0,
                 "minimum": 0,
-                "description": "Image render width in pixels (0 = auto: 1/3 of display width)"
+                "description": "Width of the box the image is scaled into, in pixels (0 = auto: 1/3 of display width, whole width for image-only)"
               },
               "image_height": {
                 "x-advanced": true,
@@ -177,7 +173,7 @@
                 "title": "Image Height",
                 "default": 0,
                 "minimum": 0,
-                "description": "Image render height in pixels (0 = auto: full display height)"
+                "description": "Height of the box the image is scaled into, in pixels (0 = auto: full display height)"
               },
               "name_x": {
                 "x-advanced": true,
@@ -222,13 +218,9 @@
             }
           },
           "style": {
-            "type": [
-              "object",
-              "string",
-              "null"
-            ],
+            "type": "object",
             "title": "Style",
-            "description": "Per-countdown font and color overrides. null values inherit global settings. Accepts null or an empty string as well as an object: the array-table editor keeps non-column properties in a hidden input, and an untouched row sends that back empty.",
+            "description": "Per-countdown font and color overrides. Blank values inherit the global settings.",
             "properties": {
               "font_family": {
                 "x-advanced": true,

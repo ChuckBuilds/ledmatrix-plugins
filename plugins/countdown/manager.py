@@ -138,17 +138,32 @@ class CountdownPlugin(BasePlugin):
 
     # ─── Normalization ───────────────────────────────────────────────────────
 
+    @staticmethod
+    def _to_int(value: Any) -> Optional[int]:
+        """A whole number from whatever the settings form delivered, or None.
+
+        The form posts strings, and a number box can hold "64.0" or be left
+        blank. int() on those raised out of the constructor and took the whole
+        plugin down with it; blank now means "not set" instead.
+        """
+        if value is None or isinstance(value, bool):
+            return None
+        try:
+            return int(float(str(value).strip()))
+        except (ValueError, TypeError, OverflowError):
+            return None
+
     def _normalize_layout(self, raw: Any) -> Dict[str, Any]:
         d = raw if isinstance(raw, dict) else {}
         return {
-            "image_x":      max(0, int(d.get("image_x", 0) or 0)),
-            "image_y":      max(0, int(d.get("image_y", 0) or 0)),
-            "image_width":  max(0, int(d.get("image_width", 0) or 0)),
-            "image_height": max(0, int(d.get("image_height", 0) or 0)),
-            "name_x":       d.get("name_x"),
-            "name_y":       d.get("name_y"),
-            "value_x":      d.get("value_x"),
-            "value_y":      d.get("value_y"),
+            "image_x":      max(0, self._to_int(d.get("image_x")) or 0),
+            "image_y":      max(0, self._to_int(d.get("image_y")) or 0),
+            "image_width":  max(0, self._to_int(d.get("image_width")) or 0),
+            "image_height": max(0, self._to_int(d.get("image_height")) or 0),
+            "name_x":       self._to_int(d.get("name_x")),
+            "name_y":       self._to_int(d.get("name_y")),
+            "value_x":      self._to_int(d.get("value_x")),
+            "value_y":      self._to_int(d.get("value_y")),
         }
 
     def _normalize_style(self, raw: Any) -> Dict[str, Any]:
@@ -725,9 +740,9 @@ class CountdownPlugin(BasePlugin):
 
             if _has_px_override:
                 # User set explicit pixel positions — honour them directly
-                img_x = layout.get('image_x', 0)
-                img_y = layout.get('image_y', 0)
-                text_area_x = img_x + img_w if cd_image else 0
+                img_x = min(layout.get('image_x', 0), dw - 1)
+                img_y = min(layout.get('image_y', 0), dh - 1)
+                text_area_x = min(img_x + img_w, dw - 1) if cd_image else 0
                 text_area_w = dw - text_area_x
             elif layout_preset == 'image-left':
                 img_x, img_y = 0, 0
@@ -745,6 +760,12 @@ class CountdownPlugin(BasePlugin):
                 img_x, img_y = 0, 0
                 text_area_x  = img_w if cd_image else 0
                 text_area_w  = dw - text_area_x
+
+            # An explicit size (or an offset plus a size) can reach past the
+            # panel. Keep the box on the panel so the image is scaled to what
+            # is visible rather than scaled to a size and cropped.
+            img_w = max(1, min(img_w, dw - img_x))
+            img_h = max(1, min(img_h, dh - img_y))
 
             # Vertical position overrides or smart defaults
             name_y  = layout.get('name_y')  if layout.get('name_y')  is not None else (dh // 3)

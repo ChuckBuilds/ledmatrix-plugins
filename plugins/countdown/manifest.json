@@ -1,7 +1,7 @@
 {
   "id": "countdown",
   "name": "Countdown Display",
-  "version": "3.3.3",
+  "version": "3.3.4",
   "author": "ChuckBuilds",
   "description": "Create and manage customizable countdowns with images. Perfect for birthdays, holidays, events, and special occasions.",
   "entry_point": "manager.py",
@@ -21,6 +21,12 @@
     ">=2.0.0"
   ],
   "versions": [
+    {
+      "version": "3.3.4",
+      "released": "2026-10-02",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Make the image size settings save and apply. layout and style were declared as a union type (object, string or null), which the settings page does not recognise as an object: it rendered one hidden input holding Python's repr of the stored dict, and the save read that back as an empty object. Every Image X/Y/Width/Height, name/value position and per-countdown font or colour override was wiped on each save, and the advanced editor had no input to write its edits into. Both are plain objects again, so the editor builds real fields and the values round-trip. Also: a size typed into the form as text (40.0, blank) no longer raises out of the constructor, and an image box that reaches past the panel edge is scaled to the visible area instead of being scaled to its full size and cropped."
+    },
     {
       "version": "3.3.3",
       "released": "2026-09-28",
