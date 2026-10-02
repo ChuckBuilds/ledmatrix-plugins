@@ -1,5 +1,19 @@
 # Changelog
 
+## [3.18.3] - 2026-10-01
+
+### Changed
+- Scroll strips build faster. `ScrollDisplay.prepare_scroll_content` keeps
+  its `GameRenderer` between builds (`_take_card_renderer` /
+  `_keep_card_renderer`) instead of constructing one per strip, which
+  reloaded fonts and element styles and, in adaptive layout, dropped every
+  fitted logo and text size. `_default_game_card_width` keeps its answer
+  instead of probing with up to a dozen throwaway renderers on every read of
+  the scroll settings. Both are rebuilt when the config object, card width or
+  panel height changes; two overlapping builds never share a renderer.
+  A seven-card strip built in about half the time on a desktop (classic
+  6.0 -> 3.4 ms, adaptive 7.2 -> 3.2 ms); the strips are pixel-identical.
+
 ## [3.18.2] - 2026-10-01
 
 ### Fixed

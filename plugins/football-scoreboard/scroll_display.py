@@ -103,6 +103,15 @@ class ScrollDisplay(_ScrollDisplayBase):
         so a 256px card, and the extra width lands as dead space either
         side of the score rather than as anything legible.
         """
+        # Asked on every read of the scroll settings, so on every strip build,
+        # and each answer builds up to a dozen throwaway renderers. It
+        # depends only on the config and the panel height, so the answer is
+        # kept for as long as both are the same objects. A failed probe is
+        # not kept.
+        memo = self.__dict__.get('_card_width_memo')
+        if (memo is not None and memo[0] is self.config
+                and memo[1] == self.display_height):
+            return memo[2]
         try:
             # The gap has to be measured at the width we are going to
             # USE, not at the probe width. When center_gap_ratio drives
@@ -137,6 +146,7 @@ class ScrollDisplay(_ScrollDisplayBase):
             self.logger.debug("Card width probe failed; keeping 128",
                               exc_info=True)
             return 128
+        self._card_width_memo = (self.config, self.display_height, width)
         return width
 
     def _load_separator_icons(self) -> None:
@@ -201,6 +211,43 @@ class ScrollDisplay(_ScrollDisplayBase):
         else:
             # Default to upcoming if state is unknown
             return 'upcoming'
+
+    def _take_card_renderer(self, card_width: int) -> GameRenderer:
+        """The renderer this display's last build used, or a new one.
+
+        A GameRenderer is costly to build and cheap to keep: its constructor
+        loads fonts and the element-style schema, and in adaptive layout its
+        LayoutContext caches every fitted logo and text size, which a fresh
+        renderer per build threw away -- most of a seven-card strip's build
+        time on the adaptive path. Its caches are bounded (LayoutContext's
+        LRUs, the 128-entry raw logo LRU), so keeping one costs no growth.
+
+        Taken, not shared: the renderer is popped off the display (a single
+        dict operation, so two overlapping builds cannot both get it) and put
+        back by _keep_card_renderer when the build has drawn its cards. A
+        build that overlaps, or one that raised before putting it back, just
+        builds a new one. It is only reused for the same card size, the same
+        config object and the same logo cache; a config change rebuilds the
+        whole scroll manager anyway.
+        """
+        held = self.__dict__.pop('_card_renderer', None)
+        if (held is not None
+                and held.display_width == card_width
+                and held.display_height == self.display_height
+                and held.config is self.config
+                and held._logo_cache is self._logo_cache):
+            return held
+        return GameRenderer(
+            card_width,
+            self.display_height,
+            self.config,
+            logo_cache=self._logo_cache,
+            custom_logger=self.logger
+        )
+
+    def _keep_card_renderer(self, renderer: GameRenderer) -> None:
+        """Hand the renderer back for the next build (see _take_card_renderer)."""
+        self._card_renderer = renderer
 
     def make_vegas_renderer(self, card_width: int,
                             rankings_cache: Optional[Dict[str, int]] = None) -> GameRenderer:
@@ -275,15 +322,9 @@ class ScrollDisplay(_ScrollDisplayBase):
 
         # Create game renderer using game_card_width so cards are a fixed size
         # regardless of the full chain width (display_width may span multiple panels)
-        renderer = GameRenderer(
-            game_card_width,
-            self.display_height,
-            self.config,
-            logo_cache=self._logo_cache,
-            custom_logger=self.logger
-        )
-        if rankings_cache:
-            renderer.set_rankings_cache(rankings_cache)
+        renderer = self._take_card_renderer(game_card_width)
+        # Always set, so a reused renderer cannot keep the last build's ranks.
+        renderer.set_rankings_cache(rankings_cache or {})
 
         # Pre-render all game cards
         content_items: List[Image.Image] = []
@@ -342,6 +383,8 @@ class ScrollDisplay(_ScrollDisplayBase):
             except Exception as e:
                 self.logger.error(f"Error rendering game card: {e}")
                 continue
+
+        self._keep_card_renderer(renderer)
 
         if not content_items:
             self.logger.warning("No game cards rendered")
