@@ -81,7 +81,8 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "1.55.0",
-      "ledmatrix_min_version": "3.9.0"
+      "ledmatrix_min_version": "3.9.0",
+      "commit": "3a72de24eca56d68e0c0661faccfbaf0c7dae662"
     },
     {
       "id": "basketball-scoreboard",
@@ -107,7 +108,8 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "1.42.0",
-      "ledmatrix_min_version": "3.9.0"
+      "ledmatrix_min_version": "3.9.0",
+      "commit": "3a72de24eca56d68e0c0661faccfbaf0c7dae662"
     },
     {
       "id": "calendar",
@@ -282,7 +284,8 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "3.19.0",
-      "ledmatrix_min_version": "3.9.0"
+      "ledmatrix_min_version": "3.9.0",
+      "commit": "3a72de24eca56d68e0c0661faccfbaf0c7dae662"
     },
     {
       "id": "geochron",
@@ -384,7 +387,8 @@
       "screenshot": "",
       "latest_version": "1.43.0",
       "icon": "fas fa-hockey-puck",
-      "ledmatrix_min_version": "3.9.0"
+      "ledmatrix_min_version": "3.9.0",
+      "commit": "3a72de24eca56d68e0c0661faccfbaf0c7dae662"
     },
     {
       "id": "lacrosse-scoreboard",
@@ -710,7 +714,8 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "1.8.0",
-      "ledmatrix_min_version": "3.9.0"
+      "ledmatrix_min_version": "3.9.0",
+      "commit": "3a72de24eca56d68e0c0661faccfbaf0c7dae662"
     },
     {
       "id": "of-the-day",
@@ -843,7 +848,8 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "2.40.0",
-      "ledmatrix_min_version": "3.9.0"
+      "ledmatrix_min_version": "3.9.0",
+      "commit": "3a72de24eca56d68e0c0661faccfbaf0c7dae662"
     },
     {
       "id": "static-image",
@@ -1160,7 +1166,8 @@
       "screenshot": "",
       "latest_version": "1.36.0",
       "last_updated": "2026-10-02",
-      "ledmatrix_min_version": "3.9.0"
+      "ledmatrix_min_version": "3.9.0",
+      "commit": "3a72de24eca56d68e0c0661faccfbaf0c7dae662"
     },
     {
       "id": "tidbyt-baseball-scoreboard",
@@ -1207,7 +1214,8 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "1.35.0",
-      "ledmatrix_min_version": "3.9.0"
+      "ledmatrix_min_version": "3.9.0",
+      "commit": "3a72de24eca56d68e0c0661faccfbaf0c7dae662"
     },
     {
       "id": "jellyfin-now-playing",

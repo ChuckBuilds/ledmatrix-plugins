@@ -9,6 +9,9 @@
   before is still read, so an upgrade serves the copy already on disk instead
   of refetching every league at once; a window that moves on a day deletes its
   copy from the day before. Requires LEDMatrix core 3.9.0.
+- The live poll also leaves today's scoreboard under that key (it still asks
+  ESPN on every poll), so odds-ticker reuses it instead of fetching the same
+  day again.
 
 ## [1.54.3] - 2026-10-01
 

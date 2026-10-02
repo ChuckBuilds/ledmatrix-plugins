@@ -9,6 +9,10 @@
   before is still read, so an upgrade serves the copy already on disk instead
   of refetching every league at once; a window that moves on a day deletes its
   copy from the day before. Requires LEDMatrix core 3.9.0.
+- The live poll's 30-second cache moves from `<sport_key>_scoreboard_current`,
+  whatever the dates, to the shared key for the dates it asks, so odds-ticker
+  and the scoreboard read each other's copy; the old key is read for a
+  release.
 
 ## [1.41.1] - 2026-10-01
 

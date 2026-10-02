@@ -20,7 +20,13 @@ from urllib3.util.retry import Retry
 from dynamic_team_resolver import DynamicTeamResolver
 from data_sources import ESPNDataSource
 # ESPN date-range helper: core ships it from 3.5.0, the manifest's floor.
-from src.common.espn_dates import ESPN_MAX_LIMIT, fetch_espn_scoreboard
+from src.common.espn_dates import (
+    ESPN_MAX_LIMIT,
+    espn_scoreboard_cache_key,
+    fetch_espn_scoreboard,
+    read_espn_scoreboard_cache,
+    store_espn_scoreboard_cache,
+)
 from basketball_timezone import resolve_timezone
 
 # Import main logo downloader (same as football plugin)
@@ -1651,14 +1657,6 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
             # This works around the date range limitation
             url = f"https://site.api.espn.com/apis/site/v2/sports/{self.sport}/{self.league}/scoreboard"
             
-            # Check cache first (short TTL for live data)
-            cache_key = f"{self.sport_key}_scoreboard_current"
-            cached_data = self.cache_manager.get(cache_key, max_age=30)   # 30s cache for live data
-            if cached_data:
-                if isinstance(cached_data, dict) and "events" in cached_data:
-                    self.logger.debug(f"Using cached current scoreboard for {self.sport}/{self.league}")
-                    return cached_data
-            
             # For NCAA Basketball, don't use dates parameter (it causes 404)
             # For other sports, use today's date
             if self.league in ["mens-college-basketball", "womens-college-basketball"]:
@@ -1680,6 +1678,18 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
                 params = {"dates": dates_param, "limit": ESPN_MAX_LIMIT}
                 self.logger.debug(f"Fetching today's games for {self.sport}/{self.league} on dates {dates_param}")
             
+            # Shared with any plugin showing the same scoreboard and dates
+            # (core espn_scoreboard_cache_key; this was
+            # "<sport_key>_scoreboard_current" whatever the dates). At most
+            # 30 s old, as before; the old key is still read for a release.
+            cache_key = espn_scoreboard_cache_key(self.sport, self.league, params.get("dates"))
+            cached_data = read_espn_scoreboard_cache(
+                self.cache_manager, cache_key, 30,
+                legacy_keys=(f"{self.sport_key}_scoreboard_current",))
+            if cached_data and "events" in cached_data:
+                self.logger.debug(f"Using cached current scoreboard for {self.sport}/{self.league}")
+                return cached_data
+
             data = fetch_espn_scoreboard(
                 self.session,
                 url,
@@ -1706,8 +1716,8 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
                         f"shortDetail={status_type.get('shortDetail', 'N/A')}"
                     )
             
-            # Cache the result (short TTL for live data)
-            self.cache_manager.set(cache_key, data)
+            # Cache the result for the next 30 s, for every reader
+            store_espn_scoreboard_cache(self.cache_manager, cache_key, data)
             return {"events": events}
         except requests.exceptions.RequestException as e:
             self.logger.error(
