@@ -1395,12 +1395,11 @@
       "plugin_path": "plugins/nfl-stat-leaders",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-27",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.1",
-      "ledmatrix_min_version": "3.4.0",
-      "commit": "764eb4d05342252cb2677f0fa4ba9f3cd8e5706a"
+      "latest_version": "1.0.2",
+      "ledmatrix_min_version": "3.4.0"
     },
     {
       "id": "fantasy-blitz",
