@@ -12,6 +12,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from PIL import Image, ImageDraw, ImageFont
 
+from baseball_celebration import BaseballCelebrationMixin
+from baseball_scorer_card import BaseballScorerCardMixin
 from data_sources import ESPNDataSource
 from sports import (
     RESAMPLE_FILTER, SportsCore, SportsLive, SportsRecent, _resolve_font_path)
@@ -1141,7 +1143,7 @@ class BaseballRecent(Baseball, SportsRecent):
             self.fonts["time"] = original
 
 
-class BaseballLive(Baseball, SportsLive):
+class BaseballLive(BaseballScorerCardMixin, BaseballCelebrationMixin, Baseball, SportsLive):
     """Base class for live baseball games."""
 
     def __init__(
@@ -1177,6 +1179,8 @@ class BaseballLive(Baseball, SportsLive):
             "player_bio_update_interval", 300
         )
         self._headshot_mgr = None  # lazily created in the render path
+        self._init_celebration()
+        self._init_scorer_card()
 
     def _at_bat_card_style(self) -> str:
         """'card' (the default) draws the pitcher/batter screen as a full
@@ -1196,6 +1200,9 @@ class BaseballLive(Baseball, SportsLive):
 
     def update(self):
         super().update()
+        # Every included live game, after the poll has refreshed live_games.
+        self._check_scores_of_live_games()
+        self._check_scorer_cards()
         if self.test_mode:
             return
         pbp_wanted = self.show_pitcher_batter or self.show_last_play or self.show_player_card
@@ -1271,7 +1278,18 @@ class BaseballLive(Baseball, SportsLive):
         """
         if str(details.get("status") or "").lower() in self._NOT_PLAYED_STATUSES:
             return
+        # The one place a game going final is seen with its details: a
+        # favourite that won it earns the win celebration on the way out.
+        self._check_for_win(details)
         super()._keep_final_for_vegas(details)
+
+    def display(self, force_clear: bool = False) -> bool:
+        """A run, home run or win takes the panel; otherwise the scorebug."""
+        if not self.is_enabled:
+            return False
+        if self._celebration_display(force_clear):
+            return True
+        return super().display(force_clear)
 
     def _count_bdf_font(self):
         """A private 7px 5x7 BDF face for the balls-strikes count.
@@ -2384,6 +2402,9 @@ class BaseballLive(Baseball, SportsLive):
 
     def _draw_scorebug_layout(self, game: Dict, force_clear: bool = False) -> None:
         """Draw the detailed scorebug layout for a live baseball game."""
+        # Who just scored comes first: it is the second beat of a run.
+        if self._maybe_draw_scorer_card(game, force_clear):
+            return
         if self._maybe_draw_at_bat_info_screen(game, force_clear):
             return
         if self._maybe_draw_player_card_screen(game, force_clear):
