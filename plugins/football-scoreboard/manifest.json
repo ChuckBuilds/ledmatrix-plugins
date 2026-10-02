@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "3.18.2",
+  "version": "3.18.3",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "3.18.3",
+      "released": "2026-10-01",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "Scroll strips build faster: the scroll display keeps its game-card renderer from one strip build to the next instead of building a new one each time (fonts, element styles and, in adaptive layout, every fitted logo and text size were loaded again per strip), and remembers the card width it measured rather than measuring it with up to a dozen throwaway renderers on every build. Both are rebuilt when the config, card size or panel changes. About half the build time on a desktop for a seven-card strip; strips look exactly as before."
+    },
     {
       "version": "3.18.2",
       "released": "2026-10-01",
