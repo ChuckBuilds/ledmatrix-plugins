@@ -1,7 +1,7 @@
 {
   "id": "hockey-scoreboard",
   "name": "Hockey Scoreboard",
-  "version": "1.40.1",
+  "version": "1.42.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, and NCAA Women's hockey with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/hockey-scoreboard",
@@ -54,6 +54,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.42.0",
+      "released": "2026-10-01",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "A flashing goal light for the goal celebration, off by default (<league>.celebration_goal_light). A pixel-art rink beacon in the scoring team's colour sits beside its crest: a bell-shaped lens on a bolted base, the reflector sweeping the glass while striped beams fan out either side and trade left and right, with a stepped drop shadow, scanlines on the beams and twinkles, in the style of Fantasy Blitz and blackjack. Goals only, not wins. Needs a panel at least 256 wide and 48 tall; smaller panels draw the plain celebration. It is laid over the frame core draws, costs about a tenth of a millisecond a frame, and a drawing error shows the plain takeover."
+    },
     {
       "version": "1.40.1",
       "released": "2026-10-01",

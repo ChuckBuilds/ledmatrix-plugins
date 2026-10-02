@@ -985,6 +985,9 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
                 "celebration_confetti": league_config.get(
                     "celebration_confetti", True
                 ),
+                "celebration_goal_light": league_config.get(
+                    "celebration_goal_light", False
+                ),
                 "update_interval_seconds": update_interval_seconds,
                 "live_update_interval": live_update_interval,
                 "recent_update_interval": recent_update_interval,

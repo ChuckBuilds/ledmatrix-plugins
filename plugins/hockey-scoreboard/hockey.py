@@ -7,6 +7,7 @@ from typing import Any, Deque, Dict, List, Optional, Tuple
 from PIL import Image, ImageDraw, ImageFont
 
 from data_sources import ESPNDataSource
+import hockey_goal_light
 from sports import SportsCore, SportsLive
 
 #: Colour of the power-play marker (and of the clock row when there is no room
@@ -425,6 +426,28 @@ class Hockey(SportsCore):
             return None
 
 
+class _HeldFrame:
+    """Stands in for display_manager while core draws the takeover, holding the
+    finished frame instead of presenting it, so the goal light can be laid on
+    before anything reaches the panel. Everything else passes through."""
+
+    def __init__(self, real):
+        object.__setattr__(self, "_real", real)
+        object.__setattr__(self, "frame", None)
+
+    def __getattr__(self, name):
+        return getattr(object.__getattribute__(self, "_real"), name)
+
+    def __setattr__(self, name, value):
+        if name == "image":
+            object.__setattr__(self, "frame", value)
+        else:
+            setattr(object.__getattribute__(self, "_real"), name, value)
+
+    def update_display(self, *args, **kwargs):
+        return None
+
+
 class HockeyLive(Hockey, SportsLive):
     def __init__(
         self,
@@ -454,6 +477,54 @@ class HockeyLive(Hockey, SportsLive):
         self._activity_inflight = False
         # Last time the live scorebug was drawn where a pop-up could show.
         self._activity_drawn_at = 0.0
+        # The goal light beside the scoring crest during a goal takeover.
+        # Off unless the league turns it on, and drawn only where it fits.
+        self.celebration_goal_light = bool(
+            self.mode_config.get("celebration_goal_light", False)
+        )
+
+    # ------------------------------------------------------------------
+    # Goal light
+    #
+    # Core draws the takeover (src.common.sports_celebration) and presents
+    # it in the same call, so the beacon is laid over the finished frame by
+    # catching it on the way to the panel. It is a function of elapsed time
+    # only, and a failure draws the plain takeover.
+    # ------------------------------------------------------------------
+
+    def _draw_celebration_layout(self, celebration: Dict, force_clear: bool = False) -> None:
+        if not (
+            getattr(self, "celebration_goal_light", False)
+            and celebration.get("kind") == "goal"
+        ):
+            return super()._draw_celebration_layout(celebration, force_clear)
+
+        real = self.display_manager
+        held = _HeldFrame(real)
+        self.display_manager = held
+        try:
+            super()._draw_celebration_layout(celebration, force_clear)
+        finally:
+            self.display_manager = real
+        frame = held.frame
+        if frame is None:
+            return
+        try:
+            side = celebration.get("scored_side")
+            crest = self._celebration_crests(celebration, frame.height).get(side)
+            elapsed = max(0.0, time.time() - celebration["started_at"])
+            frame = hockey_goal_light.draw_goal_light(
+                frame,
+                side,
+                max(0, crest.width - 2) if crest is not None else 0,
+                self._celebration_palette(celebration)["headline"],
+                elapsed,
+                float(getattr(self, "celebration_duration", 8) or 8),
+            )
+        except Exception as e:  # noqa: BLE001 - never lose a takeover to a lamp
+            self.logger.debug(f"Goal light skipped: {e}")
+        real.image = frame
+        real.update_display()
 
     # ------------------------------------------------------------------
     # Goal-scorer card
