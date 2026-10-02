@@ -606,7 +606,8 @@
       "ledmatrix_min_version": "2.0.0",
       "aliases": [
         "ledmatrix-music"
-      ]
+      ],
+      "commit": "988f1a9e5c4d037a81ae4ec4bfc7b0aec3fcda21"
     },
     {
       "id": "news",
