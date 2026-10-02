@@ -17,7 +17,7 @@ Covers:
      flight, and only while the scorebug is being drawn where a pop-up can
      show -- pausing forgets the baselines, so coming back does not replay.
   4. Render through the real plugin: the setting reaches the live manager;
-     with it off, or below 64 rows, not a pixel changes; above, only the
+     with it off, or below 32 rows, not a pixel changes; above, only the
      bottom rows change, the text stays inside the panel, dims through the
      fade and is gone after the dwell, and another game's pop-up is dropped.
   5. The schema's defaults are the ones the code falls back to.
@@ -86,6 +86,7 @@ TOR_BLUE = GAME["away_team_color"]
 
 TALL = [(64, 64), (128, 64), (256, 64), (128, 96), (128, 128), (256, 128)]
 SHORT = [(64, 32), (128, 32), (256, 32), (96, 48), (128, 48)]
+TINY = [(64, 16), (128, 16)]
 
 
 class _Clock:
@@ -218,7 +219,7 @@ def main():
         render(mgr, dm, at=1234.0)
     check("drawing the scorebug records that pop-ups can show",
           mgr._activity_drawn_at == 1234.0)
-    mgr, dm = live(128, 32)
+    mgr, dm = live(128, 16)
     render(mgr, dm, at=1234.0)
     check("...but not on a panel too short for them", mgr._activity_drawn_at == 0.0)
 
@@ -361,14 +362,14 @@ def main():
 
     # --- 4. render ----------------------------------------------------------------
     print("\nrender")
-    for (w, h) in SHORT:
+    for (w, h) in TINY:
         mgr, dm = live(w, h)
         plain = render(mgr, dm)
         with_popup = render(mgr, dm, shot)
         check("%dx%d: no row to spare, nothing drawn" % (w, h),
               plain.tobytes() == with_popup.tobytes())
 
-    for (w, h) in TALL:
+    for (w, h) in SHORT + TALL:
         mgr, dm = live(w, h)
         plain = render(mgr, dm)
         full = render(mgr, dm, shot, at=1000.0)
