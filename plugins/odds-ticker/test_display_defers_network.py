@@ -101,15 +101,23 @@ def test_display_does_not_call_perform_update_unguarded():
 
 def test_display_defers_through_the_display_manager():
     body = ast.unparse(FUNCS["display"])
-    assert "defer_update" in body, (
-        "display() no longer defers the refresh; update() does, and display() runs "
-        "on the render thread, so it needs the deferral more, not less")
+    # Not display_manager.defer_update: core runs that only when nothing is
+    # scrolling, and this plugin sets the scrolling state on every frame, so a
+    # live refresh stayed queued until it expired and the score froze.
+    assert "defer_update" not in body, (
+        "display() queues the refresh behind the scroll state again; core "
+        "never runs it while the marquee is up")
+    assert "_pump_background('live-refresh'" in body.replace('"', "'"), (
+        "display() must run the refresh on the worker thread")
     assert "_deferred_refresh" in body, (
         "display() must schedule the refresh through _deferred_refresh, which "
         "clears the pending flag once the work is done")
     assert "preserve_scroll=True" in ast.unparse(FUNCS["_deferred_refresh"]), (
         "the deferred call must keep preserve_scroll, or the ticker jumps back "
         "when the update lands")
+    assert "defer_update" not in ast.unparse(FUNCS["update"]), (
+        "update() is already off the render thread; deferring it re-creates "
+        "the stall")
 
 
 def test_display_never_waits_on_a_worker_thread():
