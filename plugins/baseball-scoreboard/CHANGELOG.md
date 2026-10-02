@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.54.4] - 2026-10-02
+
+### Changed
+- The `has_live_content() returning ...` summary is logged at INFO only
+  when the answer changes. The once-a-minute re-log of an unchanged answer
+  is now DEBUG: at INFO it was a persistent-journal line a minute, each one
+  an SD-card write, for as long as the device ran.
+
 ## [1.54.3] - 2026-10-01
 
 ### Changed
@@ -26,6 +34,34 @@
 
 No behaviour change: the code is the same, and every safety-harness render,
 scroll card and celebration golden is pixel-identical.
+
+## [1.54.2] - 2026-10-01
+
+### Fixed
+- The series line on the full-screen Recent card now fits vertically as
+  well as horizontally (#593). The width fallback in 1.54.1 never stepped
+  a large `period_text` font down on a wide panel, so "Final/N" and the
+  series row together still covered the score. With a series line shown,
+  the card is drawn in the largest face that keeps the status row, score
+  and series row apart: the configured time face, stepped down a pixel at
+  a time to 8 px, then the 4x6 record face. Cards without a series line,
+  and the default font, draw as before.
+
+## [1.54.1] - 2026-10-01
+
+### Fixed
+- `display_options.show_series_summary` no longer prints the series line
+  ("Series tied 1-1") over the score and "Final/N" on the full-screen
+  Recent card (#588). The line now shares the card's bottom row with the
+  date, taking the first of these that fits between the record corners:
+  date and series, the series alone, a compact spelling (`Tied 1-1`,
+  `NYY 2-1`, `NYY W 4-2`), then the same in the small 4x6 font with the
+  date row cleared. The line is never dropped. Off by default; Recent card
+  only.
+
+### Known issues
+- On a 64-wide panel with both team records on there is no room between
+  the record corners, so the series line is drawn and can touch them.
 
 ## [1.54.0] - 2026-09-30
 

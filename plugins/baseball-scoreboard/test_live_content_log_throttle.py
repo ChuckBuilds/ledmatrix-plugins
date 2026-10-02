@@ -11,7 +11,7 @@ panel with nine live MLB games, which was 98% of the journal.
 Covers:
   1. An unchanged live answer logs once, not once per call.
   2. A changed answer (count or boolean) logs immediately.
-  3. An unchanged answer is re-logged after the throttle interval.
+  3. An unchanged answer is re-logged after the throttle interval, at DEBUG.
   4. False results are throttled the same way (the old behavior, preserved).
 
 Run: <core-venv>/bin/python plugins/baseball-scoreboard/test_live_content_log_throttle.py
@@ -30,14 +30,19 @@ from manager import BaseballScoreboardPlugin  # noqa: E402
 class _RecordingLogger:
     def __init__(self):
         self.info_lines = []
+        self.relog_lines = []  # the has_live_content() summary, at DEBUG
 
     def info(self, msg, *a, **k):
         self.info_lines.append(msg)
 
     def debug(self, msg, *a, **k):
+        if str(msg).startswith("has_live_content() returning"):
+            self.relog_lines.append(msg)
+
+    def warning(self, msg, *a, **k):
         pass
 
-    warning = error = debug
+    error = warning
 
 
 class _LiveSource:
@@ -122,10 +127,13 @@ def test_unchanged_answer_relogs_after_interval():
         stub.has_live_content()
     assert len(stub.logger.info_lines) == 1
 
-    # Pretend the interval elapsed: a steady state stays visible in the log.
+    # Pretend the interval elapsed: a steady state is re-logged, but at DEBUG.
+    # At INFO it was a persistent-journal line a minute, every minute.
     stub._last_live_content_log -= stub._live_content_log_interval + 1
     stub.has_live_content()
-    assert len(stub.logger.info_lines) == 2, stub.logger.info_lines
+    assert len(stub.logger.info_lines) == 1, stub.logger.info_lines
+    assert len(stub.logger.relog_lines) == 1, stub.logger.relog_lines
+    assert "returning True" in stub.logger.relog_lines[0], stub.logger.relog_lines[0]
 
 
 def test_false_results_are_throttled():

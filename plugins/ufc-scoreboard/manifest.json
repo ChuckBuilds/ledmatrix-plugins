@@ -1,7 +1,7 @@
 {
   "id": "ufc-scoreboard",
   "name": "UFC Scoreboard",
-  "version": "1.19.1",
+  "version": "1.19.2",
   "author": "LegoGuy1000",
   "contributors": [
     {
@@ -32,6 +32,12 @@
   "default_duration": 15,
   "config_schema": "config_schema.json",
   "versions": [
+    {
+      "version": "1.19.2",
+      "released": "2026-10-02",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "The has_live_content() summary is logged at INFO only when the answer changes; the once-a-minute re-log of an unchanged answer is now DEBUG. At INFO it wrote a persistent-journal line a minute to the SD card for as long as the device ran. No change in behaviour."
+    },
     {
       "version": "1.19.1",
       "released": "2026-10-01",
@@ -379,7 +385,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-30",
+  "last_updated": "2026-10-02",
   "stars": 0,
   "downloads": 0,
   "verified": true,

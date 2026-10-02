@@ -1,5 +1,13 @@
 # Changelog
 
+## [3.18.4] - 2026-10-02
+
+### Changed
+- The `has_live_content() returning ...` summary is logged at INFO only
+  when the answer changes. The once-a-minute re-log of an unchanged answer
+  is now DEBUG: at INFO it was a persistent-journal line a minute, each one
+  an SD-card write, for as long as the device ran.
+
 ## [3.18.3] - 2026-10-01
 
 ### Changed
