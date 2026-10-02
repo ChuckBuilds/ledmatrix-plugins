@@ -50,6 +50,7 @@ class YTMClient:
         self._warned_missing_token = False
         self.base_url = None
         self.ytm_token = None
+        self._config_stamp = self._config_files_stamp()
         self.load_config() # Loads URL and token
         # Reconnection is disabled deliberately. socketio.Client runs its own
         # infinite reconnect loop after an established connection drops, at
@@ -179,6 +180,39 @@ class YTMClient:
         else:
             self._log.warning(f"YTM auth file not found at {YTM_AUTH_CONFIG_PATH}. Run the authentication script to generate it. YTM features may be limited or disabled.")
 
+    @staticmethod
+    def _config_files_stamp():
+        """Modification times of the two files load_config() reads."""
+        stamp = []
+        for path in (CONFIG_PATH, YTM_AUTH_CONFIG_PATH):
+            try:
+                stamp.append(os.path.getmtime(path))
+            except OSError:
+                stamp.append(None)
+        return tuple(stamp)
+
+    def _reload_config_if_changed(self):
+        """Pick up a new companion URL or token without a service restart.
+
+        load_config() used to run only in __init__, so a URL saved in the web
+        UI or a token written by the authentication script was ignored until
+        the display service restarted -- meanwhile the client kept retrying
+        the stale address (or the rejected token) and the screen said
+        "Nothing Playing". Checked before each connect attempt; a changed
+        URL or token also clears the backoff so the new one is tried now.
+        """
+        stamp = self._config_files_stamp()
+        if stamp == self._config_stamp:
+            return
+        self._config_stamp = stamp
+        old = (self.base_url, self.ytm_token)
+        self.load_config()
+        if (self.base_url, self.ytm_token) != old:
+            self._log.info("YTM Companion URL or token changed; reconnecting to %s",
+                           self.base_url)
+            self._consecutive_failures = 0
+            self._next_retry_at = 0.0
+
     def _note_connect_failure(self, reason):
         """Record a failed attempt and schedule the next one.
 
@@ -214,6 +248,9 @@ class YTMClient:
         self._next_retry_at = 0.0
 
     def connect_client(self, timeout=10):
+        if not self.is_connected:
+            self._reload_config_if_changed()
+
         if not self.ytm_token:
             # Once per client, not once per poll cycle. This branch sits ahead
             # of the backoff gate below, so warning here every time recreated
