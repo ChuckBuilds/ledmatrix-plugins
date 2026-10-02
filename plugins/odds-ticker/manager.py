@@ -1263,6 +1263,26 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         logger.warning("Odds fetch failed for game %s: %s", game_id, payload)
         return None
 
+    def _live_scoreboard_ttl(self, data: Dict[str, Any], now: datetime) -> Optional[int]:
+        """Short max_age for a scoreboard payload holding a live or imminent game.
+
+        None when every event is final or more than 30 minutes from starting,
+        so the date-based TTL stands.
+        """
+        live_ttl = max(30, min(int(self.live_game_update_interval), 60))
+        for event in (data or {}).get('events', []):
+            try:
+                state = event['status']['type']['state'].lower()
+                if state == 'in':
+                    return live_ttl
+                if state == 'pre':
+                    start = datetime.fromisoformat(event['date'].replace('Z', '+00:00'))
+                    if (start - now).total_seconds() <= 1800:
+                        return live_ttl
+            except (KeyError, TypeError, ValueError, AttributeError):
+                continue
+        return None
+
     def _fetch_league_games(self, league_config: Dict[str, Any], now: datetime, canonical_league_key: str) -> List[Dict[str, Any]]:
         """Fetch upcoming games for a specific league using day-by-day approach."""
         yesterday = now - timedelta(days=1)
@@ -1331,6 +1351,16 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
                         ttl = 43200  # 12 hours for future dates
                     
                     data = self.cache_manager.get(cache_key, max_age=ttl)
+                    if data is not None:
+                        # The date-based TTL above is wrong for any game that
+                        # is live or about to be: ESPN's day follows US time,
+                        # so an evening game sits under the UTC "yesterday"
+                        # (1h) or "tomorrow" (12h) key. Hold a payload with
+                        # such a game to the live interval instead.
+                        live_ttl = self._live_scoreboard_ttl(data, now)
+                        if live_ttl is not None and live_ttl < ttl:
+                            ttl = live_ttl
+                            data = self.cache_manager.get(cache_key, max_age=ttl)
 
                     if data is None:
                         url = f"https://site.api.espn.com/apis/site/v2/sports/{sport}/{league}/scoreboard?dates={date}"
@@ -2487,14 +2517,10 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
 
         self._probe_live_scoreboards()
 
-        # Check if we're currently scrolling and defer the update if so
-        if hasattr(self.display_manager, 'is_currently_scrolling') and self.display_manager.is_currently_scrolling():
-            logger.debug("Odds ticker is currently scrolling, deferring update")
-            if hasattr(self.display_manager, 'defer_update'):
-                self.display_manager.defer_update(self._perform_update, priority=1)
-            return
-            
-        self._perform_update()
+        # Core runs update() off the render thread, so a scroll in progress is
+        # no reason to wait: deferring here left the refresh queued behind a
+        # scroll state that this plugin re-asserts every frame.
+        self._perform_update(preserve_scroll=bool(self.games_data))
 
     def _has_live_games(self) -> bool:
         """Is a game live? games_data first, then the last scoreboard probe.
@@ -2735,18 +2761,15 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
             self._refresh_requested_at = current_time
             logger.info(f"Live game update interval reached ({current_interval}s), refreshing data...")
 
-            # Defer whenever the core can: display() *is* the render thread, so
-            # the round trip stalls the panel whether or not the marquee happens
-            # to be flagged as scrolling at this instant. Gating on
-            # is_currently_scrolling() missed the first frame of a display
-            # cycle -- exactly when the interval is most likely to have
-            # elapsed.
-            if hasattr(self.display_manager, 'defer_update'):
-                self.display_manager.defer_update(self._deferred_refresh,
-                                                  priority=1)
-            else:
-                # Core predates defer_update; nothing better available here.
-                self._deferred_refresh()
+            # Worker thread, not display_manager.defer_update(): core runs
+            # deferred work only once nothing is scrolling, and this plugin
+            # (like its neighbours in the rotation) sets the scrolling state on
+            # every frame, so the refresh sat queued until its 300s TTL
+            # expired and a live game kept the score and clock from the last
+            # time it happened to run. display() is the render thread, so the
+            # fetch still must not run here.
+            self._pump_background("live-refresh", self._deferred_refresh,
+                                  min_interval=1.0)
 
         # Reset display start time when force_clear is True or when starting fresh
         if force_clear or self._display_start_time is None:

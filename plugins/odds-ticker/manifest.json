@@ -1,7 +1,7 @@
 {
   "id": "odds-ticker",
   "name": "Odds Ticker",
-  "version": "1.7.5",
+  "version": "1.7.6",
   "description": "Displays scrolling odds and betting lines for upcoming games across multiple sports leagues including NFL, NBA, MLB, NCAA Football, and more",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -20,6 +20,12 @@
   "branch": "main",
   "plugin_path": "plugins/odds-ticker",
   "versions": [
+    {
+      "version": "1.7.6",
+      "released": "2026-10-01",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Live scores and game clocks no longer freeze. Two causes. The live refresh was queued with the display manager's defer_update, which core runs only when nothing is scrolling; the ticker sets the scrolling state every frame, so on a board the refresh ran about once and then sat queued until it expired (43 minutes with no update in the logs while three games were live). It now runs on the plugin's own worker thread, and update() no longer defers either. Second, the cached ESPN scoreboard was kept for 1 hour or 12 hours whenever its date key was not today in UTC, which is where an evening US game lands; a cached scoreboard holding a live game, or one starting within 30 minutes, is now reused for at most the live update interval (capped at 60 seconds)."
+    },
     {
       "version": "1.7.5",
       "released": "2026-09-29",
