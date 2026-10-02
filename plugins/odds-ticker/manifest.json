@@ -1,7 +1,7 @@
 {
   "id": "odds-ticker",
   "name": "Odds Ticker",
-  "version": "1.7.6",
+  "version": "1.8.0",
   "description": "Displays scrolling odds and betting lines for upcoming games across multiple sports leagues including NFL, NBA, MLB, NCAA Football, and more",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -20,6 +20,12 @@
   "branch": "main",
   "plugin_path": "plugins/odds-ticker",
   "versions": [
+    {
+      "version": "1.8.0",
+      "released": "2026-10-02",
+      "ledmatrix_min_version": "3.9.0",
+      "notes": "The per-day ESPN scoreboards are cached under core's shared key (espn_scoreboard_cache_key, fetch service stage 2), so a scoreboard plugin's copy of the same day serves the ticker and the other way round. The old scoreboard_data_* key is still read until it ages out. The request goes through core's fetch service (counted, merged with identical requests, limit=500 like the scoreboards) on the plugin's identifying session instead of a bare requests.get. A cached day holding a live game is still held to the live interval, now judged by the entry's own age whoever wrote it. Requires LEDMatrix core 3.9.0."
+    },
     {
       "version": "1.7.6",
       "released": "2026-10-01",
@@ -215,7 +221,7 @@
   ],
   "stars": 0,
   "downloads": 0,
-  "last_updated": "2026-09-28",
+  "last_updated": "2026-10-02",
   "verified": true,
   "screenshot": "",
   "display_modes": [
@@ -223,7 +229,7 @@
   ],
   "class_name": "OddsTickerPlugin",
   "compatible_versions": [
-    ">=3.4.0"
+    ">=3.9.0"
   ],
   "entry_point": "manager.py"
 }

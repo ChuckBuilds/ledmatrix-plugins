@@ -5,6 +5,7 @@ This module provides manager classes for various soccer leagues including
 Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Champions League, and Europa League.
 """
 
+from src.common.espn_dates import espn_scoreboard_cache_key_for_url
 import logging
 import shutil
 from datetime import datetime, timedelta
@@ -145,12 +146,15 @@ class BaseSoccerManager(SportsCore):
         end_date = now + timedelta(days=self.schedule_lookahead_days)
         date_str = f"{start_date.strftime('%Y%m%d')}-{end_date.strftime('%Y%m%d')}"
         
-        cache_key = f"soccer_{self.league_key}_schedule_{date_str}"
         url = f"{ESPN_SOCCER_BASE_URL}/{self.league_key}/scoreboard"
+        # The canonical key (core espn_scoreboard_cache_key), shared with
+        # every plugin showing this league; the old one is read until it ages out.
+        legacy_key = f"soccer_{self.league_key}_schedule_{date_str}"
+        cache_key = espn_scoreboard_cache_key_for_url(url, date_str) or legacy_key
 
         # Check cache first
         if use_cache:
-            cached_data = self.cache_manager.get(cache_key)
+            cached_data = self._cached_schedule(cache_key, (legacy_key,))
             if cached_data:
                 # Validate cached data structure
                 if isinstance(cached_data, dict) and "events" in cached_data:

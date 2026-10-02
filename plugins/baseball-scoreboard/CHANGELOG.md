@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.55.0] - 2026-10-02
+
+### Changed
+- Schedule windows are cached under core's shared ESPN scoreboard key
+  (espn_scoreboard_cache_key, fetch service stage 2), so every plugin showing
+  a league shares one fetch and one cached copy. The key this plugin used
+  before is still read, so an upgrade serves the copy already on disk instead
+  of refetching every league at once; a window that moves on a day deletes its
+  copy from the day before. Requires LEDMatrix core 3.9.0.
+
 ## [1.54.3] - 2026-10-01
 
 ### Changed

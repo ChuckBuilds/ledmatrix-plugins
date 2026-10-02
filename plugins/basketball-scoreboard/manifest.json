@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.41.1",
+  "version": "1.42.0",
   "update_interval": 60,
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
@@ -19,6 +19,12 @@
   "branch": "main",
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
+    {
+      "version": "1.42.0",
+      "released": "2026-10-02",
+      "ledmatrix_min_version": "3.9.0",
+      "notes": "Schedule windows are cached under core's shared ESPN scoreboard key (espn_scoreboard_cache_key, fetch service stage 2), so every plugin showing a league shares one fetch and one cached copy. The key this plugin used before is still read, so an upgrade serves the copy already on disk instead of refetching every league at once; a window that moves on a day deletes its copy from the day before. Requires LEDMatrix core 3.9.0."
+    },
     {
       "version": "1.41.1",
       "released": "2026-10-01",
@@ -605,7 +611,7 @@
   ],
   "stars": 0,
   "downloads": 0,
-  "last_updated": "2026-09-30",
+  "last_updated": "2026-10-02",
   "verified": true,
   "screenshot": "",
   "display_modes": [
@@ -626,6 +632,6 @@
   "entry_point": "manager.py",
   "class_name": "BasketballScoreboardPlugin",
   "compatible_versions": [
-    ">=3.8.0"
+    ">=3.9.0"
   ]
 }

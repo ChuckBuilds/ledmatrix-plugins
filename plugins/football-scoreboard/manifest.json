@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "3.18.3",
+  "version": "3.19.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "3.19.0",
+      "released": "2026-10-02",
+      "ledmatrix_min_version": "3.9.0",
+      "notes": "Schedule windows are cached under core's shared ESPN scoreboard key (espn_scoreboard_cache_key, fetch service stage 2), so every plugin showing a league shares one fetch and one cached copy. The key this plugin used before is still read, so an upgrade serves the copy already on disk instead of refetching every league at once; a window that moves on a day deletes its copy from the day before. Requires LEDMatrix core 3.9.0."
+    },
     {
       "version": "3.18.3",
       "released": "2026-10-01",
@@ -929,7 +935,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-30",
+  "last_updated": "2026-10-02",
   "stars": 0,
   "downloads": 0,
   "verified": true,
@@ -937,7 +943,7 @@
   "config_schema": "config_schema.json",
   "entry_point": "manager.py",
   "compatible_versions": [
-    ">=3.8.0"
+    ">=3.9.0"
   ],
   "display": {
     "design_size": {

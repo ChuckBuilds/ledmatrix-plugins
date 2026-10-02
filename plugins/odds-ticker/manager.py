@@ -118,6 +118,15 @@ except ImportError:
 # Not optional: the ticker cannot draw without it, and every core this plugin
 # admits ships it.
 from src.common.scroll_helper import ScrollHelper
+# Core's shared ESPN scoreboard cache (core 3.9.0, this version's floor).
+from src.common.espn_dates import (
+    ESPN_MAX_LIMIT,
+    espn_scoreboard_cache_key,
+    espn_scoreboard_url,
+    fetch_espn_scoreboard,
+    read_espn_scoreboard_cache,
+    store_espn_scoreboard_cache,
+)
 
 # Get logger
 logger = logging.getLogger(__name__)
@@ -1263,6 +1272,11 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         logger.warning("Odds fetch failed for game %s: %s", game_id, payload)
         return None
 
+    #: The longest a fetched scoreboard may come from core's short response
+    #: cache: the shortest live interval _live_scoreboard_ttl can return, so
+    #: a payload that turns out to hold a live game is never older than that.
+    _LIVE_SCOREBOARD_MAX_AGE = 30
+
     def _live_scoreboard_ttl(self, data: Dict[str, Any], now: datetime) -> Optional[int]:
         """Short max_age for a scoreboard payload holding a live or imminent game.
 
@@ -1331,7 +1345,12 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
                         and games_found >= self._collection_limit()):
                     break  # Enough for the widest candidate window; stop searching
                 try:
-                    cache_key = f"scoreboard_data_{sport}_{league}_{date}"
+                    # One key for this scoreboard across plugins (core
+                    # espn_scoreboard_cache_key): a scoreboard plugin's copy of
+                    # the same day serves the ticker, and the other way round.
+                    # The key this plugin used before is read until it ages out.
+                    cache_key = espn_scoreboard_cache_key(sport, league, date)
+                    legacy_keys = (f"scoreboard_data_{sport}_{league}_{date}",)
 
                     # Dynamically set TTL for scoreboard data
                     current_date_obj = now.date()
@@ -1350,27 +1369,34 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
                     else:
                         ttl = 43200  # 12 hours for future dates
                     
-                    data = self.cache_manager.get(cache_key, max_age=ttl)
-                    if data is not None:
-                        # The date-based TTL above is wrong for any game that
-                        # is live or about to be: ESPN's day follows US time,
-                        # so an evening game sits under the UTC "yesterday"
-                        # (1h) or "tomorrow" (12h) key. Hold a payload with
-                        # such a game to the live interval instead.
-                        live_ttl = self._live_scoreboard_ttl(data, now)
-                        if live_ttl is not None and live_ttl < ttl:
-                            ttl = live_ttl
-                            data = self.cache_manager.get(cache_key, max_age=ttl)
+                    # The date-based TTL above is wrong for any game that is
+                    # live or about to be: ESPN's day follows US time, so an
+                    # evening game sits under the UTC "yesterday" (1h) or
+                    # "tomorrow" (12h) date. A payload with such a game is
+                    # held to the live interval instead. The read checks the
+                    # entry's own age, whoever wrote it.
+                    def fresh_enough(payload, age, ttl=ttl):
+                        live_ttl = self._live_scoreboard_ttl(payload, now)
+                        if live_ttl is None or live_ttl >= ttl:
+                            return True
+                        return age is not None and age <= live_ttl
+
+                    data = read_espn_scoreboard_cache(
+                        self.cache_manager, cache_key, ttl, legacy_keys, accept=fresh_enough)
 
                     if data is None:
-                        url = f"https://site.api.espn.com/apis/site/v2/sports/{sport}/{league}/scoreboard?dates={date}"
                         logger.debug(f"Fetching {league} games from ESPN API for date: {date}")
-                        response = requests.get(url, timeout=self.request_timeout)
-                        response.raise_for_status()
-                        data = response.json()
-                        
-                        
-                        self.cache_manager.set(cache_key, data)
+                        # Through core's fetch service with the scoreboards'
+                        # request (limit=500, the identifying session), so the
+                        # two can share it; a 4xx/5xx still raises HTTPError.
+                        data = fetch_espn_scoreboard(
+                            getattr(self, 'session', None),
+                            espn_scoreboard_url(sport, league),
+                            params={"dates": date, "limit": ESPN_MAX_LIMIT},
+                            timeout=self.request_timeout,
+                            cache_max_age=min(ttl, self._LIVE_SCOREBOARD_MAX_AGE),
+                        )
+                        store_espn_scoreboard_cache(self.cache_manager, cache_key, data)
                         logger.debug(f"Cached scoreboard for {league} on {date} with a TTL of {ttl} seconds.")
                     else:
                         logger.debug(f"Using cached scoreboard data for {league} on {date}.")

@@ -163,8 +163,8 @@ def test_on_an_older_core_the_window_is_fetched_here_in_chunks():
     assert sorted(sent[1:]) == sorted(chunks)
     assert all(call["limit"] <= espn_dates.ESPN_MAX_LIMIT for call in manager.session.calls)
     assert len(data["events"]) == len(chunks)
-    cached = [value for key, value in manager.cache_manager.store.items() if "schedule" in key]
-    assert cached and cached[0] is data
+    # Cached under core's canonical scoreboard key for this window.
+    assert manager.cache_manager.store[f"espn_scoreboard_football_nfl_{expected}"] is data
 
 
 def test_on_a_fixed_core_the_season_goes_to_the_background_service():
@@ -183,6 +183,18 @@ def test_with_no_background_service_the_season_is_fetched_here():
     manager = make_manager(None)
     data = manager._fetch_nfl_api_data(use_cache=True)
     assert data is not None and data["events"]
+
+
+def test_the_window_cached_under_the_old_key_is_used_after_an_upgrade():
+    # The window an older version cached as nfl_schedule_window_<n>_<n> is
+    # served until it ages out, rather than every league refetching at once.
+    manager = make_manager(OldCoreService())
+    _expected, window = manager._schedule_window()
+    old = {"events": [{"id": "from-the-old-key"}]}
+    manager.cache_manager.store[f"nfl_schedule_{window}"] = old
+
+    assert manager._fetch_nfl_api_data(use_cache=True) is old
+    assert manager.session.calls == []
 
 
 def test_the_lookback_window_recovers_from_a_rejected_range():
