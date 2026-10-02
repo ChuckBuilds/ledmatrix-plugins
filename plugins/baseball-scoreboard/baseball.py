@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from PIL import Image, ImageDraw, ImageFont
 
+from baseball_activity import BaseballActivityMixin
 from baseball_celebration import BaseballCelebrationMixin
 from baseball_scorer_card import BaseballScorerCardMixin
 from data_sources import ESPNDataSource
@@ -1143,7 +1144,8 @@ class BaseballRecent(Baseball, SportsRecent):
             self.fonts["time"] = original
 
 
-class BaseballLive(BaseballScorerCardMixin, BaseballCelebrationMixin, Baseball, SportsLive):
+class BaseballLive(BaseballActivityMixin, BaseballScorerCardMixin, BaseballCelebrationMixin,
+                   Baseball, SportsLive):
     """Base class for live baseball games."""
 
     def __init__(
@@ -1181,6 +1183,7 @@ class BaseballLive(BaseballScorerCardMixin, BaseballCelebrationMixin, Baseball, 
         self._headshot_mgr = None  # lazily created in the render path
         self._init_celebration()
         self._init_scorer_card()
+        self._init_game_activity()
 
     def _at_bat_card_style(self) -> str:
         """'card' (the default) draws the pitcher/batter screen as a full
@@ -1205,6 +1208,8 @@ class BaseballLive(BaseballScorerCardMixin, BaseballCelebrationMixin, Baseball, 
         self._check_scorer_cards()
         if self.test_mode:
             return
+        if self.show_game_activity and self.espn_summary_sport_league:
+            self._poll_game_activity()
         pbp_wanted = self.show_pitcher_batter or self.show_last_play or self.show_player_card
         if not pbp_wanted:
             return
@@ -2790,6 +2795,8 @@ class BaseballLive(BaseballScorerCardMixin, BaseballCelebrationMixin, Baseball, 
             # Composite the text overlay onto the main image
             main_img = Image.alpha_composite(main_img, overlay)
             main_img = main_img.convert("RGB")  # Convert for display
+            # The play-by-play banner along the bottom row, when one is due.
+            main_img = self._with_activity_popup(main_img, game)
 
             # Display the final image
             self.display_manager.image.paste(main_img, (0, 0))

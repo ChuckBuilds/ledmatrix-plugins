@@ -471,6 +471,29 @@
           "default": false,
           "description": "Only show the scorer card for a favorite team's runs. Needs Display Options > Show Scorer Card."
         },
+        "game_activity_detail": {
+          "x-advanced": true,
+          "type": "string",
+          "enum": ["hits_and_steals", "highlights", "everything"],
+          "default": "highlights",
+          "description": "Which plays get a pop-up. Hits and steals: singles, doubles, triples and stolen bases. Highlights: those plus strikeouts, walks, double plays, errors and pitching changes. Everything: also outs and sacrifices. Needs Display Options > Show Game Activity."
+        },
+        "game_activity_dwell_seconds": {
+          "x-advanced": true,
+          "type": "integer",
+          "default": 6,
+          "minimum": 2,
+          "maximum": 20,
+          "description": "How long each pop-up stays on screen (seconds), fade included. Needs Display Options > Show Game Activity."
+        },
+        "game_activity_fade_seconds": {
+          "x-advanced": true,
+          "type": "integer",
+          "default": 3,
+          "minimum": 0,
+          "maximum": 10,
+          "description": "How much of that time the pop-up spends fading out; 0 removes it at once. Needs Display Options > Show Game Activity."
+        },
         "celebration_enabled": {
           "type": "boolean",
           "default": true,
@@ -777,6 +800,12 @@
               "type": "boolean",
               "default": false,
               "description": "After a run, show a full-screen card for the batter who drove it in: headshot, a team-colour banner (HOME RUN, 2-RUN HOMER, GRAND SLAM, RUN SCORES), name, number and position, season line, and ESPN's sentence for the play, which names the runner. It follows the celebration as a second beat, or appears straight away with the celebration off. Costs one extra ESPN request per run, plus one for the batter's bio the first time that player is seen. MLB and NCAA Baseball only -- MiLB has no play data."
+            },
+            "show_game_activity": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": false,
+              "description": "Pop up a one-line banner along the bottom of the live scorebug for the plays between runs -- \"Harper SINGLE!  Top 8th\" -- fading out after a few seconds, so a scoreless inning still shows the action. Runs are left to the celebration and the scorer card. Only on panels 32 pixels tall or more; shorter panels have no row to spare. MLB and NCAA Baseball only -- MiLB has no play data. Costs one extra ESPN request per live update for the game on screen. Choose which plays under Game Activity Detail."
             },
             "show_traditional_scoreboard": {
               "x-advanced": true,
@@ -1736,6 +1765,29 @@
           "default": false,
           "description": "Only show the scorer card for a favorite team's runs. Needs Display Options > Show Scorer Card."
         },
+        "game_activity_detail": {
+          "x-advanced": true,
+          "type": "string",
+          "enum": ["hits_and_steals", "highlights", "everything"],
+          "default": "highlights",
+          "description": "Which plays get a pop-up. Hits and steals: singles, doubles, triples and stolen bases. Highlights: those plus strikeouts, walks, double plays, errors and pitching changes. Everything: also outs and sacrifices. Needs Display Options > Show Game Activity."
+        },
+        "game_activity_dwell_seconds": {
+          "x-advanced": true,
+          "type": "integer",
+          "default": 6,
+          "minimum": 2,
+          "maximum": 20,
+          "description": "How long each pop-up stays on screen (seconds), fade included. Needs Display Options > Show Game Activity."
+        },
+        "game_activity_fade_seconds": {
+          "x-advanced": true,
+          "type": "integer",
+          "default": 3,
+          "minimum": 0,
+          "maximum": 10,
+          "description": "How much of that time the pop-up spends fading out; 0 removes it at once. Needs Display Options > Show Game Activity."
+        },
         "celebration_enabled": {
           "type": "boolean",
           "default": true,
@@ -2042,6 +2094,12 @@
               "type": "boolean",
               "default": false,
               "description": "After a run, show a full-screen card for the batter who drove it in: headshot, a team-colour banner (HOME RUN, 2-RUN HOMER, GRAND SLAM, RUN SCORES), name, number and position, season line, and ESPN's sentence for the play, which names the runner. It follows the celebration as a second beat, or appears straight away with the celebration off. Costs one extra ESPN request per run, plus one for the batter's bio the first time that player is seen. MLB and NCAA Baseball only -- MiLB has no play data."
+            },
+            "show_game_activity": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": false,
+              "description": "Pop up a one-line banner along the bottom of the live scorebug for the plays between runs -- \"Harper SINGLE!  Top 8th\" -- fading out after a few seconds, so a scoreless inning still shows the action. Runs are left to the celebration and the scorer card. Only on panels 32 pixels tall or more; shorter panels have no row to spare. MLB and NCAA Baseball only -- MiLB has no play data. Costs one extra ESPN request per live update for the game on screen. Choose which plays under Game Activity Detail."
             },
             "show_traditional_scoreboard": {
               "x-advanced": true,

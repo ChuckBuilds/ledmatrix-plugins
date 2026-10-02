@@ -846,6 +846,17 @@ class BaseballScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
                 # Who just scored: a card after the celebration (MLB and NCAA
                 # only -- it reads ESPN's play-by-play).
                 "show_scorer_card": display_options.get("show_scorer_card", False),
+                # Pop-up banners for the plays between runs (MLB and NCAA only).
+                "show_game_activity": display_options.get("show_game_activity", False),
+                "game_activity_detail": league_config.get(
+                    "game_activity_detail", "highlights"
+                ),
+                "game_activity_dwell_seconds": league_config.get(
+                    "game_activity_dwell_seconds", 6
+                ),
+                "game_activity_fade_seconds": league_config.get(
+                    "game_activity_fade_seconds", 3
+                ),
                 "scorer_card_dwell_seconds": league_config.get(
                     "scorer_card_dwell_seconds", 6
                 ),

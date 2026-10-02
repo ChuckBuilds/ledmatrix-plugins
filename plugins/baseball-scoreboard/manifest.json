@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.55.0",
+  "version": "1.56.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.56.0",
+      "released": "2026-10-02",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "Game activity pop-ups, as in the hockey scoreboard: a one-line banner along the bottom of the live scorebug for the plays between runs (a single, a stolen base, a strikeout, a walk, a double play, a pitching change), holding for a few seconds and fading back to the scorebug. New per-league settings, off by default and for MLB and NCAA only (MiLB has no play data): display_options.show_game_activity, game_activity_detail (hits_and_steals, highlights or everything), game_activity_dwell_seconds and game_activity_fade_seconds. Runs are left to the celebration and the scorer card. Costs one extra ESPN request per live update for the game on screen."
+    },
     {
       "version": "1.55.0",
       "released": "2026-10-02",

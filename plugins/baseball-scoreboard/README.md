@@ -31,6 +31,7 @@ inning, bases, outs and count are what the panel showed at that moment.*
    - [Per-league: update intervals](#per-league-update-intervals)
    - [Per-league: what appears on the card](#per-league-what-appears-on-the-card)
    - [Run and home-run celebrations](#run-and-home-run-celebrations)
+   - [Game activity pop-ups](#game-activity-pop-ups)
    - [The extra baseball screens](#the-extra-baseball-screens)
    - [The matchup card: separator, date and time](#the-matchup-card-separator-date-and-time)
    - [Favourite team result colours](#favourite-team-result-colours)
@@ -505,6 +506,37 @@ play-by-play, so it exists for MLB and NCAA Baseball only.
 | `scorer_card_dwell_seconds` | `6` | **Advanced.** Seconds on screen (3-20) |
 | `scorer_card_favorites_only` | `false` | **Advanced.** Only for a favourite team's runs |
 
+### Game activity pop-ups
+
+Between runs a scoreless inning can look frozen. With pop-ups on, a one-line
+banner appears along the bottom of the live scorebug for the plays that happen
+-- `Harper SINGLE!  Top 8th`, `Acuna Jr. STEALS 3RD  Bot 1st`,
+`McFarlane IN RELIEF  Bot 7th` -- holds for a few seconds, then fades back to
+the scorebug. It is the same idea as the hockey scoreboard's game-activity
+banner. Runs are left to the celebration and the scorer card.
+
+The banner picks the fullest wording that fits: a smaller font is tried before
+any word is given up, then the surname alone, the short label (`1B`, `SB`,
+`K`), the short inning (`T8`), and last of all the inning itself. Accents are
+folded (`Acuna`), because the small face has no accented letters.
+
+It is **off by default**, only draws on panels 32 pixels tall or more, and
+reads ESPN's play-by-play, so it exists for MLB and NCAA Baseball only. It
+costs one extra ESPN request per live update for the game on screen, shared
+with the celebration when a run has just scored.
+
+| Setting | Default | What it does |
+|---|---|---|
+| `display_options.show_game_activity` | `false` | **Advanced.** Show the pop-ups (MLB and NCAA Baseball) |
+| `game_activity_detail` | `highlights` | **Advanced.** `hits_and_steals`: singles, doubles, triples, stolen bases. `highlights`: those plus strikeouts, walks, double plays, errors and pitching changes. `everything`: also outs and sacrifices |
+| `game_activity_dwell_seconds` | `6` | **Advanced.** How long each pop-up stays, fade included (2-20) |
+| `game_activity_fade_seconds` | `3` | **Advanced.** How much of that is spent fading out; `0` removes it at once (0-10) |
+
+A pop-up can trail the play by up to one live update interval; the inning on it
+says when it happened. A burst of plays keeps the newest three. The first look
+at a game only records where the feed is, so joining a game mid-inning does not
+replay its history.
+
 ### The extra baseball screens
 
 Baseball has more to say than most sports mid-at-bat, so the plugin can
@@ -973,6 +1005,7 @@ baseball-scoreboard/
 ├── manager.py                     # BaseballScoreboardPlugin: league and mode routing
 ├── baseball_celebration.py        # Run / home-run / win celebrations
 ├── baseball_scorer_card.py        # The card naming who drove a run in
+├── baseball_activity.py           # Play-by-play pop-up banners
 ├── mlb_managers.py                # MLB fetching and cache keys
 ├── milb_managers.py               # MiLB fetching
 ├── ncaa_baseball_managers.py      # NCAA fetching

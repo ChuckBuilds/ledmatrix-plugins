@@ -208,9 +208,11 @@ class BaseballCelebrationMixin(SportsCelebrationMixin):
     #: celebration and the scorer card cost one request between them.
     _SUMMARY_REUSE_SECONDS = 15.0
 
-    def _fetch_summary(self, game_id: str) -> Optional[Dict]:
+    def _fetch_summary(self, game_id: str,
+                       timeout: float = SUMMARY_TIMEOUT_SECONDS) -> Optional[Dict]:
         """ESPN's game summary (plays and rosters), or None. Bounded, never
-        raises, and shared between callers for a few seconds."""
+        raises, and shared between callers for a few seconds. The update thread
+        waits ``timeout`` seconds; a caller already off-thread can wait longer."""
         cache = self.__dict__.setdefault("_summary_cache", {})
         hit = cache.get(game_id)
         if hit and time.time() - hit[0] < self._SUMMARY_REUSE_SECONDS:
@@ -230,7 +232,7 @@ class BaseballCelebrationMixin(SportsCelebrationMixin):
 
         threading.Thread(target=fetch, daemon=True).start()
         try:
-            data = results.get(timeout=SUMMARY_TIMEOUT_SECONDS)
+            data = results.get(timeout=timeout)
         except queue.Empty:
             return None
         if not isinstance(data, dict):
