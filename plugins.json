@@ -201,13 +201,12 @@
       "plugin_path": "plugins/countdown",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-28",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "3.3.3",
+      "latest_version": "3.3.4",
       "icon": "fa-clock",
-      "ledmatrix_min_version": "2.0.0",
-      "commit": "74edbbf59b86336b3f8030b9d86d3eb06d8b2035"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "id": "f1-scoreboard",
