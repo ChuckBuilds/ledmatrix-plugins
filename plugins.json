@@ -81,7 +81,8 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "1.56.1",
-      "ledmatrix_min_version": "3.8.0"
+      "ledmatrix_min_version": "3.8.0",
+      "commit": "f9ced936bab32e05df5dd71bcabbc94972aa634b"
     },
     {
       "id": "basketball-scoreboard",
@@ -108,7 +109,7 @@
       "screenshot": "",
       "latest_version": "1.41.2",
       "ledmatrix_min_version": "3.8.0",
-      "commit": "7824542bdc40ae5783b33997a234f61f2838bf3b"
+      "commit": "f9ced936bab32e05df5dd71bcabbc94972aa634b"
     },
     {
       "id": "calendar",
@@ -133,7 +134,7 @@
       "screenshot": "",
       "latest_version": "1.2.10",
       "ledmatrix_min_version": "3.3.0",
-      "commit": "36c19cb8d8ba85f15c1d77b543c6946d2c056034"
+      "commit": "f9ced936bab32e05df5dd71bcabbc94972aa634b"
     },
     {
       "id": "christmas-countdown",
@@ -284,7 +285,7 @@
       "screenshot": "",
       "latest_version": "3.18.4",
       "ledmatrix_min_version": "3.8.0",
-      "commit": "7824542bdc40ae5783b33997a234f61f2838bf3b"
+      "commit": "f9ced936bab32e05df5dd71bcabbc94972aa634b"
     },
     {
       "id": "geochron",
@@ -387,7 +388,7 @@
       "latest_version": "1.42.1",
       "icon": "fas fa-hockey-puck",
       "ledmatrix_min_version": "3.8.0",
-      "commit": "7824542bdc40ae5783b33997a234f61f2838bf3b"
+      "commit": "f9ced936bab32e05df5dd71bcabbc94972aa634b"
     },
     {
       "id": "lacrosse-scoreboard",
@@ -413,7 +414,7 @@
       "latest_version": "1.36.2",
       "icon": "fas fa-baseball-ball",
       "ledmatrix_min_version": "3.8.0",
-      "commit": "7824542bdc40ae5783b33997a234f61f2838bf3b"
+      "commit": "f9ced936bab32e05df5dd71bcabbc94972aa634b"
     },
     {
       "id": "birdnet-go",
@@ -766,7 +767,7 @@
       "screenshot": "",
       "latest_version": "3.1.4",
       "ledmatrix_min_version": "2.0.0",
-      "commit": "36c19cb8d8ba85f15c1d77b543c6946d2c056034"
+      "commit": "f9ced936bab32e05df5dd71bcabbc94972aa634b"
     },
     {
       "id": "pga-tour-leaderboard",
@@ -1009,7 +1010,7 @@
       "latest_version": "1.19.2",
       "icon": "fas fa-fist-raised",
       "ledmatrix_min_version": "3.8.0",
-      "commit": "7824542bdc40ae5783b33997a234f61f2838bf3b"
+      "commit": "f9ced936bab32e05df5dd71bcabbc94972aa634b"
     },
     {
       "id": "weather",
@@ -1345,7 +1346,7 @@
       "latest_version": "1.3.1",
       "icon": "fa-diamond",
       "ledmatrix_min_version": "3.2.0",
-      "commit": "36c19cb8d8ba85f15c1d77b543c6946d2c056034"
+      "commit": "f9ced936bab32e05df5dd71bcabbc94972aa634b"
     },
     {
       "id": "ledmatrix-nascar",
