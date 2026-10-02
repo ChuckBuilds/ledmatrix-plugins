@@ -61,6 +61,12 @@
       "notes": "A flashing goal light for the goal celebration, off by default (<league>.celebration_goal_light). A pixel-art rink beacon in the scoring team's colour sits beside its crest: a bell-shaped lens on a bolted base, the reflector sweeping the glass while striped beams fan out either side and trade left and right, with a stepped drop shadow, scanlines on the beams and twinkles, in the style of Fantasy Blitz and blackjack. Goals only, not wins. Needs a panel at least 256 wide and 48 tall; smaller panels draw the plain celebration. It is laid over the frame core draws, costs about a tenth of a millisecond a frame, and a drawing error shows the plain takeover."
     },
     {
+      "version": "1.41.0",
+      "released": "2026-10-01",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "Game-activity pop-ups now draw on 32- and 48-row panels, not only 64 and up. The banner takes the scorebug's bottom row (the shot line), which on a 32-row panel sits below the score, so it never covers the score; the line fits itself to the width (a 128x32 shows the whole line, a 64x32 drops the long label and the clock). Panels under 32 rows are still left alone. No config keys changed, and nothing changes unless show_game_activity is on."
+    },
+    {
       "version": "1.40.1",
       "released": "2026-10-01",
       "ledmatrix_min_version": "3.8.0",

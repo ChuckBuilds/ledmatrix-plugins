@@ -283,9 +283,9 @@
       "last_updated": "2026-10-01",
       "verified": true,
       "screenshot": "",
-      "latest_version": "3.18.2",
+      "latest_version": "3.18.3",
       "ledmatrix_min_version": "3.8.0",
-      "commit": "4d50ed8199cf405e6f4651f07cbc6c08a9f65846"
+      "commit": "e5dd1c3dc87dcd0dea00c9209feab6e9138471c4"
     },
     {
       "id": "geochron",
@@ -387,7 +387,8 @@
       "screenshot": "",
       "latest_version": "1.42.0",
       "icon": "fas fa-hockey-puck",
-      "ledmatrix_min_version": "3.8.0"
+      "ledmatrix_min_version": "3.8.0",
+      "commit": "b1e276f0e7944337b6f9f79d358721c72da5953f"
     },
     {
       "id": "lacrosse-scoreboard",

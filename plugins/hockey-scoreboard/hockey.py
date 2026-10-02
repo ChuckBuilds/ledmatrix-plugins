@@ -147,9 +147,10 @@ _ACTIVITY_LABELS: Dict[str, Tuple[str, ...]] = {
     "blocked_shots": ("BLOCKED SHOT", "BLOCKED"),
     "missed_shots": ("MISSED SHOT", "MISSED"),
 }
-#: Panels shorter than this have no row to spare: the scorebug's bottom row
-#: is the shot line, and on a 32- or 48-row panel the score sits right on it.
-_ACTIVITY_MIN_HEIGHT = 64
+#: Panels shorter than this have no row to spare. At 32 rows the score ends
+#: above the scorebug's bottom row (the shot line), so the banner takes that
+#: row without touching the score; under 32 there is nothing below the score.
+_ACTIVITY_MIN_HEIGHT = 32
 #: At most this many pop-ups wait their turn. A poll can bring a burst; the
 #: newest are kept, since each one's clock says how old it is anyway.
 _ACTIVITY_QUEUE_MAX = 3

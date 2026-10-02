@@ -731,7 +731,7 @@
               "x-advanced": true,
               "type": "boolean",
               "default": false,
-              "description": "Pop up a one-line banner along the bottom of the live scorebug for the plays between goals -- \"A. Matthews SHOT ON GOAL!  2nd 12:34\" -- fading out after a few seconds, so a scoreless game still shows the action. Only on panels 64 pixels tall or more; smaller panels have no row to spare. NHL only -- college hockey's ESPN summary carries no play data. Costs one extra ESPN request per live update for the game on screen. Choose which plays and the timing under Customization > Game Activity Pop-ups."
+              "description": "Pop up a one-line banner along the bottom of the live scorebug for the plays between goals -- \"A. Matthews SHOT ON GOAL!  2nd 12:34\" -- fading out after a few seconds, so a scoreless game still shows the action. Only on panels 32 pixels tall or more; shorter panels have no row to spare. NHL only -- college hockey's ESPN summary carries no play data. Costs one extra ESPN request per live update for the game on screen. Choose which plays and the timing under Customization > Game Activity Pop-ups."
             }
           }
         },
@@ -2749,7 +2749,7 @@
         "game_activity": {
           "type": "object",
           "title": "Game Activity Pop-ups",
-          "description": "A banner along the bottom of the live scorebug for each new shot, penalty or other play you pick below: the player, what happened and the game clock, in the acting team's colour. It holds, then fades back to the scorebug. Enable it per league via NHL > Display Options > Show Game Activity (NHL only, panels 64 pixels tall or more). Goals are left to the goal celebration and the goal-scorer card. New plays are read once per live update, so a pop-up can trail the play by up to that interval -- the clock on it says when it happened. A burst of plays keeps the newest three.",
+          "description": "A banner along the bottom of the live scorebug for each new shot, penalty or other play you pick below: the player, what happened and the game clock, in the acting team's colour. It holds, then fades back to the scorebug. Enable it per league via NHL > Display Options > Show Game Activity (NHL only, panels 32 pixels tall or more). Goals are left to the goal celebration and the goal-scorer card. New plays are read once per live update, so a pop-up can trail the play by up to that interval -- the clock on it says when it happened. A burst of plays keeps the newest three.",
           "properties": {
             "event_types": {
               "type": "array",
