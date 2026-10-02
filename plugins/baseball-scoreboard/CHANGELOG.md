@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.56.0] - 2026-10-02
+
+### Added
+- Game activity pop-ups: a one-line banner along the bottom of the live scorebug
+  for the plays between runs -- `Harper SINGLE!  Top 8th`,
+  `Acuna Jr. STEALS 3RD  Bot 1st`, `McFarlane IN RELIEF  Bot 7th` -- holding for
+  a few seconds and fading back to the scorebug. Runs are left to the
+  celebration and the scorer card.
+- Per-league `display_options.show_game_activity` (off by default; MLB and NCAA
+  Baseball, which have play-by-play), `game_activity_detail`
+  (`hits_and_steals`, `highlights`, `everything`), `game_activity_dwell_seconds`
+  and `game_activity_fade_seconds`.
+- One extra ESPN request per live update for the game on screen, shared with the
+  celebration's when a run has just scored. A first look at a game only records
+  where the feed is, so joining mid-inning replays nothing.
+
 ## [1.55.0] - 2026-10-02
 
 ### Added
