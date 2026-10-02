@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.54.3",
+  "version": "1.55.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.55.0",
+      "released": "2026-10-02",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "Run and home-run celebrations: when a team scores in a live game the panel is taken over for a few seconds, as the hockey scoreboard does for a goal. A run shows a ball diamond with a runner circling the bases; a home run shows the ball leaving the park over the outfield wall with fireworks, a bat-crack starburst and a panel shake (2-RUN HOMER and GRAND SLAM by runs driven in); a favourite's win gets a sunburst. The score ticks up with a floating +N and a glint sweeps the headline. New per-league settings: celebration_enabled, celebration_duration, celebrate_opponent_runs, celebration_home_runs_only, celebration_team_colors, celebration_confetti. A home run is told from a run by ESPN's play-by-play (MLB, NCAA); MiLB celebrates every run as a run. Also new and off by default (MLB and NCAA): display_options.show_scorer_card, a card after a run naming the batter with headshot, number, season line and ESPN's sentence for the play, with scorer_card_dwell_seconds and scorer_card_favorites_only. The plugin asks the core for the high-FPS loop while a celebration is on screen."
+    },
     {
       "version": "1.54.3",
       "released": "2026-10-01",

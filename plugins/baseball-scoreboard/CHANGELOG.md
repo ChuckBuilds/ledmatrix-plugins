@@ -1,5 +1,34 @@
 # Changelog
 
+## [1.55.0] - 2026-10-02
+
+### Added
+- Run and home-run celebrations. When a team scores in a live game the panel is
+  taken over for a few seconds, drawn by core's `SportsCelebrationMixin` in the
+  scoring team's colours. A run shows a ball diamond with a runner circling the
+  bases; a home run shows the ball leaving the park over the outfield wall with
+  fireworks (`2-RUN HOMER!`, `3-RUN HOMER!` and `GRAND SLAM!` by runs driven in);
+  a favourite's win gets the sunburst. A home run is told from a run by ESPN's
+  play-by-play, so MiLB (no plays) celebrates every run as a run.
+- Per-league `celebration_enabled`, `celebration_duration`,
+  `celebrate_opponent_runs`, `celebration_home_runs_only`,
+  `celebration_team_colors` and `celebration_confetti`.
+- `BaseballScoreboardPlugin.needs_high_fps`, true while a celebration is on
+  screen, so the runner and fireworks are not sampled once a second.
+- Impact on the takeover: the score ticks up from the old total with a floating
+  `+N`, a glint sweeps the headline, and a home run opens with a bat-crack
+  starburst and shakes the panel as it settles.
+- The scorer card (`display_options.show_scorer_card`, off by default; MLB and
+  NCAA Baseball): after a run, a full-screen card for the batter who drove it in
+  -- headshot, team-colour banner, name, number and position, season line and
+  ESPN's sentence for the play. It follows the celebration, or appears straight
+  away with the celebration off. `scorer_card_dwell_seconds` and
+  `scorer_card_favorites_only` tune it. One extra ESPN request per run, shared
+  with the celebration's home-run check.
+- A home run is only called when the play-by-play's newest scoring play agrees
+  with the scoreboard's score, so a summary one poll behind is "a run", never
+  the previous run's home run.
+
 ## [1.54.3] - 2026-10-01
 
 ### Changed

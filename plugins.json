@@ -77,12 +77,11 @@
       "plugin_path": "plugins/baseball-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-01",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.54.3",
-      "ledmatrix_min_version": "3.8.0",
-      "commit": "56e3f7a0070a26bd7b3fcd80b0214445ded480ac"
+      "latest_version": "1.55.0",
+      "ledmatrix_min_version": "3.8.0"
     },
     {
       "id": "basketball-scoreboard",
