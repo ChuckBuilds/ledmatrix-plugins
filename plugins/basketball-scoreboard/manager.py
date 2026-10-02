@@ -1630,7 +1630,11 @@ class BasketballScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
         if changed or due:
             self._last_live_content_state = state
             self._last_live_content_log = current_time
-            self.logger.info(
+            # INFO only when the answer changes. The periodic re-log of an
+            # unchanged answer goes to DEBUG: at INFO it was a journal line a
+            # minute for as long as the device ran, each one an SD write.
+            log = self.logger.info if changed else self.logger.debug
+            log(
                 f"has_live_content() returning {result}: "
                 f"nba_live={nba_live}, wnba_live={wnba_live}, "
                 f"ncaam_live={ncaam_live}, ncaaw_live={ncaaw_live}"

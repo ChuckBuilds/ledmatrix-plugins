@@ -1,7 +1,7 @@
 {
   "id": "calendar",
   "name": "Google Calendar",
-  "version": "1.2.9",
+  "version": "1.2.10",
   "author": "ChuckBuilds",
   "description": "Display upcoming events from Google Calendar with date, time, and event details. Shows next 1-3 events with automatic rotation and timezone support.",
   "category": "productivity",
@@ -35,6 +35,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.2.10",
+      "released": "2026-10-02",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Drops its get_supported_vegas_modes() override, which LEDMatrix core deprecated and removes in 3.9.0. Core never read it; Vegas still takes the calendar's participation from get_vegas_display_mode() and get_vegas_content_type(), so behaviour is unchanged. Core floor unchanged."
+    },
     {
       "version": "1.2.9",
       "released": "2026-09-28",
@@ -142,7 +148,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-28",
+  "last_updated": "2026-10-02",
   "stars": 0,
   "downloads": 0,
   "verified": true,
