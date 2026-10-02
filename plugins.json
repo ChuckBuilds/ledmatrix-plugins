@@ -284,7 +284,8 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "3.18.3",
-      "ledmatrix_min_version": "3.8.0"
+      "ledmatrix_min_version": "3.8.0",
+      "commit": "cc68e763a91b1807e1868c2a10adf47241dd30ea"
     },
     {
       "id": "geochron",
