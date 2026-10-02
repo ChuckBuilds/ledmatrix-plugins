@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.42.0] - 2026-10-01
+
+### Added
+- `<league>.celebration_goal_light` (off by default): a flashing goal light in
+  the goal takeover. A pixel-art rink beacon in the scoring team's colour sits
+  beside its crest, its reflector sweeping the lens while striped beams fan
+  out either side. Goals only; needs a panel at least 256 wide and 48 tall.
+  Drawn by `hockey_goal_light.py` over the frame core draws.
+
 ## [1.41.0] - 2026-10-01
 
 ### Changed

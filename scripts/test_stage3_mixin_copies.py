@@ -90,6 +90,9 @@ MOVED = {
 KEEP = {
     ("football", "_format_game_date"),
     ("football", "_upcoming_center_mode"),
+    # Wraps core's method rather than copying it: calls super() to draw the
+    # takeover, then lays the goal light (hockey_goal_light.py) over the frame.
+    ("hockey", "_draw_celebration_layout"),
 }
 
 _CATCHES_IMPORT_ERROR = {"ImportError", "ModuleNotFoundError", "Exception", "BaseException"}

@@ -338,6 +338,13 @@ the net.
 | `<league>.celebrate_opponent_goals` | boolean | `false` | **Advanced.** Also celebrate the opponent's goals. |
 | `<league>.celebration_team_colors` | boolean | `true` | **Advanced.** Draw it in the scoring team's colours. Off uses a fixed navy and amber. |
 | `<league>.celebration_confetti` | boolean | `true` | **Advanced.** Fall team-coloured confetti across the screen. |
+| `<league>.celebration_goal_light` | boolean | `false` | **Advanced.** Add a flashing goal light to the goal takeover — see [Goal light](#goal-light). Goals only; needs a panel at least 256 wide and 48 tall. |
+
+### Goal light
+
+With `celebration_goal_light` on, a goal takeover gets a pixel-art rink beacon in the scoring team's colour, beside that team's crest: a bell-shaped lens on a bolted base, its reflector streak sweeping across the glass while striped beams fan out either side and trade left and right, the lens going dark between flashes. It is drawn with a stepped drop shadow, dim scanlines on the beams and plus-shaped twinkles, in the same pixel-art style as Fantasy Blitz and blackjack. A home goal puts it on the right, mirrored.
+
+It needs a panel at least 256 pixels wide and 48 tall; smaller panels draw the plain celebration. Win takeovers are unchanged. The plugin already asks the core for the high-frame-rate loop while a celebration is on screen, so the lamp animates smoothly; on a board that still samples once a second each frame is a finished picture.
 
 A goal that is later waved off re-bases silently rather than celebrating
 again, and a win only fires for a game this plugin actually watched go live,
