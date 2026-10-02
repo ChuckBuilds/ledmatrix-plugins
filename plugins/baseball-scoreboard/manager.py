@@ -843,6 +843,26 @@ class BaseballScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
                 "show_pitcher_batter": display_options.get("show_pitcher_batter", True),
                 "show_last_play": display_options.get("show_last_play", False),
                 "show_player_card": display_options.get("show_player_card", False),
+                # Who just scored: a card after the celebration (MLB and NCAA
+                # only -- it reads ESPN's play-by-play).
+                "show_scorer_card": display_options.get("show_scorer_card", False),
+                # Pop-up banners for the plays between runs (MLB and NCAA only).
+                "show_game_activity": display_options.get("show_game_activity", False),
+                "game_activity_detail": league_config.get(
+                    "game_activity_detail", "highlights"
+                ),
+                "game_activity_dwell_seconds": league_config.get(
+                    "game_activity_dwell_seconds", 6
+                ),
+                "game_activity_fade_seconds": league_config.get(
+                    "game_activity_fade_seconds", 3
+                ),
+                "scorer_card_dwell_seconds": league_config.get(
+                    "scorer_card_dwell_seconds", 6
+                ),
+                "scorer_card_favorites_only": league_config.get(
+                    "scorer_card_favorites_only", False
+                ),
                 "show_traditional_scoreboard": display_options.get("show_traditional_scoreboard", False),
                 "update_interval_seconds": league_config.get(
                     "update_interval_seconds", 300
@@ -874,6 +894,21 @@ class BaseballScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
                     15  # Default per-game duration for upcoming games
                 ),
                 "live_priority": league_config.get("live_priority", True),
+                # The run / home-run / win takeover, read by baseball_celebration.py.
+                "celebration_enabled": league_config.get("celebration_enabled", True),
+                "celebration_duration": league_config.get("celebration_duration", 8),
+                "celebrate_opponent_runs": league_config.get(
+                    "celebrate_opponent_runs", False
+                ),
+                "celebration_home_runs_only": league_config.get(
+                    "celebration_home_runs_only", False
+                ),
+                "celebration_team_colors": league_config.get(
+                    "celebration_team_colors", True
+                ),
+                "celebration_confetti": league_config.get(
+                    "celebration_confetti", True
+                ),
                 "test_mode": league_config.get("test_mode", False),
                 "show_favorite_teams_only": show_favorites_only,
                 "show_all_live": show_all_live,
@@ -2122,6 +2157,15 @@ class BaseballScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
             return False
 
         try:
+            # A run, home run or win takes the screen ahead of normal rendering.
+            # It only fires for live mode requests (or internal cycling) and
+            # renders the celebrating live manager directly, so a win still
+            # shows after its game has dropped out of the live list.
+            if display_mode is None or display_mode.endswith("_live"):
+                celebrating = self._get_active_celebration_manager()
+                if celebrating is not None and celebrating[1].display(force_clear):
+                    return True
+
             # Track the current active display mode for use in is_cycle_complete()
             if display_mode:
                 # Early exit: Skip if this mode is not in our available modes (disabled league)
@@ -2252,6 +2296,40 @@ class BaseballScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
             self.logger.error(f"Error in display method: {e}")
             return False
 
+    def _get_active_celebration_manager(self):
+        """Return the (league_key, live_manager) of an enabled league whose live
+        manager currently has a celebration running, else None."""
+        if not self.is_enabled:
+            return None
+        for league_key, league_data in self._league_registry.items():
+            if not league_data.get("enabled", False):
+                continue
+            live_manager = self._get_league_manager_for_mode(league_key, "live")
+            if live_manager is not None and getattr(
+                    live_manager, "has_active_celebration", lambda: False)():
+                return league_key, live_manager
+        return None
+
+    @property
+    def needs_high_fps(self) -> bool:
+        """Whether the controller should drive this plugin at 125 FPS.
+
+        Without this the core falls back to ``enable_scrolling``, false on a
+        switch-mode board, so the runner and the fireworks would be sampled once
+        a second. The controller reads it once on entering a mode, which is the
+        moment that matters: a run arms the takeover while another plugin is on
+        screen, live priority hands baseball the panel, and the celebration is
+        smooth from its first frame. One armed while baseball is already
+        showing steps at 1 FPS for the rest of that turn, which every frame of
+        it is built to survive.
+        """
+        try:
+            if self.enable_scrolling:
+                return True
+            return self._get_active_celebration_manager() is not None
+        except Exception:  # noqa: BLE001 - the controller reads this bare
+            return bool(getattr(self, "enable_scrolling", False))
+
     def has_live_priority(self) -> bool:
         if not self.is_enabled:
             return False
@@ -2305,6 +2383,11 @@ class BaseballScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
         if not self.is_enabled:
             self.logger.debug("[LIVE_PRIORITY_DEBUG] has_live_content: plugin not enabled, returning False")
             return False
+
+        # A running celebration (notably a win, whose game has already left
+        # the live list) keeps the live mode on screen.
+        if self._get_active_celebration_manager() is not None:
+            return True
 
         # Live game counts per league, folded into the single throttled summary
         # at the end rather than logged per league on every call.

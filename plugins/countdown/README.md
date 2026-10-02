@@ -165,8 +165,8 @@ Each object in the `countdowns` array takes these:
 | `image_path` | string / null | `null` | Image to show beside the text |
 | `display_order` | integer | `0` | Rotation order; lower goes first |
 | `id` | string | *auto* | Unique identifier, generated for you |
-| `layout` | object / null | `null` | Pixel position and size overrides |
-| `style` | object / null | `null` | Per-entry font and colour overrides |
+| `layout` | object | `{}` | Pixel position and size overrides |
+| `style` | object | `{}` | Per-entry font and colour overrides |
 
 ### Layout presets
 
@@ -216,13 +216,15 @@ text on the right two thirds.
 | Key | Default | Meaning |
 |-----|---------|---------|
 | `image_x` / `image_y` | `0` | Image top-left corner; `0` for both keeps the preset's placement |
-| `image_width` | `0` | `0` means auto — a third of the panel width |
-| `image_height` | `0` | `0` means auto — the full panel height |
+| `image_width` | `0` | Width of the box the image is scaled into. `0` means auto — a third of the panel width, the whole width for `image-only` |
+| `image_height` | `0` | Height of the box the image is scaled into. `0` means auto — the full panel height |
 | `name_x` / `name_y` | `null` | `null` means auto: centred in the text area, upper third. `name_x` is the line's centre |
 | `value_x` / `value_y` | `null` | `null` means auto: centred, lower two thirds. `value_x` is the line's centre |
 
-Both `layout` and `style` also accept `null` or an empty string, which the web
-UI may write when you clear a field.
+The image is scaled to fit inside its box (keeping its aspect ratio unless
+`preserve_aspect_ratio` is off), and the box is kept on the panel — a size or
+offset that reaches past the edge is trimmed to what is visible. A blank or
+non-numeric value in any `layout` field counts as unset.
 
 ---
 

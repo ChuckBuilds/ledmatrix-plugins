@@ -30,6 +30,8 @@ inning, bases, outs and count are what the panel showed at that moment.*
    - [Per-league: durations](#per-league-durations)
    - [Per-league: update intervals](#per-league-update-intervals)
    - [Per-league: what appears on the card](#per-league-what-appears-on-the-card)
+   - [Run and home-run celebrations](#run-and-home-run-celebrations)
+   - [Game activity pop-ups](#game-activity-pop-ups)
    - [The extra baseball screens](#the-extra-baseball-screens)
    - [The matchup card: separator, date and time](#the-matchup-card-separator-date-and-time)
    - [Favourite team result colours](#favourite-team-result-colours)
@@ -439,6 +441,101 @@ are fetched asynchronously on a background thread after the card is first
 drawn, so the line appears a moment later, once the fetch returns. That also
 means it costs an extra request per selected game — worth turning off if you
 do not want the line.
+
+### Run and home-run celebrations
+
+When a team scores in a live game the plugin can take over the panel for a few
+seconds, the way the hockey scoreboard does for a goal. It tells the two kinds
+of score apart:
+
+- **A run** shows a ball diamond in the scoring team's colours with a runner
+  circling the bases, and reads `RUN SCORES!` or `<TEAM> SCORES!` (`<TEAM> +3!`
+  when several came in at once).
+- **A home run** shows the ball leaving the park over the outfield wall, with
+  fireworks, and reads `HOME RUN!` or `<TEAM> HOMER!` -- `2-RUN HOMER!`,
+  `3-RUN HOMER!` and `GRAND SLAM!` by how many it drove in. A bigger blast
+  launches more fireworks.
+- **A win** (a favourite's game going final) gets the sunburst and
+  `<TEAM> WINS!`.
+
+What makes it land: the score ticks up from the old total to the new one with
+a floating `+1` (or `+4`), a glint sweeps across the headline, and a home run
+opens with a bat-crack starburst and shakes the panel before it settles.
+
+The score itself decides when to celebrate; ESPN's play-by-play decides which
+kind. MiLB's feed carries no plays, so there every run is celebrated as a run.
+If a summary has not caught up yet, the run is celebrated as a run rather than
+guessed at.
+
+The settings are per league (`mlb`, `milb`, `ncaa_baseball`):
+
+| Setting | Default | What it does |
+|---|---|---|
+| `celebration_enabled` | `true` | Turn the takeover on or off |
+| `celebration_duration` | `8` | **Advanced.** Seconds on screen (3-30) |
+| `celebrate_opponent_runs` | `false` | **Advanced.** Also celebrate the opponent's runs, not just a favourite's. With no favourites set, every run in a shown game is celebrated |
+| `celebration_home_runs_only` | `false` | **Advanced.** Only home runs (and wins) get the takeover; plain runs just update the scorebug |
+| `celebration_team_colors` | `true` | **Advanced.** Draw it in the scoring team's colours, read from its logo; off uses a fixed navy and amber |
+| `celebration_confetti` | `true` | **Advanced.** Team-coloured confetti, and the home-run fireworks and runner |
+
+The runner, the fireworks and the tick-up move, so the plugin asks the core for
+its high-frame-rate loop while a celebration is on screen. A celebration armed
+while baseball is already showing steps at one frame a second for the rest of
+that turn; every frame is a finished picture.
+
+#### The scorer card
+
+After a run, the plugin can show who drove it in, the way the hockey
+scoreboard shows the goal scorer: a full-screen card with the batter's
+headshot, a team-colour banner (`HOME RUN`, `2-RUN HOMER`, `GRAND SLAM`,
+`RUN SCORES`), their name, number and position, their season line
+(AVG/HR/RBI) and ESPN's own sentence for the play. For a run that came in on a
+single or a walk, that sentence names the runner (for example "Turner singled
+to center, Schwarber scored"). It follows the celebration as a second beat, or
+appears straight away when the celebration is off -- the two are independent.
+Rows are dropped least-important-first on small panels, and the wording
+shortens (`PHI HR`, `Harper`) before it is cut off.
+
+It is **off by default** and costs one extra ESPN request per run, plus one
+for the batter's bio the first time that player is seen. It reads ESPN's
+play-by-play, so it exists for MLB and NCAA Baseball only.
+
+| Setting | Default | What it does |
+|---|---|---|
+| `display_options.show_scorer_card` | `false` | **Advanced.** Show the card after a run (MLB and NCAA Baseball) |
+| `scorer_card_dwell_seconds` | `6` | **Advanced.** Seconds on screen (3-20) |
+| `scorer_card_favorites_only` | `false` | **Advanced.** Only for a favourite team's runs |
+
+### Game activity pop-ups
+
+Between runs a scoreless inning can look frozen. With pop-ups on, a one-line
+banner appears along the bottom of the live scorebug for the plays that happen
+-- `Harper SINGLE!  Top 8th`, `Acuna Jr. STEALS 3RD  Bot 1st`,
+`McFarlane IN RELIEF  Bot 7th` -- holds for a few seconds, then fades back to
+the scorebug. It is the same idea as the hockey scoreboard's game-activity
+banner. Runs are left to the celebration and the scorer card.
+
+The banner picks the fullest wording that fits: a smaller font is tried before
+any word is given up, then the surname alone, the short label (`1B`, `SB`,
+`K`), the short inning (`T8`), and last of all the inning itself. Accents are
+folded (`Acuna`), because the small face has no accented letters.
+
+It is **off by default**, only draws on panels 32 pixels tall or more, and
+reads ESPN's play-by-play, so it exists for MLB and NCAA Baseball only. It
+costs one extra ESPN request per live update for the game on screen, shared
+with the celebration when a run has just scored.
+
+| Setting | Default | What it does |
+|---|---|---|
+| `display_options.show_game_activity` | `false` | **Advanced.** Show the pop-ups (MLB and NCAA Baseball) |
+| `game_activity_detail` | `highlights` | **Advanced.** `hits_and_steals`: singles, doubles, triples, stolen bases. `highlights`: those plus strikeouts, walks, double plays, errors and pitching changes. `everything`: also outs and sacrifices |
+| `game_activity_dwell_seconds` | `6` | **Advanced.** How long each pop-up stays, fade included (2-20) |
+| `game_activity_fade_seconds` | `3` | **Advanced.** How much of that is spent fading out; `0` removes it at once (0-10) |
+
+A pop-up can trail the play by up to one live update interval; the inning on it
+says when it happened. A burst of plays keeps the newest three. The first look
+at a game only records where the feed is, so joining a game mid-inning does not
+replay its history.
 
 ### The extra baseball screens
 
@@ -906,6 +1003,9 @@ broken.
 baseball-scoreboard/
 ├── manifest.json                  # Metadata and version history
 ├── manager.py                     # BaseballScoreboardPlugin: league and mode routing
+├── baseball_celebration.py        # Run / home-run / win celebrations
+├── baseball_scorer_card.py        # The card naming who drove a run in
+├── baseball_activity.py           # Play-by-play pop-up banners
 ├── mlb_managers.py                # MLB fetching and cache keys
 ├── milb_managers.py               # MiLB fetching
 ├── ncaa_baseball_managers.py      # NCAA fetching

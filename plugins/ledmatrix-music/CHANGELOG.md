@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.5.3] - 2026-10-02
+
+### Fixed
+- YouTube Music: a new companion URL saved in the web UI, or a new token from
+  the authentication script, now applies without restarting the display
+  service. Both were read only at startup, so the client kept retrying the old
+  address (or the old token) and the screen stayed on "Nothing Playing". The
+  files are re-checked before each connect attempt, and a change clears the
+  reconnect backoff so the new settings are tried straight away.
+
 ## [1.5.2] - 2026-09-28
 
 ### Changed

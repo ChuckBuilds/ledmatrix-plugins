@@ -74,6 +74,9 @@ def _client(monotonic):
     c._connection_event = threading.Event()
     c._data_lock = threading.Lock()
     c._warned_missing_token = False
+    # Matches the files on disk, so connect_client() does not reload them and
+    # replace the fixture's URL and token with whatever this machine has.
+    c._config_stamp = c._config_files_stamp()
 
     class _Sio:
         def connect(self, *a, **k):
@@ -171,6 +174,40 @@ def main():
         check("warns again after a token comes and goes",
               len(c4._log.records["warning"]) == 2,
               "%d warnings" % len(c4._log.records["warning"]))
+
+        print("\na new URL or token is picked up without a restart")
+        # Regression: load_config() ran only in __init__, so a URL saved in
+        # the web UI (or a token from the auth script) was ignored until the
+        # service restarted, and the client kept dialling the dead address.
+        c5 = _client(clock)
+        c5.connect_client(timeout=1)
+        check("backed off from the stale address", c5._next_retry_at > clock["t"])
+        stamp = {"v": ("old",)}
+        c5._config_stamp = stamp["v"]
+        c5._config_files_stamp = lambda: stamp["v"]
+        loads = []
+
+        def fake_load():
+            loads.append(1)
+            c5.base_url = "http://10.0.10.132:9863"
+
+        c5.load_config = fake_load
+        dialled = []
+
+        class _RecordingSio:
+            def connect(self, url, **k):
+                dialled.append(url)
+                raise ytm_client.socketio.exceptions.ConnectionError("x")
+
+        c5.sio = _RecordingSio()
+        clock["t"] += 1.0                      # still inside the backoff window
+        c5.connect_client(timeout=1)
+        check("unchanged files are not re-read", not loads and not dialled)
+        stamp["v"] = ("new",)                  # the user saves a new URL
+        c5.connect_client(timeout=1)
+        check("changed files are re-read", len(loads) == 1)
+        check("the new URL is dialled at once, backoff cleared",
+              dialled == ["http://10.0.10.132:9863"], repr(dialled))
 
         print("\nsocketio does not run a retry loop behind the backoff")
         src_client = (PLUGIN_DIR / "ytm_client.py").read_text(encoding="utf-8")

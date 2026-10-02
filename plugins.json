@@ -80,7 +80,7 @@
       "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.54.4",
+      "latest_version": "1.56.1",
       "ledmatrix_min_version": "3.8.0"
     },
     {
@@ -107,7 +107,8 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "1.41.2",
-      "ledmatrix_min_version": "3.8.0"
+      "ledmatrix_min_version": "3.8.0",
+      "commit": "7824542bdc40ae5783b33997a234f61f2838bf3b"
     },
     {
       "id": "calendar",
@@ -131,7 +132,8 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "1.2.10",
-      "ledmatrix_min_version": "3.3.0"
+      "ledmatrix_min_version": "3.3.0",
+      "commit": "36c19cb8d8ba85f15c1d77b543c6946d2c056034"
     },
     {
       "id": "christmas-countdown",
@@ -198,13 +200,13 @@
       "plugin_path": "plugins/countdown",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-28",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "3.3.3",
+      "latest_version": "3.3.4",
       "icon": "fa-clock",
       "ledmatrix_min_version": "2.0.0",
-      "commit": "74edbbf59b86336b3f8030b9d86d3eb06d8b2035"
+      "commit": "a6a38144d3544b236032926bf844ad730c825917"
     },
     {
       "id": "f1-scoreboard",
@@ -281,7 +283,8 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "3.18.4",
-      "ledmatrix_min_version": "3.8.0"
+      "ledmatrix_min_version": "3.8.0",
+      "commit": "7824542bdc40ae5783b33997a234f61f2838bf3b"
     },
     {
       "id": "geochron",
@@ -383,7 +386,8 @@
       "screenshot": "",
       "latest_version": "1.42.1",
       "icon": "fas fa-hockey-puck",
-      "ledmatrix_min_version": "3.8.0"
+      "ledmatrix_min_version": "3.8.0",
+      "commit": "7824542bdc40ae5783b33997a234f61f2838bf3b"
     },
     {
       "id": "lacrosse-scoreboard",
@@ -408,7 +412,8 @@
       "screenshot": "",
       "latest_version": "1.36.2",
       "icon": "fas fa-baseball-ball",
-      "ledmatrix_min_version": "3.8.0"
+      "ledmatrix_min_version": "3.8.0",
+      "commit": "7824542bdc40ae5783b33997a234f61f2838bf3b"
     },
     {
       "id": "birdnet-go",
@@ -593,15 +598,15 @@
       "plugin_path": "plugins/ledmatrix-music",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-28",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.5.2",
+      "latest_version": "1.5.3",
       "ledmatrix_min_version": "2.0.0",
       "aliases": [
         "ledmatrix-music"
       ],
-      "commit": "62fa95853476715b833abfe0b207d4f50876b6b4"
+      "commit": "988f1a9e5c4d037a81ae4ec4bfc7b0aec3fcda21"
     },
     {
       "id": "news",
@@ -760,7 +765,8 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "3.1.4",
-      "ledmatrix_min_version": "2.0.0"
+      "ledmatrix_min_version": "2.0.0",
+      "commit": "36c19cb8d8ba85f15c1d77b543c6946d2c056034"
     },
     {
       "id": "pga-tour-leaderboard",
@@ -1002,7 +1008,8 @@
       "screenshot": "",
       "latest_version": "1.19.2",
       "icon": "fas fa-fist-raised",
-      "ledmatrix_min_version": "3.8.0"
+      "ledmatrix_min_version": "3.8.0",
+      "commit": "7824542bdc40ae5783b33997a234f61f2838bf3b"
     },
     {
       "id": "weather",
@@ -1337,7 +1344,8 @@
       "screenshot": "https://raw.githubusercontent.com/ChuckBuilds/ledmatrix-plugins/main/plugins/blackjack/assets/hero.png",
       "latest_version": "1.3.1",
       "icon": "fa-diamond",
-      "ledmatrix_min_version": "3.2.0"
+      "ledmatrix_min_version": "3.2.0",
+      "commit": "36c19cb8d8ba85f15c1d77b543c6946d2c056034"
     },
     {
       "id": "ledmatrix-nascar",
@@ -1386,12 +1394,11 @@
       "plugin_path": "plugins/nfl-stat-leaders",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-27",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.1",
-      "ledmatrix_min_version": "3.4.0",
-      "commit": "764eb4d05342252cb2677f0fa4ba9f3cd8e5706a"
+      "latest_version": "1.0.2",
+      "ledmatrix_min_version": "3.4.0"
     },
     {
       "id": "fantasy-blitz",

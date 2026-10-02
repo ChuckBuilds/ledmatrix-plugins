@@ -60,6 +60,9 @@ class _Stub:
 
     has_live_content = BaseballScoreboardPlugin.has_live_content
 
+    def _get_active_celebration_manager(self):
+        return None          # no celebration is running in this stub
+
     def __init__(self, mlb_games=(), milb_games=(), ncaa_games=()):
         self.logger = _RecordingLogger()
         self.is_enabled = True
