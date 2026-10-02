@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-10-01",
+  "last_updated": "2026-10-02",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -284,7 +284,8 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "3.18.2",
-      "ledmatrix_min_version": "3.8.0"
+      "ledmatrix_min_version": "3.8.0",
+      "commit": "4d50ed8199cf405e6f4651f07cbc6c08a9f65846"
     },
     {
       "id": "geochron",
