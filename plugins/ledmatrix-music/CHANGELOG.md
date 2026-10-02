@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.5.5] - 2026-10-03
+
+### Fixed
+- Scrolling no longer stutters while YouTube Music is playing. websocket-client
+  validates every text frame's UTF-8 in pure Python (unless wsaccel is
+  installed), holding the GIL; the companion pushes its whole player state
+  every few seconds, and on a 512x64 Pi 4 that check was ~16% of the display
+  process's GIL time and stalled ~8% of scroll frames (0.6% without it). The
+  socket now skips it via `websocket_extra_options`; the payload is still
+  decoded and parsed as JSON, which rejects anything malformed.
+
 ## [1.5.4] - 2026-10-02
 
 ### Fixed

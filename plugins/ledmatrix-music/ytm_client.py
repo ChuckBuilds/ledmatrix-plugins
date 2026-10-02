@@ -59,10 +59,19 @@ class YTMClient:
         # class had no say in. connect_client() owns retry timing; the poll
         # loop calls it, and the backoff applies uniformly whether the
         # connection never came up or came up and went away.
+        #
+        # skip_utf8_validation: websocket-client checks every text frame's
+        # UTF-8 in pure Python unless wsaccel is installed, holding the GIL
+        # throughout. The companion pushes its whole player state every few
+        # seconds while music plays, and on a Pi 4 that check was ~16% of the
+        # display process's GIL time and stalled ~8% of scroll frames. The
+        # payload is decoded and parsed as JSON right after, which rejects
+        # anything malformed anyway.
         self.sio = socketio.Client(
             logger=False,
             engineio_logger=False,
             reconnection=False,
+            websocket_extra_options={'skip_utf8_validation': True},
         )
         self.last_known_track_data = None
         self.is_connected = False

@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-music",
   "name": "Music Player - Now Playing",
-  "version": "1.5.4",
+  "version": "1.5.5",
   "description": "Real-time now playing display for Spotify and YouTube Music with album art, scrolling text, and progress bars",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -65,6 +65,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.5.5",
+      "released": "2026-10-03",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Scrolling no longer stutters while YouTube Music is playing. The YTM connection checked every incoming message's text in slow pure-Python code, blocking the display for tens of milliseconds every few seconds; it now skips that check (the message is still parsed as JSON, which rejects anything malformed)."
+    },
     {
       "version": "1.5.4",
       "released": "2026-10-02",
