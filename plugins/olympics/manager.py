@@ -621,12 +621,6 @@ class OlympicsPlugin(BasePlugin):
 
         return VegasDisplayMode.SCROLL
 
-    def get_supported_vegas_modes(self) -> List[VegasDisplayMode]:
-        """Return list of Vegas display modes this plugin supports."""
-        if VegasDisplayMode is None:
-            return []
-        return [VegasDisplayMode.SCROLL, VegasDisplayMode.FIXED_SEGMENT, VegasDisplayMode.STATIC]
-
     def has_live_content(self) -> bool:
         """
         Check if there is priority live content to display.

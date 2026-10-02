@@ -872,18 +872,6 @@ class CalendarPlugin(BasePlugin):
         # Default to SCROLL for multi-event content
         return VegasDisplayMode.SCROLL
 
-    def get_supported_vegas_modes(self) -> List[VegasDisplayMode]:
-        """
-        Return list of Vegas display modes this plugin supports.
-
-        Calendar supports both SCROLL (events flow with the ticker)
-        and FIXED_SEGMENT (calendar shows as a static block).
-
-        Returns:
-            List of supported VegasDisplayMode values
-        """
-        return [VegasDisplayMode.SCROLL, VegasDisplayMode.FIXED_SEGMENT]
-
     # ==================== End Vegas Scroll Integration ====================
 
     def get_display_duration(self) -> float:

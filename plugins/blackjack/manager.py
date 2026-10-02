@@ -93,6 +93,16 @@ _CORE_DEFAULT_CAP = 180.0
 #: and calls display() straight after, so the real gap is microseconds.
 _STATIC_PAUSE_WINDOW = 0.5
 
+#: The ``vegas_mode`` values this plugin honours. SCROLL is for multi-item
+#: plugins and a hand is one thing, so ``"scroll"`` falls back to fixed. This
+#: was ``get_supported_vegas_modes()``, which core deprecated (removed in 3.9.0)
+#: and never read; nothing else consulted it.
+#:
+#: There is deliberately no manifest ``vegas_participation``: Vegas derives
+#: ours from get_vegas_display_mode() (STATIC pauses, otherwise scroll), and
+#: that call is what tells display() a STATIC pause is starting.
+_VEGAS_MODES_OFFERED = ("fixed", "static")
+
 
 class BlackjackPlugin(BasePlugin):
     """Deals one hand of blackjack per rotation and plays it out on the panel."""
@@ -692,7 +702,7 @@ class BlackjackPlugin(BasePlugin):
             except ValueError:
                 self.logger.warning("Invalid vegas_mode %r, using fixed", requested)
             else:
-                if mode in self.get_supported_vegas_modes():
+                if mode.value in _VEGAS_MODES_OFFERED:
                     return mode
                 self.logger.warning(
                     "vegas_mode %r is not supported by this plugin, using fixed",
@@ -728,12 +738,6 @@ class BlackjackPlugin(BasePlugin):
         self.display_manager.draw = ImageDraw.Draw(image)
         self.display_manager.update_display()
         return True
-
-    def get_supported_vegas_modes(self):
-        """The two that work. SCROLL is for multi-item plugins; a hand is one."""
-        if VegasDisplayMode is None:
-            return []
-        return [VegasDisplayMode.FIXED_SEGMENT, VegasDisplayMode.STATIC]
 
     # -- lifecycle / web UI ----------------------------------------------
 
