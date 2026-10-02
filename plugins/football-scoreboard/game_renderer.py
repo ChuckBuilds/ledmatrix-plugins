@@ -1060,8 +1060,14 @@ class GameRenderer(SportsCardWrappersMixin, SportsGameRendererMixin):
 
     def _load_raw_logo(self, team_abbrev: str, logo_path) -> Optional[Image.Image]:
         """Load a logo unresized (the adaptive path fits it per region;
-        results are cached per size by the LayoutContext)."""
-        cached = self._lru_get(self._raw_logo_cache, team_abbrev)
+        results are cached per size by the LayoutContext).
+
+        Keyed by logo directory as well as abbreviation, as the classic cache
+        is (see _logo_scope): one renderer draws a strip carrying both
+        leagues, and keyed by "MIA" alone the Hurricanes' card drew the
+        Dolphins' logo, or the other way round."""
+        key = f"{self._logo_scope(logo_path)}:{team_abbrev}"
+        cached = self._lru_get(self._raw_logo_cache, key)
         if cached is not None:
             return cached
         try:
@@ -1069,7 +1075,7 @@ class GameRenderer(SportsCardWrappersMixin, SportsGameRendererMixin):
                 logo = Image.open(logo_path)
                 if logo.mode != "RGBA":
                     logo = logo.convert("RGBA")
-                self._lru_put(self._raw_logo_cache, team_abbrev, logo)
+                self._lru_put(self._raw_logo_cache, key, logo)
                 return logo
         except Exception as e:
             self.logger.error(f"Error loading logo for {team_abbrev}: {e}")
@@ -1258,14 +1264,18 @@ class GameRenderer(SportsCardWrappersMixin, SportsGameRendererMixin):
             )
             return main_img.convert('RGB')
 
-        for raw, slot, element, abbr in (
-            (away_raw, regs.away_slot, 'away_logo', game.get("away_abbr", "")),
-            (home_raw, regs.home_slot, 'home_logo', game.get("home_abbr", "")),
+        for raw, slot, element, abbr, path in (
+            (away_raw, regs.away_slot, 'away_logo', game.get("away_abbr", ""),
+             game.get("away_logo_path")),
+            (home_raw, regs.home_slot, 'home_logo', game.get("home_abbr", ""),
+             game.get("home_logo_path")),
         ):
             slot = self._region_for(slot, element)
+            # Scoped like the raw logo: the fitted-image cache is keyed by
+            # name, so "logo:MIA" would hand one league's fit to the other.
             ifit = self._ctx.fit_image(raw, slot, mode="fill_height",
                                        crop_to_ink=True,
-                                       cache_key=f"logo:{abbr}")
+                                       cache_key=f"logo:{self._logo_scope(path)}:{abbr}")
             if not ifit.is_empty:
                 x, y = slot.align_xy(ifit.width, ifit.height)
                 main_img.paste(ifit.image, (x, y), ifit.image)

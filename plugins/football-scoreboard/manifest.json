@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "3.18.1",
+  "version": "3.18.2",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "3.18.2",
+      "released": "2026-10-01",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "Adaptive layout (layout_mode: adaptive) no longer draws one league's logo on the other league's card when they share an abbreviation. NFL and NCAA FB share ten (CAR CIN DAL DEN HOU LAC MIA NE TB TBD), and a scroll strip carries both, but the adaptive path cached logos by abbreviation alone, so the Hurricanes' card could show the Dolphins' logo or the other way round. Both of its logo caches are now keyed by logo directory as well, as the classic layout's already was. Classic layout is unchanged."
+    },
     {
       "version": "3.18.1",
       "released": "2026-10-01",
