@@ -206,7 +206,8 @@
       "screenshot": "",
       "latest_version": "3.3.4",
       "icon": "fa-clock",
-      "ledmatrix_min_version": "2.0.0"
+      "ledmatrix_min_version": "2.0.0",
+      "commit": "a6a38144d3544b236032926bf844ad730c825917"
     },
     {
       "id": "f1-scoreboard",
