@@ -81,7 +81,8 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "1.56.0",
-      "ledmatrix_min_version": "3.8.0"
+      "ledmatrix_min_version": "3.8.0",
+      "commit": "43c19f76c144c1b8cecd3d811706a1de371c7ea7"
     },
     {
       "id": "basketball-scoreboard",
