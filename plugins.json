@@ -1399,7 +1399,8 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "1.0.2",
-      "ledmatrix_min_version": "3.4.0"
+      "ledmatrix_min_version": "3.4.0",
+      "commit": "cb04ac4a25ed580fea02b506b2cff90cc55de241"
     },
     {
       "id": "fantasy-blitz",
