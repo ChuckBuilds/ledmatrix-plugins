@@ -599,15 +599,14 @@
       "plugin_path": "plugins/ledmatrix-music",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-02",
+      "last_updated": "2026-10-03",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.5.4",
+      "latest_version": "1.5.5",
       "ledmatrix_min_version": "2.0.0",
       "aliases": [
         "ledmatrix-music"
-      ],
-      "commit": "886d2038d22a35c962beac0ea261543339cffec9"
+      ]
     },
     {
       "id": "news",
