@@ -56,8 +56,9 @@ MOVED = {
         "SportsFetchMixin", "sports.py", "SportsCore", ALL, (),
         ("_fetch_season_directly", "_background_fetches_espn_ranges",
          "_needs_previous_day", "_wants_live_odds",
-         "_cached_schedule", "_retire_previous_window", "_schedule_cache_key",
-         "_LOOKBACK_CUTOFF_HOUR", "_LIVE_ODDS_LOOKAHEAD")),
+         "_LOOKBACK_CUTOFF_HOUR", "_LIVE_ODDS_LOOKAHEAD",
+         # core #728 (fetch service stage 2): the shared ESPN schedule window
+         "_schedule_cache_key", "_cached_schedule", "_retire_previous_window")),
     "src.common.sports_celebration": (
         "SportsCelebrationMixin", "sports.py", "SportsLive",
         ("afl", "football", "hockey", "nrl", "soccer"),
