@@ -257,6 +257,50 @@ def test_vegas_content(frozen):
     assert {p["id"] for p in plugin._vegas_players()} <= wanted
 
 
+def test_vegas_static_pause_walks_every_screen(frozen):
+    """Vegas calls display() once per pause and never again, with no mode. It
+    drew the top scorers' first card every time and skipped the other screens."""
+    plugin, display, _ = make_plugin({"vegas_mode": "static"})
+    plugin.update()
+    assert plugin.get_vegas_participation() == "pause"
+    playlist = [screen for screen, _items in plugin._playlist()]
+    assert len(playlist) > 3
+    shown, frames = [], []
+    for turn in range(len(playlist)):
+        frozen.tick(5)  # each pass is a separate pause
+        assert plugin.display(force_clear=True) is True
+        shown.append(plugin._playlist()[plugin._pause_turn % len(playlist)][0])
+        assert plugin.get_display_duration() in (plugin.item_seconds, manager_mod.PAGE_SECONDS)
+        frames.append(display.image.copy().tobytes())
+    assert shown == playlist
+    assert len(set(frames)) == len(frames)
+
+
+def test_vegas_static_pause_is_stable_within_one_pause(frozen):
+    plugin, _, _ = make_plugin({"vegas_mode": "static"})
+    plugin.update()
+    plugin.display(force_clear=True)
+    turn = plugin._pause_turn
+    plugin.display(force_clear=True)
+    assert plugin._pause_turn == turn
+
+
+def test_normal_rotation_is_unaffected_by_a_static_setting(frozen):
+    plugin, _, _ = make_plugin({"vegas_mode": "static"})
+    plugin.update()
+    assert plugin.display(force_clear=True, display_mode="fantasy_leaderboard") is True
+    assert plugin._current_screen == "leaderboard"
+    assert plugin.get_display_duration() == 2 * manager_mod.PAGE_SECONDS
+
+
+def test_vegas_fixed_scrolls_panel_sized_blocks(frozen):
+    plugin, _, _ = make_plugin({"vegas_mode": "fixed"}, size=(128, 64))
+    plugin.update()
+    blocks = plugin.get_vegas_content()
+    assert blocks and all(block.size == (128, 64) for block in blocks)
+    assert len(blocks) > 3  # more than the ticker's title plus its scorers
+
+
 def test_espn_fallback_when_sleeper_is_down(frozen):
     fixture = copy.deepcopy(FIXTURE)
     fixture.pop(f"{ID}:stats:2026:2")

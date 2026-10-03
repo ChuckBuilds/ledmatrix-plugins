@@ -166,7 +166,7 @@ are on, and are cut at a whole letter when they are off.
 | `advanced.animation_fps` | integer (5-60) | `30` | **Advanced.** Frames per second for the animations. |
 | `advanced.request_timeout` | integer (5-60) | `15` | **Advanced.** Seconds to wait for Sleeper or ESPN before giving up. |
 | `advanced.headshot_downloads` | boolean | `true` | **Advanced.** Download player photos from ESPN. Off uses only photos already saved. |
-| `vegas_mode` | `scroll` / `fixed` / `static` | `"scroll"` | **Advanced.** How Fantasy Blitz behaves in Vegas mode: scroll its top scorers through the ticker, scroll the whole panel as one block, or pause the ticker and show normally. |
+| `vegas_mode` | `scroll` / `fixed` / `static` | `"scroll"` | **Advanced.** How Fantasy Blitz behaves in Vegas mode: scroll its top scorers through the ticker, scroll each screen through it as a panel-sized block, or pause the ticker to show one screen per pass (the next screen each time round). |
 
 A screen `duration` of 0 means "long enough to show everything": about six
 seconds per card (`advanced.card_seconds`) and eight per page of a list.
