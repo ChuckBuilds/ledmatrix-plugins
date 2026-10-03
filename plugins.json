@@ -631,9 +631,9 @@
       "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.6.5",
+      "latest_version": "1.7.0",
       "ledmatrix_min_version": "3.4.0",
-      "commit": "886d2038d22a35c962beac0ea261543339cffec9"
+      "commit": "f41dad77bdc21c4b2474ea778b863ef72e0daa7c"
     },
     {
       "id": "on-air",
@@ -900,9 +900,9 @@
       "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.8.4",
+      "latest_version": "2.9.0",
       "ledmatrix_min_version": "3.4.0",
-      "commit": "886d2038d22a35c962beac0ea261543339cffec9"
+      "commit": "f41dad77bdc21c4b2474ea778b863ef72e0daa7c"
     },
     {
       "id": "stocks",
