@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.42.2] - 2026-10-02
+
+### Documentation
+- README: documents `<league>.update_intervals.live_odds` (`60` s) and the
+  full-screen `scroll_card.switch_show_date` / `switch_show_time` switches,
+  and says `show_date` / `show_time` apply to the scroll and Vegas cards.
+- `requirements.txt`: dropped a stale note about a `base_classes.py` the
+  plugin no longer ships. No change in behaviour.
+
 ## [1.42.1] - 2026-10-02
 
 ### Changed

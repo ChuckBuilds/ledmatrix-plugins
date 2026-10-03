@@ -1,7 +1,7 @@
 {
   "id": "birdnet-go",
   "name": "BirdNET-Go",
-  "version": "1.2.7",
+  "version": "1.2.8",
   "author": "ChuckBuilds",
   "description": "Show what BirdNET-Go is hearing. One screen cycles a different species each turn \u2014 name, confidence, how many times it has been heard today, and a photo \u2014 and a second shows today's stats: species count, total detections and the most-heard species. Polls the BirdNET-Go REST API, with optional MQTT for instant pop-ups.",
   "category": "integration",
@@ -21,6 +21,12 @@
   "entry_point": "manager.py",
   "class_name": "BirdNetGoPlugin",
   "versions": [
+    {
+      "released": "2026-10-02",
+      "version": "1.2.8",
+      "changelog": "A species photo that failed to load is retried after 30 minutes instead of never. BirdNET-Go downloads a photo upstream on its first request, so one slow first fetch used to leave that species text-only until a restart.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-09-28",
       "version": "1.2.7",
@@ -84,7 +90,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-28",
+  "last_updated": "2026-10-02",
   "stars": 0,
   "downloads": 0,
   "verified": true,

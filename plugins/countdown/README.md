@@ -132,12 +132,12 @@ count, and there is no separate "today" state:
 ![Six panels showing each rung of that ladder: 113 Days, Tomorrow, 10h 30m,
 30m, NOW! and 3d ago](../../docs/assets/countdown/count-formats.png)
 
-Two consequences worth knowing:
+Three consequences worth knowing:
 
-- **The hours-and-minutes rungs only appear if you set `target_time`.** Without
-  it the target is midnight, so an event "today" is already in the past by the
-  time anyone is looking at the panel. Set `target_time` for anything where the
-  hour matters.
+- **Without `target_time` the target is midnight at the start of
+  `target_date`.** The hours-and-minutes rungs then count down through the day
+  *before*, and on the day itself the countdown has already passed. Set
+  `target_time` for anything where the hour matters.
 - **A passed countdown is hidden by default.** `Nd ago` is only ever visible
   with [`show_expired`](#global-settings) turned on.
 - **The last 24 hours are drawn in yellow.** Once the target is less than a day
@@ -277,7 +277,8 @@ makes the name inherit `font_family`.
 ### Images
 
 `image_path` may be absolute, relative to the working directory, or relative to
-the plugins repository root — the plugin tries each in that order.
+the LEDMatrix directory the plugin is installed under — the plugin tries each in
+that order.
 
 - Square images work best; the image area is a third of the panel width by the
   full height.
@@ -321,7 +322,7 @@ writes `Tomorrow` rather than `1 Day`. See
 
 **The image is not showing.**
 Check the log for `Image not found` — the path is tried absolute, then relative
-to the working directory, then relative to the repository root. Also check
+to the working directory, then relative to the LEDMatrix directory. Also check
 `layout_preset` is not `text-only`, which ignores images by design.
 
 **I picked a font and nothing changed.**

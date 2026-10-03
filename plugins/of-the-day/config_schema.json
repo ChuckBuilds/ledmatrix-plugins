@@ -89,7 +89,7 @@
       "type": "number",
       "default": 40,
       "minimum": 10,
-      "description": "How long to display each category in seconds"
+      "description": "Seconds the plugin holds the panel per turn; categories rotate within it every display_rotate_interval"
     },
     "file_manager": {
       "type": "null",
@@ -106,7 +106,7 @@
           "create": "create-file",
           "toggle": "toggle-category"
         },
-        "upload_hint": "JSON files with day numbers 1\u2013365 as keys",
+        "upload_hint": "JSON files with day numbers 1\u2013366 as keys",
         "directory_label": "of_the_day/",
         "create_fields": [
           {

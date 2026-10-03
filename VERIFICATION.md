@@ -18,14 +18,16 @@ module-collision check. Use this list for the human judgment CI can't make
 
 ## Manifest Validation
 
-- [ ] All required fields present (`id`, `name`, `version`, `class_name`,
-      `display_modes`)
+- [ ] All required fields present (`id`, `name`, `version`, `author`,
+      `entry_point`, `class_name`, `compatible_versions` per the core
+      manifest schema, plus `display_modes`)
 - [ ] `class_name` matches the actual class name in the entry point
       (case-sensitive, no spaces) — the loader does
       `getattr(module, class_name)` and will fail with `AttributeError`
       otherwise
-- [ ] `entry_point` either matches the real file name or is omitted
-      (defaults to `manager.py`)
+- [ ] `entry_point` matches the real file name (the loader defaults to
+      `manager.py` when it is absent, but the core manifest schema CI
+      validates against requires it)
 - [ ] `id` matches the directory name
 - [ ] Valid JSON syntax
 - [ ] Correct version format (semver)

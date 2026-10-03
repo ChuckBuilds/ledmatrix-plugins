@@ -316,14 +316,19 @@ class ElectionPlugin(BasePlugin):
         out: List[ElectionEvent] = []
         for e in self.calendar_events_cfg:
             try:
-                out.append(ElectionEvent(
+                ev = ElectionEvent(
                     state=(e.get("state") or self.state or "").upper(),
                     date=e["date"],
                     type=e.get("type", "general"),
                     trail_days=int(e.get("trail_days", 14)),
                     feed_filename=(e.get("feed_filename") or None),
                     feed_url=(e.get("feed_url") or None),
-                ))
+                )
+                # Parse the date here: a malformed one (e.g. "11/03/2026")
+                # otherwise raised later in resolve_active, failing every
+                # update so no election -- built-in or configured -- showed.
+                ev.election_day()
+                out.append(ev)
             except Exception:
                 self.logger.warning("Elections: ignoring bad calendar_events entry: %s", e)
         return out

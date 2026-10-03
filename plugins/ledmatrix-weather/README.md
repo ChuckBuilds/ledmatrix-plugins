@@ -91,8 +91,10 @@ generated from it. The keys you'll touch most often:
 | `radar_update_interval` | `180` | Seconds between new-frame checks (60–1800). Checks are cheap; tiles only download when RainViewer publishes a new frame |
 | `radar_past_frames` | `6` | Observed frames to animate (~10 min apart) |
 | `radar_frame_seconds` / `radar_loop_pause_seconds` | `0.5` / `1.5` | Animation pacing: per-frame time and the hold on the newest frame |
+| `radar_in_vegas` | `true` | In the Vegas ticker, show the animated radar after the forecast cards (needs LEDMatrix core 3.8.0 and `show_radar` on). Off leaves the radar out of the ticker; the full-screen radar mode is unaffected |
 | `dynamic_duration.enabled` | `false` | Opt-in: hold the radar until a full animation loop completes rather than cutting mid-loop |
 | `dynamic_duration.max_duration_seconds` | `60` | Ceiling on that hold, in seconds (10–300), so a slow loop cannot monopolise the panel |
+| `customization` | *(shipped styling)* | Font, size, colour, visibility and position offsets for the current-conditions screen's elements: `condition_text`, `temp_text`, `high_low_text`, `metric_text` (bottom bar) and `weather_icon`. Edited from the **Display Customization** section of the web UI. Needs a core with the element-style system; older cores ignore it |
 
 ## Display modes
 

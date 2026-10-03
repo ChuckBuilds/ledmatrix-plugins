@@ -5530,7 +5530,7 @@
               },
               "show_all_live": {
                 "type": "boolean",
-                "default": true,
+                "default": false,
                 "description": "Show all live games, not just favorites"
               },
               "favorite_live_boost": {

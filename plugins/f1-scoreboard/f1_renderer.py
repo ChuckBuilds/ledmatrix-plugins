@@ -274,13 +274,19 @@ class F1Renderer:
             user_size = c.get("font_size")
             if font_name in _BDF_NATIVE_SIZE:
                 size = _BDF_NATIVE_SIZE[font_name]      # bitmap: always native px
-            elif user_size:
-                size = int(user_size)
-            else:
-                base = 8 if key in ("header", "position") else 6
+            elif auto_scale:
+                # The web UI saves font_size with every config, so it is the
+                # base here rather than a bypass: auto_scale on scales it with
+                # the panel and snaps it to the font's pixel grid.
+                base = int(user_size) if user_size else (
+                    8 if key in ("header", "position") else 6)
                 floor = 6 if key in ("header", "position") else 5
                 target = max(floor, int(base * type_scale))
-                size = _snap_font_size(font_name, target) if auto_scale else target
+                size = _snap_font_size(font_name, target)
+            else:
+                # auto_scale off: the exact size set.
+                size = int(user_size) if user_size else (
+                    8 if key in ("header", "position") else 6)
             fonts[key] = self._load_font(font_name, int(size))
         return fonts
 

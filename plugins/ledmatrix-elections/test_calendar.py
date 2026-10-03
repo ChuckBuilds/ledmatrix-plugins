@@ -172,10 +172,16 @@ def test_cold_start_seed():
 # ---------------------------------------------------------------------------
 
 class FakeCache:
+    """Models the core's expiry: get() defaults to max_age=300 and an entry
+    older than that reads as a miss. ``age`` is how old every entry is."""
+
     def __init__(self):
         self.d = {}
+        self.age = 0.0
 
-    def get(self, k):
+    def get(self, k, max_age=300):
+        if max_age is not None and self.age > max_age:
+            return None
         return self.d.get(k)
 
     def set(self, k, v):
@@ -206,6 +212,15 @@ def test_persistence():
     fired = s2.diff_newly_called([keep, new_call], now=2100.0, cold_start_ts=900.0)
     check(len(fired) == 1 and fired[0].id == "u-s-house-ca-12",
           "a fresh call after restart is still detected")
+
+    # A restart after a long outage (the snapshot is hours old) still loads
+    # it: the core's get() expires entries after 300s unless told otherwise.
+    cache.age = 6 * 3600
+    s3 = RaceStore(cache_manager=cache)
+    s3.set_election(key)
+    check(s3._called_snapshot is not None and s3._called_at.get("u-s-house-ca-12") == 2100.0,
+          "a snapshot older than the cache's default max_age survives a restart")
+    cache.age = 0.0
 
     # Switching elections resets the snapshot.
     s2.set_election("CA_2026-11-03_general")
@@ -292,6 +307,17 @@ def test_manager_resolution():
           "user-supplied calendar_events drive auto-pickup")
     check(p._resolve_active(_ts("2026-03-25")) is None,
           "dormant again once the extra event's window passes")
+
+    # A malformed date in one entry is skipped, not fatal to the rest.
+    p = _plugin({"state": "TX", "calendar_events": [
+        {"state": "TX", "date": "03/03/2026", "type": "primary"},
+        {"state": "TX", "date": "2026-03-03", "type": "primary"}]})
+    try:
+        ev = p._resolve_active(_ts("2026-03-05"))
+        ok = ev is not None and ev.date == "2026-03-03"
+    except Exception:
+        ok = False
+    check(ok, "a calendar_events entry with a bad date is ignored, the good one still resolves")
 
 
 def test_local_provider_autoengage():

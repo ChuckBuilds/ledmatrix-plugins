@@ -227,12 +227,12 @@ the clock renders at 1.8× actually leaves a 3-pixel gap.
 panel, plus spacing 2 and 10 on a 64x32
 panel](../../docs/assets/7-segment-clock/digit-spacing.png)
 
-**One caveat worth knowing.** The auto-scaler sizes the digits from the width
-of the digits alone — it does not account for the spacing you add on top. On a
-wide panel that is harmless. On a narrow one it is not: as the bottom row above
-shows, `digit_spacing: 10` on a 64×32 panel pushes the outer digits off both
-edges. If you are on a 64-wide panel, keep `digit_spacing` at 4 or below, or
-turn off the leading zero to buy back a digit's width.
+The auto-scaler counts the spacing as part of the width it fits to the panel,
+so no value in the 0–10 range pushes digits off the edge. On a narrow panel a
+large spacing is paid for in digit size instead: `digit_spacing: 10` on a
+64×32 panel shrinks the digits to about 0.6× so the whole string still fits.
+If you are on a 64-wide panel and want the digits as large as possible, keep
+`digit_spacing` low, or turn off the leading zero to buy back a digit's width.
 
 ### `color`
 
@@ -267,7 +267,7 @@ white.
 The clock has no fixed size. On every frame it computes a scale factor:
 
 ```text
-scale = min( (panel_width  * 0.9) / total_digit_width,
+scale = min( (panel_width  * 0.9) / (total_digit_width + total_spacing),
              (panel_height * 0.9) / 32 )
 
 clamped to the range 0.5 – 3.0
@@ -316,9 +316,10 @@ means UTC.
 That is the Pi's system clock, not the plugin. Check `timedatectl` and that NTP
 is reaching a time server.
 
-**The outer digits are cut off.**
-See the caveat under [`digit_spacing`](#digit_spacing) — reduce the spacing, or
-move to a wider panel.
+**The digits look small.**
+A large [`digit_spacing`](#digit_spacing) or a leading zero takes width the
+auto-scaler would otherwise give the digits. Reduce the spacing, or turn off
+`has_leading_zero`.
 
 **The colon is missing.**
 If it is missing only some of the time, that is
@@ -338,6 +339,8 @@ is missing permanently, check that `assets/images/separator.png` exists.
 ├── config_schema.json        # Settings schema; source of truth for defaults
 ├── requirements.txt          # pytz
 ├── test_render_polarity.py   # Regression test for digit rendering
+├── test_frame_cadence.py     # Colon blink and per-minute repaint at the core's frame rate
+├── test/                     # Safety-harness config and golden images
 ├── README.md
 ├── LICENSE
 └── assets/

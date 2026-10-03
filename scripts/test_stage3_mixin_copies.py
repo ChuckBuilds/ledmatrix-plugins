@@ -56,6 +56,7 @@ MOVED = {
         "SportsFetchMixin", "sports.py", "SportsCore", ALL, (),
         ("_fetch_season_directly", "_background_fetches_espn_ranges",
          "_needs_previous_day", "_wants_live_odds",
+         "_cached_schedule", "_retire_previous_window", "_schedule_cache_key",
          "_LOOKBACK_CUTOFF_HOUR", "_LIVE_ODDS_LOOKAHEAD")),
     "src.common.sports_celebration": (
         "SportsCelebrationMixin", "sports.py", "SportsLive",

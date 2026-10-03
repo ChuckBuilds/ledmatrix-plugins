@@ -211,7 +211,8 @@ class MusicPlugin(BasePlugin):
 
         try:
             # Flattened config access - no nested 'music' key
-            self.enabled = self.config.get("enabled", False)
+            # Same default as the schema and BasePlugin.
+            self.enabled = self.config.get("enabled", True)
             if not self.enabled:
                 self.logger.info("Music plugin is disabled in config.")
                 return
@@ -833,7 +834,13 @@ class MusicPlugin(BasePlugin):
                                     self.logger.debug("Polling Spotify: Significant change (title/artist/art/is_playing) detected.")
                                 else:
                                     self.logger.debug("Polling Spotify: Only progress changed, not significant.")
-                                
+
+                                # Read before the swap below. It used to be read
+                                # from the new dict, which never has it, so every
+                                # progress-only poll discarded the decoded cover
+                                # and display() decoded it again.
+                                old_album_art_url = (self.current_track_info.get('album_art_url')
+                                                     if self.current_track_info else None)
                                 self.current_track_info = simplified_info_poll
                                 self.current_source = MusicSource.SPOTIFY
                                 significant_change_for_callback = significant_change_detected
@@ -847,7 +854,6 @@ class MusicPlugin(BasePlugin):
                                     self.logger.debug("Polling Spotify: Minor update (progress only), no full refresh needed.")
                                 
                                 # Handle album art for Spotify
-                                old_album_art_url = self.current_track_info.get('album_art_url_prev_spotify')
                                 new_album_art_url = simplified_info_poll.get('album_art_url')
                                 if new_album_art_url != old_album_art_url:
                                     self.album_art_image = None
@@ -855,7 +861,6 @@ class MusicPlugin(BasePlugin):
                                     # Downloaded at the end of this poll cycle by
                                     # _prefetch_current_album_art(), outside
                                     # track_info_lock so display() never waits on it.
-                                self.current_track_info['album_art_url_prev_spotify'] = new_album_art_url
 
                                 self.logger.debug(f"Polling Spotify: Active track - {spotify_track.get('item', {}).get('name')}")
                             else:

@@ -21,17 +21,17 @@ size from seeded games so it reproduces exactly. Team records come from a live
 per-team ESPN lookup that these offline renders skip, which is why they read
 `(N/A)`.*
 
-A plugin for LEDMatrix that displays scrolling odds and betting lines for upcoming games across multiple sports leagues including NFL, NBA, MLB, NCAA Football, and NCAA Basketball.
+A plugin for LEDMatrix that displays scrolling odds and betting lines for upcoming games across multiple sports leagues including NFL, NBA, MLB, NHL, MiLB, NCAA Football, NCAA Men's Basketball, and NCAA Baseball.
 
 ## Features
 
-- **Multi-Sport Support**: NFL, NBA, MLB, NCAA Football, NCAA Basketball
+- **Multi-Sport Support**: NFL, NBA, MLB, NHL, MiLB, NCAA Football, NCAA Men's Basketball, NCAA Baseball
 - **Scrolling Ticker Display**: Continuous scrolling of odds information
 - **Betting Lines**: Point spreads, money lines, and over/under totals
 - **Favorite Teams**: Prioritize odds for your favorite teams
 - **Broadcast Information**: Show channel logos and game times
 - **Configurable Display**: Adjustable scroll speed, duration, and filtering options
-- **Background Data Fetching**: Efficient API calls without blocking display
+- **Fetch Outside the Draw Loop**: Data is fetched and cached in `update()`, never while the ticker is drawing
 
 ## Configuration
 
@@ -151,8 +151,11 @@ The plugin supports the following sports leagues:
 - **nfl**: NFL (National Football League)
 - **nba**: NBA (National Basketball Association)
 - **mlb**: MLB (Major League Baseball)
+- **nhl**: NHL (National Hockey League)
+- **milb**: Minor League Baseball
 - **ncaa_fb**: NCAA Football
 - **ncaam_basketball**: NCAA Men's Basketball
+- **ncaa_baseball**: NCAA Baseball
 
 ## Team Abbreviations
 
@@ -171,18 +174,19 @@ Common abbreviations: UGA, AUB, BAMA, CLEM, OSU, MICH, FSU, LSU, OU, TEX, etc.
 ### NCAA Basketball Teams
 Common abbreviations: DUKE, UNC, KANSAS, KENTUCKY, UCLA, ARIZONA, GONZAGA, BAYLOR, VILLANOVA, MICHIGAN, etc.
 
-## Background Service
+## Data Fetching
 
-The plugin uses background data fetching for efficient API calls:
+All network calls run in `update()`, never from the draw loop:
 
-- Requests timeout after 30 seconds (configurable)
-- Up to 3 retries for failed requests
-- Priority level 2 (medium priority)
-- Updates every hour by default (configurable)
+- Requests time out after `data_settings.request_timeout` seconds (30 by default)
+- Refreshes every `data_settings.update_interval` seconds (an hour by default), or every
+  `data_settings.live_game_update_interval` seconds while live games are on the ticker
+- ESPN scoreboards are cached per league and day; odds per game
 
 ## Data Sources
 
-Odds data is fetched from various sports data APIs and aggregated for display. The plugin integrates with the main LEDMatrix odds management system.
+Games come from ESPN's public scoreboard API and betting lines from ESPN's public odds
+API (through LEDMatrix's shared odds manager). No API key is required.
 
 ## Dependencies
 

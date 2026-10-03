@@ -36,15 +36,17 @@ The text has three states, driven by the date:
 
 | When | Shows |
 |------|-------|
-| Before 25 December | `N DAYS UNTIL CHRISTMAS` |
+| Before 25 December | `N DAYS UNTIL CHRISTMAS` (`1 DAY UNTIL CHRISTMAS` on the 24th) |
 | On 25 December | `MERRY CHRISTMAS` |
-| After 25 December | `MERRY CHRISTMAS`, until the count to next year begins |
+| From 26 December | The count to next year's Christmas, e.g. `364 DAYS UNTIL CHRISTMAS` |
 
 ![The countdown 114 days out, a week out, the day before, and on Christmas Day
 itself](../../docs/assets/christmas-countdown/countdown.png)
 
-On a panel **narrower than 64 pixels** the last word is abbreviated to `XMAS`
-so the text still fits. The count is computed from today's date in the
+When `CHRISTMAS` does not fit the right half of the panel in the smallest font
+(any panel narrower than about 93 pixels, so every 64-pixel-wide panel) the
+last word is abbreviated to `XMAS` so the text still fits; 96 pixels and wider
+spell it out. The count is computed from today's date in the
 LEDMatrix `timezone` setting (the host's system time if none is set) every time
 the screen is drawn, so it changes at midnight in that timezone.
 
@@ -120,24 +122,26 @@ panels](../../docs/assets/christmas-countdown/panel-sizes.png)
 
 ## The Tree Image
 
-The tree is `assets/christmas_tree.png`, a small pixel-art PNG that ships with
-the plugin and is scaled to the space available.
+The tree is `tree icon.png` in the plugin's own directory, a 256×256 image that
+ships with the plugin and is scaled down to the space available. If that file
+is missing the plugin falls back to `assets/christmas_tree.png`, a small 32×32
+pixel-art tree that also ships with it.
 
-If that file is missing, the plugin draws a simple tree programmatically
+If both files are missing, the plugin draws a simple tree programmatically
 instead — and **that** is the only situation in which `tree_color` applies. With
-the bundled image present, as it is on any normal install, `tree_color` has no
-visible effect. The schema says so; it is repeated here because "green tree
+the bundled images present, as they are on any normal install, `tree_color` has
+no visible effect. The schema says so; it is repeated here because "green tree
 colour" reads like a setting that should work.
 
-To regenerate the bundled image:
+To regenerate the fallback image:
 
 ```bash
 python3 generate_tree_image.py
 ```
 
 That script writes `assets/christmas_tree.png` and nothing else — it is an
-asset generator, not a preview of the plugin, so it cannot drift from what the
-plugin draws.
+asset generator, not a preview of the plugin, and it does not touch
+`tree icon.png`, which is the image normally drawn.
 
 ---
 
@@ -153,16 +157,18 @@ system timezone, which is used when none is set) if it disagrees with your
 calendar.
 
 **It says MERRY CHRISTMAS in July.**
-It should not — that message is shown on and shortly after 25 December only. If
-you see it out of season, check the system date.
+It should not — that message is shown on 25 December only; from the 26th the
+count to next year starts. If you see it out of season, check the system date
+and the LEDMatrix `timezone` setting.
 
 **The text says XMAS instead of CHRISTMAS.**
-That is deliberate on panels narrower than 64 pixels, where the full word does
-not fit.
+That is deliberate on panels narrower than about 93 pixels (every 64-pixel-wide
+panel), where the full word does not fit the right half.
 
 **I changed the tree colour and nothing happened.**
-`tree_color` only applies when `assets/christmas_tree.png` is missing. With the
-bundled image in place the tree comes from the PNG.
+`tree_color` only applies when both `tree icon.png` and
+`assets/christmas_tree.png` are missing. With the bundled images in place the
+tree comes from the PNG.
 
 **I changed the tree size and nothing happened.**
 `tree_size` is not applied — see
@@ -180,9 +186,11 @@ christmas-countdown/
 ├── manager.py               # ChristmasCountdownPlugin
 ├── config_schema.json       # Settings schema; source of truth for defaults
 ├── generate_tree_image.py   # Regenerates assets/christmas_tree.png
+├── tree icon.png            # The tree normally drawn
 ├── assets/
-│   └── christmas_tree.png
-├── test/
+│   └── christmas_tree.png   # Fallback tree when tree icon.png is missing
+├── test/                    # Harness fixture and golden images
+├── test_christmas_day_count.py
 └── README.md
 ```
 
@@ -200,6 +208,13 @@ harness can check it renders correctly at every panel size:
 ```bash
 # from a LEDMatrix core checkout
 python scripts/check_plugin.py --plugin christmas-countdown   --plugin-dir /path/to/ledmatrix-plugins/plugins --out-dir /tmp/preview
+```
+
+The day-count regression tests (count before the first `update()`, midnight
+rollover, the LEDMatrix timezone) run against a core checkout:
+
+```bash
+LEDMATRIX_CORE=/path/to/LEDMatrix python plugins/christmas-countdown/test_christmas_day_count.py
 ```
 
 To watch it live in the emulator instead:

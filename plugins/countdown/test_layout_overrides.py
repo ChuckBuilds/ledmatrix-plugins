@@ -160,6 +160,14 @@ check("the whole image fits between image_x and the right edge, uncropped",
       and rows and rows[-1] - rows[0] + 1 == 28,
       "%s rows %s" % (span, (rows[0], rows[-1]) if rows else None))
 
+print("an image-right width wider than the panel stays on the panel")
+frame = render(layout_preset="image-right", image_path=str(RED),
+               layout={"image_width": 200})
+span = extent(frame, range(H), red)
+check("the box is capped at the panel width, so the image is centred, not cropped",
+      span is not None and span[0] > 0 and span[1] < W
+      and abs((span[0] + span[1]) / 2 - W / 2) <= 1, str(span))
+
 print()
 print("%d failed" % len(failures))
 sys.exit(1 if failures else 0)

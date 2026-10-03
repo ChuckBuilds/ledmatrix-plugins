@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.39.1",
+  "version": "2.39.2",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -53,6 +53,12 @@
     "soccer_usa.1_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.39.2",
+      "released": "2026-10-02",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "A custom league whose game limits were never opened in the web UI showed 5 recent games instead of the 1 its settings page displays; it now uses the schema default of 1. The custom-league filtering.show_all_live default is now false in the schema, matching the built-in leagues and what the plugin already did, so the settings page no longer shows the switch on when it is off. README documents the per-league odds_update_interval / live_odds_update_interval and the full-screen scroll_card.switch_show_date / switch_show_time switches."
+    },
     {
       "version": "2.39.1",
       "released": "2026-10-01",
@@ -693,7 +699,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-30",
+  "last_updated": "2026-10-02",
   "stars": 0,
   "downloads": 0,
   "verified": true,

@@ -90,7 +90,7 @@ class JellyfinNowPlayingPlugin(BasePlugin):
         self.title_font = self._load_font(title_text.get('font', '5by7.regular.ttf'),
                                           int(title_text.get('font_size', 7)))
         self.subtitle_font = self._load_font(subtitle_text.get('font', '4x6-font.ttf'),
-                                             int(subtitle_text.get('font_size', 6)))
+                                             int(subtitle_text.get('font_size', 7)))
 
         # State
         self.now_playing: Optional[Dict[str, Any]] = None

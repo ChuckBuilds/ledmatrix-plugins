@@ -49,10 +49,10 @@ size and scaled up so the pixels stay pixels.*
 
 1. In Cloud Console, go to **APIs & Services → Credentials**
 2. Click **Create Credentials → OAuth client ID**
-3. Choose **Desktop application** — the plugin uses
-   `InstalledAppFlow.run_local_server()`
-   (`plugins/calendar/manager.py:346-348`), which requires this client
-   type. "TV and Limited Input Device" will not work.
+3. Choose **Desktop application**. The sign-in flow in
+   `calendar_registration.py` redirects to a loopback address
+   (`http://127.0.0.1`), which Google only allows for this client type.
+   "TV and Limited Input Device" will not work.
 4. Download the JSON file
 5. Save it as `credentials.json` in the calendar plugin directory
    (typically `plugin-repos/calendar/credentials.json`)
@@ -64,14 +64,19 @@ size and scaled up so the pixels stay pixels.*
 2. Open the **Calendar** tab in the second nav row (added once the
    plugin is installed)
 3. Click the **Authenticate Google Calendar** button
-4. Follow the OAuth flow in your browser
-5. The token is saved automatically into the plugin directory
+4. Open the link it gives you and approve access. Google then redirects your
+   browser to a `http://127.0.0.1/...` page that fails to load -- that is
+   expected. Copy that page's full address and paste it back into the web UI
+5. The token is saved automatically into the plugin directory as `token.pickle`
 
 **Option B: Use Registration Script**
 ```bash
-cd plugins/calendar
+cd plugin-repos/calendar
 python calendar_registration.py
 ```
+
+Run from a terminal, the script opens a local browser for the consent screen,
+so it needs a machine with a desktop browser. On a headless Pi use Option A.
 
 **The plugin never signs in by itself.** If it has no usable token (none yet, or
 a refresh fails because access was revoked or the token expired), it logs the
@@ -110,7 +115,7 @@ widget and first-time authentication) and rarely need editing by hand.
 | `enabled` | `false` | Enable or disable the plugin |
 | `credentials_file` | `"credentials.json"` | Google OAuth credentials file (uploaded via the config UI) |
 | `google_auth` | `""` | Not a setting you type into. It is the **Step 2: Connect Your Google Account** button in the web UI (`x-widget: google-oauth`), which runs the consent flow described above. Google redirects to a page that fails to load — that is expected; copy the address back into the field to finish. |
-| `token_file` | `"token.pickle"` | Where the OAuth token is stored after first-time auth (auto-created) |
+| `token_file` | `"token.pickle"` | Token file the plugin reads, relative to the plugin directory. Not in the web form. The sign-in flow always writes `token.pickle`, so leave this at the default |
 | `calendars` | `["primary"]` | Calendar IDs to display — use the calendar picker after authenticating, or `"primary"` for your default |
 | `max_events` | `3` | Maximum upcoming events to show (1–10) |
 | `show_all_day_events` | `true` | Include all-day events |
@@ -168,8 +173,9 @@ Events from all calendars are merged and sorted by start time.
 ### Update Frequency
 
 - Set `update_interval` to balance freshness vs. API usage
-- 300 seconds (5 minutes) is recommended
-- Lower values may hit API rate limits
+- The default is 3600 seconds (hourly); 300 (5 minutes) suits a calendar that
+  changes during the day
+- Each refresh makes one request per configured calendar
 
 ### Timezone
 
@@ -212,9 +218,11 @@ See [List of timezones](https://en.wikipedia.org/wiki/List_of_tz_database_time_z
 - Review logs for errors
 
 **Long titles cut off:**
-- Text automatically wraps to 2 lines
-- Titles longer than 2 lines will be truncated
-- Consider shortening event names in Google Calendar
+- Titles wrap onto as many lines as fit below the date (two on a 32-pixel-tall
+  panel with the default fonts, four at 64 pixels)
+- When the title needs more lines than fit, the last visible line ends in `...`
+- Use a smaller `customization.title_text` font, or shorten event names in
+  Google Calendar
 
 ## Calendar IDs
 
@@ -238,8 +246,8 @@ Google Calendar API has rate limits:
 - **Free tier**: 1,000,000 queries per day
 - **Per user**: 10 requests per second
 
-With default settings (300s interval):
-- 288 requests per day (well within limits)
+With the default 3600s interval: 24 requests per calendar per day. At 300s:
+288 per calendar per day. Both are well within the limits.
 
 ## Security Notes
 

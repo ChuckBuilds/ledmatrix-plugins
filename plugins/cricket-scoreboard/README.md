@@ -72,14 +72,14 @@ Configured under the `cricket-scoreboard` key in `config/config.json`. See
 | `show_favorite_teams_only` | `false` | Restrict *international* matches to those featuring a favorite team |
 | `live_game_duration` / `recent_game_duration` / `upcoming_game_duration` | 20 / 15 / 15 | Per-match on-screen seconds |
 | `non_favorite_live_game_duration` | `0` | Shorter turn for live matches without a favorite (0 = same as `live_game_duration`) |
-| `update_interval_seconds` / `live_update_interval` | 3600 / 30 | Data refresh cadence |
+| `update_interval_seconds` / `live_update_interval` | 3600 / 30 | Data refresh cadence (the live cadence also applies once an upcoming match's start time has passed, so a match that has just started is picked up within seconds) |
 | `series_discovery_interval` | `86400` | How often numeric series ids are re-resolved |
 | `recent_games_to_show` / `upcoming_games_to_show` | 5 / 5 | Match counts per mode |
 | `live_priority` | `true` | Live matches interrupt the normal rotation |
 | `display_modes` | all on | Toggle live / recent / upcoming |
 | `dynamic_duration`, `mode_durations` | off / null | Auto-size or cap each mode's total time |
 | `background_service.request_timeout` | 30 | HTTP request timeout (seconds) |
-| `customization` | — | Fonts + colors for score / overs / team / status / detail text |
+| `customization` | — | Fonts + colors for score / team / status / detail text |
 
 ### Every setting
 
@@ -94,7 +94,7 @@ complete list, at the exact paths the schema expects — the schema sets
 | `favorite_competitions` | `["international", "ipl", "bbl"]` | Domestic competitions (keys from competitions.json) to follow. Include 'international' to follow Test/ODI/T20I tours for your favorite_teams. |
 | `exclude_teams` | *(empty)* | Teams to always hide from live rotation and recent/final scores (spoiler protection). Takes precedence over favorite_teams. |
 | `show_favorite_teams_only` | `false` | Only show matches involving a favorite national team. Domestic-league matches are always governed by favorite_competitions. |
-| `display_duration` | `15` | Duration in seconds to display each match (5–60). |
+| `display_duration` | `15` | Seconds a mode stays on screen when it has no matches to time by (5–60). Per-match time comes from the three durations below. |
 | `live_game_duration` | `20` | Duration in seconds to display each live match before rotating to the next (10–120). |
 | `non_favorite_live_game_duration` | `0` | Duration in seconds for live matches that do NOT involve a favorite team. 0 (default) = use live_game_duration for every live match (0–120). |
 | `recent_game_duration` | `15` | Duration in seconds to display each recent match (5–60). |
@@ -117,15 +117,15 @@ complete list, at the exact paths the schema expects — the schema sets
 | `display_modes.upcoming` | `true` | Show upcoming matches. |
 | `background_service.request_timeout` | `30` | Timeout in seconds for each request to ESPN (5–120). |
 | `customization.score_text.font` | `"PressStart2P-Regular.ttf"` | one of `PressStart2P-Regular.ttf`, `4x6-font.ttf`, `5by7.regular.ttf`. |
-| `customization.score_text.font_size` | `10` | (4–16). |
-| `customization.period_text.font` | `"PressStart2P-Regular.ttf"` | one of `PressStart2P-Regular.ttf`, `4x6-font.ttf`, `5by7.regular.ttf`. |
-| `customization.period_text.font_size` | `8` | (4–16). |
+| `customization.score_text.font_size` | `8` | (4–16). |
+| `customization.period_text.font` | `"PressStart2P-Regular.ttf"` | Ignored and hidden in the settings form: nothing draws with it (the overs line uses `detail_text`, the session/day `status_text`). Kept so saved configs validate. |
+| `customization.period_text.font_size` | `8` | Ignored, as above. |
 | `customization.team_name.font` | `"PressStart2P-Regular.ttf"` | one of `PressStart2P-Regular.ttf`, `4x6-font.ttf`, `5by7.regular.ttf`. |
 | `customization.team_name.font_size` | `8` | (4–16). |
 | `customization.status_text.font` | `"4x6-font.ttf"` | one of `PressStart2P-Regular.ttf`, `4x6-font.ttf`, `5by7.regular.ttf`. |
-| `customization.status_text.font_size` | `6` | (4–16). |
+| `customization.status_text.font_size` | `7` | (4–16). |
 | `customization.detail_text.font` | `"4x6-font.ttf"` | one of `PressStart2P-Regular.ttf`, `4x6-font.ttf`, `5by7.regular.ttf`. |
-| `customization.detail_text.font_size` | `6` | (4–16). |
+| `customization.detail_text.font_size` | `7` | (4–16). |
 | `customization.colors.score_color` | `"#FFFFFF"` | Color for the runs/wickets score. |
 | `customization.colors.batting_color` | `"#00FF66"` | Highlight color for the team currently batting. |
 | `customization.colors.detail_color` | `"#FFD200"` | Color for run rate / target detail text. |
@@ -211,8 +211,8 @@ live but not *whose*.
 Two things to keep in mind:
 
 - The weight is per **plugin**, not per game. With four games live this
-  scoreboard still occupies one slot at a time and picks between its own games
-  using `favorite_live_boost`; these weights control how often the scoreboard
+  scoreboard still occupies one slot at a time and rotates through its own
+  games, favorites first; these weights control how often the scoreboard
   itself comes round.
 - More slots make the cycle **longer**, not faster — everything else appears
   proportionally less often. And appearing more often only helps if the data is

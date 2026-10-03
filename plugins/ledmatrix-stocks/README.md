@@ -170,8 +170,9 @@ value it rejected.
 
 ### The inline chart
 
-`display.toggle_chart` draws the day's price history behind the text, sized by
-`chart_width_px` and `chart_height_px`:
+`display.toggle_chart` draws the day's price history just right of each
+symbol's text, sized by `chart_width_px` and `chart_height_px`. The chart is
+part of the `scroll` ribbon; `switch` mode shows no chart:
 
 ![toggle_chart on and off](../../docs/assets/ledmatrix-stocks/toggle-chart.png)
 
@@ -210,6 +211,7 @@ plugin: prices on one rotation slot, related headlines on another.
 
 **Chart isn't drawing**
 - Set `display.toggle_chart` to `true`.
+- The chart is drawn only in `scroll` mode, not `switch`.
 - Charts need enough horizontal room next to each symbol. On a 64×32
   panel they may be cropped — try a wider chain.
 

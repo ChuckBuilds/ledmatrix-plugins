@@ -18,18 +18,19 @@ so your plugin still loads on an older core.
 
 By default the core shows a plugin for a fixed `display_duration`. Dynamic
 duration lets a plugin say "hold my screen for a computed time instead" — long
-enough to finish a scroll, or to keep a live game up. You opt in by implementing
-`supports_dynamic_duration()`; the rest of the family lets the core size and end
-the turn.
+enough to finish a scroll, or to keep a live game up. The core asks
+`supports_dynamic_duration()`; `BasePlugin`'s version returns the config's
+`dynamic_duration.enabled`, so override it only for custom logic. The rest of the
+family lets the core size and end the turn.
 
 | Hook | Signature | Role |
 |------|-----------|------|
 | `supports_dynamic_duration` | `(self) -> bool` (or `(self, mode_type=None)`) | Gate — return `True` to opt in |
 | `get_display_duration` | `(self) -> float` | The computed seconds to display |
-| `get_cycle_duration` | `(self, display_mode=None) -> Optional[float]` | Per-mode duration for one full cycle |
-| `get_dynamic_duration` | `(self) -> int` | Simple computed duration (alt to the above) |
-| `get_dynamic_duration_cap` | `(self) -> Optional[float]` | Upper bound the core will wait |
-| `get_dynamic_duration_floor` | `(self) -> Optional[float]` | Lower bound |
+| `get_cycle_duration` | `(self, display_mode=None) -> Optional[float]` (called with `display_mode=` as a keyword) | Per-mode duration for one full cycle |
+| `get_dynamic_duration` | `(self) -> int` | Plugin-internal helper some plugins define — the core does not call it |
+| `get_dynamic_duration_cap` | `(self) -> Optional[float]` | Upper bound the core will wait (base reads `dynamic_duration.max_duration_seconds`) |
+| `get_dynamic_duration_floor` | `(self) -> Optional[float]` | Plugin-internal helper — the core does not call it |
 | `is_cycle_complete` | `(self) -> bool` | Tell the core the scroll/animation finished |
 | `reset_cycle_state` | `(self) -> None` | Reset between turns (call `super()` if you override) |
 
@@ -105,6 +106,13 @@ There are three mechanisms, used together:
    [`plugins/christmas-countdown/config_schema.json`](../../plugins/christmas-countdown/config_schema.json)
    switches 120 FPS transitions vs. 30 FPS.
 
+None of this matters unless the core runs your plugin in its high-FPS loop
+(8 ms ticks). It does that only for a plugin that declares `needs_high_fps`
+(an attribute or property, read when the mode starts) or has a truthy
+`enable_scrolling`; every other plugin gets **one `display()` call per
+second**, so a sub-second animation aliases. Declare `needs_high_fps = True`
+when the screen genuinely moves.
+
 Scrolling plugins also coordinate with the loop through the display manager's
 `set_scrolling_state`, `defer_update`, and `process_deferred_updates` so the core
 knows a scroll is in progress.
@@ -143,18 +151,22 @@ endlessly-scrolling strip. A plugin opts in by implementing:
 
 | Hook | Signature | Role |
 |------|-----------|------|
-| `get_vegas_content` | `(self) -> Optional[list[Image]]` | The PIL image(s) to splice into the strip, or `None` |
-| `get_vegas_content_type` | `(self) -> str` | `'single'` or `'multi'` (multiple scrollable items, e.g. games) |
+| `get_vegas_content` | `(self) -> Optional[Image \| list[Image]]` | The PIL image(s) to splice into the strip, or `None` |
+| `get_vegas_content_type` | `(self) -> str` | `'multi'` (multiple scrollable items, e.g. games), `'static'` (one block; the base default) or `'none'` (excluded) |
 | `get_vegas_display_mode` | `(self) -> VegasDisplayMode` | How this plugin behaves in the strip |
 
 Import the enum defensively — older cores don't ship it:
 
 ```python
+from src.plugin_system.base_plugin import BasePlugin
 try:
-    from src.plugin_system.base_plugin import BasePlugin, VegasDisplayMode
+    from src.plugin_system.base_plugin import VegasDisplayMode
 except ImportError:
     VegasDisplayMode = None
 ```
+
+(Keep `BasePlugin` out of the `try` — a combined import that fails leaves
+`BasePlugin` undefined too.)
 
 The `vegas_mode` config key (mark it `x-advanced`) overrides the display mode and
 is an enum:
@@ -162,6 +174,9 @@ is an enum:
 - `scroll` — items scroll individually through the stream (default)
 - `fixed` — the whole display scrolls by as one block
 - `static` — the marquee pauses while the plugin shows for its duration
+
+Only `static` changes what Vegas does: `scroll` and `fixed` both join the strip
+(Vegas never told them apart, and core 3.9.0 drops the distinction).
 
 `get_vegas_display_mode` should honor the config override, falling back to the
 plugin's natural default:
@@ -186,7 +201,8 @@ and the `vegas_mode` config declarations in
 and [`plugins/olympics/config_schema.json`](../../plugins/olympics/config_schema.json).
 Core 3.8.0 adds `vegas_participation` (`"scroll"`, `"pause"` or `"exclude"`)
 in the manifest as the way to declare a fixed answer; the hooks above still
-decide it when the manifest and the user's config say nothing, and only
+decide it when the manifest and the user's config say nothing (override
+`get_vegas_participation()` only when the answer depends on state), and only
 `STATIC` (pauses) and content type `'none'` (excluded) change anything. Do not
 implement `get_supported_vegas_modes`: core never read it and removes it in
 3.9.0. See the core's `docs/PLUGIN_API_REFERENCE.md`, "Vegas participation".

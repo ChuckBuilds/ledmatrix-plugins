@@ -37,6 +37,15 @@ def _install_thirdparty_stubs() -> None:
     def _mod(name, **attrs):
         m = sys.modules.get(name)
         if m is None:
+            # Prefer the real package when it is installed: a stubbed
+            # ``requests`` is not a package, so a core that imports
+            # ``requests.models`` (fetch_service) would fail to load.
+            try:
+                import importlib
+                m = importlib.import_module(name)
+            except ImportError:
+                m = None
+        if m is None:
             m = types.ModuleType(name)
             sys.modules[name] = m
         for k, v in attrs.items():

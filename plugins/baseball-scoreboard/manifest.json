@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.56.1",
+  "version": "1.57.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.57.0",
+      "released": "2026-10-02",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "Adds customization.layout.time (advanced): the upcoming start time has always read this offset, but the schema had no time group and forbids extra keys, so it could not be set. Hides customization.layout.record.x_offset, which nothing reads (the records move with away_x_offset / home_x_offset; the README said it shifted both). README documents scroll_card.switch_show_date / switch_show_time, customization.odds_text and the layout groups."
+    },
     {
       "version": "1.56.1",
       "released": "2026-10-02",
@@ -836,7 +842,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-30",
+  "last_updated": "2026-10-02",
   "stars": 0,
   "downloads": 0,
   "verified": true,

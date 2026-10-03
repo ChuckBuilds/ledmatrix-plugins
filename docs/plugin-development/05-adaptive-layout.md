@@ -137,8 +137,9 @@ vs. "caller should draw its classic layout," so there's always a working path.
 - **flights `layout` / `widescreen_threshold`** — flights has its own
   compact/wide selection independent of `layout_mode`.
 - **`design_size` in the manifest** — declare your layout's reference size (e.g.
-  `"display": {"design_size": [128, 32]}`) so the harness and adaptive scaling
-  know the baseline. Opt into strict fill checking via
+  `"display": {"design_size": {"width": 128, "height": 32}}` — an object, per
+  the core manifest schema; the default is 128×32) so the harness and adaptive
+  scaling know the baseline. Opt into strict fill checking via
   `test/harness.json` `{"fill_check": "strict"}` once your plugin is adaptive.
 
 > The core's own `docs/ADAPTIVE_LAYOUT.md` is the authoritative reference for the

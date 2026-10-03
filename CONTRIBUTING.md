@@ -109,8 +109,10 @@ short version:
    - `class_name` must match the actual class name in `manager.py`
      **exactly** (case-sensitive, no spaces — see
      [VERIFICATION.md](VERIFICATION.md) for why this matters)
-   - Set `entry_point` (defaults to `manager.py` if omitted)
-   - Set `version`, `author`, `category`, `tags`, `display_modes`
+   - Set `entry_point` (usually `manager.py`; the core manifest schema CI
+     validates against requires it)
+   - Set `version`, `author`, `compatible_versions`, `category`, `tags`,
+     `display_modes`
 4. Implement `update()` and `display()` in your plugin class.
 5. Define the configuration schema in `config_schema.json`. The web
    UI form is generated automatically from this — every key you want
@@ -119,8 +121,12 @@ short version:
 6. Write a `README.md` covering: what the plugin does, install,
    configuration, and any external service / API key requirements.
 7. Add a `LICENSE` (usually a copy of the project GPL-3.0).
-8. Test locally via the symlink + dev_server flow above.
-9. Open a PR.
+8. Add the plugin's entry to `plugins.json` by hand (copy a neighbour's
+   shape, `plugin_path: "plugins/<plugin-id>"`) — `update_registry.py` only
+   updates existing entries, and CI's `update_registry.py --check` fails a
+   new plugin directory without one.
+9. Test locally via the symlink + dev_server flow above.
+10. Open a PR.
 
 ## Commit message convention
 
@@ -136,9 +142,11 @@ specific plugin later.
 
 ## Testing
 
-Per-plugin tests live in the LEDMatrix repo at `test/plugins/`. If
-you're adding a test for your plugin, open a corresponding PR in
-LEDMatrix. The dev preview server (`scripts/dev_server.py` in
+Per-plugin unit tests live with the plugin, as `plugins/<id>/test_*.py` (or
+under its `test/` directory); CI runs them with `scripts/run_plugin_tests.py`
+for every plugin a PR changes. Safety-harness fixtures and golden images go in
+`plugins/<id>/test/` (see
+[topic 7](docs/plugin-development/07-testing-ci-and-registry.md)). The dev preview server (`scripts/dev_server.py` in
 LEDMatrix) is the fastest way to iterate visually — its **All Sizes**
 button renders your plugin at every harness panel size side by side.
 
@@ -148,7 +156,7 @@ check but fails users. Use the adaptive layout system
 (`docs/ADAPTIVE_LAYOUT.md` in LEDMatrix: `self.layout`, `draw_fit`,
 `draw_image`, `scoreboard_regions`) and check the harness's
 `fill warn` output in `check_plugin.py` reports. Declare your layout's
-design size in the manifest (`"display": {"design_size": ...}`) and, once
+design size in the manifest (`"display": {"design_size": {"width": 128, "height": 32}}`) and, once
 your plugin is adaptive, opt into strict checking via
 `test/harness.json`: `{"fill_check": "strict"}`. See
 [docs/plugin-development/05-adaptive-layout.md](docs/plugin-development/05-adaptive-layout.md).
@@ -157,12 +165,18 @@ your plugin is adaptive, opt into strict checking via
 
 - **Plugin Safety** (`test-plugins.yml`): for each changed plugin, enforces the
   version bump, validates `manifest.json` against the core schema, installs its
-  `requirements.txt`, and runs the safety harness across all matrix sizes.
-- **Module Collisions** (`module-collisions.yml`): runs
-  `check_module_collisions.py` across all plugins.
+  `requirements.txt`, runs the safety harness across all matrix sizes, and runs
+  its unit tests; on every run it also checks `plugins.json` against the
+  manifests (`update_registry.py --check`) and runs every `scripts/test_*.py`.
+- **Plugin Structure** (`module-collisions.yml`): runs
+  `check_module_collisions.py` and the other all-plugin structural checks.
+- **Sports Lineage Drift** (`sports-drift.yml`): on scoreboard changes, fails
+  when copies of a shared sports function that agreed start to disagree.
 
-A changed plugin whose code (anything outside `test/`, including its README) is
-not accompanied by a `version` bump **fails the PR**.
+A changed plugin whose code (anything outside `test/` and root-level
+`test_*.py`, including its README) is not accompanied by a `version` bump
+**fails the PR**. Details:
+[topic 7](docs/plugin-development/07-testing-ci-and-registry.md#ci-workflows).
 
 ## Code of Conduct
 

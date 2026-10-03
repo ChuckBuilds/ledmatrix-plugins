@@ -90,7 +90,7 @@ centred, which suits short alerts and costs no CPU between redraws.
 
 | Key | Default | What it does |
 |---|---|---|
-| `text.font_path` | `assets/fonts/PressStart2P-Regular.ttf` | Font file, TTF or BDF. Relative to the project root, or absolute. |
+| `text.font_path` | `assets/fonts/PressStart2P-Regular.ttf` | Font file, TTF or BDF. Relative to the project root, or absolute. A BDF is a bitmap face and draws at the one size it declares, so `text.font_size` does not apply to it. |
 | `text.font_size` | `8` | Size in pixels. |
 | `text.text_color` | `[255, 255, 255]` | RGB triple. |
 | `text.background_color` | `[0, 0, 0]` | RGB triple. |
@@ -289,11 +289,11 @@ To send a base64 encoded image, use the data URI format:
 
 ## Image Support
 
-- **Formats**: PNG, JPEG, GIF (animated GIFs supported)
+- **Formats**: PNG, JPEG, GIF (an animated GIF shows its first frame only)
 - **Base64**: Use data URI format: `data:image/png;base64,<base64_data>`
 - **File Paths**: Absolute paths or paths relative to LEDMatrix project root
 - **Resizing**: Images are automatically resized to fit the LED matrix while maintaining aspect ratio
-- **Transparency**: RGBA images are converted to RGB with black background
+- **Transparency**: RGBA images are flattened onto `text.background_color` (black by default)
 
 ## Troubleshooting
 

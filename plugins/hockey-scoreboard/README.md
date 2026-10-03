@@ -532,6 +532,7 @@ All **Advanced**.
 | `<league>.update_intervals.recent` | 60–86400 s | `3600` | Refresh for finished games. |
 | `<league>.update_intervals.upcoming` | 60–86400 s | `3600` | Refresh for the schedule. |
 | `<league>.update_intervals.odds` | 60–86400 s | `3600` | Refresh for betting odds. |
+| `<league>.update_intervals.live_odds` | 30–3600 s | `60` | Refresh for betting odds while a game is live. |
 | `<league>.update_intervals.stale_game_timeout` | 60–3600 s | `300` | Drop a live game the API has stopped updating. |
 
 ### Display durations
@@ -617,7 +618,8 @@ Plugin-wide, not per league.
 | Date Format | `scroll_card.date_format` | `abbrev` | Scroll and Vegas cards: `Sep 19`, `9/19`, `19 Sep`, `19/9`, or `Fri Sep 19`. |
 | Full-Screen Date Format | `scroll_card.switch_date_format` | `numeric` | **Advanced.** The same for the full-screen scoreboard, plus `inherit`. It has its own default because the two displays disagree about what is normal. |
 | Time Format | `scroll_card.time_format` | `12h` | 12- or 24-hour clock. |
-| Show Date / Show Time | `scroll_card.show_date`, `scroll_card.show_time` | `true` | Drop either line. |
+| Show Date / Show Time | `scroll_card.show_date`, `scroll_card.show_time` | `true` | Drop either line from the scroll and Vegas cards. |
+| Full-Screen Show Date / Show Time | `scroll_card.switch_show_date`, `scroll_card.switch_show_time` | `true` | The same for the full-screen upcoming scoreboard. Separate switches because Show Date / Show Time predate that display reading the block. |
 | Full-Screen Recent Date | `scroll_card.switch_recent_show_date` | `true` | Draw the date a finished game was played along the bottom of the full-screen recent scoreboard, written in the Full-Screen Date Format. |
 | Swap Date and Time | `scroll_card.swap_date_time` | `false` | Flip the two lines. Each display starts from its own order, so this flips rather than forces. |
 

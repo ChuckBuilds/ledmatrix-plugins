@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.35.2] - 2026-10-02
+
+### Documentation
+- README: `scroll_settings.scroll_speed` is documented with its real default,
+  `50` px/s (it said `1.0` "pixels per step").
+- README: documents `odds_update_interval` (`3600` s),
+  `live_odds_update_interval` (`60` s), the full-screen
+  `scroll_card.switch_show_date` / `switch_show_time` switches,
+  `customization.odds_text`, and the nested `game_limits` /
+  `display_options` copies and which one wins. No change in behaviour.
+
 ## [1.35.1] - 2026-10-01
 
 ### Changed

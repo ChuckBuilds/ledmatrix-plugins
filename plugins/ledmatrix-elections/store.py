@@ -48,7 +48,12 @@ class RaceStore:
         self._called_at = {}
         if self.cache_manager and key:
             try:
-                cached = self.cache_manager.get(f"elections_snapshot_{key}")
+                # max_age=None: the core's get() otherwise expires an entry
+                # after 300s, so a restart more than five minutes after the
+                # last write lost the snapshot -- calls made while down never
+                # interrupted, and later calls were re-dated to election day
+                # and hidden from the ticker at once.
+                cached = self.cache_manager.get(f"elections_snapshot_{key}", max_age=None)
             except Exception:
                 cached = None
             if cached:

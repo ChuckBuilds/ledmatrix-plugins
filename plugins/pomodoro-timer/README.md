@@ -178,7 +178,7 @@ edit the file directly or read it back in a log line. The full schema is
 |---|---|---|---|
 | **Enable MQTT Control** | `mqtt_enabled` | `true` | Connect to a broker so the timer can be driven remotely. |
 | **Broker Address** | `mqtt_host` | `localhost` | IP or hostname of your MQTT broker. |
-| **Broker Port** | `mqtt_port` | `1883` | Use 8883 for TLS. |
+| **Broker Port** | `mqtt_port` | `1883` | The plugin connects without TLS, so point it at a plain-MQTT listener (usually 1883); a TLS-only port such as 8883 will not connect. |
 | **Username / Password** | `mqtt_username`<br>`mqtt_password` | *(blank)* | Leave blank for an anonymous broker. The password is marked secret, so the web UI masks it. |
 | **Command Topic** | `command_topic` | `ledmatrix/pomodoro/set` | Everything the plugin publishes is derived from this topic's base. |
 | **State Topic** | `state_topic` | `ledmatrix/pomodoro/state` | `ON` while a session is active, `OFF` when idle. |
@@ -206,7 +206,7 @@ edit the file directly or read it back in a log line. The full schema is
 | **Pulse the Current Session Dot** | `pulse_active_pip` | `true` | Slowly blink the pip for the session you're in, so the row reads as "two done, on the third" rather than just a count. |
 | **Work / Short Break / Long Break / Idle / Paused Label** | `work_label`<br>`short_break_label`<br>`long_break_label`<br>`idle_label`<br>`paused_label` | `FOCUS` / `BREAK` / `LONG BREAK` / `POMODORO` / `PAUSED` | The on-screen text for each state, up to 24 characters. Blank the Paused Label to keep showing the phase name while paused. |
 | **Font** | `font_path` | *(blank)* | Path to a TTF relative to the LEDMatrix root, e.g. `assets/fonts/PressStart2P-Regular.ttf`. Blank uses the display's default font. |
-| **Font Size (px)** | `font_size` | `0` | Fix the countdown height in pixels. `0` sizes it automatically to the panel. |
+| **Font Size (px)** | `font_size` | `0` | Fix the font height in pixels for the phase label and, with the `pixel` digit style, the countdown. `0` sizes them automatically to the panel. The `seven_segment` countdown ignores it, and a label taller than its row is not drawn. |
 
 ### Behavior
 

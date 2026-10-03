@@ -238,6 +238,7 @@ Fallbacks used when the corresponding per-league setting is absent.
 | Key | Type | Default | What it does |
 |---|---|---|---|
 | `defaults.display_duration` | 5–60 s | `15` | Per-game on-screen time. |
+| `defaults.game_display_duration` | 3–60 s | `15` | **Hidden (still declared); has no effect.** Per-game time comes from each league's `display_durations`. |
 | `defaults.show_records` | boolean | `false` | Draw win-loss records. |
 | `defaults.show_ranking` | boolean | `false` | Draw poll rank badges. |
 | `defaults.show_odds` | boolean | `false` | **Advanced.** Draw betting odds. |
@@ -311,6 +312,7 @@ All **Advanced**.
 | `<league>.update_intervals.recent` | 60–86400 s | `3600` | Refresh for finished games. |
 | `<league>.update_intervals.upcoming` | 60–86400 s | `3600` | Refresh for the schedule. |
 | `<league>.update_intervals.odds` | 60–86400 s | `3600` | Refresh for betting odds. |
+| `<league>.update_intervals.live_odds` | 30–3600 s | `60` | **Advanced.** Refresh for betting odds while a game is live. |
 | `<league>.update_intervals.stale_game_timeout` | 60–3600 s | `300` | Drop a live game the API has stopped updating. |
 
 ### Display durations
@@ -427,7 +429,8 @@ These settings are plugin-wide, not per league, and apply to every display mode.
 | Date Format | `scroll_card.date_format` | `abbrev` | Scroll and Vegas cards: `Sep 19`, `9/19`, `19 Sep`, `19/9`, or `Fri Sep 19`. |
 | Full-Screen Date Format | `scroll_card.switch_date_format` | `numeric` | **Advanced.** The same for the full-screen scoreboard, plus `inherit`. It has its own default because the two displays disagree about what is normal. |
 | Time Format | `scroll_card.time_format` | `12h` | 12- or 24-hour clock. |
-| Show Date / Show Time | `scroll_card.show_date`, `scroll_card.show_time` | `true` | Drop either line. |
+| Show Date / Show Time | `scroll_card.show_date`, `scroll_card.show_time` | `true` | Drop either line from the scroll and Vegas cards. |
+| Full-Screen Show Date / Show Time | `scroll_card.switch_show_date`, `scroll_card.switch_show_time` | `true` | The same for the full-screen scoreboard. Separate switches because the originals predate this display reading the block, and sharing them would have changed what existing boards draw. |
 | Full-Screen Recent Date | `scroll_card.switch_recent_show_date` | `true` | Draw the date a finished game was played along the bottom of the full-screen recent scoreboard, written in the Full-Screen Date Format. |
 | Swap Date and Time | `scroll_card.swap_date_time` | `false` | Flip the two lines. Each display starts from its own order, so this flips rather than forces. |
 

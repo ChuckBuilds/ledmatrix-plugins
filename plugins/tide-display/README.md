@@ -282,7 +282,7 @@ at the default 6 and `5x7.bdf` silently fell back.
 ```text
 tide-display/
 ├── manifest.json        # Plugin metadata and version history
-├── manager.py           # TideDisplayPlugin — all four screens
+├── manager.py           # TidePlugin — all four screens
 ├── config_schema.json   # Settings schema; source of truth for defaults
 ├── requirements.txt
 └── README.md

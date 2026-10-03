@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.34.2] - 2026-10-02
+
+### Documentation
+- README: `scroll_settings.scroll_speed` is documented with its real default,
+  `50` px/s (it said `1.0`).
+- README: the `game_limits` precedence note matches the code: a
+  `game_limits` value changed from its default wins, otherwise the root key
+  decides (it said `game_limits` wins whenever present).
+- README: documents `odds_update_interval` (`3600` s),
+  `live_odds_update_interval` (`60` s) and the full-screen
+  `scroll_card.switch_show_date` / `switch_show_time` switches. No change in
+  behaviour.
+
 ## [1.34.1] - 2026-10-01
 
 ### Changed

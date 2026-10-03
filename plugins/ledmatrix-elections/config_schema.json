@@ -12,7 +12,7 @@
     "display_duration": {
       "type": "number",
       "title": "Ticker Duration (seconds)",
-      "description": "How long the scrolling ticker shows per rotation. Dynamic duration may extend this to fit all races.",
+      "description": "Fallback ticker duration. While races are loaded the ticker stays for exactly one pass over every race (at least 6 seconds), however long that takes.",
       "minimum": 10,
       "maximum": 300,
       "default": 30

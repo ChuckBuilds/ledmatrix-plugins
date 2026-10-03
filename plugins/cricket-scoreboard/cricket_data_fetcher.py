@@ -373,6 +373,10 @@ class CricketDataFetcher:
                 "status_summary": status.get("summary", "") or "",
                 "status_detail": stype.get("detail", "") or "",
                 "status_short": stype.get("shortDetail", "") or "",
+                # A Test's break ("Stumps", "Lunch") and day ("Day 2"):
+                # shortDetail is only "Live" while one is in progress.
+                "status_description": stype.get("description", "") or "",
+                "status_session": status.get("session", "") or "",
                 "period": int(status.get("period", 0) or 0),
                 "date": comp.get("date") or ev.get("date") or "",
                 "start_time_utc": self._parse_iso(comp.get("date") or ev.get("date")),
@@ -419,7 +423,9 @@ class CricketDataFetcher:
             "short_name": team.get("shortDisplayName") or team.get("name") or "",
             "abbr": team.get("abbreviation") or "",
             "logo_url": logo_url,
-            "winner": bool(c.get("winner", False)),
+            # ESPN's cricket feed sends this as the string "true"/"false";
+            # bool("false") is True, which drew the losing side green too.
+            "winner": str(c.get("winner", "")).strip().lower() == "true",
             "score_str": c.get("score", "") or "",
             "innings": innings,
             "records": records,

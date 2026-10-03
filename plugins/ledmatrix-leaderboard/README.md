@@ -161,7 +161,7 @@ The full key list is in the [`enabled_sports`](#enabled_sports) table below.
 | `global.display.scroll_speed` | `1.0` | Pixels moved per scroll step (0.5–5.0). Speed is `scroll_speed / scroll_delay` px/s — see [Scroll speed](#scroll-speed). |
 | `global.display.scroll_delay` | `0.01` | Seconds per scroll step (0.001–0.1). |
 | `global.scroll_mode` | `"one_shot"` | Scrolling mode — one of `one_shot`, `continuous`. |
-| `global.loop` | `false` | Continuously loop the leaderboard. |
+| `global.loop` | `false` | Continuously loop the leaderboard. On, it overrides `scroll_mode` `one_shot`; `scroll_mode` `continuous` loops whatever this is set to. |
 | `global.appearance.pixel_perfect_text` | `true` | Render text with hard pixel edges. Disable only if you prefer the older anti-aliased (softer, blurrier) look. |
 | `global.appearance.crisp_logos` | `true` | Give logos hard edges instead of a ring of half-lit pixels. |
 | `global.appearance.text_outline` | `true` | Draw a black outline around text so it stays readable over logos. |

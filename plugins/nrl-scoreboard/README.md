@@ -114,9 +114,10 @@ Which of three regimes you are in depends on `favorite_teams` and
 | `other_games_divisions` | `["fbs"]` | Which divisions non-favorite games may come from. Inert here — see below. **Hidden from the config form since 1.29.0 (still declared).** |
 
 All eight are declared **twice**: at the root of the config and inside
-`game_limits`. Both render in the web UI and both are read. **`game_limits` wins
-where the key is present**, and the root value is used otherwise. Set one place
-or the other, not both.
+`game_limits`. Both render in the web UI and both are read. The web UI saves a
+value into both copies, so **a `game_limits` value you changed from its default
+wins**, and the root value decides otherwise. Set one place or the other, not
+both.
 
 Within the other-games pool the better matchup leads and each team appears once.
 The pool is each team's *next* game ordered by the best poll position of either
@@ -302,6 +303,8 @@ full turn before the board moves on.
 | `recent_update_interval` | 60–86400 s | `3600` | **Advanced.** Refresh cadence for finished games. |
 | `upcoming_update_interval` | 60–86400 s | `3600` | **Advanced.** Refresh cadence for the schedule. |
 | `stale_game_timeout` | 60–3600 s | `300` | **Advanced.** Drop a live game the API has stopped updating. |
+| `odds_update_interval` | 60–86400 s | `3600` | **Advanced.** How long fetched betting odds for a game that is not live are reused before asking again. Only matters with `show_odds` on. |
+| `live_odds_update_interval` | 15–3600 s | `60` | **Advanced.** The same for a live game. |
 | `no_data_interval_seconds` | 5–86400 s | `300` | **Advanced.** Wait between live checks when there are no live games. Backs off further the longer nothing is found. |
 | `live_idle_max_interval_seconds` | 5–86400 s | `900` | **Advanced.** Ceiling for that back-off. |
 | `schedule_lookback_days` | 1–60 | `14` | **Advanced.** How far back to fetch for the Recent screen. |
@@ -360,7 +363,7 @@ Nudge any element in pixels. All default to `0`, all live under
 
 | Key | Type | Default |
 |---|---|---|
-| `scroll_settings.scroll_speed` | 0.01–200 px/s | `1.0` |
+| `scroll_settings.scroll_speed` | 0.01–200 px/s | `50` |
 | `scroll_settings.scroll_delay` | 0.001–0.1 s | `0.01` (ignored; kept so saved configs still load -- scrolling is paced to the panel refresh). **Hidden from the config form since 1.29.0 (still declared).** |
 | `scroll_settings.gap_between_games` | 8–128 px | `24` |
 | `scroll_settings.show_league_separators` | boolean | `true` |
@@ -391,7 +394,8 @@ full-screen scoreboard.
 | Date Format | `scroll_card.date_format` | `abbrev` | Scroll and Vegas cards: `Sep 19`, `9/19`, `19 Sep`, `19/9`, or `Fri Sep 19`. |
 | Full-Screen Date Format | `scroll_card.switch_date_format` | `numeric` | **Advanced.** The same for the full-screen scoreboard, plus `inherit`. It has its own default because the two displays disagree about what is normal: the cards have always written `Sep 19` and the full-screen scoreboard `9/19`, so a single shared default would restyle one of them. |
 | Time Format | `scroll_card.time_format` | `12h` | 12- or 24-hour clock. |
-| Show Date / Show Time | `scroll_card.show_date`, `scroll_card.show_time` | `true` | Drop either line. |
+| Show Date / Show Time | `scroll_card.show_date`, `scroll_card.show_time` | `true` | Drop either line from the scroll and Vegas cards. |
+| Full-Screen Show Date / Show Time | `scroll_card.switch_show_date`, `scroll_card.switch_show_time` | `true` | The same for the full-screen upcoming scoreboard. |
 | Full-Screen Recent Date | `scroll_card.switch_recent_show_date` | `true` | Draw the date a finished game was played along the bottom of the full-screen recent scoreboard, written in the Full-Screen Date Format. |
 | Swap Date and Time | `scroll_card.swap_date_time` | `false` | Flip the two lines. Each display starts from its own order, so this flips rather than forces: scroll and Vegas cards put the time on top, the full-screen stack puts the date on top. |
 

@@ -105,16 +105,17 @@ class CricketRenderer:
         return ImageFont.load_default()
 
     def _load_fonts(self, custom: Dict[str, Any]) -> None:
+        # Defaults mirror config_schema.json (score 8, status/detail 7).
         self._fonts["score"] = self._load_one(custom.get("score_text"),
-                                               "PressStart2P-Regular.ttf", 10)
+                                               "PressStart2P-Regular.ttf", 8)
         self._fonts["period"] = self._load_one(custom.get("period_text"),
                                                 "PressStart2P-Regular.ttf", 8)
         self._fonts["team"] = self._load_one(custom.get("team_name"),
                                              "PressStart2P-Regular.ttf", 8)
         self._fonts["status"] = self._load_one(custom.get("status_text"),
-                                               "4x6-font.ttf", 6)
+                                               "4x6-font.ttf", 7)
         self._fonts["detail"] = self._load_one(custom.get("detail_text"),
-                                               "4x6-font.ttf", 6)
+                                               "4x6-font.ttf", 7)
 
     # ---- draw helpers ----------------------------------------------------- #
 
@@ -190,14 +191,39 @@ class CricketRenderer:
     # ---- innings helpers -------------------------------------------------- #
 
     @staticmethod
+    def _batted_innings(team: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """The innings this side actually batted, in order.
+
+        ESPN gives each side a linescore for every period of the match,
+        including the ones it spent bowling: those carry 0 runs, 0 wickets and
+        the opponent's overs, with isBatting false. isBatting marks the periods
+        a side batted in (not just the one in progress), so it stays true on a
+        finished first innings. Counting the bowling rows drew a Test score as
+        "0 & 278 & 0/0" and a side yet to bat as "0/0".
+        """
+        return [inn for inn in (team.get("innings") or [])
+                if inn.get("is_batting") or inn.get("runs") or inn.get("wickets")]
+
+    @staticmethod
     def _batting_innings(team: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-        innings = team.get("innings") or []
-        if not innings:
-            return None
-        for inn in innings:
-            if inn.get("is_batting"):
-                return inn
-        return innings[-1]
+        """This side's latest batted innings, or None when it has not batted."""
+        batted = CricketRenderer._batted_innings(team)
+        return batted[-1] if batted else None
+
+    @staticmethod
+    def _at_crease(inn: Optional[Dict[str, Any]],
+                   other: Optional[Dict[str, Any]]) -> bool:
+        """Whether `inn` is the innings in progress, given the other side's.
+
+        Both sides keep isBatting true on every innings they batted, so the
+        flag alone highlighted the side that batted first for the whole chase.
+        The later innings (higher period) is the one in progress.
+        """
+        if not inn:
+            return False
+        if other and inn.get("period", 0) != other.get("period", 0):
+            return inn.get("period", 0) > other.get("period", 0)
+        return bool(inn.get("is_batting"))
 
     @staticmethod
     def _score_text(team: Dict[str, Any]) -> str:
@@ -236,8 +262,8 @@ class CricketRenderer:
         # Scores center.
         away_inn = self._batting_innings(away)
         home_inn = self._batting_innings(home)
-        away_batting = bool(away_inn and away_inn.get("is_batting"))
-        home_batting = bool(home_inn and home_inn.get("is_batting"))
+        away_batting = self._at_crease(away_inn, home_inn)
+        home_batting = self._at_crease(home_inn, away_inn)
 
         cx = self.width // 2
         away_score = self._score_text(away)
@@ -248,19 +274,43 @@ class CricketRenderer:
                             self.batting_color if home_batting else self.score_color)
 
         # Detail line: overs + run rate for the batting side; RRR/target on chase.
-        detail = self._live_detail(match, away, home, away_inn, home_inn,
-                                   away_batting, home_batting)
+        parts = self._live_detail_parts(match, away, home, away_inn, home_inn,
+                                        away_batting, home_batting)
+        detail = self._fit_parts(draw, parts, self._fonts["detail"])
         if detail:
             self._draw_centered(draw, detail, cx, self.height - 7,
                                 self._fonts["detail"], self.detail_color)
         return img
 
-    def _live_detail(self, match, away, home, away_inn, home_inn,
-                     away_batting, home_batting) -> str:
+    def _fit_parts(self, draw: ImageDraw.ImageDraw, parts: List[str],
+                   font: ImageFont.ImageFont) -> str:
+        """The detail parts joined, dropping the least useful until they fit.
+
+        A chase reads "13/20 ov  RR 9.4  need 34 RRR 4.9", about 130px in the
+        detail font -- wider than a 128px panel, so both ends were cut off.
+        Run rate goes first, then the overs; the chase equation is kept.
+        """
+        if not parts:
+            return ""
+        candidates = [parts]
+        no_rr = [p for p in parts if not p.startswith("RR ")]
+        if no_rr != parts:
+            candidates.append(no_rr)
+        if len(no_rr) > 1:
+            candidates.append(no_rr[1:])   # the overs are always first
+        for cand in candidates:
+            text = "  ".join(cand)
+            if self._text_size(draw, text, font)[0] <= self.width:
+                return text
+        return "  ".join(candidates[-1])
+
+    def _live_detail_parts(self, match, away, home, away_inn, home_inn,
+                           away_batting, home_batting) -> List[str]:
         bat_team = away if away_batting else (home if home_batting else None)
         bat_inn = away_inn if away_batting else (home_inn if home_batting else None)
         if not bat_inn:
-            return match.get("status_short", "") or ""
+            status = match.get("status_short", "") or ""
+            return [status] if status else []
 
         max_overs = CricketDataFetcher.parse_max_overs(
             bat_team.get("score_str", ""), match.get("format", ""))
@@ -283,7 +333,7 @@ class CricketRenderer:
             rrr = required_run_rate(runs_needed, balls_remaining)
             if runs_needed > 0 and rrr is not None:
                 parts.append(f"need {runs_needed} RRR {rrr:.1f}")
-        return "  ".join(parts)
+        return parts
 
     def render_live_test(self, match: Dict[str, Any]) -> Image.Image:
         """Live Test card: no clock -- day + session, both innings scores."""
@@ -310,7 +360,9 @@ class CricketRenderer:
         self._draw_centered(draw, (home.get("abbr") or "")[:4] + " " + home_score,
                             cx, 8 + 8, self._fonts["detail"], self.score_color)
 
-        lead = match.get("status_short") or match.get("status_summary") or ""
+        # The summary ("India lead by 84 runs") first: ESPN's short detail
+        # is just "Live" while a Test is in progress.
+        lead = match.get("status_summary") or match.get("status_short") or ""
         if lead:
             self._draw_centered(draw, lead[:26], cx, self.height - 7,
                                 self._fonts["detail"], self.detail_color)
@@ -318,7 +370,7 @@ class CricketRenderer:
 
     @staticmethod
     def _test_score_text(team: Dict[str, Any]) -> str:
-        innings = team.get("innings") or []
+        innings = CricketRenderer._batted_innings(team)
         if not innings:
             return "-"
         pieces = []
@@ -332,16 +384,21 @@ class CricketRenderer:
         return " & ".join(pieces)
 
     def _test_session(self, match: Dict[str, Any]) -> str:
-        for key in ("status_short", "status_detail", "status_summary"):
+        # ESPN puts the break ("Stumps", "Lunch") in status.type.description
+        # and the day ("Day 2") in status.session. status.period counts
+        # innings, not days, so it is not used here: it drew "Day 3" on the
+        # second day's third innings.
+        day = match.get("status_session") or ""
+        for key in ("status_description", "status_short", "status_detail",
+                    "status_summary"):
             txt = match.get(key) or ""
             for token in ("Stumps", "Lunch", "Tea", "Close", "Drinks",
                           "Innings Break", "Day"):
                 if token.lower() in txt.lower():
+                    if day and "day" not in txt.lower():
+                        txt = f"{txt} {day}"
                     return txt[:22]
-        period = match.get("period", 0)
-        if period:
-            return f"Day {period}"
-        return "Test"
+        return day[:22] or "Test"
 
     def render_recent(self, match: Dict[str, Any]) -> Image.Image:
         """Completed match: final scores + result summary."""
@@ -359,8 +416,11 @@ class CricketRenderer:
                             self._fonts["status"], self.status_color)
 
         cx = self.width // 2
-        away_line = f"{(away.get('abbr') or '')[:4]} {self._final_score(away)}"
-        home_line = f"{(home.get('abbr') or '')[:4]} {self._final_score(home)}"
+        # A Test result needs both innings; the last one alone read as the
+        # side's whole match.
+        score = self._test_score_text if match.get("is_test") else self._final_score
+        away_line = f"{(away.get('abbr') or '')[:4]} {score(away)}"
+        home_line = f"{(home.get('abbr') or '')[:4]} {score(home)}"
         away_col = GREEN if away.get("winner") else self.score_color
         home_col = GREEN if home.get("winner") else self.score_color
         self._draw_centered(draw, away_line, cx, 7, self._fonts["detail"], away_col)

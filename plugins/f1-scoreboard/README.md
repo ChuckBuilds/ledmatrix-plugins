@@ -102,7 +102,7 @@ Each mode section has an `enabled` toggle and mode-specific options:
 | `qualifying` | `show_team_duel` | `true` | Show team H2H summary card (who outqualified their teammate) |
 | `practice` | `sessions_to_show` | `["FP1","FP2","FP3"]` | Which sessions to render |
 | `practice` | `top_n` | `10` | Drivers per practice session |
-| `sprint` | `top_finishers` | `10` | Sprint result depth |
+| `sprint` | `top_finishers` | `10` | Sprint result depth (3–22) |
 | `calendar` | `max_events` | `5` | Race weekends to show |
 | `calendar` | `show_practice` | `false` | Include practice sessions in calendar |
 | `calendar` | `show_qualifying` | `true` | Include qualifying in calendar |
@@ -196,12 +196,18 @@ Override the font used for each text role. All fonts are bundled in `assets/font
 
 | Key | Default font | Description |
 |---|---|---|
-| `customization.header_text.font` | `PressStart2P-Regular.ttf` | Section headers and GP names |
-| `customization.position_text.font` | `PressStart2P-Regular.ttf` | Position numbers and driver codes |
-| `customization.detail_text.font` | `4x6-font.ttf` | Points, times, gaps |
-| `customization.small_text.font` | `4x6-font.ttf` | Secondary info (circuit name, location) |
+| `customization.header_text.font` | `""` (auto) | Section headers and GP names |
+| `customization.position_text.font` | `""` (auto) | Position numbers and driver codes |
+| `customization.detail_text.font` | `""` (auto) | Points, times, gaps |
+| `customization.small_text.font` | `""` (auto) | Secondary info (circuit name, location) |
 
-Available fonts: `PressStart2P-Regular.ttf`, `4x6-font.ttf`, `5by7.regular.ttf`
+Left blank, each role gets a crisp bitmap font picked for your panel size
+(`6x10.bdf` / `4x6.bdf` on 128x32, larger BDFs on bigger panels).
+
+Available fonts: `4x6.bdf`, `5x8.bdf`, `6x10.bdf`, `7x13.bdf`, `9x15.bdf`,
+`10x20.bdf` (bitmap fonts, always drawn at their native size, so `font_size`
+does not apply), and the scalable `PressStart2P-Regular.ttf`, `4x6-font.ttf`,
+`5by7.regular.ttf`.
 
 Each role also takes a size, and `auto_scale` decides whether those sizes are
 used as written or scaled to the panel:
@@ -209,10 +215,10 @@ used as written or scaled to the panel:
 | Key | Default | Description |
 |---|---|---|
 | `customization.auto_scale` | `true` | Leave the font fields below blank to auto-pick a crisp pixel (bitmap) font sized for your panel. This toggle only affects a scalable TTF you choose manually: on, it scales that TTF with panel size and snaps it to its pixel grid; off, it uses the exact size below. |
-| `customization.header_text.font_size` | `8` | Size in pixels. |
-| `customization.position_text.font_size` | `8` | Size in pixels. |
-| `customization.detail_text.font_size` | `6` | Size in pixels. |
-| `customization.small_text.font_size` | `6` | Size in pixels. |
+| `customization.header_text.font_size` | `8` | Size in pixels (4–16; TTF fonts only). |
+| `customization.position_text.font_size` | `8` | Size in pixels (4–16; TTF fonts only). |
+| `customization.detail_text.font_size` | `6` | Size in pixels (4–16; TTF fonts only). |
+| `customization.small_text.font_size` | `6` | Size in pixels (4–16; TTF fonts only). |
 
 ### Driver and team codes
 

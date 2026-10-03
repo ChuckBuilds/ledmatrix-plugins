@@ -1,7 +1,7 @@
 {
   "id": "countdown",
   "name": "Countdown Display",
-  "version": "3.3.4",
+  "version": "3.3.5",
   "author": "ChuckBuilds",
   "description": "Create and manage customizable countdowns with images. Perfect for birthdays, holidays, events, and special occasions.",
   "entry_point": "manager.py",
@@ -21,6 +21,12 @@
     ">=2.0.0"
   ],
   "versions": [
+    {
+      "version": "3.3.5",
+      "released": "2026-10-02",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "An image-right image with an Image Width wider than the panel stays on the panel. The box was placed at panel width minus image width, a negative x, so the image landed on the left edge, cropped, and the text area had a negative width that pushed the countdown text off the panel. The width and height are now capped at the panel before the preset places the box. README: without target_time the hours-and-minutes rungs count down through the day before the target date (the old text said they never appear), and a relative image_path is resolved against the LEDMatrix directory, not the plugins repository."
+    },
     {
       "version": "3.3.4",
       "released": "2026-10-02",
@@ -123,5 +129,5 @@
   "license": "GPL-3.0",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/countdown",
   "config_schema": "config_schema.json",
-  "last_updated": "2026-09-28"
+  "last_updated": "2026-10-02"
 }

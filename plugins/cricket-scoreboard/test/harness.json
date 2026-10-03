@@ -1,5 +1,5 @@
 {
-  "_comment": "Deterministic harness config + mocked ESPN cricket responses for golden-image rendering. mock_matches is consumed directly by test_cricket_plugin.py (the plugin's live fetcher is bypassed) and covers every format branch: a live T20 chase, a live Test with a session, a completed match, and an upcoming fixture.",
+  "_comment": "Deterministic harness config + mocked ESPN cricket responses. mock_data (test/fixtures/mock.json) seeds the plugin cache with a resolved series list and trimmed real ESPN scoreboards (a live T20 chase, a live Super60 innings, a result and two fixtures), so the core harness renders without touching the network. mock_matches is consumed directly by test_cricket_plugin.py (the plugin's live fetcher is bypassed) and covers every format branch: a live T20 chase, a live Test with a session, a completed match, and an upcoming fixture.",
   "config": {
     "enabled": true,
     "favorite_teams": ["India", "Australia", "England"],
@@ -14,7 +14,8 @@
     "show_venue": true,
     "display_modes": {"live": true, "recent": true, "upcoming": true}
   },
-  "freeze_time": "2026-05-31 15:30:00",
+  "mock_data": "test/fixtures/mock.json",
+  "freeze_time": "2026-10-03 02:00:00",
   "mock_matches": [
     {
       "id": "live-t20",

@@ -2534,6 +2534,26 @@
               },
               "additionalProperties": false
             },
+            "time": {
+              "type": "object",
+              "title": "Game Time",
+              "description": "Moves the start time on the upcoming scoreboard and on an upcoming card.",
+              "properties": {
+                "x_offset": {
+                  "x-advanced": true,
+                  "type": "integer",
+                  "default": 0,
+                  "description": "Horizontal offset from center (default: 0)"
+                },
+                "y_offset": {
+                  "x-advanced": true,
+                  "type": "integer",
+                  "default": 0,
+                  "description": "Vertical offset from default position (default: 0)"
+                }
+              },
+              "additionalProperties": false
+            },
             "status": {
               "type": "object",
               "title": "Game Status/Inning",
@@ -2560,9 +2580,10 @@
               "properties": {
                 "x_offset": {
                   "x-advanced": true,
+                  "x-display": "hidden",
                   "type": "integer",
                   "default": 0,
-                  "description": "Horizontal offset from default position (default: 0)"
+                  "description": "Horizontal offset from default position (default: 0) HIDDEN: nothing reads it. The two records sit at opposite edges and move with away_x_offset / home_x_offset. Kept declared so saved configs keep validating."
                 },
                 "y_offset": {
                   "x-advanced": true,
@@ -2574,13 +2595,13 @@
                   "x-advanced": true,
                   "type": "integer",
                   "default": 0,
-                  "description": "Additional horizontal offset for away team record (default: 0)"
+                  "description": "Horizontal offset for the away record, drawn from the left edge (default: 0)"
                 },
                 "home_x_offset": {
                   "x-advanced": true,
                   "type": "integer",
                   "default": 0,
-                  "description": "Additional horizontal offset for home team record (default: 0)"
+                  "description": "Horizontal offset for the home record, drawn from the right edge (default: 0)"
                 }
               },
               "additionalProperties": false,
@@ -2632,6 +2653,7 @@
             "away_logo",
             "score",
             "date",
+            "time",
             "status",
             "record",
             "ranking",

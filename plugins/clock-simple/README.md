@@ -1,8 +1,8 @@
 # Simple Clock
 
-A clean time-and-date clock for your LED matrix. It picks the largest text that
-fits your panel, shrinks and abbreviates when it has to, and lets you restyle
-the time, the date and the AM/PM marker independently.
+A clean time-and-date clock for your LED matrix. It centres itself on any
+panel, abbreviates the weekday and date when they would not fit, and lets you
+restyle the time, the date and the AM/PM marker independently.
 
 ![The clock on a 128x32 panel showing 3:07 PM in white with PM in pale yellow,
 and Wednesday over September 2nd in
@@ -136,10 +136,11 @@ correct for the whole turn however long you make it.
 
 ### `update_interval`
 
-Seconds between refreshes, default `1`. With `show_seconds` on you want `1`;
-with it off you could raise it, but there is little to gain — the plugin only
-pushes pixels to the panel when the rendered image actually changes, so an
-unchanged minute costs nothing either way.
+How often the LEDMatrix core calls the plugin's background `update()`,
+default `1`. It has no visible effect on this plugin: the clock re-reads the
+time on every frame it draws, so the display (seconds included) stays current
+whatever this is set to. The plugin also only pushes pixels to the panel when
+the rendered image actually changes, so an unchanged minute costs nothing.
 
 ### `timezone`
 
@@ -148,7 +149,7 @@ An IANA timezone name such as `America/Chicago`, `Europe/London` or
 
 1. `timezone` in this plugin's config
 2. The global LEDMatrix `timezone` setting
-3. The host system's timezone
+3. UTC, when neither is set
 
 Leave it unset on a normal install. Set it only when you want this clock to
 show a *different* zone from the rest of your board — a second clock for a
@@ -165,8 +166,9 @@ element simply is not used.
 
 ### `show_seconds`
 
-Appends `:SS`, giving `3:07:09` or `15:07:09`. The string is wider, so on a
-narrow panel the clock picks a smaller size to fit it.
+Appends `:SS`, giving `3:07:09` or `15:07:09`. The string is wider, and the
+time is not resized to fit: with a large `font_size` on a narrow panel it can
+run past the edges, so pick a smaller font there.
 
 ![Four panels comparing 12-hour against 24-hour, and seconds off against
 on](../../docs/assets/clock-simple/time-format.png)
@@ -181,8 +183,8 @@ when the hour rolls from `9:59` to `10:00`.
 
 ### `show_date`
 
-Set to `false` for a time-only clock. The time is then drawn larger, since it
-has the whole panel to itself.
+Set to `false` for a time-only clock. The time stays where it is, near the top
+in the same font; the space below is left empty.
 
 ### `date_format`
 
@@ -245,8 +247,8 @@ look sharp while a `.ttf` scaled to an odd size looks soft.
 
 ## Panel Sizes and How Text Shrinks
 
-The clock measures its text against the panel and steps down rather than
-overflowing.
+The clock measures the weekday and date against the panel and shortens them
+rather than overflowing. The time itself is never resized.
 
 ![The same clock on 64x32, 128x32, 128x64 and 256x32
 panels](../../docs/assets/clock-simple/panel-sizes.png)
@@ -256,8 +258,8 @@ Two behaviours worth knowing, both visible in the 64×32 panel above:
 - **The weekday abbreviates.** `Wednesday` becomes `Wed` when the full name
   will not fit.
 - **The date falls back through shorter forms.** `September 2nd` becomes
-  `Sep 2nd`, then `Sep 2`; the numeric formats drop to a two-digit year
-  (`09/02/26`) and then to `09-02`.
+  `Sep 2nd`, then `Sep 2`; `MM/DD/YYYY` and `DD/MM/YYYY` drop to a two-digit
+  year (`09/02/26`), and `YYYY-MM-DD` drops to `09-02`.
 
 The clock only shortens what it must, so a wider panel keeps the full text. On
 a 128×64 panel the time and date sit in separate bands with the space between
@@ -316,8 +318,10 @@ missing from `assets/fonts/`.
 ```text
 clock-simple/
 ├── manifest.json        # Plugin metadata and version history
-├── manager.py           # ClockSimplePlugin
+├── manager.py           # SimpleClock
 ├── config_schema.json   # Settings schema; source of truth for defaults
+├── test_position_and_timezone.py   # Offset and timezone-fallback tests
+├── test/                # Render-harness config and golden PNGs
 ├── README.md
 └── LICENSE
 ```

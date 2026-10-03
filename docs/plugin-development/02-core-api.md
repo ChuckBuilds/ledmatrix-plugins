@@ -15,10 +15,13 @@ what each provides.
 | `self.cache_manager` | Shared network/data cache — use it for anything fetched |
 | `self.plugin_manager` | Access to shared services: `font_manager`, `config_manager`, other plugins |
 
-The base class also derives some convenience values from config that most plugins
-read directly: `self.enabled` (default `True`), `self.display_duration`,
-`self.update_interval`, and `self.global_config` (the `global` config block,
-where cross-cutting settings like `target_fps` live).
+The base class also sets `self.enabled` (from config, default `True`) and
+exposes `self.global_config` — the **whole** LEDMatrix config, read-only, where
+device-wide settings like `target_fps` and `timezone` live (`{}` when
+unavailable). It does **not** set `self.display_duration` or
+`self.update_interval`: read those from `self.config` yourself (the core asks
+through `get_display_duration()` / `get_update_interval()`, which you can
+override).
 
 ## `self.logger`
 
@@ -59,7 +62,7 @@ The drawing surface. The most common members:
 | `.small_font` / `.extra_small_font` / `.regular_font` | Pre-loaded fonts you can use without registering your own |
 
 Scrolling plugins additionally coordinate with the core loop through
-`.set_scrolling_state(...)`, `.is_currently_scrolling`, `.defer_update(...)`, and
+`.set_scrolling_state(...)`, `.is_currently_scrolling()`, `.defer_update(...)`, and
 `.process_deferred_updates()` — see [topic 3](./03-advanced-features.md#high-fps--smooth-scrolling).
 
 Two rendering styles coexist: draw with `draw_text` for simple text (like
@@ -77,9 +80,9 @@ and multiple plugins don't re-hit APIs. Fetch in `update()`, never in
 |--------|---------|
 | `get(key, max_age=<seconds>)` | Return the cached value, or `None` if missing/older than `max_age` |
 | `set(key, value, ttl=<seconds>)` | Store a value with an optional time-to-live |
-| `get_cached_data_with_strategy(key, strategy)` | Strategy-driven read (e.g. `'leaderboard'`) that layers a TTL/refresh policy on top of raw get/set |
+| `get_cached_data_with_strategy(key, data_type)` | Strategy-driven read (e.g. `'leaderboard'`) that layers a TTL/refresh policy on top of raw get/set |
 | `save_cache(key, data)` | Strategy-driven write partner to the above |
-| `get_with_auto_strategy(...)` | Auto-selected strategy variant |
+| `get_with_auto_strategy(key)` | Same, with the data type inferred from the key |
 | `delete(key)` / `clear_cache()` | Invalidate one key / everything |
 
 **Always namespace keys with your plugin id** so they never collide with another
@@ -137,9 +140,14 @@ fm.register_manager_font(
 **Fetch in `display()`:**
 
 ```python
-message_font = fm.get_font(f"{self.plugin_id}.message")
+message_font = fm.resolve_font(f"{self.plugin_id}.message", "press_start", 10,
+                               plugin_id=self.plugin_id)
 self.display_manager.draw_text(self.message, x=..., y=..., font=message_font)
 ```
+
+`resolve_font(element_key, family, size_px, plugin_id=None)` applies any user
+override for that element, then loads the font; `get_font(family, size_px)`
+takes no element key and skips overrides.
 
 The `element_key` convention is `f"{self.plugin_id}.<element>"` — prefixing with
 the plugin id avoids collisions with other plugins' registered fonts. Common

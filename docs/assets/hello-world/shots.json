@@ -186,7 +186,7 @@
         {
           "shot": "msg-long",
           "label": "\"Welcome to the workshop\"",
-          "sublabel": "too long: the plugin does not shrink or wrap, so the ends are clipped"
+          "sublabel": "too long: the font steps down until it fits, at the cost of legibility"
         }
       ]
     },
@@ -197,7 +197,7 @@
         {
           "shot": "p-64",
           "label": "64 x 32",
-          "sublabel": "the default message no longer fits"
+          "sublabel": "the default message shrinks to fit, but barely reads"
         },
         {
           "shot": "p-128",

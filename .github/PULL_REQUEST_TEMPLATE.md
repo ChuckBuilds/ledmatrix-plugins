@@ -43,8 +43,8 @@ checked box. -->
       forgetting this means users won't receive the change)
 - [ ] `class_name` in `manifest.json` matches the actual class in
       `manager.py` exactly (case-sensitive, no spaces)
-- [ ] `entry_point` matches the real file (or is omitted to use
-      the `manager.py` default)
+- [ ] `entry_point` matches the real file (the core manifest schema
+      requires it)
 - [ ] Updated the plugin's `README.md` if config keys changed
 - [ ] `config_schema.json` is the source of truth for the web UI
       form — any new option is in the schema with a `default`,
@@ -57,7 +57,10 @@ checked box. -->
 
 - [ ] Plugin id matches the directory name and is unique
 - [ ] `manifest.json` has all required fields (`id`, `name`,
-      `version`, `class_name`, `display_modes`)
+      `version`, `author`, `entry_point`, `class_name`,
+      `compatible_versions`, plus `display_modes`)
+- [ ] Added the plugin's entry to `plugins.json` (new plugins are the
+      one hand-added case; `update_registry.py --check` fails without it)
 - [ ] `manager.py` inherits from `BasePlugin` and implements
       `update()` and `display()`
 - [ ] `config_schema.json` exists and validates as JSON Schema Draft-7

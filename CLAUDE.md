@@ -37,6 +37,9 @@ These are not general Python advice — they exist because of how *this* stack w
 2. **Never hand-edit `plugins.json`.** Commit with the pre-commit hook
    (`cp scripts/pre-commit .git/hooks/pre-commit`) or run
    `python update_registry.py`. CI also regenerates on push to `main`.
+   Exception: a **new** plugin's entry (and review fields like `verified`) is
+   added by hand — the script only updates existing entries, and `--check`
+   fails without one (docs topic 07).
 3. **Fetch in `update()`, draw in `display()`.** Never hit the network from
    `display()`. Cache network data via `self.cache_manager`, keys namespaced by
    plugin id.
@@ -105,8 +108,10 @@ Plugin class: subclass `BasePlugin` from the core
 (`src.plugin_system.base_plugin.BasePlugin`). Constructor args:
 `plugin_id, config, display_manager, cache_manager, plugin_manager`.
 
-Required manifest fields: `id` (matches directory), `name`, `version`,
-`class_name`, `display_modes`. Full field list / schema conventions →
+Required manifest fields (core `schema/manifest_schema.json`, validated in CI):
+`id` (matches directory), `name`, `version`, `author`, `entry_point`,
+`class_name`, `compatible_versions` — plus `display_modes`, which every plugin
+needs to be shown. Full field list / schema conventions →
 `docs/plugin-development/06-manifest-and-config-schema.md`.
 
 Config schemas are JSON Schema Draft-07 with UI `x-*` extensions

@@ -735,8 +735,12 @@ class CountdownPlugin(BasePlugin):
             # An explicit image_width/image_height from the advanced modal
             # still wins over both.
             _default_img_w = dw if layout_preset == 'image-only' else (dw // 3)
-            img_w = layout.get('image_width')  or _default_img_w
-            img_h = layout.get('image_height') or dh
+            # Capped at the panel first: image-right places the box at
+            # dw - img_w, so a width wider than the panel put it at a negative
+            # x -- the image landed on the left, cropped, and the text area
+            # had a negative width, which pushed the text off the panel.
+            img_w = min(layout.get('image_width')  or _default_img_w, dw)
+            img_h = min(layout.get('image_height') or dh, dh)
 
             if _has_px_override:
                 # User set explicit pixel positions — honour them directly

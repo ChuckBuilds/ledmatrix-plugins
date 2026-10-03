@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.42.0] - 2026-10-02
+
+### Added
+- `customization.layout.record.away_x_offset` / `home_x_offset`,
+  `customization.layout.date` and `customization.layout.time` (advanced).
+  The scoreboard and cards have always read these offsets, but the schema did
+  not declare them and sets `additionalProperties: false`, so none could be
+  set: the records could only be moved vertically, and the recent date and the
+  upcoming card's date and time not at all.
+
+### Changed
+- `customization.layout.record.x_offset` is hidden: nothing reads it (the
+  records move with the two keys above). Kept declared so saved configs keep
+  validating.
+- README: the layout table named elements the schema does not have
+  (`status_text`, `records`); it now lists the real ones. Documents
+  `scroll_card.switch_show_date` / `switch_show_time` and the per-league
+  `odds_update_interval` / `live_odds_update_interval`.
+
 ## [1.41.2] - 2026-10-02
 
 ### Changed

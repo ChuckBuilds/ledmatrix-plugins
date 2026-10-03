@@ -118,7 +118,7 @@ Enable/disable specific modes and configure their settings:
 |---|---|---|
 | `enabled` | `true` | Enable or disable the Masters Tournament plugin. |
 | `display_duration` | `20` | Duration in seconds to display each mode before rotating (5–300). |
-| `update_interval` | `30` | How often to fetch new data in seconds (30s during tournament, 3600s off-season) (10–3600). |
+| `update_interval` | `30` | How often, in seconds, the plugin checks for new data (10–3600). The ESPN responses it fetches are cached for 30s while a round is on, 5 min in the three days before the start, and 1 h otherwise, so most checks off-season are served from the cache. |
 | `player_card_duration` | `8` | Seconds each player card is shown before rotating to the next player in the player card display mode (1–300). |
 | `hole_display_duration` | `15` | Seconds between hole advances in course tour and hole-by-hole display modes (1–300). |
 | `page_display_duration` | `15` | Seconds between page advances in paginated modes (leaderboard, champions, tournament stats, schedule, course overview) (1–300). |
@@ -359,7 +359,7 @@ The Masters is typically held:
 - **Tournament**: Thursday-Sunday (April 9-12)
 
 Plugin automatically detects tournament phase and adjusts:
-- Update intervals (30s live, 5m practice, 1h off-season)
+- Data cache lifetime (30s live, 5m in the three days before the start, 1h otherwise)
 - Cache duration
 - Mode prioritization
 
@@ -376,7 +376,7 @@ cd ~/Github/ledmatrix-plugins/plugins/masters-tournament
 sudo systemctl restart ledmatrix
 
 # Monitor logs
-tail -f /var/log/ledmatrix/ledmatrix.log
+sudo journalctl -u ledmatrix -f
 ```
 
 ### Adding New Display Modes
@@ -391,9 +391,9 @@ tail -f /var/log/ledmatrix/ledmatrix.log
 
 ### ESPN Golf API Endpoints
 
-- **Leaderboard**: `https://site.api.espn.com/apis/site/v2/sports/golf/pga/leaderboard`
-- **Schedule**: `https://site.api.espn.com/apis/site/v2/sports/golf/pga/schedule`
-- **News**: `https://site.api.espn.com/apis/site/v2/sports/golf/pga/news`
+- **Leaderboard** (also the source of tee times and tournament dates): `https://site.api.espn.com/apis/site/v2/sports/golf/leaderboard`
+- **Player bio**: `https://site.web.api.espn.com/apis/common/v3/sports/golf/pga/athletes/{player_id}`
+- **Player overview**: `https://site.web.api.espn.com/apis/common/v3/sports/golf/pga/athletes/{player_id}/overview`
 
 No API key required. Rate limits apply (plugin respects with caching).
 

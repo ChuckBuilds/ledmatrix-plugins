@@ -217,8 +217,9 @@
           "default": 15,
           "minimum": 3,
           "maximum": 60,
-          "description": "Duration in seconds to show each individual game before rotating to the next game within the same mode",
-          "x-advanced": true
+          "description": "Duration in seconds to show each individual game before rotating to the next game within the same mode HIDDEN: nothing reads it. Per-game time comes from each league's display_durations (live/recent/upcoming); this value only appears in the plugin's status info. Kept declared so saved configs keep validating.",
+          "x-advanced": true,
+          "x-display": "hidden"
         },
         "show_records": {
           "type": "boolean",

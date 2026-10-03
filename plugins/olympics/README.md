@@ -36,7 +36,7 @@ Screenshot Preview:
   - During Olympics: Countdown to closing ceremony
 - **Olympics Logo**: Displays Olympics logo (image or programmatically drawn Olympic rings)
 - **Adaptive Text Display**: Automatically adjusts text size and layout for different display sizes
-- **Multiple Olympics Support**: Includes dates for upcoming Olympics through 2032
+- **Multiple Olympics Support**: Includes dates for the Games through Los Angeles 2028
 
 ## Installation
 
@@ -71,9 +71,8 @@ under `olympics`. The schema sets `additionalProperties: false`, so a key that
 is not listed below fails schema validation: the core logs a warning and flags
 the plugin as degraded in the web UI, but still loads it with that key ignored.
 `notifications_enabled`, `favorite_countries` and `webhooks` are still declared
-for that reason: they are kept for compatibility and ignored, and are still
-shown in the settings form (titled "deprecated") until core honours
-`x-display: hidden`. The full schema is
+for that reason: they are kept for compatibility and ignored, and are hidden
+from the settings form (`x-display: hidden`). The full schema is
 [`config_schema.json`](config_schema.json).
 
 ### Basics
@@ -174,7 +173,6 @@ The plugin will look for an Olympics logo image in the following locations:
 - `olympics-icon.png`
 - `logo.png`
 - `assets/olympics-logo.png`
-- `assets/logo.png`
 
 If no image is found, the plugin will automatically draw the Olympic rings programmatically as a fallback.
 
@@ -183,10 +181,10 @@ If no image is found, the plugin will automatically draw the Olympic rings progr
 ## Dependencies
 
 - Python 3.7+
-- PIL/Pillow (for image handling)
+- PIL/Pillow and pytz (provided by LEDMatrix)
+- `requests` and `lxml` (listed in `requirements.txt`; the plugin store installs
+  them) for the medal, schedule and results pages fetched during the Games
 - LEDMatrix 2.0.0 or higher
-
-No additional Python packages are required beyond what LEDMatrix provides.
 
 ## Troubleshooting
 
@@ -199,8 +197,8 @@ If the logo image doesn't appear:
 
 ### Countdown Not Updating
 
-- The countdown updates based on `update_interval` (default: 1 hour)
-- The countdown changes once per day, so hourly updates are sufficient
+- Data refreshes every `update_interval` seconds (default: 300, five minutes)
+- The day count itself is recomputed each time the screen is drawn
 - Check the plugin logs for any errors
 
 ### Text Not Fitting
@@ -222,8 +220,11 @@ olympics/
 ├── config_schema.json     # Configuration schema
 ├── README.md             # This file
 ├── requirements.txt      # Python dependencies
-└── assets/               # Optional: Olympics logo image
-    └── olympics-logo.png
+├── olympics-logo.png     # Logo drawn beside the countdown
+├── data/                 # Games table, olympics.com scraping, caching
+├── renderers/            # Countdown, medal, event and alert cards
+├── scripts/              # Asset/schedule generators (not loaded at runtime)
+└── assets/               # Flags, sport icons, Olympic rings
 ```
 
 ### Testing
@@ -243,5 +244,5 @@ ChuckBuilds
 
 ## Version
 
-1.0.0
+See `version` and the `versions` history in [`manifest.json`](manifest.json).
 

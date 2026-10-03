@@ -1,7 +1,7 @@
 {
   "id": "nrl-scoreboard",
   "name": "NRL Scoreboard",
-  "version": "1.34.1",
+  "version": "1.34.2",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NRL (National Rugby League) games with real-time scores and game status.",
   "category": "sports",
@@ -18,6 +18,12 @@
     "nrl_upcoming"
   ],
   "versions": [
+    {
+      "version": "1.34.2",
+      "released": "2026-10-02",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "README only: scroll_settings.scroll_speed is documented with its real default (50 px/s, not 1.0); the game_limits precedence note now matches the code (a game_limits value changed from its default wins, otherwise the root key); documents odds_update_interval / live_odds_update_interval and the full-screen scroll_card.switch_show_date / switch_show_time switches. No change in behaviour."
+    },
     {
       "version": "1.34.1",
       "released": "2026-10-01",
@@ -541,7 +547,7 @@
       "ledmatrix_min": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-30",
+  "last_updated": "2026-10-02",
   "stars": 0,
   "downloads": 0,
   "verified": true,

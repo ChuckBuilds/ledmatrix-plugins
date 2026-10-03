@@ -1,7 +1,7 @@
 {
   "id": "tide-display",
   "name": "Tide Display",
-  "version": "1.3.4",
+  "version": "1.3.5",
   "author": "ChuckBuilds",
   "description": "Coastal tide display with animated wave level, tide schedule, 24-hour chart, and tidal statistics. Powered by the free NOAA Tides & Currents API (US stations, no API key required).",
   "entry_point": "manager.py",
@@ -25,6 +25,12 @@
     ">=2.0.0"
   ],
   "versions": [
+    {
+      "version": "1.3.5",
+      "released": "2026-10-02",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "A screen switched off no longer takes a turn: display() drew its own rotation and ignored the mode the core asked for, so a disabled screen's slot showed another screen. The setup prompt (no station set) no longer runs into the border on a 32-row panel, which cut off the bottom of 'in Settings'."
+    },
     {
       "version": "1.3.4",
       "released": "2026-09-28",
@@ -112,7 +118,7 @@
   "license": "GPL-3.0",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/tide-display",
   "config_schema": "config_schema.json",
-  "last_updated": "2026-09-28",
+  "last_updated": "2026-10-02",
   "stars": 0,
   "downloads": 0,
   "verified": true,

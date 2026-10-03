@@ -2,13 +2,13 @@
 Christmas Countdown Plugin for LEDMatrix
 
 Displays a countdown to Christmas with a stylized Christmas tree logo
-and festive text. Shows "MERRY CHRISTMAS" on and after Christmas Day.
+and festive text. Shows "MERRY CHRISTMAS" on Christmas Day.
 
 Features:
 - Stylized Christmas tree logo (image or programmatic fallback)
 - Adaptive text: "N DAYS UNTIL CHRISTMAS" or "N DAYS UNTIL XMAS" on smaller displays
 - Traditional holiday colors (green tree, red text)
-- Automatic "MERRY CHRISTMAS" message on/after Dec 25
+- Automatic "MERRY CHRISTMAS" message on Dec 25
 
 API Version: 1.0.0
 """
@@ -487,10 +487,11 @@ class ChristmasCountdownPlugin(BasePlugin):
             if self.is_christmas or self.days_until_christmas == 0:
                 message = "MERRY CHRISTMAS"
             else:
+                day_word = "DAY" if self.days_until_christmas == 1 else "DAYS"
                 if use_xmas:
-                    message = f"{self.days_until_christmas} DAYS UNTIL XMAS"
+                    message = f"{self.days_until_christmas} {day_word} UNTIL XMAS"
                 else:
-                    message = f"{self.days_until_christmas} DAYS UNTIL CHRISTMAS"
+                    message = f"{self.days_until_christmas} {day_word} UNTIL CHRISTMAS"
             
             # Check if we need to redraw (prevent blinking)
             # Only redraw if the message changed or force_clear is True
@@ -539,7 +540,7 @@ class ChristmasCountdownPlugin(BasePlugin):
                     if len(parts) >= 4:
                         lines = [
                             f"{self.days_until_christmas}",
-                            "DAYS",
+                            day_word,
                             "UNTIL",
                             "XMAS"
                         ]
@@ -551,7 +552,7 @@ class ChristmasCountdownPlugin(BasePlugin):
                     if len(parts) >= 4:
                         lines = [
                             f"{self.days_until_christmas}",
-                            "DAYS",
+                            day_word,
                             "UNTIL",
                             "CHRISTMAS"
                         ]

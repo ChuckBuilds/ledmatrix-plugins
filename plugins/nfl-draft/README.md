@@ -37,15 +37,15 @@ Plugin path: plugins/nfl-draft
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
 | `enabled` | boolean | `true` | Enable/disable the plugin |
-| `display_duration` | number | `60` | Display duration in seconds |
+| `display_duration` | number | `60` | Display duration in seconds (10–300); used when `dynamic_duration.enabled` is off |
 | `font` | string | `"PressStart2P-Regular.ttf"` | Font file from assets/fonts/ |
 | `player_name_font_size` | integer | `12` | Font size for player names |
 | `detail_font_size` | integer | `8` | Font size for pick number / position / college |
 | `player_name_color` | object | `{r:255,g:255,b:255}` | Player-name colour, as separate `player_name_color.r`, `player_name_color.g` and `player_name_color.b` values (0–255) |
 | `pick_number_color` | object | `{r:255,g:255,b:255}` | Detail-line colour, as separate `pick_number_color.r`, `pick_number_color.g` and `pick_number_color.b` values (0–255) |
 | `scroll_speed` | number | `30` | Scroll speed in pixels per second, snapped to the nearest speed the panel can move in whole pixels (30 runs at 33.3 on a 100 Hz panel). **Changed in 2.1.0:** this setting used to be ignored and every install scrolled at 100 px/s; set `100` for that speed |
-| `live_refresh_interval` | integer | `600` | Refresh interval during live draft (seconds) |
-| `projection_refresh_interval` | integer | `86400` | Refresh interval for projections (seconds) |
+| `live_refresh_interval` | integer | `600` | Refresh interval during the live draft and the April 20–27 draft window (seconds, 60–1800) |
+| `projection_refresh_interval` | integer | `86400` | Refresh interval for projections outside the draft window (seconds, 3600–172800) |
 | `draft_year` | integer | `0` | Draft year (0 = auto-detect current/upcoming) |
 | `show_position` | boolean | `true` | Show player position |
 | `show_college` | boolean | `true` | Show player college/school |
@@ -68,7 +68,7 @@ Plugin path: plugins/nfl-draft
 
 | Key | Default | Notes |
 |---|---|---|
-| `dynamic_duration.enabled` | `true` | . |
+| `dynamic_duration.enabled` | `true` | Keep the scroll on screen until it has run through every pick (between `min_duration` and `max_duration`). Off, each slot lasts `display_duration`. |
 | `dynamic_duration.min_duration` | `30` | Minimum display duration in seconds. |
 | `dynamic_duration.max_duration` | `300` | Maximum display duration in seconds. |
 | `vegas_mode` | `"scroll"` | Override how this plugin appears in Vegas scroll mode. 'scroll' = individual picks scroll through the stream (default), 'fixed' = entire display scrolls by as one block, 'static' = scroll pauses while plugin displays for its duration — one of `scroll`, `fixed`, `static`. |

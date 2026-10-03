@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.3] - 2026-10-02
+
+### Fixed
+- The subtitle font size falls back to 7 when the setting is absent: the
+  schema default, and the 4x6 font's crisp size. The code fell back to 6,
+  which drops glyph columns. The README listed 6 as the default; it says 7.
+
 ## [1.3.2] - 2026-09-28
 
 ### Fixed

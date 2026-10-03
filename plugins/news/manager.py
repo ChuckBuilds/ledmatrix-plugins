@@ -1051,10 +1051,13 @@ class NewsTickerPlugin(BasePlugin):
                 link = item.find('link')
 
                 if title is not None and title.text:
+                    # An empty <description/> has text None; unescaping it
+                    # raised, and the whole feed was dropped as failed.
+                    desc_text = description.text if description is not None else None
                     headline = {
                         'feed_name': feed_name,
                         'title': html.unescape(title.text).strip(),
-                        'description': html.unescape(description.text).strip() if description is not None else '',
+                        'description': html.unescape(desc_text).strip() if desc_text else '',
                         'published': pub_date.text if pub_date is not None else '',
                         'link': link.text if link is not None else '',
                         'timestamp': datetime.now().isoformat()

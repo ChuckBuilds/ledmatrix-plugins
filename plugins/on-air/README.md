@@ -67,9 +67,9 @@ directly. The full schema is [`config_schema.json`](config_schema.json).
 | **Text Color** | `text_color` | `[255, 255, 255]` | RGB color of the sign text. |
 | **Background Color** | `background_color` | `[200, 10, 10]` | RGB background color — broadcast red by default. |
 | **Font** | `font_path` | *(blank)* | Path to a TTF font relative to the LEDMatrix root (e.g. `assets/fonts/PressStart2P-Regular.ttf`). Blank auto-selects one from the LEDMatrix assets folder, sized to 80% of display height. |
-| **Font Size (px)** | `font_size` | `0` | Font height in pixels when a custom Font is set. `0` auto-sizes to 80% of display height. |
+| **Font Size (px)** | `font_size` | `0` | Font height in pixels when a custom Font is set (`0` uses 8 px). Without a Font, the auto-selected font is sized to 80% of display height and this setting is ignored. |
 | **MQTT Broker Host** | `mqtt_host` | `localhost` | IP or hostname of your MQTT broker. |
-| **MQTT Port** | `mqtt_port` | `1883` | Broker port (use 8883 for TLS). |
+| **MQTT Port** | `mqtt_port` | `1883` | Broker port. TLS is not supported, so use a plain (non-TLS) listener. |
 | **MQTT Username** | `mqtt_username` | *(blank)* | Leave blank if no auth required. |
 | **MQTT Password** | `mqtt_password` | *(blank)* | Leave blank if no auth required. Marked secret, so the web UI masks it. |
 | **Command Topic** | `command_topic` | `ledmatrix/on-air/set` | Topic the plugin **subscribes** to (publish `ON`/`OFF` or JSON). |
@@ -489,7 +489,7 @@ mosquitto_pub -h <broker-ip> -t ledmatrix/on-air/set -m OFF
 ### The HA switch shows "Unavailable"
 
 - Confirm you reloaded your config after adding the `mqtt: switch:` block.
-- Check the state topic: the switch won't show a valid state until the plugin has published at least once. Toggle it once from the command line to prime the state.
+- Check the state topic: the plugin publishes its current state (and availability) every time it connects to the broker, so the switch should show `OFF` shortly after LEDMatrix starts. If it does not, the plugin is not reaching the broker.
 
 ### HA switch state doesn't update after sending OFF
 
@@ -506,5 +506,5 @@ mosquitto_pub -h <broker-ip> -t ledmatrix/on-air/set -m OFF
 - Set `retain: false` in your HA switch config.
 - Clear any retained messages on the command topic:
   ```bash
-  mosquitto_pub -h <broker-ip> -t ledmatrix/on-air/set -m "" -r -n
+  mosquitto_pub -h <broker-ip> -t ledmatrix/on-air/set -r -n
   ```

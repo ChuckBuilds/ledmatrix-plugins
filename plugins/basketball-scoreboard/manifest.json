@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.41.2",
+  "version": "1.42.0",
   "update_interval": 60,
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
@@ -19,6 +19,12 @@
   "branch": "main",
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
+    {
+      "version": "1.42.0",
+      "released": "2026-10-02",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "Adds customization.layout.record.away_x_offset / home_x_offset and the layout.date and layout.time groups (advanced). The scoreboard and cards have always read these offsets, but the schema did not declare them and forbids extra keys, so the records could only be moved vertically and the recent date and upcoming card date/time not at all. Hides layout.record.x_offset, which nothing reads. README: the layout table named elements the schema does not have; it now lists the real ones, and documents scroll_card.switch_show_date / switch_show_time and the per-league odds_update_interval / live_odds_update_interval."
+    },
     {
       "version": "1.41.2",
       "released": "2026-10-02",

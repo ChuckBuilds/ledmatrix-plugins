@@ -41,7 +41,6 @@ list.
 - **Round Logos**: Optional round-logo separators between game groups.
 - **Upset Highlighting**: Highlights upset winners (a higher seed beating a lower
   seed) in gold.
-- **Bracket Progress**: Optionally shows which teams are still alive in each region.
 - **Favorite Teams**: Highlight your teams anywhere they appear in the bracket.
 - **Live Scores**: Live game scores with an automatically shortened refresh
   interval while games are in progress.
@@ -95,7 +94,7 @@ truth. The keys below are the ones you'll typically set.
 | `leagues.ncaaw` | `true` | Show NCAA Women's Tournament games. |
 | `favorite_teams` | `[]` | Team abbreviations to highlight (e.g. `DUKE`, `UNC`). Empty shows all teams equally. |
 
-### Display Options
+### Display Options (`display_options`)
 
 | Key | Default | Range | Notes |
 |-----|---------|-------|-------|
@@ -106,7 +105,7 @@ truth. The keys below are the ones you'll typically set.
 | `scroll_delay` | `0.02` | 0.001–0.1 | Seconds per step; see `scroll_speed`. |
 | `loop` | `true` | — | Loop the scroll continuously. |
 | `dynamic_duration` | `true` | — | Adjust the on-screen duration automatically based on content width. |
-| `min_duration` | `30` | 10–300 | Minimum display duration in seconds (used with `dynamic_duration`). |
+| `min_duration` | `30` | 10–300 | Minimum display duration in seconds. With `dynamic_duration` off, every slot lasts exactly this long. |
 | `max_duration` | `300` | 30–600 | Maximum display duration in seconds (used with `dynamic_duration`). |
 
 Three of these change what you see on the panel directly:
@@ -117,7 +116,7 @@ Three of these change what you see on the panel directly:
 
 ![highlight_upsets on and off](../../docs/assets/march-madness/highlight-upsets.png)
 
-### Data Settings
+### Data Settings (`data_settings`)
 
 | Key | Default | Range | Notes |
 |-----|---------|-------|-------|

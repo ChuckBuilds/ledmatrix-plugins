@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.8.1] - 2026-10-02
+
+### Documentation
+- README lists `radar_in_vegas` and the `customization` section (fonts,
+  colours, visibility and offsets for the current-conditions screen).
+
 ## [2.8.0] - 2026-09-30
 
 ### Added
