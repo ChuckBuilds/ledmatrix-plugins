@@ -15,7 +15,7 @@ extensions that shape the config form itself.
 
 The older, explicit form: a `customization` object in `config_schema.json` with
 one sub-object per text element, each declaring `font`, `font_size`, and
-`text_color`. About 17 plugins use a `customization` block. The canonical
+`text_color`. About two dozen plugins use a `customization` block. The canonical
 per-element shape (from
 [`plugins/clock-simple/config_schema.json`](../../plugins/clock-simple/config_schema.json),
 element `time_text`):
@@ -36,15 +36,18 @@ element `time_text`):
 
 Your code then reads `config["customization"]["time_text"]["font_size"]` etc. and
 feeds those into font registration / drawing. This is fully self-contained — it
-works on any core.
+works on any core. (Core 3.4.0+ also recognises a hand-written block of this shape
+and renders it with its composite style editor, with no plugin change.)
 
 ### B) The `x-style-elements` shorthand (newer, core-assisted)
 
 The compact form: instead of hand-writing each element object, you declare a
 single `x-style-elements` map on the `customization` object, and a **newer core**
-expands it into the full per-element style UI and a resolver. Only
-[`plugins/of-the-day`](../../plugins/of-the-day/config_schema.json) uses it today
-— it's the reference implementation.
+expands it into the full per-element style UI and a resolver.
+[`plugins/of-the-day`](../../plugins/of-the-day/config_schema.json) is the
+reference implementation; `ledmatrix-weather` uses it too. A sibling
+`x-style-modes` declaration adds per-display-mode overrides
+(`customization.modes.<mode>`); the scoreboards use it.
 
 ```json
 "customization": {
@@ -107,6 +110,13 @@ title_y = margin_top + title.offset[1]
 self.display_manager.draw_text(text, x=title_x, y=title_y, color=title.color, font=title.font)
 ```
 
+On core 3.4.0+ you don't need to build the resolver yourself: `BasePlugin.styles`
+finds the plugin's schema, rebuilds on config change, and never raises
+(`self.styles.style("title_text", classic_font=..., classic_size=...,
+classic_color=...)`; set the class attribute `STYLE_MODE` for per-mode
+overrides). Guard it with `getattr(self, "styles", None)` if your floor is
+older.
+
 See [`plugins/of-the-day/manager.py`](../../plugins/of-the-day/manager.py) for the
 full `_element_styles()` helper, including the `STYLE_AVAILABLE == False` fallback
 that loads bundled fonts directly with offset `(0, 0)`.
@@ -137,13 +147,14 @@ Beyond styling, the web UI honors a family of custom `x-` keys in
 | `x-columns` | array | Column keys for the `array-table` widget |
 | `x-placeholder` | string | Input placeholder text |
 | `x-display` | string (e.g. `"hidden"`) | Field display mode |
+| `x-style-elements` / `x-style-modes` | object / array | Compact style declarations on `customization` (see above) |
 
 ### `x-widget` values seen in the wild
 
 `color-picker` (the common one), `checkbox-group`, `file-upload` /
 `file-upload-single`, `array-table`, `radio`, `select`, `time-picker`,
 `date-picker`, `schedule`, `tag-input`, `custom-feeds`, `plugin-file-manager`,
-`google-calendar-picker`.
+`google-calendar-picker`, `google-oauth`.
 
 Examples: `color-picker` in
 [`plugins/baseball-scoreboard/config_schema.json`](../../plugins/baseball-scoreboard/config_schema.json);

@@ -1,7 +1,7 @@
 {
   "id": "christmas-countdown",
   "name": "Christmas Countdown",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "author": "ChuckBuilds",
   "description": "Display a countdown to Christmas with a stylized Christmas tree logo and festive text",
   "category": "holiday",
@@ -17,6 +17,12 @@
     "christmas-countdown"
   ],
   "versions": [
+    {
+      "version": "2.0.4",
+      "released": "2026-10-02",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "On 24 December the panel reads 1 DAY UNTIL CHRISTMAS (or XMAS) instead of 1 DAYS. Documentation: the README said MERRY CHRISTMAS stays up after the 25th; from the 26th the plugin counts to next year's Christmas. It put the XMAS abbreviation below 64px wide, but every 64px-wide panel abbreviates and 96px and wider spell it out (the cut is whether CHRISTMAS fits the right half, about 93px). And it named assets/christmas_tree.png as the tree, but the plugin draws tree icon.png and only falls back to that file, so tree_color applies only when both are missing. The module docstring had the same after-Christmas claim."
+    },
     {
       "version": "2.0.3",
       "released": "2026-09-28",
@@ -70,7 +76,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-28",
+  "last_updated": "2026-10-02",
   "stars": 0,
   "downloads": 0,
   "verified": true,

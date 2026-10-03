@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.57.0] - 2026-10-02
+
+### Added
+- `customization.layout.time` (`x_offset` / `y_offset`, advanced). The start
+  time on the upcoming scoreboard and on upcoming cards has always read this
+  offset, but the schema had no `time` group and sets
+  `additionalProperties: false`, so it could not be set.
+
+### Changed
+- `customization.layout.record.x_offset` is hidden: nothing reads it. The two
+  records sit at opposite edges and move with `away_x_offset` /
+  `home_x_offset`. The README said it shifted both records; it now says it is
+  ignored. Kept declared so saved configs keep validating.
+- README documents `scroll_card.switch_show_date` / `switch_show_time`,
+  `customization.odds_text` and the full list of layout groups.
+
 ## [1.56.1] - 2026-10-02
 
 ### Changed

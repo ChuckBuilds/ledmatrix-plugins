@@ -1,7 +1,7 @@
 {
   "id": "static-image",
   "name": "Static Image Display",
-  "version": "1.1.7",
+  "version": "1.1.8",
   "author": "ChuckBuilds",
   "description": "Display static images on your LED matrix with automatic scaling, aspect ratio preservation, and transparency support. Perfect for logos, artwork, or custom graphics.",
   "entry_point": "manager.py",
@@ -18,6 +18,12 @@
     "static_image"
   ],
   "versions": [
+    {
+      "version": "1.1.8",
+      "released": "2026-10-02",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "The \"Image Error\" screen is visible. It swapped in a blank canvas and then drew its text through the display's previous drawing context, so the words landed on a frame nobody showed and the panel went blank whenever a font manager was present (always, on a board). It also drew in white; it is now red, as intended. A very wide or very tall image (say 2000x3) loads instead of erroring: fitting it rounded the short side down to zero, which Image.resize rejects. README: when every image is outside its schedule window the schedules are set aside and the whole list rotates (the old text said nothing would draw)."
+    },
     {
       "version": "1.1.7",
       "released": "2026-09-28",
@@ -112,7 +118,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-28",
+  "last_updated": "2026-10-02",
   "stars": 0,
   "downloads": 0,
   "verified": true,

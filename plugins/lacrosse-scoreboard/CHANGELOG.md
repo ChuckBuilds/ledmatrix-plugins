@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.36.3] - 2026-10-02
+
+### Changed
+- `defaults.game_display_duration` is hidden: nothing reads it (per-game time
+  comes from each league's `display_durations`; the value only appeared in the
+  plugin's status info). Kept declared so saved configs keep validating.
+- README documents `defaults.game_display_duration`,
+  `<league>.update_intervals.live_odds` and `scroll_card.switch_show_date` /
+  `switch_show_time`.
+
 ## [1.36.2] - 2026-10-02
 
 ### Changed

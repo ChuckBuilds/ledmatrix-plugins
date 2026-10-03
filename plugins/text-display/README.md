@@ -183,9 +183,9 @@ coming round again. A gap roughly equal to your panel width gives the cleanest
 loop — the message is fully gone before it returns. The default of 32 suits a
 64-wide panel; on a 128-wide chain, try 128.
 
-With `scroll_loop: false` the text scrolls past once and stops. Pair it with
-`display_duration` long enough for a full pass, or the plugin's turn will end
-mid-message.
+With `scroll_loop: false` the text scrolls past once and stops. The turn is
+stretched to cover that pass (see [Timing](#timing)), and any time left over
+holds the parked end frame.
 
 > **A still cannot show motion.** There is no screenshot of scrolling in this
 > README because a single frame captured at the start of a scroll is an empty
@@ -213,19 +213,24 @@ deliberate alert, not as a default.
 
 | Option | Type | Default | What it does |
 |--------|------|---------|--------------|
-| `display_duration` | number | `10` | Seconds the plugin holds the panel per turn |
-| `update_interval` | integer | `60` | Seconds between refreshes of the text |
+| `display_duration` | number | `10` | Seconds the plugin holds the panel per turn; the minimum while scrolling |
+| `update_interval` | integer | `60` | Seconds between the core's calls to the plugin's `update()` |
 
-For scrolling text, `display_duration` should be long enough for at least one
-full pass, or viewers only ever see the middle of the message. A rough guide:
+For scrolling text the plugin asks for a turn long enough for one full pass,
+using `display_duration` as the floor and 300 seconds as the ceiling, so a long
+message is not cut off mid-way. The turn it asks for is roughly:
 
 ```text
-seconds for one pass ≈ (text width + panel width + scroll_gap_width) / (scroll_speed / scroll_delay)
+seconds ≈ 1.1 × (text width + 3 × panel width + scroll_gap_width) / (scroll_speed / scroll_delay)
 ```
 
+Two exceptions: the first turn after a restart can come before the scrolling
+strip has been built, and then uses `display_duration` alone; and a duration
+set for this mode on the web UI's Rotation & Durations page replaces both.
+
 `update_interval` matters little here because the text is static configuration
-rather than fetched data — it only decides how quickly a config change is
-picked up.
+rather than fetched data. A settings save applies straight away whatever it is
+set to.
 
 ---
 
@@ -308,8 +313,10 @@ It is moved to the nearest speed the panel can draw in whole pixels — see
 [How fast it moves](#how-fast-it-moves).
 
 **I only ever see the middle of the message.**
-`display_duration` is ending the turn before a full pass completes. Raise it,
-or shorten the text.
+The turn is ending before a full pass completes. The plugin stretches its turn
+to one pass (up to 300 seconds), so check whether the Rotation & Durations page
+sets a fixed duration for `text_display`, and whether the pass is longer than
+300 seconds at your speed; raise the speed or shorten the text if so.
 
 **`font_size` has no effect.**
 Either `font_mode` is `auto` (which chooses the size itself) or `font_path`

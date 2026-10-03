@@ -1,7 +1,7 @@
 {
   "id": "hockey-scoreboard",
   "name": "Hockey Scoreboard",
-  "version": "1.42.1",
+  "version": "1.42.2",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, and NCAA Women's hockey with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/hockey-scoreboard",
@@ -54,6 +54,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.42.2",
+      "released": "2026-10-02",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "README only: documents update_intervals.live_odds (default 60 s) and the full-screen scroll_card.switch_show_date / switch_show_time switches, and says Show Date / Show Time apply to the scroll and Vegas cards. requirements.txt drops a stale note about a base_classes.py the plugin no longer ships. No change in behaviour."
+    },
     {
       "version": "1.42.1",
       "released": "2026-10-02",

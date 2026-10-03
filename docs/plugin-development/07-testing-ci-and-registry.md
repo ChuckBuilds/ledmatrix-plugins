@@ -112,7 +112,7 @@ Four workflows run from `.github/workflows/`:
 ### `test-plugins.yml` — "Plugin Safety"
 
 Triggers on PRs touching `plugins/**`, `scripts/**`, `update_registry.py`,
-`plugins.json` or the workflow itself. It checks out the core repo
+`plugins.json`, the root `README.md` or the workflow itself. It checks out the core repo
 (`ChuckBuilds/LEDMatrix@main`, full history with tags) for the harness, the
 manifest schema and the imports several guards need.
 
@@ -145,6 +145,9 @@ Steps, in order:
 6. **Repo-level guard tests** (always) — every `scripts/test_*.py`, discovered
    by glob, with `LEDMATRIX_CORE` and `PYTHONPATH` pointing at the core
    checkout. A new guard runs the day it lands; there is no list to update.
+   This is where `test_readme_lists_every_plugin.py` runs: every
+   `plugins/<id>/` has a row in the root README's Available Plugins tables, and
+   each `### Category (N)` count matches its rows.
 7. **Plugin unit tests** (always, for plugins with any change) —
    `scripts/run_plugin_tests.py <ids> --core <core>` runs the plugins' own
    `test_*.py`.
@@ -169,9 +172,6 @@ the core.
 - `test_pixel_perfect_text.py`: text draws are 1-bit (no anti-aliasing)
 - `update_readme_previews.py --check`: the root README's Preview column matches
   the `hero.png` files on disk
-- `test_readme_lists_every_plugin.py`: every `plugins/<id>/` has a row in the
-  root README's Available Plugins tables, and each `### Category (N)` count
-  matches its rows
 - `check_secrets_template.py`: every `x-secret` schema field has a placeholder
   in the root `config_secrets.template.json`, under the plugin id
 
@@ -315,7 +315,7 @@ Not run by CI; use them by hand.
 - `scripts/render_docs_assets.py` — renders a plugin README's screenshots from
   `docs/assets/<id>/shots.json` through the core renderer; `--check` diffs
   against what is committed. `--all --check` is not in CI: it re-renders all
-  42 shot lists through the core renderer (each plugin's dependencies needed),
+  44 shot lists through the core renderer (each plugin's dependencies needed),
   and a local run was still rendering, with no output yet, after more than
   five minutes. Run it for the plugins you
   touched, e.g. `--plugin <id> --check`.

@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-elections",
   "name": "Election Results",
-  "version": "1.3.1",
+  "version": "1.3.2",
   "author": "rpierce99",
   "description": "Live election results: a scrolling ticker of important races plus a full-screen interrupt when a race is newly called. Auto-activates for your state's primary + general (dormant otherwise), drains stale calls from the ticker, and survives restarts. Filterable to your state. NYT baseline provider + optional California SoS county/city rollup.",
   "entry_point": "manager.py",
@@ -22,6 +22,12 @@
     "cache_manager"
   ],
   "versions": [
+    {
+      "version": "1.3.2",
+      "released": "2026-10-02",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "The called-race snapshot now survives a restart of any length, as the README says. It was read back with the cache's default five-minute max_age, so after a longer outage it was gone: calls made while down never interrupted, and races called after election day were re-dated to election day and dropped from the ticker at once. A calendar_events entry whose date is not YYYY-MM-DD is now skipped with a warning; it used to make every update raise, so no election showed at all. Docs: display_duration is described as the fallback it is (the ticker runs one full pass of every race), interrupt.enabled, the district aliases, calendar_events feed_url and providers.ca_sos.advance_count are documented, an empty providers.ca_sos.offices fetches nothing (not a built-in set), general NYT feeds are per-state, the California SoS source contributes nothing until offices or include_house is set, and the data-model file is election_data_model.py. The render-harness config now freezes the clock on election night: the fixture calls are dated to election day, so since June the 24-hour hide had dropped them all and the election_called check was drawing the ticker instead. Requires LEDMatrix core 3.4.0, as before."
+    },
     {
       "version": "1.3.1",
       "released": "2026-09-16",
@@ -97,7 +103,7 @@
       "ledmatrix_min": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-16",
+  "last_updated": "2026-10-02",
   "stars": 0,
   "downloads": 0,
   "verified": false,

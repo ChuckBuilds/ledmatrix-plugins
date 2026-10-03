@@ -1,7 +1,7 @@
 {
   "id": "hello-world",
   "name": "Hello World",
-  "version": "1.1.3",
+  "version": "1.1.4",
   "author": "ChuckBuilds",
   "description": "A simple test plugin that displays a customizable message",
   "entry_point": "manager.py",
@@ -16,6 +16,12 @@
     "hello-world"
   ],
   "versions": [
+    {
+      "version": "1.1.4",
+      "released": "2026-10-02",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "A core that has no font manager (the attribute set to None) no longer logs a font warning on every frame: the plugin checked hasattr(), which is true for None, then called resolve_font on None. The error screen's text is centred instead of starting mid-panel and running off the right edge. README: the message is shrunk to fit the panel width (down to 4 px) when the core font manager is present, not clipped at full size; the file list no longer says requirements.txt is empty (it lists freetype-py)."
+    },
     {
       "version": "1.1.3",
       "released": "2026-09-28",
@@ -55,7 +61,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-28",
+  "last_updated": "2026-10-02",
   "stars": 0,
   "downloads": 0,
   "verified": true,

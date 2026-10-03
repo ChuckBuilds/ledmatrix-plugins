@@ -82,7 +82,7 @@
       "minimum": 1,
       "maximum": 65535,
       "title": "Broker Port",
-      "description": "Default is 1883. Use 8883 for TLS."
+      "description": "Default is 1883. TLS is not supported, so point this at a plain (non-TLS) listener."
     },
     "mqtt_username": {
       "type": "string",

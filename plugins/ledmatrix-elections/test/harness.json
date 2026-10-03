@@ -1,5 +1,6 @@
 {
-  "_comment": "Deterministic config for the plugin safety harness. test_mode parses the bundled June-2-2026 primary fixtures offline (no network), so both the ticker and called-card screens render identically on any host for golden-image comparison.",
+  "_comment": "Deterministic config for the plugin safety harness. test_mode parses the bundled June-2-2026 primary fixtures offline (no network), so both the ticker and called-card screens render identically on any host for golden-image comparison. freeze_time puts the clock on election night: the fixture calls are dated to election day, and hide_called_after_seconds (24h) would otherwise drop every one, leaving election_called to fall back to the ticker.",
+  "freeze_time": "2026-06-02 20:00:00",
   "config": {
     "enabled": true,
     "test_mode": true,

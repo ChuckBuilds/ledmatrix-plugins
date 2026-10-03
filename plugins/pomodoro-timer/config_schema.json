@@ -126,7 +126,7 @@
       "minimum": 1,
       "maximum": 65535,
       "title": "Broker Port",
-      "description": "Default is 1883. Use 8883 for TLS."
+      "description": "Default is 1883. The connection is plain MQTT: TLS is not supported, so a TLS-only port such as 8883 will not connect."
     },
     "mqtt_username": {
       "type": "string",

@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-music",
   "name": "Music Player - Now Playing",
-  "version": "1.5.3",
+  "version": "1.5.4",
   "description": "Real-time now playing display for Spotify and YouTube Music with album art, scrolling text, and progress bars",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -65,6 +65,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.5.4",
+      "released": "2026-10-02",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Spotify: the decoded album cover is kept between polls. The previous art URL was read from the freshly replaced track dict, where it never exists, so every progress-only poll (every 2 s) dropped the cover and display() decoded it again. The enabled fallback is now true, matching the schema and the core."
+    },
     {
       "version": "1.5.3",
       "released": "2026-10-02",
@@ -205,7 +211,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-28",
+  "last_updated": "2026-10-02",
   "stars": 0,
   "downloads": 0,
   "verified": true,

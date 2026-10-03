@@ -518,6 +518,8 @@ All **Advanced**.
 | `<league>.recent_update_interval` | 60–86400 s | `3600` | How often the finished-games list is rebuilt. This also sets how soon a game that has just ended can appear — lower it if you want results sooner. |
 | `<league>.upcoming_update_interval` | 60–86400 s | `3600` | How often the upcoming-games list is rebuilt. Selection and the non-favorite rotation both run on the display side, so this governs only the fetch. |
 | `<league>.stale_game_timeout` | 60–3600 s | `300` | Drop a live game the API has stopped updating. |
+| `<league>.odds_update_interval` | 60–86400 s | `3600` | How often odds are re-fetched for recent and upcoming games. Only used when `show_odds` is on. |
+| `<league>.live_odds_update_interval` | 15–3600 s | `60` | How often odds are re-fetched for a game in progress. Only used when `show_odds` is on. |
 
 ### Display options
 

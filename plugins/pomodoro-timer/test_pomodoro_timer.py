@@ -256,6 +256,24 @@ def test_json_command_with_custom_duration_and_label():
     assert p.work_minutes == 25
 
 
+def test_an_infinite_duration_is_ignored_not_fatal():
+    # 1e999 is valid JSON for infinity; it used to set an infinite deadline
+    # that made every snapshot (and so every frame) raise OverflowError.
+    for raw in (b'{"command": "start", "duration_minutes": 1e999}',
+                b'{"command": "start", "duration_seconds": "inf"}'):
+        p = make_plugin()
+        p._apply_command(*p._parse_command(raw))
+        snap = p._snapshot()
+        assert snap["phase"] == "work"
+        assert snap["remaining"] == "25:00"
+        assert p.display() is True
+
+
+def test_sw_version_tracks_the_manifest():
+    manifest = json.loads((PLUGIN_DIR / "manifest.json").read_text(encoding="utf-8"))
+    assert MODULE._PLUGIN_VERSION == manifest["version"]
+
+
 def test_settings_only_payload_updates_durations():
     p = make_plugin()
     command, payload = p._parse_command(b'{"work_minutes": 45, "short_break_minutes": 10}')

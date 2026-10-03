@@ -427,7 +427,19 @@ class TidePlugin(BasePlugin):
             self._cache_delete(f"{self.plugin_id}:hilo:{self.station_id}:{d}")
             self._cache_delete(f"{self.plugin_id}:hourly:{self.station_id}:{d}")
 
-    def display(self, force_clear=False):
+    def display(self, display_mode=None, force_clear=False):
+        # The core rotates through the manifest's four modes and names the one
+        # it is showing. display() used to ignore the name and step its own
+        # rotation, so a screen switched off still took a turn (another screen
+        # was drawn in its slot). A mode that is off now reports no content,
+        # and the core moves straight on. Without a name (Vegas capture, older
+        # cores) the plugin keeps rotating on its own.
+        if display_mode in self.MODES:
+            if display_mode not in self.modes:
+                return False
+            mode = display_mode
+        else:
+            mode = self.modes[self.mode_idx % len(self.modes)]
         dw = self.display_manager.matrix.width
         dh = self.display_manager.matrix.height
         canvas = Image.new('RGB', (dw, dh), C_BG)
@@ -442,7 +454,7 @@ class TidePlugin(BasePlugin):
         elif not self.hilo:
             self._loading(draw, dw, dh, L)
         else:
-            m = self.modes[self.mode_idx % len(self.modes)]
+            m = mode
             if   m == 'current':  self._mode_current(canvas, draw, dw, dh, L)
             elif m == 'schedule': self._mode_schedule(draw, dw, dh, L)
             elif m == 'chart':    self._mode_chart(canvas, draw, dw, dh, L)
@@ -720,11 +732,14 @@ class TidePlugin(BasePlugin):
 
     def _no_station(self, draw, dw, dh, L):
         draw.rectangle([0, 0, dw-1, dh-1], outline=C_BAR_OUT)
-        header_h, small_h, spacing = 8, 6, 2
-        base_y = dh // 2 - 8
-        line_y = [base_y + i * (small_h + spacing) + header_h + spacing
+        # Glyph heights as drawn: the header face is 7px, the small 4x6 face
+        # 7px with descenders. Sized as 6, the block ran onto the border on a
+        # 32-row panel and cut off the bottom of "in Settings".
+        header_h, small_h, spacing = 7, 7, 2
+        block_h = header_h + spacing + 1 + small_h + spacing + small_h
+        base_y = max(1, (dh - block_h) // 2)
+        line_y = [base_y + header_h + spacing + 1 + i * (small_h + spacing)
                   for i in range(2)]
-        line_y = [min(y, dh - small_h - 1) for y in line_y]
         self._txtc(dw//2, base_y, 'TIDE', C_WAVE1, small=False)
         self._txtc(dw//2, line_y[0], 'Set Station ID', C_LABEL)
         self._txtc(dw//2, line_y[1], 'in Settings', C_LABEL)

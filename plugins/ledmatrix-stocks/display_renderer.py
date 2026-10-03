@@ -368,13 +368,9 @@ class StockDisplayRenderer:
         
         is_crypto = data.get('is_crypto', False)
         
-        # Draw logo
+        # The logo is drawn once the text is measured (below), so the text
+        # can be placed beside it rather than on top of it.
         logo = self._get_stock_logo(symbol, is_crypto)
-        if logo:
-            # Ensure positions are integers
-            logo_x = 5
-            logo_y = int((int(self.display_height) - logo.height) // 2)
-            image.paste(logo, (int(logo_x), int(logo_y)), logo)
         
         # Use custom fonts loaded from config
         symbol_font = self.symbol_font
@@ -427,8 +423,26 @@ class StockDisplayRenderer:
         else:
             change_bbox = (0, 0, 0, 0)
         
-        # Center everything - ensure integer
-        center_x = int(self.display_width) // 2
+        # Center the text in the space right of the logo. Centering it on the
+        # whole panel drew it over the logo, which covers most of a 64-wide
+        # panel. The logo shrinks to the room the widest line leaves, and is
+        # left out (text centered on the panel) when that is under 8px.
+        logo_x = 5
+        logo_gap = 4
+        panel_width = int(self.display_width)
+        text_width = max(int(symbol_bbox[2] - symbol_bbox[0]),
+                         int(price_bbox[2] - price_bbox[0]),
+                         int(change_bbox[2] - change_bbox[0]))
+        center_x = panel_width // 2
+        logo_room = panel_width - logo_x - logo_gap - text_width
+        if logo and logo_room >= 8:
+            if logo.width > logo_room:
+                logo = logo.copy()
+                logo.thumbnail((logo_room, logo_room))
+            logo_y = int((int(self.display_height) - logo.height) // 2)
+            image.paste(logo, (int(logo_x), int(logo_y)), logo)
+            text_left = logo_x + logo.width + logo_gap
+            center_x = text_left + (panel_width - text_left) // 2
         
         # Draw symbol
         symbol_width = int(symbol_bbox[2] - symbol_bbox[0])

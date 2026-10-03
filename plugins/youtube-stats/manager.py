@@ -228,7 +228,9 @@ class YouTubeStatsPlugin(BasePlugin):
             return None
         
         # Try cache first
-        cache_key = f"{self.plugin_id}_channel_stats"
+        # Keyed by channel: with one shared key, switching channel_id served
+        # the previous channel's stats until the old entry aged out.
+        cache_key = f"{self.plugin_id}_channel_stats_{self.channel_id}"
         cached = self.cache_manager.get(cache_key, max_age=self.update_interval_config)
         if cached:
             self.logger.debug("Using cached channel stats")

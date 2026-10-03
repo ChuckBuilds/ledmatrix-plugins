@@ -358,6 +358,8 @@ also driving a panel, and raising the polling rate rarely helps.
 | `recent_update_interval` | `3600` | Fetch interval for the recent screen |
 | `upcoming_update_interval` | `3600` | Fetch interval for the upcoming screen |
 | `stale_game_timeout` | `300` | How long a live game may go without an update before it is dropped from the rotation. Guards against a game the API stops reporting sitting on the board forever |
+| `odds_update_interval` | `3600` | How long fetched betting odds for a recent or upcoming game are reused before asking again (60–86400 s). Only matters with `show_odds` on |
+| `live_odds_update_interval` | `60` | The same for a live game (30–3600 s) |
 | `no_data_interval_seconds` | `300` | How long to wait between live checks when nothing is on. Backs off further the longer nothing is found |
 | `live_idle_max_interval_seconds` | `900` | Ceiling for that back-off. Raise it out of season; lower it to notice the first game of the night sooner |
 | `schedule_lookback_days` | `14` | How far back the recent screen can see |
@@ -383,6 +385,7 @@ also driving a panel, and raising the polling rate rarely helps.
 | `show_records` | `false` | **Advanced.** Draw each team's season record in the bottom corners |
 | `show_ranking` | `false` | **Advanced.** Draw a rank badge. AFL publishes no poll, so this shows nothing. **Hidden from the config form since 1.30.1 (still declared) — the empty rank badge also replaced the record.** |
 | `show_odds` | `true` | Draw the betting line. **ESPN publishes no odds for AFL** — see [Known Limitations](#known-limitations) |
+| `game_limits.*`, `display_options.*` | as above | **Advanced.** Nested copies of the game-limit keys (`recent_games_to_show` … `other_games_divisions`) and of `show_records` / `show_ranking` / `show_odds`. Both copies render in the web UI and both are read: a nested value you changed from its default wins, otherwise the root key decides. Set one place or the other, not both |
 | `customization.favorite_result_colors.enabled` | `false` | Colour a finished game's score by whether your favourite won |
 | `customization.favorite_result_colors.win_color` | `[0, 255, 0]` | **Advanced.** Colour for a win |
 | `customization.favorite_result_colors.loss_color` | `[255, 0, 0]` | **Advanced.** Colour for a loss |
@@ -414,8 +417,10 @@ scroll mode.
 | `scroll_card.switch_date_format` | `numeric` | `numeric` (9/4), `abbrev` (Sep 4), `day_first` (4 Sep), `numeric_day_first` (4/9), `weekday` (Fri Sep 4), `inherit` |
 | `scroll_card.date_format` | `abbrev` | Same set, minus `inherit` |
 | `scroll_card.time_format` | `12h` | `12h` (7:40PM) or `24h` (19:40) |
-| `scroll_card.show_date` | `true` | Draw the date at all |
-| `scroll_card.show_time` | `true` | Draw the start time at all |
+| `scroll_card.show_date` | `true` | Draw the date on the scroll and Vegas cards |
+| `scroll_card.show_time` | `true` | Draw the start time on the scroll and Vegas cards |
+| `scroll_card.switch_show_date` | `true` | Draw the date on the full-screen upcoming scoreboard |
+| `scroll_card.switch_show_time` | `true` | Draw the start time on the full-screen upcoming scoreboard |
 | `scroll_card.switch_recent_show_date` | `true` | Draw the game's date along the bottom of the full-screen recent scoreboard, written in `switch_date_format` |
 | `scroll_card.swap_date_time` | `false` | Put the time above the date instead of below |
 | `scroll_card.center_gap` | *(auto)* | Fixed pixel gap in the middle of a scroll card |
@@ -437,7 +442,7 @@ Scroll-mode-only settings:
 
 | Option | Default | What it does |
 |--------|---------|--------------|
-| `scroll_settings.scroll_speed` | `1.0` | **Advanced.** Pixels per step |
+| `scroll_settings.scroll_speed` | `50` | **Advanced.** Scroll speed in pixels per second (0.01–200) |
 | `scroll_settings.scroll_delay` | `0.01` | **Advanced.** Ignored; kept so saved configs still load. Scrolling is paced to the panel refresh; `scroll_speed` sets the speed. **Hidden from the config form since 1.30.0 (still declared).** |
 | `scroll_settings.gap_between_games` | `24` | **Advanced.** Blank pixels between cards |
 | `scroll_settings.game_card_width` | `128` | **Advanced.** Width of one card |
@@ -484,6 +489,7 @@ Every text element on the card can be restyled independently. All of these are
 | `customization.status_text` | `4x6-font.ttf` | `6` | `[255, 255, 255]` |
 | `customization.detail_text` | `4x6-font.ttf` | `6` | `[255, 255, 255]` |
 | `customization.rank_text` | `PressStart2P-Regular.ttf` | `10` | `[255, 255, 255]` |
+| `customization.odds_text` | `4x6-font.ttf` | `6` | `[0, 255, 0]` |
 
 Each group takes `font`, `font_size` and `text_color` (an RGB array):
 

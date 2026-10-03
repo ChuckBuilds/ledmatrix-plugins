@@ -1,7 +1,7 @@
 {
   "id": "youtube-stats",
   "name": "YouTube Stats",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "author": "ChuckBuilds",
   "description": "Display YouTube channel statistics including subscriber count, total views, and channel name on your LED matrix",
   "category": "social",
@@ -33,6 +33,12 @@
     }
   ],
   "versions": [
+    {
+      "released": "2026-10-02",
+      "version": "1.3.3",
+      "changelog": "The cached channel stats are keyed by channel ID. With one shared key, changing channel_id kept showing the previous channel's numbers until the cached entry expired (up to update_interval).",
+      "ledmatrix_min_version": "3.4.0"
+    },
     {
       "released": "2026-09-28",
       "version": "1.3.2",
@@ -106,7 +112,7 @@
       "ledmatrix_min": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-28",
+  "last_updated": "2026-10-02",
   "compatible_versions": [
     ">=3.4.0"
   ]

@@ -746,7 +746,8 @@ and the full-screen scoreboard.
 | `date_format` | `abbrev` | Scroll and Vegas: `abbrev` (Sep 19), `numeric` (9/19), `day_first` (19 Sep), `numeric_day_first` (19/9), `weekday` (Fri Sep 19) |
 | `switch_date_format` | `numeric` | The same set for the full-screen scoreboard, plus `inherit` |
 | `time_format` | `12h` | `12h` (7:40PM) or `24h` (19:40) |
-| `show_date` / `show_time` | `true` | Drop either line **on an upcoming card** |
+| `show_date` / `show_time` | `true` | Drop either line **on an upcoming card** (scroll and Vegas only) |
+| `switch_show_date` / `switch_show_time` | `true` | The same for the full-screen upcoming scoreboard. Separate switches because the originals predate that display reading this block, and sharing them would have changed what existing boards draw |
 | `swap_date_time` | `false` | Swap the two lines. Each display starts from its own order, so this flips rather than forces: cards put the time on top, the full-screen stack puts the date on top |
 
 The two `*_date_format` keys have different defaults on purpose: the cards have
@@ -882,8 +883,10 @@ full-screen scoreboard and on the scroll and Vegas cards alike.
 | `status_text` | Status lines such as "Next Game" |
 | `detail_text` | Small detail lines |
 | `rank_text` | Team rankings (unused here — no baseball league publishes a poll) |
+| `odds_text` | The spread and over/under (4x6 at 6 by default, like `detail_text`) |
 
-Colours are `[r, g, b]` or `"#RRGGBB"`, and every default is white:
+Colours are `[r, g, b]` or `"#RRGGBB"`, and every default is white except
+`odds_text`, which defaults to the green the odds have always used (`[0, 255, 0]`):
 
 ```json
 {
@@ -894,15 +897,18 @@ Colours are `[r, g, b]` or `"#RRGGBB"`, and every default is white:
 ```
 
 `customization.layout` nudges individual elements by `x_offset` / `y_offset`
-for panels where something sits slightly wrong. The record group takes two extra
+for panels where something sits slightly wrong. Its groups are `home_logo`,
+`away_logo`, `score`, `date`, `time`, `status`, `record` and `odds`, each
+defaulting to `0`/`0` (`ranking` is hidden and ignored: the rank badge sits in
+the record slot). The record group takes two extra
 keys, because the two records sit at opposite edges:
 
 | Option | Default | What it does |
 |--------|---------|--------------|
-| `customization.layout.record.x_offset` | `0` | Shifts both records. |
+| `customization.layout.record.x_offset` | `0` | Ignored and hidden in the settings form; nothing reads it. Use the two keys below. |
 | `customization.layout.record.y_offset` | `0` | Vertical nudge for both. |
-| `customization.layout.record.away_x_offset` | `0` | Extra horizontal shift for the away record alone. |
-| `customization.layout.record.home_x_offset` | `0` | Extra horizontal shift for the home record alone. |
+| `customization.layout.record.away_x_offset` | `0` | Horizontal shift for the away record, drawn from the left edge. |
+| `customization.layout.record.home_x_offset` | `0` | Horizontal shift for the home record, drawn from the right edge. |
 
 The centre-gap settings size the strip kept clear down the middle of a scroll or
 Vegas card, so the score is not drawn over the team logos. They do not affect the

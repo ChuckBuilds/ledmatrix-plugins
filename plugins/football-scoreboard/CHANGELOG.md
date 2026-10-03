@@ -1,5 +1,12 @@
 # Changelog
 
+## [3.18.5] - 2026-10-02
+
+### Documentation
+- README: the per-league `odds_update_interval` (`3600` s) and
+  `live_odds_update_interval` (`60` s) settings are documented in the
+  Update intervals table. No change in behaviour.
+
 ## [3.18.4] - 2026-10-02
 
 ### Changed

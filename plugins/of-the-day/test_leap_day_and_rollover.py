@@ -62,7 +62,30 @@ p.update()
 check("the first update after midnight loads the new day",
       p.current_day == date(2026, 9, 28) and p.current_items, p.current_day)
 
+# 3. A new day can leave fewer categories with an entry (a sparse file has
+#    none for today). The category index pointed past the shorter list, so
+#    display() raised IndexError and showed "Error" until the next rotation.
+p = object.__new__(OfTheDayPlugin)
+p.logger = logging.getLogger("test-of-the-day")
+p.categories = {"a": {"enabled": True}, "b": {"enabled": True}}
+p.category_order = ["a", "b"]
+p.current_items = {"a": {"title": "only"}}   # "b" has no entry today
+p.current_category_index = 1                 # was showing "b" yesterday
+p.rotation_state = 0
+now = time.time()
+p.last_category_rotation_time = p.last_rotation_time = now
+p.display_rotate_interval = p.subtitle_rotate_interval = 3600
+p.display_needs_update = True
+p.last_displayed_category = p.last_displayed_rotation_state = None
+drawn = []
+p._display_title = lambda cfg, item: drawn.append(("title", item))
+p._display_content = lambda cfg, item: drawn.append(("content", item))
+p._display_error = lambda: drawn.append(("error", None))
+p.display()
+check("a shrunken category list wraps the index instead of showing Error",
+      drawn == [("title", {"title": "only"})], drawn)
+
 print()
-failed = [c for c, ok in results if not ok]
+failed =[c for c, ok in results if not ok]
 print(f"{len(results) - len(failed)}/{len(results)} passed")
 sys.exit(1 if failed else 0)

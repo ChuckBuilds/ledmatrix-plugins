@@ -1,7 +1,7 @@
 {
   "id": "march-madness",
   "name": "March Madness",
-  "version": "2.1.3",
+  "version": "2.1.4",
   "description": "NCAA March Madness tournament bracket tracker with round branding, seeded matchups, live scores, and upset highlighting",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -20,6 +20,12 @@
     ">=3.4.0"
   ],
   "versions": [
+    {
+      "version": "2.1.4",
+      "released": "2026-10-02",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "README only: removed a Bracket Progress feature the plugin does not have; min_duration is the whole slot when dynamic_duration is off; section headings name display_options and data_settings."
+    },
     {
       "version": "2.1.3",
       "released": "2026-09-28",
@@ -117,7 +123,7 @@
   ],
   "stars": 0,
   "downloads": 0,
-  "last_updated": "2026-09-28",
+  "last_updated": "2026-10-02",
   "verified": true,
   "screenshot": "",
   "display_modes": [

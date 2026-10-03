@@ -75,7 +75,7 @@ Customization** in the web UI.
 | `customization.title_text.font_size` | `7` | Title height in pixels, 4–16 (advanced) |
 | `customization.title_text.text_color` | `[255, 255, 255]` | Title color |
 | `customization.subtitle_text.font` | `4x6-font.ttf` | Font for the subtitle and the time readout (advanced) |
-| `customization.subtitle_text.font_size` | `6` | Subtitle height in pixels, 4–16 (advanced) |
+| `customization.subtitle_text.font_size` | `7` | Subtitle height in pixels, 4–16 (advanced) |
 | `customization.subtitle_text.text_color` | `[170, 170, 170]` | Subtitle color |
 | `customization.progress_bar.bar_color` | `[124, 77, 255]` | Filled portion of the bar. Ignored while paused, when the bar is amber |
 | `customization.progress_bar.background_color` | `[40, 40, 40]` | Unfilled portion of the bar |

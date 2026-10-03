@@ -36,7 +36,18 @@ except ImportError:
 
 from src.plugin_system.base_plugin import BasePlugin
 
-_PLUGIN_VERSION = "1.2.0"
+def _manifest_version() -> str:
+    """manifest.json's version, so HA's sw_version tracks the release (a
+    hard-coded constant here stayed at 1.2.0 through every later bump)."""
+    try:
+        with open(Path(__file__).resolve().parent / 'manifest.json',
+                  encoding='utf-8') as f:
+            return str(json.load(f).get('version', 'unknown'))
+    except (OSError, ValueError):
+        return 'unknown'
+
+
+_PLUGIN_VERSION = _manifest_version()
 
 
 def _rgb(value, default) -> Tuple[int, int, int]:
@@ -555,6 +566,13 @@ class OnAirPlugin(BasePlugin):
             client.subscribe(self.command_topic, qos=1)
             self._publish_availability(True)
             self._publish_discovery()
+            # Re-announce the current state. Both topics are retained, so
+            # after a restart (the sign always comes up dark) Home Assistant
+            # kept showing the last ON until the next toggle.
+            with self.state_lock:
+                on_air, label = self.on_air, self.label
+            self._publish_state(on_air)
+            self._publish_label(label if on_air else '')
             self.logger.info("MQTT connected — subscribed to %s", self.command_topic)
         else:
             self.mqtt_connecting = False

@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "3.18.4",
+  "version": "3.18.5",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "3.18.5",
+      "released": "2026-10-02",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "README only: the per-league odds_update_interval (default 3600 s) and live_odds_update_interval (default 60 s) settings are now documented in the Update intervals table. No change in behaviour."
+    },
     {
       "version": "3.18.4",
       "released": "2026-10-02",

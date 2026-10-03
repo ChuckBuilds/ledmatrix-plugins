@@ -189,7 +189,9 @@ class CalendarPlugin(BasePlugin):
             title_settings = customization.get('title_text', {})
 
             # Get font names and sizes from config (with defaults)
-            datetime_font_name = datetime_settings.get('font', '4x6-font.ttf')
+            # Mirrors config_schema.json, whose default is PressStart2P for
+            # both elements; a normal load merges that default in anyway.
+            datetime_font_name = datetime_settings.get('font', 'PressStart2P-Regular.ttf')
             datetime_font_size = datetime_settings.get('font_size', 8)
             title_font_name = title_settings.get('font', 'PressStart2P-Regular.ttf')
             title_font_size = title_settings.get('font_size', 8)
@@ -452,8 +454,10 @@ class CalendarPlugin(BasePlugin):
                     )
                     continue
             
-            # Sort all events by start time
-            all_events.sort(key=lambda x: x['start'].get('dateTime', x['start'].get('date', '')))
+            # Sort all events by start time. Compare instants, not strings:
+            # each calendar's dateTime carries its own UTC offset, so text order
+            # put e.g. 10:00-07:00 ahead of 12:00-04:00 (an hour earlier).
+            all_events.sort(key=self._event_start_ts)
             
             # Limit to max_events
             self.events = all_events[:self.max_events]
@@ -730,7 +734,26 @@ class CalendarPlugin(BasePlugin):
             self.logger.warning(f"Error formatting event time: {e}")
         
         return 'All Day'
-    
+
+    def _event_start_ts(self, event: Dict) -> float:
+        """Start of an event as a UNIX timestamp, for merging calendars.
+
+        An all-day event starts at local midnight of its date, so it still
+        sorts ahead of that day's timed events. Unparseable starts sort last.
+        """
+        start = event.get('start', {})
+        try:
+            if 'dateTime' in start:
+                return datetime.fromisoformat(start['dateTime'].replace('Z', '+00:00')).timestamp()
+            if 'date' in start:
+                day = datetime.fromisoformat(start['date'])
+                if self.timezone is not None and hasattr(self.timezone, 'localize'):
+                    return self.timezone.localize(day).timestamp()
+                return day.replace(tzinfo=timezone.utc).timestamp()
+        except (TypeError, ValueError, AttributeError) as e:
+            self.logger.warning(f"Error reading event start for sorting: {e}")
+        return float('inf')
+
     def _display_no_events(self):
         """Display message when no events are available."""
         width, height = self._fresh_frame()

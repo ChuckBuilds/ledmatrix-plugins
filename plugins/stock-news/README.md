@@ -95,7 +95,7 @@ The full schema is [`config_schema.json`](config_schema.json).
 | Key | Default | Notes |
 |---|---|---|
 | `feeds.stock_symbols` | `["AAPL", "GOOGL", "MSFT"]` | Stock symbols — headlines fetched from Yahoo Finance. Fetches are spread across update_interval_seconds. |
-| `feeds.custom_feeds` | *(empty)* | Extra RSS feeds to include alongside stock symbols. |
+| `feeds.custom_feeds` | *(empty)* | Extra RSS feeds to include alongside stock symbols. Each entry is `{"name": ..., "url": ...}`; `name` is drawn as the story's label where a symbol would be. |
 | `feeds.text_color` | `"#00ff00"` | Color for headline text. |
 | `feeds.symbol_color` | `"#ffff00"` | Color for stock symbol labels (e.g. 'AAPL:'). |
 | `feeds.publisher_color` | `"#6e6e6e"` | Color for the publisher segment (e.g. '• Reuters'). Advanced. |

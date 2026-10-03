@@ -14,25 +14,32 @@ Validated on every PR against the core repo's `schema/manifest_schema.json`.
 
 ### Core required fields
 
+The core schema's `required` list — a manifest missing any of these fails CI:
+
 | Field | Meaning |
 |-------|---------|
 | `id` | Plugin identifier — **must match the directory name** |
 | `name` | Human-readable display name |
 | `version` | Semver string, e.g. `"1.2.3"` |
+| `author` | Plugin author |
+| `entry_point` | Python file with the class (every plugin here uses `manager.py`; the loader falls back to it when absent, but the schema requires the field) |
 | `class_name` | The Python class name in the entry point |
+| `compatible_versions` | Array of core-version constraint strings, e.g. `[">=3.8.0"]` — keep it in line with the floor below |
+
+Not in the schema's `required` list, but needed in practice:
+
+| Field | Meaning |
+|-------|---------|
 | `display_modes` | Array of the mode names this plugin supports |
 
 ### Fields present on essentially every plugin
 
-`author`, `description`, `entry_point` (always `manager.py`), `tags`, `versions`
-(the changelog array), `last_updated`, and `compatible_versions` (an array of
-constraint strings — almost all use `[">=2.0.0"]`).
+`description`, `tags`, `versions` (the changelog array) and `last_updated`.
 
 ### Common optional fields
 
 | Field | Meaning |
 |-------|---------|
-| `entry_point` | Python file with the class (default `manager.py`) |
 | `category` | Store category |
 | `config_schema` | Path to the schema file (the string `"config_schema.json"`) |
 | `icon`, `homepage`, `license` | Store display / links |
@@ -68,8 +75,9 @@ usually a minimum-core-version key and a description:
 >
 > Note the **name is inverted** between the two locations — `min_ledmatrix_version`
 > at the top level, `ledmatrix_min_version` inside `versions[]` — which is easy to
-> read past. Four plugins declare the top-level form today (`ledmatrix-flights`,
-> `ledmatrix-leaderboard`, `ledmatrix-music`, `ledmatrix-stocks`), and for those
+> read past. Five plugins declare the top-level form today (`ledmatrix-flights`,
+> `ledmatrix-leaderboard`, `ledmatrix-music`, `ledmatrix-stocks`,
+> `nfl-stat-leaders`), and for those
 > **editing `versions[0]` changes nothing the core reads.** Check for a top-level
 > key before raising a floor, and raise the one that actually wins. CI fails a
 > changed plugin whose floors in these places disagree, so raise them together.
@@ -120,7 +128,9 @@ never receive the update — and CI fails the PR.
 ### Every plugin change:
 
 1. Make your code changes in `plugins/<plugin-id>/`.
-2. **Bump `version`** in `plugins/<plugin-id>/manifest.json` (semver).
+2. **Bump `version`** in `plugins/<plugin-id>/manifest.json` (semver) and add
+   a matching new entry at the **top** of `versions[]` — CI requires
+   `version == versions[0].version` and a new top entry.
 3. Commit — the pre-commit hook runs `update_registry.py` and stages the updated
    `plugins.json` into the same commit.
 

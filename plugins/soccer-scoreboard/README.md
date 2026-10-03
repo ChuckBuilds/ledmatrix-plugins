@@ -457,6 +457,8 @@ See [The selection settings](#the-selection-settings).
 | `<league>.recent_update_interval` | number | `3600` | How often the finished-matches list is rebuilt. This also sets how soon a match that has just ended can appear. |
 | `<league>.upcoming_update_interval` | number | `3600` | How often the upcoming-matches list is rebuilt. Selection and the non-favorite rotation both run on the display side, so this governs only the fetch. |
 | `<league>.stale_game_timeout` | number | `300` | Drop a live match the API has stopped updating. |
+| `<league>.odds_update_interval` | 60–86400 s | `3600` | How often betting odds for recent and upcoming matches are refreshed. Odds are cached per match, so this bounds requests rather than adding them. Only matters with `show_odds` on. |
+| `<league>.live_odds_update_interval` | 15–3600 s | `60` | How often betting odds for matches in progress are refreshed. |
 
 ### Celebrations
 
@@ -546,7 +548,8 @@ Plugin-wide, not per league.
 | Date Format | `scroll_card.date_format` | `abbrev` | Scroll and Vegas cards: `Sep 19`, `9/19`, `19 Sep`, `19/9`, or `Fri Sep 19`. |
 | Full-Screen Date Format | `scroll_card.switch_date_format` | `numeric` | **Advanced.** The same for the full-screen scoreboard, plus `inherit`. It has its own default because the two displays disagree about what is normal. |
 | Time Format | `scroll_card.time_format` | `12h` | 12- or 24-hour clock. |
-| Show Date / Show Time | `scroll_card.show_date`, `scroll_card.show_time` | `true` | Drop either line. |
+| Show Date / Show Time | `scroll_card.show_date`, `scroll_card.show_time` | `true` | Drop either line from the scroll and Vegas cards. |
+| Full-Screen Show Date / Show Time | `scroll_card.switch_show_date`, `scroll_card.switch_show_time` | `true` | The same for the full-screen upcoming scoreboard. |
 | Full-Screen Recent Date | `scroll_card.switch_recent_show_date` | `true` | Draw the date a finished game was played along the bottom of the full-screen recent scoreboard, written in the Full-Screen Date Format. |
 | Swap Date and Time | `scroll_card.swap_date_time` | `false` | Flip the two lines. Each display starts from its own order, so this flips rather than forces. |
 

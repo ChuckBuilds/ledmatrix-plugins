@@ -1,7 +1,7 @@
 {
   "id": "ufc-scoreboard",
   "name": "UFC Scoreboard",
-  "version": "1.19.2",
+  "version": "1.19.3",
   "author": "LegoGuy1000",
   "contributors": [
     {
@@ -32,6 +32,12 @@
   "default_duration": 15,
   "config_schema": "config_schema.json",
   "versions": [
+    {
+      "version": "1.19.3",
+      "released": "2026-10-02",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "Hides the root update_interval setting: the manifest's update_interval (60 s) wins in the core scheduler, so it never did anything; each list refreshes at its own ufc.*_update_interval. README said it set the fetch cadence, and now documents ufc.odds_update_interval and live_odds_update_interval. No change in behaviour."
+    },
     {
       "version": "1.19.2",
       "released": "2026-10-02",

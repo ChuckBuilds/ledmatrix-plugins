@@ -105,14 +105,17 @@ thirds. With it off, the message alone is drawn on the centre line. The clock
 shows the LEDMatrix timezone from the main settings, falling back to the Pi's
 system time when that setting is missing or invalid.
 
-**The message is not shrunk or wrapped.** It is drawn centred at whatever size
-the font gives, so a message wider than the panel is clipped at both ends:
+**The message is shrunk to fit, never wrapped.** Each line starts at its
+registered font size (10 px for the message, 8 px for the clock) and steps down
+a pixel at a time until it fits the panel width, stopping at 4 px. A message
+still too wide at that size, or any message on an install without the core font
+manager (the bundled 6x9 BDF is used unshrunk there), is clipped at both ends:
 
 ![Hi, Hello World! and a message too long to fit, on a 128x32
 panel](../../docs/assets/hello-world/message-length.png)
 
-The default `Hello, World!` just fits a 128-wide panel. On a 64-wide panel it
-does not — keep the message short, or use the
+The default `Hello, World!` fits a 128-wide panel at full size; on a 64-wide
+panel it is drawn in a much smaller font. Keep the message short, or use the
 [Scrolling Text](../text-display/) plugin, which scrolls and can auto-size.
 
 ### Colours
@@ -165,8 +168,8 @@ differ so the two lines read as separate things at a glance.
 panels](../../docs/assets/hello-world/panel-sizes.png)
 
 Text is centred horizontally and placed by fractions of the panel height, so
-the layout holds at any size. The only real constraint is message width — see
-above.
+the layout holds at any size. The only real constraint is message width: a
+narrow panel shrinks the font (see above).
 
 ---
 
@@ -227,7 +230,8 @@ case-sensitive, no spaces. This is the single most common mistake when copying
 this plugin to start a new one.
 
 **The message is cut off at both ends.**
-It is wider than the panel. The plugin centres but does not resize or wrap; use
+It is wider than the panel even at the smallest font size the plugin steps
+down to, or the core font manager is unavailable. The plugin does not wrap; use
 a shorter message or a wider panel.
 
 **Colours look wrong.**
@@ -246,7 +250,8 @@ hello-world/
 ├── manager.py            # HelloWorldPlugin
 ├── config_schema.json    # Settings schema; source of truth for defaults
 ├── example_config.json   # A config block to copy
-├── requirements.txt      # None beyond the core
+├── requirements.txt      # freetype-py, which the core already installs
+├── test_timezone.py      # Regression test: the clock follows the LEDMatrix timezone
 ├── QUICK_START.md        # Enabling it and verifying it on a Pi
 └── README.md
 ```

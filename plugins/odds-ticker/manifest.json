@@ -1,7 +1,7 @@
 {
   "id": "odds-ticker",
   "name": "Odds Ticker",
-  "version": "1.7.6",
+  "version": "1.7.7",
   "description": "Displays scrolling odds and betting lines for upcoming games across multiple sports leagues including NFL, NBA, MLB, NCAA Football, and more",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -20,6 +20,12 @@
   "branch": "main",
   "plugin_path": "plugins/odds-ticker",
   "versions": [
+    {
+      "version": "1.7.7",
+      "released": "2026-10-02",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "README only: lists all eight supported leagues (NHL, MiLB and NCAA Baseball were missing), describes data fetching as it is (in update(), request_timeout and the two refresh intervals) instead of a background service with retries and a priority it does not use, and names ESPN as the data source."
+    },
     {
       "version": "1.7.6",
       "released": "2026-10-01",
@@ -215,7 +221,7 @@
   ],
   "stars": 0,
   "downloads": 0,
-  "last_updated": "2026-09-28",
+  "last_updated": "2026-10-02",
   "verified": true,
   "screenshot": "",
   "display_modes": [

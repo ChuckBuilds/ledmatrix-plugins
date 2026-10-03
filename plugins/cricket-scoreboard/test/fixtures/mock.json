@@ -1,0 +1,398 @@
+{
+ "cricket:scoreboard:22547": {
+  "events": [
+   {
+    "id": "1552778",
+    "name": "Bangladesh v Sri Lanka",
+    "shortName": "BAN v SL",
+    "date": "2026-10-03T00:00Z",
+    "status": {
+     "period": 2,
+     "session": "",
+     "summary": "Bangladesh require 106 runs",
+     "type": {
+      "description": "Live",
+      "detail": "Live",
+      "shortDetail": "Live",
+      "state": "in"
+     }
+    },
+    "competitions": [
+     {
+      "date": "2026-10-03T00:00Z",
+      "class": {
+       "eventType": "T20"
+      },
+      "venue": {
+       "fullName": "Korogi Sports Park, Nisshin"
+      },
+      "competitors": [
+       {
+        "order": 2,
+        "homeAway": "home",
+        "winner": "false",
+        "score": "60/6 (9/20 ov, target 166)",
+        "team": {
+         "id": "25",
+         "name": "Bangladesh",
+         "displayName": "Bangladesh",
+         "shortDisplayName": "BAN",
+         "abbreviation": "BAN"
+        },
+        "linescores": [
+         {
+          "period": 1,
+          "runs": 0,
+          "wickets": 0,
+          "overs": 20.0,
+          "isBatting": false,
+          "description": "complete"
+         },
+         {
+          "period": 2,
+          "runs": 60,
+          "wickets": 6,
+          "overs": 9.0,
+          "isBatting": true,
+          "description": ""
+         }
+        ]
+       },
+       {
+        "order": 1,
+        "homeAway": "away",
+        "winner": "false",
+        "score": "165/9",
+        "team": {
+         "id": "8",
+         "name": "Sri Lanka",
+         "displayName": "Sri Lanka",
+         "shortDisplayName": "SL",
+         "abbreviation": "SL"
+        },
+        "linescores": [
+         {
+          "period": 1,
+          "runs": 165,
+          "wickets": 9,
+          "overs": 20.0,
+          "isBatting": true,
+          "description": "complete"
+         },
+         {
+          "period": 2,
+          "runs": 0,
+          "wickets": 0,
+          "overs": 9.0,
+          "isBatting": false,
+          "description": ""
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "1552779",
+    "name": "India v Pakistan",
+    "shortName": "IND v PAK",
+    "date": "2026-10-03T04:30Z",
+    "status": {
+     "period": 0,
+     "session": null,
+     "summary": "Starts at 13:30 local time",
+     "type": {
+      "description": "Scheduled",
+      "detail": "Scheduled",
+      "shortDetail": "Scheduled",
+      "state": "pre"
+     }
+    },
+    "competitions": [
+     {
+      "date": "2026-10-03T04:30Z",
+      "class": {
+       "eventType": "T20"
+      },
+      "venue": {
+       "fullName": "Korogi Sports Park, Nisshin"
+      },
+      "competitors": [
+       {
+        "order": 1,
+        "homeAway": "home",
+        "winner": "false",
+        "score": "",
+        "team": {
+         "id": "6",
+         "name": "India",
+         "displayName": "India",
+         "shortDisplayName": "IND",
+         "abbreviation": "IND"
+        },
+        "linescores": []
+       },
+       {
+        "order": 2,
+        "homeAway": "away",
+        "winner": "false",
+        "score": "",
+        "team": {
+         "id": "7",
+         "name": "Pakistan",
+         "displayName": "Pakistan",
+         "shortDisplayName": "PAK",
+         "abbreviation": "PAK"
+        },
+        "linescores": []
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "cricket:scoreboard:24139": {
+  "events": [
+   {
+    "id": "1556694",
+    "name": "Vancouver Anchors v Toronto Sixers",
+    "shortName": "VAA v TSS",
+    "date": "2026-10-02T23:00Z",
+    "status": {
+     "period": 2,
+     "session": null,
+     "summary": "Anchors won by 7 wkts (2b rem)",
+     "type": {
+      "description": "Result",
+      "detail": "Final",
+      "shortDetail": "Final",
+      "state": "post"
+     }
+    },
+    "competitions": [
+     {
+      "date": "2026-10-02T23:00Z",
+      "class": {
+       "eventType": "ODI"
+      },
+      "venue": {
+       "fullName": "BC Place, Vancouver"
+      },
+      "competitors": [
+       {
+        "order": 2,
+        "homeAway": "home",
+        "winner": "true",
+        "score": "112/3 (9.4/10 ov, target 112)",
+        "team": {
+         "id": "1506166",
+         "name": "Vancouver Anchors",
+         "displayName": "Vancouver Anchors",
+         "shortDisplayName": "VAA",
+         "abbreviation": "VAA"
+        },
+        "linescores": [
+         {
+          "period": 1,
+          "runs": 0,
+          "wickets": 0,
+          "overs": 10.0,
+          "isBatting": false,
+          "description": ""
+         },
+         {
+          "period": 2,
+          "runs": 112,
+          "wickets": 3,
+          "overs": 9.4,
+          "isBatting": true,
+          "description": ""
+         }
+        ]
+       },
+       {
+        "order": 1,
+        "homeAway": "away",
+        "winner": "false",
+        "score": "111/7",
+        "team": {
+         "id": "1506169",
+         "name": "Toronto Sixers",
+         "displayName": "Toronto Sixers",
+         "shortDisplayName": "TSS",
+         "abbreviation": "TSS"
+        },
+        "linescores": [
+         {
+          "period": 1,
+          "runs": 111,
+          "wickets": 7,
+          "overs": 10.0,
+          "isBatting": true,
+          "description": ""
+         },
+         {
+          "period": 2,
+          "runs": 0,
+          "wickets": 0,
+          "overs": 9.4,
+          "isBatting": false,
+          "description": ""
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "1556695",
+    "name": "Montreal Royal Tigers v White Rock Warriors",
+    "shortName": "MRT v WRW",
+    "date": "2026-10-03T01:45Z",
+    "status": {
+     "period": 1,
+     "session": "",
+     "summary": "Tigers won toss & fielded",
+     "type": {
+      "description": "Live",
+      "detail": "Live",
+      "shortDetail": "Live",
+      "state": "in"
+     }
+    },
+    "competitions": [
+     {
+      "date": "2026-10-03T01:45Z",
+      "class": {
+       "eventType": "ODI"
+      },
+      "venue": {
+       "fullName": "BC Place, Vancouver"
+      },
+      "competitors": [
+       {
+        "order": 2,
+        "homeAway": "home",
+        "winner": "false",
+        "score": "",
+        "team": {
+         "id": "1506164",
+         "name": "Montreal Royal Tigers",
+         "displayName": "Montreal Royal Tigers",
+         "shortDisplayName": "MRT",
+         "abbreviation": "MRT"
+        },
+        "linescores": [
+         {
+          "period": 1,
+          "runs": 0,
+          "wickets": 0,
+          "overs": 9.1,
+          "isBatting": false,
+          "description": ""
+         }
+        ]
+       },
+       {
+        "order": 1,
+        "homeAway": "away",
+        "winner": "false",
+        "score": "133/3 (9.1/10 ov)",
+        "team": {
+         "id": "1506167",
+         "name": "White Rock Warriors",
+         "displayName": "White Rock Warriors",
+         "shortDisplayName": "WRW",
+         "abbreviation": "WRW"
+        },
+        "linescores": [
+         {
+          "period": 1,
+          "runs": 133,
+          "wickets": 3,
+          "overs": 9.1,
+          "isBatting": true,
+          "description": ""
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "id": "1556696",
+    "name": "Brampton Blitz v Mississauga Masters",
+    "shortName": "BRB v MIM",
+    "date": "2026-10-03T05:45Z",
+    "status": {
+     "period": 0,
+     "session": null,
+     "summary": "Starts at 22:45 local time",
+     "type": {
+      "description": "Scheduled",
+      "detail": "Scheduled",
+      "shortDetail": "Scheduled",
+      "state": "pre"
+     }
+    },
+    "competitions": [
+     {
+      "date": "2026-10-03T05:45Z",
+      "class": {
+       "eventType": "ODI"
+      },
+      "venue": {
+       "fullName": "BC Place, Vancouver"
+      },
+      "competitors": [
+       {
+        "order": 1,
+        "homeAway": "home",
+        "winner": "false",
+        "score": "",
+        "team": {
+         "id": "1506163",
+         "name": "Brampton Blitz",
+         "displayName": "Brampton Blitz",
+         "shortDisplayName": "BRB",
+         "abbreviation": "BRB"
+        },
+        "linescores": []
+       },
+       {
+        "order": 2,
+        "homeAway": "away",
+        "winner": "false",
+        "score": "",
+        "team": {
+         "id": "1506165",
+         "name": "Mississauga Masters",
+         "displayName": "Mississauga Masters",
+         "shortDisplayName": "MIM",
+         "abbreviation": "MIM"
+        },
+        "linescores": []
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "cricket:series_ids:bbl|international|ipl|australia|england|india": [
+  {
+   "series_id": "22547",
+   "name": "Asian Games Men's Cricket Competition",
+   "competition_key": "international"
+  },
+  {
+   "series_id": "24139",
+   "name": "Canada Super60",
+   "competition_key": "international"
+  }
+ ]
+}

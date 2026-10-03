@@ -1,7 +1,7 @@
 {
   "id": "mqtt-notifications",
   "name": "MQTT Notifications",
-  "version": "1.2.7",
+  "version": "1.2.8",
   "author": "ChuckBuilds",
   "description": "Display text or images from HomeAssistant via MQTT. Supports dynamic MQTT topics with wildcard support for flexible notification handling that interrupts the normal display rotation.",
   "category": "integration",
@@ -18,6 +18,12 @@
   "entry_point": "manager.py",
   "class_name": "MQTTNotificationsPlugin",
   "versions": [
+    {
+      "released": "2026-10-02",
+      "version": "1.2.8",
+      "changelog": "A BDF font set in text.font_path now renders: it was loaded as a raw freetype face PIL cannot draw with, so every text message failed. It loads through PIL at the size the file declares, and the freetype-py dependency is dropped. An image that fails to load is tried once per message instead of on every frame of the fast loop, each attempt logging an error. Docs: an animated GIF shows its first frame, and transparency is flattened onto text.background_color.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-09-28",
       "version": "1.2.7",
@@ -97,7 +103,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-28",
+  "last_updated": "2026-10-02",
   "stars": 0,
   "downloads": 0,
   "verified": true,

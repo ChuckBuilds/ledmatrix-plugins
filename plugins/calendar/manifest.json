@@ -1,7 +1,7 @@
 {
   "id": "calendar",
   "name": "Google Calendar",
-  "version": "1.2.10",
+  "version": "1.2.11",
   "author": "ChuckBuilds",
   "description": "Display upcoming events from Google Calendar with date, time, and event details. Shows next 1-3 events with automatic rotation and timezone support.",
   "category": "productivity",
@@ -35,6 +35,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.2.11",
+      "released": "2026-10-02",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Events merged from several calendars are ordered by when they actually start. They were sorted by the start text, and each calendar writes its times with its own UTC offset, so a 10:00-07:00 event sorted ahead of a 12:00-04:00 one that starts an hour earlier -- and with max_events applied after the sort, the earlier event could be dropped. The code default for the date/time font now matches the schema (PressStart2P); a normal load merges the schema default, so rendering is unchanged. README: the setup step no longer cites the removed run_local_server() call, the web sign-in step describes pasting back the 127.0.0.1 address, the registration script is noted as needing a desktop browser, token_file is noted as best left at its default (sign-in always writes token.pickle), and the update-interval and long-title notes match the code (default 3600s; titles wrap to as many lines as fit). Core floor unchanged."
+    },
     {
       "version": "1.2.10",
       "released": "2026-10-02",

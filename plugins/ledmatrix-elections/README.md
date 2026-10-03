@@ -106,9 +106,10 @@ testing or to point at one specific feed:
 | `only_my_state` | `true` | National + your state's races only. |
 | `race_types` | `["president","senate","governor","house","ballot"]` | Office types to show. |
 | `update_interval` | `60` | Poll seconds. Use 30–60 on election night. |
-| `display_duration` | `30` | Ticker seconds per rotation (dynamic duration may extend). |
+| `display_duration` | `30` | Fallback only. While races are loaded the ticker stays for exactly one pass over every race (at least 6 s), however long that is; a duration set for the mode on the web UI's rotation page overrides both. |
 | `hide_called_after_seconds` | `86400` | Drop a called race from the ticker this long after it was called (0 disables). |
 | `live_priority` | `true` | Allow the called-race interrupt. |
+| `interrupt.enabled` | `true` | Interrupt with the full-screen card when a race is newly called. Off: a new call no longer takes over the screen. |
 | `interrupt.duration_seconds` | `12` | How long each called card holds the screen. |
 | `interrupt.my_state_only` | `true` | Only interrupt for races passing the state filter. |
 | `interrupt.max_age_seconds` | `300` | Drop stale queued calls older than this. |
@@ -119,7 +120,7 @@ testing or to point at one specific feed:
 | `override.feed_filename` | `""` | Exact NYT filename for a non-standard slug (specials). |
 | `override.feed_url` | `""` | Full URL of a results JSON; bypasses URL building entirely. |
 | `override.trail_days` | `14` | Days after election day to keep showing results. |
-| `calendar_events` | `[]` | Extra scheduled elections (e.g. your state's primary). Each: `{state,date,type,feed_filename?,trail_days?}`. |
+| `calendar_events` | `[]` | Extra scheduled elections (e.g. your state's primary). Each: `{state,date,type,feed_filename?,trail_days?}`; `feed_url` is also read, by hand-editing `config.json`. `date` must be `YYYY-MM-DD`; an entry that is not is skipped with a warning. |
 | `local_races` | `true` | Use your state's authoritative local results source where one exists (auto-engages by state; currently CA). |
 | `test_mode` | `false` | Render bundled fixtures offline (demo / no election night). |
 
@@ -129,24 +130,26 @@ These are real settings the table above left out.
 
 | Key | Default | Notes |
 |---|---|---|
-| `lower_chamber_district` | `""` | Your state legislature lower-chamber district number — whatever your state calls it (Assembly, House of Delegates). Set it to have that local race appear in the ticker; leave blank to omit it. |
-| `upper_chamber_district` | `""` | Your state senate district number. Same idea. |
+| `lower_chamber_district` | `""` | Your state legislature lower-chamber district number — whatever your state calls it (Assembly, House of Delegates). Set it to have that local race appear in the ticker; leave blank to omit it. `assembly_district` is read as an alias. |
+| `upper_chamber_district` | `""` | Your state senate district number. Same idea. `senate_district` is read as an alias. |
 | `scroll_speed` | `1.0` | Pixels moved per scroll step. The ticker runs at `scroll_speed / scroll_delay` pixels per second (default 33.3), moved by the LEDMatrix core to the nearest speed the panel can draw in whole pixels. |
 | `scroll_delay` | `0.03` | Seconds per scroll step; lower is faster. Around `0.03` reads comfortably, `0.01` is brisk. |
 | `providers.nyt.enabled` | `true` | Use the NYT static feed as the national baseline. |
 | `providers.nyt.base_url` | `https://static01.nyt.com/elections-assets/pages/data` | Where the NYT feeds are fetched from. Change it only to point at a mirror or a local capture. |
 | `providers.nyt.election_date` | `2026-06-02` | Drives the feed URL. Normally set for you by the calendar or `override` — see the note below. |
-| `providers.nyt.election_type` | `primary` | `primary` feeds are per-state; `general` feeds are national. Also normally set for you. |
+| `providers.nyt.election_type` | `primary` | Picks the feed name: `results-{state}-primary.json` for `primary`, `results-{state}.json` for `general` (both per-state). Also normally set for you. |
 | `providers.ca_sos.base_url` | `https://api.sos.ca.gov/returns` | California Secretary of State returns API. |
-| `providers.ca_sos.offices` | `[]` | Statewide office slugs to fetch from the SoS (e.g. `governor`, `attorney-general`). Empty uses the built-in set. |
+| `providers.ca_sos.offices` | `[]` | Statewide office slugs to fetch from the SoS (e.g. `governor`, `attorney-general`). Empty fetches none. |
 | `providers.ca_sos.include_house` | `false` | Also pull CA U.S. House results from the SoS. Off by default — the national feed already covers them. |
 | `providers.ca_sos.called_threshold` | `99.0` | Reporting percentage at which an SoS office counts as called, since the SoS feed carries no winner flag. |
 
-> **Two settings the code reads are not in the schema**, so they never appear in
-> the web UI and can only be set by hand-editing `config.json`:
-> `test_mode` (default `false`, used above to render bundled fixtures offline)
-> and `providers.ca_sos.override_nyt_votes` (default `true`, described under
-> California local results). Both work; they are simply not offered by the form.
+> **Three settings the code reads are not in the schema**, so they never appear
+> in the web UI and can only be set by hand-editing `config.json`:
+> `test_mode` (default `false`, used above to render bundled fixtures offline),
+> `providers.ca_sos.override_nyt_votes` (default `true`, described under
+> California local results) and `providers.ca_sos.advance_count` (default `2`,
+> how many leading candidates count as advancing once an SoS race is called).
+> All work; they are simply not offered by the form.
 
 > The active election's date and type are chosen by the calendar/override and
 > pushed to the NYT provider automatically; you don't set `providers.nyt.election_date`
@@ -154,10 +157,13 @@ These are real settings the table above left out.
 
 ### California local results
 
-For California users this **engages automatically** (`local_races` is on by
-default) — there's no provider to switch on. It supplements CA races with the
-authoritative Secretary of State tally and an optional **county/city rollup**.
-The knobs under `providers.ca_sos` only fine-tune that rollup:
+For California users the Secretary of State source **engages automatically**
+(`local_races` is on by default) — there's no provider to switch on. Out of the
+box it fetches nothing, though: the NYT feed already carries CA's statewide,
+U.S. House and legislature races with a better reporting estimate. It only
+contributes once you list `providers.ca_sos.offices` or turn on
+`providers.ca_sos.include_house`; it then supplements those CA races with the
+authoritative SoS tally, optionally as a **county/city rollup**:
 
 - `county` — a county slug (e.g. `los-angeles`) for county-level totals.
 - `city` — a major CA city, mapped to its county (ignored if `county` is set).
@@ -191,7 +197,7 @@ To add a state/source:
 1. Create `providers/<name>.py` with a class extending `ElectionProvider`.
    Implement `fetch(state)` → `list[Race]` and `provides_states()` (return the
    set of states it supplements, or `None` for a national baseline).
-2. Normalize into the common `Race`/`Candidate` model (`data_model.py`). Use
+2. Normalize into the common `Race`/`Candidate` model (`election_data_model.py`). Use
    `make_race_id(office, state, district)` so your races merge with the baseline.
 3. Register it in `create_providers()` (`providers/__init__.py`), gated on its
    own `providers.<name>.enabled` config flag.

@@ -134,7 +134,7 @@ under `incoming-packages`. The full schema is
 | `include_delivered` | `false` | Also give already-delivered packages their own card |
 | `show_usps_mail_image` | `true` | Include the USPS Informed Delivery mail card when there is mail |
 | `show_delivery_images` | `true` | Show a carrier's scanned delivery photo when it is out for delivery today |
-| `highlight_today` | `true` | Sort arriving-today carriers first and accent their count |
+| `highlight_today` | `true` | Give the arriving-today count its own line in `accent_color`. Off drops that line from the count and summary cards. Carriers arriving today are sorted first either way |
 | `accent_color` | `[0, 220, 120]` | The accent colour used for that highlight |
 | `customization.title_text.text_color` | `[255, 255, 255]` | Colour of the primary text |
 
@@ -161,7 +161,7 @@ compact summary:
 
 ![show_dashboard true and false](../../docs/assets/incoming-packages/show-dashboard.png)
 
-`highlight_today` controls both the accent colour and the sort order:
+`highlight_today` decides whether the arriving-today count gets its own accented line. With it off the card falls back to the in-transit count; the sort order does not change:
 
 ![highlight_today true and false](../../docs/assets/incoming-packages/highlight-today.png)
 

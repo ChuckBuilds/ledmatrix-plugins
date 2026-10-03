@@ -857,8 +857,12 @@ class StaticImagePlugin(BasePlugin):
         scale_x = display_width / img_width
         scale_y = display_height / img_height
         scale = min(scale_x, scale_y)
-        
-        return (int(img_width * scale), int(img_height * scale))
+
+        # A very wide or very tall source rounds its short side down to zero
+        # (2000x3 into 64x32 gives 64x0). Image.resize rejects a zero side, so
+        # the load failed and the panel showed "Image Error". One pixel is the
+        # smallest thing that can still be seen.
+        return (max(1, int(img_width * scale)), max(1, int(img_height * scale)))
     
     def update(self) -> None:
         """
@@ -1031,9 +1035,16 @@ class StaticImagePlugin(BasePlugin):
                           (0, 0, 0))
 
             if error_font:
+                from PIL import ImageDraw
                 self.display_manager.image = img.copy()
-                self.display_manager.draw_text("Image", x=5, y=12, font=error_font, centered=False)
-                self.display_manager.draw_text("Error", x=5, y=20, font=error_font, centered=False)
+                # draw_text draws through display_manager.draw, which still
+                # pointed at the previous canvas: the text went onto an image
+                # nobody showed and the panel was pushed blank. The font
+                # manager does not draw with its registered colour either, so
+                # the red is passed here.
+                self.display_manager.draw = ImageDraw.Draw(self.display_manager.image)
+                self.display_manager.draw_text("Image", x=5, y=12, color=(255, 0, 0), font=error_font, centered=False)
+                self.display_manager.draw_text("Error", x=5, y=20, color=(255, 0, 0), font=error_font, centered=False)
             else:
                 # Fallback to direct PIL if font manager fails
                 from PIL import ImageDraw, ImageFont

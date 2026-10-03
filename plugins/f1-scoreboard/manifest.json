@@ -1,7 +1,7 @@
 {
   "id": "f1-scoreboard",
   "name": "F1 Scoreboard",
-  "version": "1.10.0",
+  "version": "1.10.1",
   "author": "ChuckBuilds",
   "class_name": "F1ScoreboardPlugin",
   "entry_point": "manager.py",
@@ -29,6 +29,12 @@
     "f1_calendar"
   ],
   "versions": [
+    {
+      "version": "1.10.1",
+      "released": "2026-10-02",
+      "ledmatrix_min_version": "3.6.1",
+      "notes": "customization.auto_scale now does what it says for a TTF font you pick: on, the font size is scaled with the panel and snapped to the font's pixel grid; off, the exact size is used. The web UI saves font_size with every config, and a set font_size bypassed auto_scale entirely, while with no font_size auto_scale off still scaled. Blank font fields (the default bitmap fonts) are unchanged. README: the font table listed PressStart2P/4x6-font as defaults (the default is blank, auto-picked BDF) and omitted the six bundled BDF fonts; sprint.top_finishers range added."
+    },
     {
       "version": "1.10.0",
       "released": "2026-09-29",
@@ -352,7 +358,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-28",
+  "last_updated": "2026-10-02",
   "stars": 0,
   "downloads": 0,
   "verified": true,

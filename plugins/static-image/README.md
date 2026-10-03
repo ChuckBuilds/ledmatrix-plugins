@@ -238,8 +238,10 @@ Images outside their window are skipped by the rotation entirely.
 The common mistake is setting `mode` and the times but leaving `enabled` at
 `false`, which leaves the image always visible.
 
-If every image is scheduled out at once there is nothing eligible to draw, so
-keep at least one image unscheduled as a fallback.
+If every image is outside its window at once, the schedules are set aside and
+the whole list rotates as if none were scheduled — a per-image schedule never
+blanks the panel. Keep at least one image unscheduled (or always in its window)
+if you want to control what shows in the gaps.
 
 Windows are read in the LEDMatrix timezone from the main settings, not the
 Pi's system zone, so `08:00` means 08:00 where the panel is. The system clock
@@ -265,6 +267,10 @@ image to use a wide panel, give it a wide source.
 **Nothing appears.**
 `enabled` defaults to `false`. After that, check the `images` array is not
 empty and that at least one entry's `path` resolves.
+
+**The panel shows "Image Error" in red.**
+The current entry's file could not be found or decoded. The log names the path
+it tried; check `path` as below.
 
 **The image is missing but others show.**
 Check the log for a load warning. `path` is relative to the LEDMatrix project
@@ -330,8 +336,8 @@ python scripts/render_docs_assets.py --plugin static-image
 `--check` verifies the committed images still match what the plugin renders.
 The sample marks live in `docs/assets/static-image/sample/`.
 
-Note that rotation cannot be shown in a still: every `rotation_mode` starts on
-the first eligible image, and the differences only appear across frames. The
+Note that rotation cannot be shown in a still: a screenshot catches one image,
+and the differences between modes only appear across frames. The
 rotation behaviour above is documented from the source rather than from a
 screenshot.
 

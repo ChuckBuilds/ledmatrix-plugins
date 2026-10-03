@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.39.2] - 2026-10-02
+
+### Fixed
+- A custom league whose `game_limits` were never opened in the web UI
+  (the row editor sends them back blank) showed 5 recent games, not the `1`
+  its settings page displays: `_adapt_config_for_custom_league` now falls
+  back to the schema default.
+- `custom_leagues[].filtering.show_all_live` defaults to `false` in the
+  schema, matching the built-in leagues and what the plugin already did when
+  the value was absent; the settings page showed it on while it was off.
+
+### Documentation
+- README: documents `<league>.odds_update_interval` (`3600` s),
+  `<league>.live_odds_update_interval` (`60` s) and the full-screen
+  `scroll_card.switch_show_date` / `switch_show_time` switches.
+
 ## [2.39.1] - 2026-10-01
 
 ### Changed

@@ -61,8 +61,9 @@ draw here.
 
 ## The lifecycle methods
 
-The core calls six methods on your plugin. Only `__init__` is strictly
-mandatory, but a useful plugin implements at least `update` and `display`.
+The core calls six methods on your plugin. `update` and `display` are abstract
+on `BasePlugin`, so every plugin must implement them (a class missing either
+cannot be instantiated); the rest have working base implementations.
 
 | Method | Signature | When the core calls it | Rule |
 |--------|-----------|------------------------|------|
@@ -110,8 +111,9 @@ def display(self, force_clear=False):
     if force_clear:
         self.display_manager.clear()
     w, h = self.display_manager.width, self.display_manager.height
+    # x is the left edge unless centered=True; y is the top of the text
     self.display_manager.draw_text(self.message, x=w // 2, y=h // 2,
-                                   color=self.color, font=self.bdf_font)
+                                   color=self.color, font=self.bdf_font, centered=True)
     self.display_manager.update_display()
 ```
 
@@ -219,7 +221,8 @@ class MyPlugin(BasePlugin):
         if force_clear:
             self.display_manager.clear()
         w, h = self.display_manager.width, self.display_manager.height
-        self.display_manager.draw_text(self.message, x=w // 2, y=h // 2, color=self.color)
+        self.display_manager.draw_text(self.message, x=w // 2, y=h // 2,
+                                       color=self.color, centered=True)
         self.display_manager.update_display()
 
     def validate_config(self):

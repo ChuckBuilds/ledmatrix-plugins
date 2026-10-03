@@ -77,10 +77,11 @@ class HelloWorldPlugin(BasePlugin):
     def _register_fonts(self):
         """Register fonts with the font manager."""
         try:
-            if not hasattr(self.plugin_manager, 'font_manager'):
+            # The core always sets the attribute but passes None when it has
+            # no font manager, so hasattr() alone is not enough.
+            font_manager = getattr(self.plugin_manager, 'font_manager', None)
+            if font_manager is None:
                 return
-
-            font_manager = self.plugin_manager.font_manager
 
             # Message font
             font_manager.register_manager_font(
@@ -217,8 +218,8 @@ class HelloWorldPlugin(BasePlugin):
             time_font = None
 
             try:
-                if hasattr(self.plugin_manager, 'font_manager'):
-                    font_manager = self.plugin_manager.font_manager
+                font_manager = getattr(self.plugin_manager, 'font_manager', None)
+                if font_manager is not None:
                     # resolve_font() is the accessor for a registered element --
                     # it honours user overrides and takes the same (family,
                     # size_px) the element was registered with. get_font() is
@@ -293,7 +294,8 @@ class HelloWorldPlugin(BasePlugin):
                     x=width // 2,
                     y=height // 2,
                     color=(255, 0, 0),
-                    font=self.bdf_font
+                    font=self.bdf_font,
+                    centered=True
                 )
                 self.display_manager.update_display()
             except Exception:

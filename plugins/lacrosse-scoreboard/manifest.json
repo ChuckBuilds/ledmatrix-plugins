@@ -1,7 +1,7 @@
 {
   "id": "lacrosse-scoreboard",
   "name": "Lacrosse Scoreboard",
-  "version": "1.36.2",
+  "version": "1.36.3",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NCAA men's and women's lacrosse games with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/lacrosse-scoreboard",
@@ -50,6 +50,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.36.3",
+      "released": "2026-10-02",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "Hides defaults.game_display_duration, which nothing reads (per-game time comes from each league's display_durations). README documents it, update_intervals.live_odds and scroll_card.switch_show_date / switch_show_time. No change in behaviour."
+    },
     {
       "version": "1.36.2",
       "released": "2026-10-02",

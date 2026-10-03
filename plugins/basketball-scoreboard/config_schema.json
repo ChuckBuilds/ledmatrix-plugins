@@ -2940,15 +2940,16 @@
               },
               "additionalProperties": false
             },
-            "record": {
+            "date": {
               "type": "object",
-              "title": "Team Records",
+              "title": "Game Date",
+              "description": "Moves the date along the bottom of the full-screen recent scoreboard, and the date on an upcoming scroll or Vegas card. (The full-screen upcoming date and time move with Game Status.)",
               "properties": {
                 "x_offset": {
                   "x-advanced": true,
                   "type": "integer",
                   "default": 0,
-                  "description": "Horizontal offset from default position (default: 0)"
+                  "description": "Horizontal offset from center (default: 0)"
                 },
                 "y_offset": {
                   "x-advanced": true,
@@ -2958,6 +2959,59 @@
                 }
               },
               "additionalProperties": false
+            },
+            "time": {
+              "type": "object",
+              "title": "Game Time",
+              "description": "Moves the start time on an upcoming scroll or Vegas card.",
+              "properties": {
+                "x_offset": {
+                  "x-advanced": true,
+                  "type": "integer",
+                  "default": 0,
+                  "description": "Horizontal offset from center (default: 0)"
+                },
+                "y_offset": {
+                  "x-advanced": true,
+                  "type": "integer",
+                  "default": 0,
+                  "description": "Vertical offset from default position (default: 0)"
+                }
+              },
+              "additionalProperties": false
+            },
+            "record": {
+              "type": "object",
+              "title": "Team Records",
+              "properties": {
+                "x_offset": {
+                  "x-advanced": true,
+                  "type": "integer",
+                  "default": 0,
+                  "description": "Horizontal offset from default position (default: 0) HIDDEN: nothing reads it. The two records sit at opposite edges and move with Away / Home Horizontal Offset. Kept declared so saved configs keep validating.",
+                  "x-display": "hidden"
+                },
+                "y_offset": {
+                  "x-advanced": true,
+                  "type": "integer",
+                  "default": 0,
+                  "description": "Vertical offset for both records (default: 0)"
+                },
+                "away_x_offset": {
+                  "x-advanced": true,
+                  "type": "integer",
+                  "default": 0,
+                  "description": "Horizontal offset for the away record, drawn from the left edge (default: 0)"
+                },
+                "home_x_offset": {
+                  "x-advanced": true,
+                  "type": "integer",
+                  "default": 0,
+                  "description": "Horizontal offset for the home record, drawn from the right edge (default: 0)"
+                }
+              },
+              "additionalProperties": false,
+              "description": "Moves the win-loss record (or rank badge) in the bottom corners. The rank badge is drawn in the record slot, so these are its offsets too."
             },
             "ranking": {
               "type": "object",
@@ -3005,6 +3059,8 @@
             "away_logo",
             "score",
             "status",
+            "date",
+            "time",
             "record",
             "ranking",
             "odds"

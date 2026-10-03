@@ -109,17 +109,17 @@ one](../../docs/assets/of-the-day/categories.png)
 | `of_the_day/word_of_the_day.json` | An English word a day, with definition and example |
 | `of_the_day/slovenian_word_of_the_day.json` | A Slovenian word a day, with its English meaning |
 
-`category_order` controls the order categories are shown in. A category listed
-in `category_order` but missing from `categories` is skipped, and one present
-in `categories` but absent from `category_order` is appended after the
-listed ones.
+`category_order` controls the order categories are shown in. A name listed in
+`category_order` that is not a category (no data file in `of_the_day/` and no
+`categories` entry) is skipped, and a category absent from `category_order` is
+appended after the listed ones.
 
 ---
 
 ## The Data File Format
 
 A data file is a JSON object keyed by **day of the year as a string**, `"1"`
-through `"365"`:
+through `"365"` (plus an optional `"366"` for 31 December of a leap year):
 
 ```json
 {
@@ -148,7 +148,8 @@ day — and means a file needs 365 entries for full coverage. Missing days are
 skipped rather than erroring.
 
 Because it is keyed by day rather than date, the same file works every year.
-For a leap year, day 366 has no entry unless you add one.
+In a leap year 31 December is day 366; a file with no `"366"` entry shows its
+day 365 entry that day, and one that has a `"366"` entry shows that instead.
 
 > Earlier documentation described these files as keyed by `YYYY-MM-DD`. They are
 > not — the bundled files and the loader both use the day-of-year number. A file
@@ -160,8 +161,9 @@ For a leap year, day 366 has no entry unless you add one.
 - **Keep the subtitle short.** It is the line most often shown, and on a 128×32
   panel roughly 24 characters survive before truncation. The description can be
   longer since it only needs to fit when it takes its turn.
-- **Use the same fields throughout.** An entry missing `subtitle` or
-  `description` simply shows less; it does not fall back to another field.
+- **Use the same fields throughout.** An entry missing `subtitle` shows the
+  title alone on that view; one missing `description` shows "No content" when
+  the description takes its turn.
 - **Cover all 365 days** if you want the category to appear every day. Gaps are
   skipped, so a sparse file means the category quietly disappears on the missing
   days.
@@ -179,7 +181,7 @@ For a leap year, day 366 has no entry unless you add one.
 | `enabled` | boolean | `false` | Whether the plugin runs at all |
 | `categories` | object | *(empty)* | Your categories — see [above](#adding-a-category) |
 | `category_order` | array | `["word_of_the_day", "slovenian_word_of_the_day"]` | Display order |
-| `display_duration` | number | `40` | Seconds each category holds the panel |
+| `display_duration` | number | `40` | Seconds the plugin holds the panel per turn |
 | `display_rotate_interval` | number | `20` | Seconds before moving to the next category |
 | `subtitle_rotate_interval` | number | `10` | Seconds between the subtitle and description views |
 | `update_interval` | integer | `3600` | Seconds between checks for a new day |
@@ -191,8 +193,8 @@ For a leap year, day 366 has no entry unless you add one.
 
 Three intervals stack, from slowest to fastest:
 
-- **`display_duration`** (default `40`) — how long the whole category holds the
-  panel before the display controller moves on.
+- **`display_duration`** (default `40`) — how long the plugin holds the panel
+  before the display controller moves on to the next plugin.
 - **`display_rotate_interval`** (default `20`) — how often the plugin moves on
   to the next enabled category. At the defaults, a 40-second turn with two
   categories shows each for 20 seconds.
@@ -235,7 +237,11 @@ sizes](../../docs/assets/of-the-day/customization.png)
 | Element | `font` | `font_size` | `text_color` |
 |---------|--------|-------------|--------------|
 | `title_text` | `PressStart2P-Regular.ttf` | `8` (4–16) | `[255, 255, 255]` |
-| `body_text` | `4x6-font.ttf` | `6` (4–12) | `[200, 200, 200]` |
+| `body_text` | `4x6-font.ttf` | `6`\* (4–12) | `[200, 200, 200]` |
+
+\* A `font_size` equal to the schema default counts as untouched, and an
+untouched body renders 4x6-font at 7px, its clean pixel grid. Any other value
+is used as written.
 
 ```json
 {
@@ -253,7 +259,19 @@ sizes](../../docs/assets/of-the-day/customization.png)
 > `color` in your config is silently ignored, with no warning and no visible
 > change. It is an easy mistake to make from reading the schema.
 
-Both elements also accept `x_offset` and `y_offset` for nudging position.
+Both elements also take `x_offset` and `y_offset` for nudging position. These
+live in a separate `layout` block, not beside `font_size`:
+
+```json
+{
+  "customization": {
+    "layout": {
+      "title_text": { "x_offset": 0, "y_offset": 2 },
+      "body_text":  { "x_offset": 0, "y_offset": -1 }
+    }
+  }
+}
+```
 
 Customization needs a LEDMatrix core with the element-style system. On an older
 core the section is not offered and the classic styling above is used, which is
@@ -342,9 +360,16 @@ web UI rather than run directly.
 
 ### Tests
 
+Run from the repo root with a LEDMatrix core checkout on the import path
+(`PYTHONPATH=/path/to/LEDMatrix`); without it the tests cannot import
+`src.plugin_system`:
+
 ```bash
 python plugins/of-the-day/test_text_fitting.py
 python plugins/of-the-day/test_element_styles.py
+python plugins/of-the-day/test_category_resolution.py
+python plugins/of-the-day/test_leap_day_and_rollover.py
+python plugins/of-the-day/test_timezone_and_config_change.py
 ```
 
 ### Regenerating the images in this README

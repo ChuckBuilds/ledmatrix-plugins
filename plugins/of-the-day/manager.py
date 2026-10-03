@@ -379,7 +379,12 @@ class OfTheDayPlugin(BasePlugin):
                 self.last_rotation_time = current_time
                 category_changed = True
                 self.display_needs_update = True
-            
+
+            # The list can shrink under the index (a new day where a sparse
+            # file has no entry); wrap instead of raising IndexError, which
+            # showed "Error" until the next category rotation.
+            self.current_category_index %= len(enabled_categories)
+
             # Get current category
             category_name = enabled_categories[self.current_category_index]
             category_config = self.categories.get(category_name, {})

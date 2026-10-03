@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.5.4] - 2026-10-02
+
+### Fixed
+- Spotify: the decoded album cover is kept between polls. The previous art URL
+  was read from the freshly replaced track dict, where it never exists, so
+  every progress-only poll (every 2 s) dropped the cover and display()
+  decoded it again.
+- The `enabled` fallback is true, matching the schema and the core.
+
 ## [1.5.3] - 2026-10-02
 
 ### Fixed

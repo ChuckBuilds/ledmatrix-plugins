@@ -169,7 +169,7 @@ Defaults are the schema defaults, which is what the web UI writes.
 | `enabled` | boolean | `true` | Master on/off switch. |
 | `display_duration` | 5–300 s | `30` | How long the display controller shows this plugin's mode before rotating to the next plugin. |
 | `game_display_duration` | 3–60 s | `15` | Per-fight time within a mode, where the mode does not override it. |
-| `update_interval` | 30–86400 s | `3600` | How often to fetch new data. |
+| `update_interval` | 30–86400 s | `3600` | **Hidden (still declared); has no effect.** The manifest's `update_interval` (60 s) wins in the core scheduler, and each list refreshes at its own `ufc.*_update_interval`. |
 | `timezone` | string | `""` | **Advanced.** IANA zone for event times, e.g. `America/Chicago`. Blank follows the LEDMatrix global timezone, then the host system's, then UTC. |
 | `schedule_lookback_days` | 1–60 | `14` | **Advanced.** How far back to fetch for the Recent screen. |
 | `schedule_lookahead_days` | 1–60 | `7` | **Advanced.** How far ahead to fetch for Upcoming. A card beyond this horizon is never fetched. |
@@ -218,6 +218,8 @@ Defaults are the schema defaults, which is what the web UI writes.
 | `ufc.live_update_interval` | 5–300 s | `30` | How often live fight data refreshes. |
 | `ufc.recent_update_interval` | 60–86400 s | `3600` | **Advanced.** How often the finished-fights list is rebuilt. This also sets how soon a fight that has just ended can appear. |
 | `ufc.upcoming_update_interval` | 60–86400 s | `3600` | **Advanced.** How often the upcoming-fights list is rebuilt. |
+| `ufc.odds_update_interval` | 60–86400 s | `3600` | **Advanced.** How long fetched odds for a fight that has not started are reused before being requested again. |
+| `ufc.live_odds_update_interval` | 15–3600 s | `60` | **Advanced.** The same for a fight in progress. |
 | `ufc.stale_game_timeout` | 60–3600 s | `300` | **Advanced.** Drop a live fight the API has stopped updating. |
 
 ### Dynamic duration
@@ -323,7 +325,8 @@ can tell *that* a fight is live but not *whose*.
 ## Data source
 
 ESPN's public MMA endpoints. No API key required. Be mindful of
-`update_interval` — the default of 3600s suits normal use.
+`ufc.recent_update_interval` and `ufc.upcoming_update_interval` — the default
+of 3600s suits normal use.
 
 The documentation images come from `docs/assets/ufc-scoreboard/shots.json` and
 re-render with `python scripts/render_docs_assets.py --plugin ufc-scoreboard

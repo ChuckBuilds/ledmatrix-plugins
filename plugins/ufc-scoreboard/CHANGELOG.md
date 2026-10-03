@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.19.3] - 2026-10-02
+
+### Changed
+- Root `update_interval` is hidden: the manifest declares `update_interval`
+  (60 s) and the core scheduler uses that over this setting, so it never did
+  anything. Each list refreshes at its own `ufc.*_update_interval`. Kept
+  declared so saved configs keep validating. The README said it set the fetch
+  cadence.
+- README documents `ufc.odds_update_interval` and
+  `ufc.live_odds_update_interval`.
+
 ## [1.19.2] - 2026-10-02
 
 ### Changed

@@ -18,6 +18,3 @@ urllib3>=2.7.0
 # - src.cache_manager (CacheManager)
 # - src.display_manager (DisplayManager)
 
-# Note: The plugin now includes its own base classes in base_classes.py
-# to be self-contained and not depend on the main LEDMatrix installation
-

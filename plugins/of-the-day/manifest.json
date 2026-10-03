@@ -1,7 +1,7 @@
 {
   "id": "of-the-day",
   "name": "Of The Day Display",
-  "version": "1.4.8",
+  "version": "1.4.9",
   "author": "ChuckBuilds",
   "description": "Display daily featured content like Word of the Day, Bible verses, or custom daily items. Supports multiple categories with rotating display and configurable data sources.",
   "category": "information",
@@ -21,6 +21,12 @@
     "of_the_day"
   ],
   "versions": [
+    {
+      "released": "2026-10-02",
+      "version": "1.4.9",
+      "changelog": "When a new day leaves fewer categories with an entry than before (a sparse data file with no entry for today), the display wraps its category index instead of raising IndexError and showing 'Error' until the next category rotation. The file manager's upload action now rejects filenames containing '..', '/' or a backslash, as get/save/delete already did, and upload/save accept a day-366 key, which the loader already uses on 31 December of a leap year. README: display_duration is the plugin's whole turn (not per category), day 366 falls back to day 365, a missing description shows 'No content', offsets live under customization.layout, an untouched body font_size renders at 7px, and the test list is complete.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-09-28",
       "version": "1.4.8",
@@ -109,7 +115,7 @@
       "ledmatrix_min": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-28",
+  "last_updated": "2026-10-02",
   "stars": 0,
   "downloads": 0,
   "verified": true,

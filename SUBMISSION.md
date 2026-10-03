@@ -7,7 +7,9 @@ Want to add your plugin to the official registry? Follow these steps!
 Before submitting, ensure your plugin:
 
 - ✅ Has a complete `manifest.json` with all required fields
-  (`id`, `name`, `version`, `class_name`, `display_modes`)
+  (`id`, `name`, `version`, `author`, `entry_point`, `class_name`,
+  `compatible_versions` — the core manifest schema requires these — plus
+  `display_modes`)
 - ✅ Follows the [plugin development guide](docs/plugin-development/)
 - ✅ Has comprehensive README documentation
 - ✅ Includes example configuration
@@ -36,10 +38,17 @@ Submit a PR to add your plugin directly to this repository:
      README.md
    ```
 
-3. **Submit Pull Request**
+3. **Add a `plugins.json` entry**
+   `update_registry.py` only updates entries that already exist, so a new
+   plugin's entry is the one thing added by hand: copy a neighbour's shape with
+   `plugin_path: "plugins/your-plugin-id"`. CI (`update_registry.py --check`)
+   fails a PR that adds a plugin directory without one. See
+   [the registry](docs/plugin-development/07-testing-ci-and-registry.md#the-registry-pluginsjson).
+
+4. **Submit Pull Request**
    Create PR with title: "Add plugin: your-plugin-name"
 
-After approval, your plugin will be added to `plugins.json` and available in the Plugin Store.
+After approval and merge, your plugin is available in the Plugin Store.
 
 ### Option B: Keep Your Own Repository (3rd-Party)
 

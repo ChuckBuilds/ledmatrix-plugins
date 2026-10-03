@@ -26,6 +26,15 @@ try:
         }))
         sys.exit(1)
     
+    # Security: ensure filename doesn't contain path traversal (same check
+    # as get/save/delete)
+    if '..' in filename or '/' in filename or '\\' in filename:
+        print(json.dumps({
+            'status': 'error',
+            'message': 'Invalid filename'
+        }))
+        sys.exit(1)
+
     # Validate filename
     if not filename.endswith('.json'):
         print(json.dumps({
@@ -48,7 +57,7 @@ try:
     if not isinstance(data, dict):
         print(json.dumps({
             'status': 'error',
-            'message': 'JSON must be an object with day numbers (1-365) as keys'
+            'message': 'JSON must be an object with day numbers (1-366) as keys'
         }))
         sys.exit(1)
     
@@ -56,16 +65,16 @@ try:
     for key in data.keys():
         try:
             day_num = int(key)
-            if day_num < 1 or day_num > 365:
+            if day_num < 1 or day_num > 366:
                 print(json.dumps({
                     'status': 'error',
-                    'message': f'Day number {day_num} is out of range (must be 1-365)'
+                    'message': f'Day number {day_num} is out of range (must be 1-366)'
                 }))
                 sys.exit(1)
         except ValueError:
             print(json.dumps({
                 'status': 'error',
-                'message': f'Invalid key "{key}": must be a day number (1-365)'
+                'message': f'Invalid key "{key}": must be a day number (1-366)'
             }))
             sys.exit(1)
     

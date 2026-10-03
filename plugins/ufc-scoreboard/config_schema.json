@@ -21,7 +21,9 @@
       "default": 3600,
       "minimum": 30,
       "maximum": 86400,
-      "description": "How often to fetch new data in seconds"
+      "x-advanced": true,
+      "x-display": "hidden",
+      "description": "How often to fetch new data in seconds HIDDEN: the manifest declares update_interval (60 s), and the core scheduler uses the manifest's value over this setting; while a fight is live, get_update_interval() answers instead. Fetch cadence comes from ufc.live_update_interval, recent_update_interval and upcoming_update_interval."
     },
     "game_display_duration": {
       "type": "number",

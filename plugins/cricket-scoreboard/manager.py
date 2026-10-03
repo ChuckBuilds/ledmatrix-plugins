@@ -186,8 +186,11 @@ class CricketScoreboardPlugin(BasePlugin if BasePlugin else object):
         if not self.is_enabled:
             return
         now = time.time()
-        # Faster refresh when live content is present.
-        has_live = bool(self.live_matches)
+        # Faster refresh when live content is present -- or due: a match whose
+        # start time has passed but was still "pre" at the last fetch. Without
+        # this the hourly interval left a match that had just started
+        # unnoticed for up to an hour, so live_priority never fired for it.
+        has_live = bool(self.live_matches) or self._upcoming_has_started(now)
         interval = self.live_update_interval if has_live else self.update_interval
         if now - self._last_update < interval:
             return
@@ -234,6 +237,22 @@ class CricketScoreboardPlugin(BasePlugin if BasePlugin else object):
 
         self.logger.info("Cricket update: %d live, %d recent, %d upcoming",
                          len(live), len(recent), len(upcoming))
+
+    def _upcoming_has_started(self, now: float) -> bool:
+        """Whether an upcoming match's start time passed in the last 12h.
+
+        Bounded so a fixture ESPN never moves off "pre" (abandoned without a
+        result) cannot hold the fast live cadence forever.
+        """
+        with self._lock:
+            upcoming = list(self.upcoming_matches)
+        for m in upcoming:
+            start = m.get("start_time_utc")
+            if not hasattr(start, "timestamp"):
+                continue
+            if 0 <= now - start.timestamp() <= 12 * 3600:
+                return True
+        return False
 
     def _ensure_logos(self, match: Dict[str, Any]) -> None:
         if download_missing_logo is None:
@@ -576,9 +595,18 @@ class CricketScoreboardPlugin(BasePlugin if BasePlugin else object):
         # inside update()/display(), and replacing it would break mutual
         # exclusion.
         lock = self._lock
+        old_fetcher = getattr(self, "fetcher", None)
         self.__init__(self.plugin_id, new_config, self.display_manager,
                       self.cache_manager, self.plugin_manager)
         self._lock = lock
+        # The rebuilt fetcher opened its own HTTP session; close the old one
+        # rather than leak a connection pool per settings save.
+        old_session = getattr(old_fetcher, "session", None)
+        if old_session is not None:
+            try:
+                old_session.close()
+            except Exception as e:
+                self.logger.debug("Closing the previous HTTP session failed: %s", e)
         # Force a re-discovery + refetch on next update.
         self._last_update = 0.0
 

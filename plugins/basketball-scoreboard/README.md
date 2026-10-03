@@ -357,6 +357,8 @@ All **Advanced**.
 | `<league>.live_update_interval` | 5–300 s | `30` | How often live game data refreshes. |
 | `<league>.recent_update_interval` | 60–86400 s | `3600` | How often the finished-games list is rebuilt. This also sets how soon a game that has just ended can appear — lower it if you want results sooner. |
 | `<league>.upcoming_update_interval` | 60–86400 s | `3600` | How often the upcoming-games list is rebuilt. Selection and the non-favorite rotation both run on the display side, so this governs only the fetch. |
+| `<league>.odds_update_interval` | 60–86400 s | `3600` | **Advanced.** How often betting odds are refreshed for recent and upcoming games. Only matters when Show Odds is on. |
+| `<league>.live_odds_update_interval` | 30–3600 s | `60` | **Advanced.** How often odds are refreshed for games in progress. Only matters when Show Odds is on. |
 | `<league>.stale_game_timeout` | 60–3600 s | `300` | Drop a live game the API has stopped updating. |
 
 ### Display options
@@ -423,7 +425,8 @@ Plugin-wide, not per league.
 | Date Format | `scroll_card.date_format` | `abbrev` | Scroll and Vegas cards: `Sep 19`, `9/19`, `19 Sep`, `19/9`, or `Fri Sep 19`. |
 | Full-Screen Date Format | `scroll_card.switch_date_format` | `numeric` | **Advanced.** The same for the full-screen scoreboard, plus `inherit`. It has its own default because the two displays disagree about what is normal. |
 | Time Format | `scroll_card.time_format` | `12h` | 12- or 24-hour clock. |
-| Show Date / Show Time | `scroll_card.show_date`, `scroll_card.show_time` | `true` | Drop either line. |
+| Show Date / Show Time | `scroll_card.show_date`, `scroll_card.show_time` | `true` | Drop either line from the scroll and Vegas cards. |
+| Full-Screen Show Date / Show Time | `scroll_card.switch_show_date`, `scroll_card.switch_show_time` | `true` | The same for the full-screen scoreboard. Separate switches because the originals predate this display reading the block, and sharing them would have changed what existing boards draw. |
 | Full-Screen Recent Date | `scroll_card.switch_recent_show_date` | `true` | Draw the date a finished game was played along the bottom of the full-screen recent scoreboard, written in the Full-Screen Date Format. |
 | Swap Date and Time | `scroll_card.swap_date_time` | `false` | Flip the two lines. Each display starts from its own order, so this flips rather than forces. |
 
@@ -475,10 +478,10 @@ Nudge any element in pixels. All default to `0`, all **Advanced**, all under
 |---|---|---|
 | `home_logo`, `away_logo` | `x_offset`, `y_offset` | Default logo position |
 | `score` | `x_offset`, `y_offset` | Panel centre |
-| `status_text` | `x_offset`, `y_offset` | Centre horizontally, top vertically |
-| `date` | `x_offset`, `y_offset` | Centre horizontally, default position vertically |
-| `time` | `x_offset`, `y_offset` | Centre horizontally, the date's position vertically |
-| `records` | `away_x_offset`, `home_x_offset`, `y_offset` | Away from the left, home from the right, both from the bottom |
+| `status` | `x_offset`, `y_offset` | Centre horizontally, top vertically. Also moves the date and time on an upcoming scoreboard, which are drawn as status text |
+| `date` | `x_offset`, `y_offset` | The date along the bottom of a recent scoreboard, and the date on an upcoming scroll or Vegas card |
+| `time` | `x_offset`, `y_offset` | The start time on an upcoming scroll or Vegas card |
+| `record` | `away_x_offset`, `home_x_offset`, `y_offset` | Away from the left, home from the right, both from the bottom. The rank badge sits in the same slot. `record.x_offset` is hidden and ignored |
 | `odds` | `x_offset`, `y_offset` | Default odds position |
 
 ## Favorite team result colours

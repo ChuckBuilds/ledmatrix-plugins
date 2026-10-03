@@ -106,7 +106,7 @@
         "minimum": 0,
         "maximum": 255
       },
-      "x-widget": "color"
+      "x-widget": "color-picker"
     },
     "player_color": {
       "type": "array",
@@ -124,7 +124,7 @@
         "minimum": 0,
         "maximum": 255
       },
-      "x-widget": "color"
+      "x-widget": "color-picker"
     },
     "felt_color": {
       "type": "array",
@@ -142,7 +142,7 @@
         "minimum": 0,
         "maximum": 255
       },
-      "x-widget": "color"
+      "x-widget": "color-picker"
     },
     "card_interval": {
       "type": "number",

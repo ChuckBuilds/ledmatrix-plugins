@@ -57,6 +57,10 @@ p = object.__new__(TidePlugin)
 p.logger = logging.getLogger("test-tide")
 p.cache_manager = DictCache()
 p.STALE_MAX_DAYS = getattr(TidePlugin, "STALE_MAX_DAYS", 3)
+# Pin "today" to the fixture dates below; the staleness check reads the
+# real clock, so this case started failing a few days after it was written.
+import datetime as _dt
+p._today = lambda: _dt.date(2026, 9, 28)
 
 calls = []
 

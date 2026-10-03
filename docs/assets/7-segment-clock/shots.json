@@ -289,12 +289,12 @@
         {
           "shot": "narrow-spacing-2",
           "label": "64 x 32, spacing 2",
-          "sublabel": "fits with room to spare"
+          "sublabel": "the digits fill the height"
         },
         {
           "shot": "narrow-spacing-10",
           "label": "64 x 32, spacing 10",
-          "sublabel": "too wide: the outer digits are clipped"
+          "sublabel": "still fits, but the digits shrink to make room"
         }
       ]
     }

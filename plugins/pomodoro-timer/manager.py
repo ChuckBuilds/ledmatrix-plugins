@@ -48,7 +48,19 @@ except ImportError:
 
 from src.plugin_system.base_plugin import BasePlugin
 
-_PLUGIN_VERSION = "1.0.0"
+
+def _manifest_version() -> str:
+    """manifest.json's version, so HA's sw_version tracks the release (a
+    hard-coded constant here stayed at 1.0.0 through every later bump)."""
+    try:
+        with open(Path(__file__).resolve().parent / "manifest.json",
+                  encoding="utf-8") as f:
+            return str(json.load(f).get("version", "unknown"))
+    except (OSError, ValueError):
+        return "unknown"
+
+
+_PLUGIN_VERSION = _manifest_version()
 
 PHASE_IDLE = "idle"
 PHASE_WORK = "work"
@@ -447,6 +459,11 @@ class PomodoroTimerPlugin(BasePlugin):
                     duration = max(1.0, float(payload["duration_seconds"]))
                 except (TypeError, ValueError):
                     duration = None
+            # JSON accepts 1e999 (and float() accepts "inf"); an infinite
+            # deadline made every snapshot raise OverflowError, so the panel
+            # showed the error screen until a RESET.
+            if duration is not None and not math.isfinite(duration):
+                duration = None
 
             if command in ("START", "ON", "PLAY"):
                 started = True
@@ -568,7 +585,7 @@ class PomodoroTimerPlugin(BasePlugin):
         _, _, low, high, _, _ = spec
         try:
             value = int(round(float(raw)))
-        except (TypeError, ValueError):
+        except (TypeError, ValueError, OverflowError):
             self.logger.warning("Invalid value for %s: %r", field, raw)
             return False
         value = max(low, min(high, value))

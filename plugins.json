@@ -24,12 +24,11 @@
       "plugin_path": "plugins/cricket-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-28",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.3.2",
-      "ledmatrix_min_version": "2.0.0",
-      "commit": "e429d8e46b547f09a0bd93af60002db6357a8bf8"
+      "latest_version": "1.3.3",
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "id": "7-segment-clock",
@@ -49,12 +48,11 @@
       "plugin_path": "plugins/7-segment-clock",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-28",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.10",
-      "ledmatrix_min_version": "2.0.0",
-      "commit": "62fa95853476715b833abfe0b207d4f50876b6b4"
+      "latest_version": "1.0.11",
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "id": "baseball-scoreboard",
@@ -80,9 +78,8 @@
       "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.56.1",
-      "ledmatrix_min_version": "3.8.0",
-      "commit": "f9ced936bab32e05df5dd71bcabbc94972aa634b"
+      "latest_version": "1.57.0",
+      "ledmatrix_min_version": "3.8.0"
     },
     {
       "id": "basketball-scoreboard",
@@ -107,9 +104,8 @@
       "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.41.2",
-      "ledmatrix_min_version": "3.8.0",
-      "commit": "f9ced936bab32e05df5dd71bcabbc94972aa634b"
+      "latest_version": "1.42.0",
+      "ledmatrix_min_version": "3.8.0"
     },
     {
       "id": "calendar",
@@ -132,9 +128,8 @@
       "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.10",
-      "ledmatrix_min_version": "3.3.0",
-      "commit": "f9ced936bab32e05df5dd71bcabbc94972aa634b"
+      "latest_version": "1.2.11",
+      "ledmatrix_min_version": "3.3.0"
     },
     {
       "id": "christmas-countdown",
@@ -153,12 +148,11 @@
       "plugin_path": "plugins/christmas-countdown",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-28",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.0.3",
-      "ledmatrix_min_version": "2.0.0",
-      "commit": "d6223d0f6f6299238fa6c952143004a2f45e3c92"
+      "latest_version": "2.0.4",
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "id": "clock-simple",
@@ -176,12 +170,11 @@
       "plugin_path": "plugins/clock-simple",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-29",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.1.3",
-      "ledmatrix_min_version": "2.0.0",
-      "commit": "843588025a81197056f8d96779ccb2be19337ab8"
+      "latest_version": "1.1.4",
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "id": "countdown",
@@ -204,10 +197,9 @@
       "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "3.3.4",
+      "latest_version": "3.3.5",
       "icon": "fa-clock",
-      "ledmatrix_min_version": "2.0.0",
-      "commit": "a6a38144d3544b236032926bf844ad730c825917"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "id": "f1-scoreboard",
@@ -228,12 +220,11 @@
       "plugin_path": "plugins/f1-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-29",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.10.0",
-      "ledmatrix_min_version": "3.6.1",
-      "commit": "30455671d5856814cc972040297341de60b673fa"
+      "latest_version": "1.10.1",
+      "ledmatrix_min_version": "3.6.1"
     },
     {
       "id": "f1-live",
@@ -283,9 +274,8 @@
       "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "3.18.4",
-      "ledmatrix_min_version": "3.8.0",
-      "commit": "f9ced936bab32e05df5dd71bcabbc94972aa634b"
+      "latest_version": "3.18.5",
+      "ledmatrix_min_version": "3.8.0"
     },
     {
       "id": "geochron",
@@ -356,12 +346,11 @@
       "plugin_path": "plugins/hello-world",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-28",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.1.3",
-      "ledmatrix_min_version": "2.0.0",
-      "commit": "d6223d0f6f6299238fa6c952143004a2f45e3c92"
+      "latest_version": "1.1.4",
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "id": "hockey-scoreboard",
@@ -385,10 +374,9 @@
       "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.42.1",
+      "latest_version": "1.42.2",
       "icon": "fas fa-hockey-puck",
-      "ledmatrix_min_version": "3.8.0",
-      "commit": "f9ced936bab32e05df5dd71bcabbc94972aa634b"
+      "ledmatrix_min_version": "3.8.0"
     },
     {
       "id": "lacrosse-scoreboard",
@@ -411,10 +399,9 @@
       "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.36.2",
+      "latest_version": "1.36.3",
       "icon": "fas fa-baseball-ball",
-      "ledmatrix_min_version": "3.8.0",
-      "commit": "f9ced936bab32e05df5dd71bcabbc94972aa634b"
+      "ledmatrix_min_version": "3.8.0"
     },
     {
       "id": "birdnet-go",
@@ -436,12 +423,11 @@
       "plugin_path": "plugins/birdnet-go",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-28",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.7",
-      "ledmatrix_min_version": "2.0.0",
-      "commit": "d6223d0f6f6299238fa6c952143004a2f45e3c92"
+      "latest_version": "1.2.8",
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "id": "leaderboard",
@@ -465,15 +451,14 @@
       "plugin_path": "plugins/ledmatrix-leaderboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-28",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.5.4",
+      "latest_version": "1.5.5",
       "ledmatrix_min_version": "3.4.0",
       "aliases": [
         "ledmatrix-leaderboard"
-      ],
-      "commit": "62fa95853476715b833abfe0b207d4f50876b6b4"
+      ]
     },
     {
       "id": "ledmatrix-flights",
@@ -523,12 +508,11 @@
       "plugin_path": "plugins/march-madness",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-28",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.1.3",
-      "ledmatrix_min_version": "3.4.0",
-      "commit": "e429d8e46b547f09a0bd93af60002db6357a8bf8"
+      "latest_version": "2.1.4",
+      "ledmatrix_min_version": "3.4.0"
     },
     {
       "id": "masters-tournament",
@@ -549,12 +533,11 @@
       "plugin_path": "plugins/masters-tournament",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-28",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "3.2.4",
-      "ledmatrix_min_version": "3.4.0",
-      "commit": "62fa95853476715b833abfe0b207d4f50876b6b4"
+      "latest_version": "3.2.5",
+      "ledmatrix_min_version": "3.4.0"
     },
     {
       "id": "mqtt-notifications",
@@ -574,12 +557,11 @@
       "plugin_path": "plugins/mqtt-notifications",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-28",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.7",
-      "ledmatrix_min_version": "2.0.0",
-      "commit": "67d6ae4b1f4bc7529cc2fcc485d9f1477e9dea66"
+      "latest_version": "1.2.8",
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "id": "music",
@@ -602,12 +584,11 @@
       "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.5.3",
+      "latest_version": "1.5.4",
       "ledmatrix_min_version": "2.0.0",
       "aliases": [
         "ledmatrix-music"
-      ],
-      "commit": "988f1a9e5c4d037a81ae4ec4bfc7b0aec3fcda21"
+      ]
     },
     {
       "id": "news",
@@ -628,12 +609,11 @@
       "plugin_path": "plugins/news",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-28",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.6.4",
-      "ledmatrix_min_version": "3.4.0",
-      "commit": "026931a925cddb96c214eb92fe2796f5a33a4b89"
+      "latest_version": "1.6.5",
+      "ledmatrix_min_version": "3.4.0"
     },
     {
       "id": "on-air",
@@ -654,13 +634,12 @@
       "plugin_path": "plugins/on-air",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-29",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.13",
+      "latest_version": "1.2.14",
       "icon": "fa-circle-dot",
-      "ledmatrix_min_version": "2.0.0",
-      "commit": "c695b9761d59a9379222c8abfca41c14297e6cb9"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "id": "nfl-draft",
@@ -680,13 +659,12 @@
       "plugin_path": "plugins/nfl-draft",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-28",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.2.1",
+      "latest_version": "2.2.2",
       "icon": "fas fa-football-ball",
-      "ledmatrix_min_version": "3.4.0",
-      "commit": "62fa95853476715b833abfe0b207d4f50876b6b4"
+      "ledmatrix_min_version": "3.4.0"
     },
     {
       "id": "odds-ticker",
@@ -710,12 +688,11 @@
       "plugin_path": "plugins/odds-ticker",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-01",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.7.6",
-      "ledmatrix_min_version": "3.4.0",
-      "commit": "e90b592502f3a20e50fe62a4ebc977d9c24a2d7d"
+      "latest_version": "1.7.7",
+      "ledmatrix_min_version": "3.4.0"
     },
     {
       "id": "of-the-day",
@@ -735,12 +712,11 @@
       "plugin_path": "plugins/of-the-day",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-28",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.4.8",
-      "ledmatrix_min_version": "2.0.0",
-      "commit": "e429d8e46b547f09a0bd93af60002db6357a8bf8"
+      "latest_version": "1.4.9",
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "id": "olympics",
@@ -765,9 +741,8 @@
       "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "3.1.4",
-      "ledmatrix_min_version": "2.0.0",
-      "commit": "f9ced936bab32e05df5dd71bcabbc94972aa634b"
+      "latest_version": "3.1.5",
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "id": "pga-tour-leaderboard",
@@ -844,12 +819,11 @@
       "plugin_path": "plugins/soccer-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-01",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.39.1",
-      "ledmatrix_min_version": "3.8.0",
-      "commit": "56e3f7a0070a26bd7b3fcd80b0214445ded480ac"
+      "latest_version": "2.39.2",
+      "ledmatrix_min_version": "3.8.0"
     },
     {
       "id": "static-image",
@@ -869,12 +843,11 @@
       "plugin_path": "plugins/static-image",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-28",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.1.7",
-      "ledmatrix_min_version": "2.0.0",
-      "commit": "62fa95853476715b833abfe0b207d4f50876b6b4"
+      "latest_version": "1.1.8",
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "id": "stock-news",
@@ -897,12 +870,11 @@
       "plugin_path": "plugins/stock-news",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-01",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.8.3",
-      "ledmatrix_min_version": "3.4.0",
-      "commit": "9826f800aa163713d7927975bb1ddaf0de121751"
+      "latest_version": "2.8.4",
+      "ledmatrix_min_version": "3.4.0"
     },
     {
       "id": "stocks",
@@ -922,16 +894,15 @@
       "plugin_path": "plugins/ledmatrix-stocks",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-28",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.11.2",
+      "latest_version": "2.11.3",
       "icon": "fas fa-chart-line",
       "ledmatrix_min_version": "3.4.0",
       "aliases": [
         "ledmatrix-stocks"
-      ],
-      "commit": "026931a925cddb96c214eb92fe2796f5a33a4b89"
+      ]
     },
     {
       "id": "text-display",
@@ -951,12 +922,11 @@
       "plugin_path": "plugins/text-display",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-28",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.3.2",
-      "ledmatrix_min_version": "3.4.0",
-      "commit": "d6223d0f6f6299238fa6c952143004a2f45e3c92"
+      "latest_version": "1.3.3",
+      "ledmatrix_min_version": "3.4.0"
     },
     {
       "id": "tide-display",
@@ -977,13 +947,12 @@
       "plugin_path": "plugins/tide-display",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-28",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.3.4",
+      "latest_version": "1.3.5",
       "icon": "fa-water",
-      "ledmatrix_min_version": "2.0.0",
-      "commit": "62fa95853476715b833abfe0b207d4f50876b6b4"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "id": "ufc-scoreboard",
@@ -1007,10 +976,9 @@
       "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.19.2",
+      "latest_version": "1.19.3",
       "icon": "fas fa-fist-raised",
-      "ledmatrix_min_version": "3.8.0",
-      "commit": "f9ced936bab32e05df5dd71bcabbc94972aa634b"
+      "ledmatrix_min_version": "3.8.0"
     },
     {
       "id": "weather",
@@ -1032,17 +1000,16 @@
       "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
       "branch": "main",
       "plugin_path": "plugins/ledmatrix-weather",
-      "latest_version": "2.8.0",
+      "latest_version": "2.8.1",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-30",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
       "ledmatrix_min_version": "3.8.0",
       "aliases": [
         "ledmatrix-weather"
-      ],
-      "commit": "555e63f5c79221d206d740bea11698249ce0eb08"
+      ]
     },
     {
       "id": "web-ui-info",
@@ -1086,12 +1053,11 @@
       "plugin_path": "plugins/youtube-stats",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-28",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.3.2",
-      "ledmatrix_min_version": "3.4.0",
-      "commit": "44618443dd6e2ea581377d589864dcc9190d2114"
+      "latest_version": "1.3.3",
+      "ledmatrix_min_version": "3.4.0"
     },
     {
       "id": "ledmatrix-elections",
@@ -1111,12 +1077,11 @@
       "plugin_path": "plugins/ledmatrix-elections",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-16",
+      "last_updated": "2026-10-02",
       "verified": false,
       "screenshot": "",
-      "latest_version": "1.3.1",
-      "ledmatrix_min_version": "3.4.0",
-      "commit": "912724bccbf6c56985be2b1fcdf16b79a33dd0c2"
+      "latest_version": "1.3.2",
+      "ledmatrix_min_version": "3.4.0"
     },
     {
       "id": "ledmatrix-dresden-departures",
@@ -1164,10 +1129,9 @@
       "downloads": 0,
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.35.1",
-      "last_updated": "2026-10-01",
-      "ledmatrix_min_version": "3.8.0",
-      "commit": "56e3f7a0070a26bd7b3fcd80b0214445ded480ac"
+      "latest_version": "1.35.2",
+      "last_updated": "2026-10-02",
+      "ledmatrix_min_version": "3.8.0"
     },
     {
       "id": "tidbyt-baseball-scoreboard",
@@ -1210,12 +1174,11 @@
       "plugin_path": "plugins/nrl-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-01",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.34.1",
-      "ledmatrix_min_version": "3.8.0",
-      "commit": "56e3f7a0070a26bd7b3fcd80b0214445ded480ac"
+      "latest_version": "1.34.2",
+      "ledmatrix_min_version": "3.8.0"
     },
     {
       "id": "jellyfin-now-playing",
@@ -1236,12 +1199,11 @@
       "plugin_path": "plugins/jellyfin-now-playing",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-28",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.3.2",
-      "ledmatrix_min_version": "3.4.0",
-      "commit": "d6223d0f6f6299238fa6c952143004a2f45e3c92"
+      "latest_version": "1.3.3",
+      "ledmatrix_min_version": "3.4.0"
     },
     {
       "id": "incoming-packages",
@@ -1262,13 +1224,12 @@
       "plugin_path": "plugins/incoming-packages",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-28",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "https://raw.githubusercontent.com/ChuckBuilds/ledmatrix-plugins/main/plugins/incoming-packages/assets/screenshot.png",
-      "latest_version": "1.1.3",
+      "latest_version": "1.1.4",
       "icon": "fas fa-box",
-      "ledmatrix_min_version": "3.4.0",
-      "commit": "8eb980951dedda974ebca5d9eac76ca4e7aa7601"
+      "ledmatrix_min_version": "3.4.0"
     },
     {
       "id": "pomodoro-timer",
@@ -1289,13 +1250,12 @@
       "plugin_path": "plugins/pomodoro-timer",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-29",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.3.9",
+      "latest_version": "1.3.10",
       "icon": "fa-hourglass-half",
-      "ledmatrix_min_version": "2.0.0",
-      "commit": "843588025a81197056f8d96779ccb2be19337ab8"
+      "ledmatrix_min_version": "2.0.0"
     },
     {
       "id": "sleeper-fantasy",
@@ -1343,10 +1303,9 @@
       "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "https://raw.githubusercontent.com/ChuckBuilds/ledmatrix-plugins/main/plugins/blackjack/assets/hero.png",
-      "latest_version": "1.3.1",
+      "latest_version": "1.3.2",
       "icon": "fa-diamond",
-      "ledmatrix_min_version": "3.2.0",
-      "commit": "f9ced936bab32e05df5dd71bcabbc94972aa634b"
+      "ledmatrix_min_version": "3.2.0"
     },
     {
       "id": "ledmatrix-nascar",

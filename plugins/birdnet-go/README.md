@@ -117,7 +117,7 @@ Every `birdnet_api.poll_interval` seconds (default 60) the plugin calls:
 | `/api/v2/analytics/species/daily` | today's per-species counts |
 | `/api/v2/media/species-image?name=<scientific_name>` | the species photo |
 
-Photos are cached in memory and on disk for 30 days, keyed by scientific name; failed lookups are remembered for the session so we don't hammer the API. If the image endpoint is unreachable the layout falls back to text-only.
+Photos are cached in memory and on disk for 30 days, keyed by scientific name; a failed lookup is not retried for 30 minutes, so the API isn't hammered but a photo that timed out on its first request still turns up. If the image endpoint is unreachable the layout falls back to text-only.
 
 Polling keeps running even when MQTT is enabled, so a broker outage can't freeze the display.
 

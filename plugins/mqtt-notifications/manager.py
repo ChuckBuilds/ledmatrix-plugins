@@ -104,7 +104,8 @@ class MQTTNotificationsPlugin(BasePlugin):
         self.last_update_time = time.time()
         self.text_image_cache: Optional[Image.Image] = None
         self.image_cache: Optional[Image.Image] = None
-        
+        self.image_failed = False
+
         # Load font
         self.font = self._load_font()
 
@@ -164,15 +165,14 @@ class MQTTNotificationsPlugin(BasePlugin):
                 self.logger.info("Loaded TTF font: %s", font_path)
                 return font
             elif font_path.lower().endswith('.bdf'):
-                try:
-                    import freetype
-                    face = freetype.Face(font_path)
-                    face.set_pixel_sizes(0, self.font_size)
-                    self.logger.info("Loaded BDF font: %s", font_path)
-                    return face
-                except ImportError:
-                    self.logger.warning("freetype not available for BDF font, using default")
-                    return ImageFont.load_default()
+                # PIL's FreeType loader opens a .bdf, but only at the one pixel
+                # size it declares. This used to return a raw freetype.Face,
+                # which PIL cannot draw with, so every message failed to render.
+                native = self._bdf_pixel_size(font_path)
+                size = native if native is not None else int(self.font_size)
+                font = ImageFont.truetype(font_path, size)
+                self.logger.info("Loaded BDF font: %s @ %s", font_path, size)
+                return font
             else:
                 self.logger.warning("Unsupported font type: %s", font_path)
                 return ImageFont.load_default()
@@ -323,8 +323,9 @@ class MQTTNotificationsPlugin(BasePlugin):
                 # Clear caches when new message arrives
                 self.text_image_cache = None
                 self.image_cache = None
+                self.image_failed = False
                 self.scroll_pos = 0.0
-            
+
             # Trigger on-demand display
             self._trigger_on_demand_display(message)
             
@@ -660,13 +661,20 @@ class MQTTNotificationsPlugin(BasePlugin):
             if 'image' in content and content['image']:
                 # Display image
                 if self.image_cache is None:
-                    img = self._load_image(content['image'])
+                    # One attempt per message: a failed load used to be retried
+                    # (and logged as an error) on every frame of the fast loop.
+                    img = None
+                    first_attempt = not getattr(self, 'image_failed', False)
+                    if first_attempt:
+                        img = self._load_image(content['image'])
+                        self.image_failed = img is None
                     if img:
                         self.image_cache = self._resize_image(img)
                     else:
                         # Fallback to text if image loading fails
                         if 'text' in content and content['text']:
-                            self.logger.warning("Image loading failed, falling back to text")
+                            if first_attempt:
+                                self.logger.warning("Image loading failed, falling back to text")
                             content = {'text': content['text']}
                         else:
                             return False

@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-stocks",
   "name": "Stock & Crypto Ticker",
-  "version": "2.11.2",
+  "version": "2.11.3",
   "description": "Displays stock tickers with prices, changes, and optional charts for stocks and cryptocurrencies. Supports scroll and switch display modes.",
   "author": "LEDMatrix Team",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/ledmatrix-stocks",
@@ -38,6 +38,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "2.11.3",
+      "released": "2026-10-02",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Switch mode no longer draws the price over the logo. The text was centered on the whole panel, so on a 64-wide panel it covered the logo and on 128 wide the change line ran into it. The text is now centered beside the logo, which shrinks to fit the widest line and is left out when there is no room for it. README: the inline chart is drawn in scroll mode only."
+    },
     {
       "version": "2.11.2",
       "released": "2026-09-28",
@@ -151,7 +157,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-28",
+  "last_updated": "2026-10-02",
   "stars": 0,
   "downloads": 0,
   "verified": true,

@@ -363,7 +363,8 @@
         "period_text": {
           "type": "object",
           "title": "Overs / Session",
-          "description": "Font settings for overs, session and day text",
+          "x-display": "hidden",
+          "description": "Font settings for overs, session and day text HIDDEN: nothing draws with it. The overs line uses Details and the session/day uses Status Messages. Kept declared so saved configs keep validating.",
           "properties": {
             "font": {
               "type": "string",

@@ -1,7 +1,7 @@
 {
   "id": "cricket-scoreboard",
   "name": "Cricket Scoreboard",
-  "version": "1.3.2",
+  "version": "1.3.3",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming cricket matches across international tours (Test/ODI/T20I) and major domestic T20 leagues including the IPL, Big Bash League, The Hundred, PSL, CPL, SA20 and more. Shows runs/wickets/overs, run rates, targets, and match results.",
   "category": "sports",
@@ -22,6 +22,12 @@
     "cricket_upcoming"
   ],
   "versions": [
+    {
+      "version": "1.3.3",
+      "released": "2026-10-02",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Scores now read ESPN's cricket data correctly. ESPN gives each side a linescore for every innings of the match, including the ones it spent bowling (0 runs, 0 wickets), and marks every innings a side batted, not only the one in progress. So a live Test drew \"0 & 278 & 0/0\" for a side that had made 278, a side yet to bat showed \"0/0\", and in a chase both sides were highlighted as batting; only innings a side batted are shown now, and only the innings in progress is highlighted. ESPN sends the winner flag as the string \"false\", which read as true, so a result drew both sides in the winner's green. A live Test shows ESPN's break and day (\"Stumps Day 2\") rather than \"Day 3\" (status.period counts innings, not days), and the bottom line shows the match situation (\"trail by 17 runs\") rather than \"Live\"; a finished Test shows both innings. The chase line drops the run rate, then the overs, when it would run off the panel. A match whose start time has passed is polled at live_update_interval, so live_priority picks it up within seconds instead of up to an hour later. Closes the old HTTP session on a settings save. customization.period_text is hidden (nothing draws with it); font size fallbacks match the schema (8/7/7). The harness fixture now seeds trimmed ESPN data, so CI renders without the network."
+    },
     {
       "version": "1.3.2",
       "released": "2026-09-28",
@@ -101,7 +107,7 @@
       "ledmatrix_min": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-28",
+  "last_updated": "2026-10-02",
   "stars": 0,
   "downloads": 0,
   "verified": true,

@@ -871,7 +871,7 @@ class SoccerScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
                 "favorite_teams": custom_league.get("favorite_teams", []),
                 "exclude_teams": custom_league.get("exclude_teams", []),
                 "display_modes": manager_display_modes,
-                "recent_games_to_show": game_limits.get("recent_games_to_show", 5),
+                "recent_games_to_show": game_limits.get("recent_games_to_show", 1),
                 # These ride the same source as the limits above, which is where the
                 # schema declares them. Managers read a translated config, not the
                 # plugin config, so a key missing here is a setting the user can
@@ -882,7 +882,7 @@ class SoccerScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
                 ),
                 "other_recent_games_to_show": game_limits.get(
                     "other_recent_games_to_show",
-                    game_limits.get("recent_games_to_show", 5),
+                    game_limits.get("recent_games_to_show", 1),
                 ),
                 "other_rotation_interval_seconds": game_limits.get(
                     "other_rotation_interval_seconds", 1800
