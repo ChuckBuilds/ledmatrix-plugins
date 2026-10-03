@@ -845,8 +845,8 @@ class FantasyBlitzPlugin(BasePlugin):
         if getter is not None:
             try:
                 return getter() == "pause"
-            except Exception:  # noqa: BLE001 - fall back to the setting itself
-                pass
+            except Exception as exc:  # noqa: BLE001 - fall back to the setting itself
+                self.logger.debug("get_vegas_participation() failed: %s", exc)
         return self.vegas_mode == "static"
 
     def _display_pause(self, now: float) -> bool:
