@@ -150,9 +150,17 @@ without `<item>` elements will fetch successfully and yield nothing.
 
 | Option | Default | What it does |
 |--------|---------|--------------|
-| `global.headlines_per_feed` | `2` | Headlines taken from each enabled feed per fetch |
+| `global.headlines_per_feed` | `2` | Headlines shown from each enabled feed at a time |
+| `global.headline_pool_size` | `10` | Stories fetched from each feed. The strip shows `headlines_per_feed` of them and moves on to the ones not yet shown, so the same top stories do not repeat. Advanced. |
+| `global.max_headline_age_hours` | `48` | A story older than this is shown only when a feed has too few newer ones; `0` turns the check off. Advanced. |
 | `global.rotation_enabled` | `true` | Rotate the headline order after `rotation_threshold` passes. Only used when `headline_paging` is off (it is on by default) |
 | `global.rotation_threshold` | `3` | Complete passes of the strip before the order rotates — a count of scroll cycles, not of feeds |
+
+Every cycle (or page, with `headline_paging` on) is built from the stories each
+feed has shown least recently, newest first, so a feed's second, third and
+fourth story come round instead of its top two repeating. A story carried by
+two feeds is shown once. When a feed has nothing newer to offer, the rotation
+falls back to changing which headline leads.
 
 With three feeds and the default `headlines_per_feed: 2`, a cycle carries six
 headlines. Raising it makes the strip longer, and therefore each lap slower —

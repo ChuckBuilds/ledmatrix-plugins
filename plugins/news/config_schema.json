@@ -162,7 +162,23 @@
           "default": 2,
           "minimum": 1,
           "maximum": 10,
-          "description": "Number of headlines to fetch per feed",
+          "description": "Number of headlines shown from each feed at a time",
+          "x-advanced": true
+        },
+        "headline_pool_size": {
+          "type": "integer",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 30,
+          "description": "Stories fetched from each feed. Only headlines_per_feed of them are shown at a time; the rest are the pool later cycles pick from, so the same top stories are not shown every time. Never fewer than headlines_per_feed.",
+          "x-advanced": true
+        },
+        "max_headline_age_hours": {
+          "type": "number",
+          "default": 48,
+          "minimum": 0,
+          "maximum": 720,
+          "description": "A story older than this is only shown when a feed has too few newer ones. 0 turns the age check off.",
           "x-advanced": true
         },
         "background_service": {

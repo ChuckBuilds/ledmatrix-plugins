@@ -65,10 +65,12 @@ The full schema is [`config_schema.json`](config_schema.json).
 |---|---|---|
 | `global.rotation_enabled` | `true` | Rotate through headlines after each scroll cycle. Advanced. |
 | `global.rotation_threshold` | `1` | Scroll cycles before advancing to the next headline (1–10). Advanced. |
-| `global.shuffle_headlines` | `true` | Randomise headline order on fetch and after each full rotation cycle. Advanced. |
+| `global.shuffle_headlines` | `true` | Randomise headline order each time the strip is rebuilt. Advanced. |
 | `global.max_headline_length` | `120` | Maximum headline length in characters before truncating with '...'. Default 120 shows most headlines in full (40–300). Advanced. |
-| `global.max_headlines_per_symbol` | `1` | Max headlines shown per stock symbol (1–5). Advanced. |
-| `global.headlines_per_rotation` | `2` | Max headlines pulled from each custom RSS feed (1–10). Advanced. |
+| `global.max_headlines_per_symbol` | `1` | Max headlines shown per stock symbol per pass (1–5). Advanced. |
+| `global.headline_pool_size` | `10` | Stories fetched per symbol or custom feed (1–30). Each pass shows the ones shown least recently, so a symbol's top story does not repeat every pass. Advanced. |
+| `global.max_headline_age_hours` | `48` | A story older than this is shown only when a symbol has too few newer ones; `0` turns the check off. Advanced. |
+| `global.headlines_per_rotation` | `2` | Max headlines shown per pass from each custom RSS feed (1–10). Advanced. |
 | `global.eager_fetch_on_startup` | `true` | Fetch every configured symbol once immediately (ignoring the normal per-symbol spacing) so the ticker isn't left showing just 1-2 headlines for several minutes after a restart or config change. Falls back to the spread schedule once every symbol has data. Advanced. |
 | `global.sync_with_stocks_plugin` | `false` | Automatically track the same stocks watched in the Stock Ticker plugin (ledmatrix-stocks). Synced symbols are merged with any symbols configured above. |
 

@@ -79,6 +79,11 @@ class StockNewsTickerPlugin(BasePlugin):
         self._last_symbol_fetch: float = 0
         self._rotation_count: int = 0
         self._items_rotated: int = 0
+        # Story -> sequence number of the last pass that showed it (0 = never).
+        # Drives which stories are picked from each pool; see _pick_items().
+        self._shown_headlines: Dict[str, int] = {}
+        self._show_seq: int = 0
+        self._strip_items: list = []              # what the strip on screen was built from
         self._cycle_complete: bool = False
         self._vegas_cache: Optional[list] = None
         self._was_stale: bool = False
@@ -176,6 +181,12 @@ class StockNewsTickerPlugin(BasePlugin):
         self.max_headlines_per_symbol = gc.get('max_headlines_per_symbol', 1)  # int or dict
         self.headlines_per_rotation = gc.get('headlines_per_rotation', 2)
         self.max_headline_length = gc.get('max_headline_length', 120)
+        # How many stories to fetch per symbol/feed, and how old a story can be
+        # before one that is newer always goes first. The strip shows only
+        # max_headlines_per_symbol of them per pass; the rest is the pool the
+        # next passes draw from, so the same top story is not shown every time.
+        self.headline_pool_size = max(1, int(gc.get('headline_pool_size', 10)))
+        self.max_headline_age_hours = max(0.0, float(gc.get('max_headline_age_hours', 48)))
 
         # Rotation / shuffle
         self.rotation_enabled = gc.get('rotation_enabled', True)
@@ -454,7 +465,7 @@ class StockNewsTickerPlugin(BasePlugin):
             last = self._feed_last_fetch.get(feed_name, 0)
             if now - last >= self.update_interval:
                 items = self._fetch_rss_feed(feed_name, feed_url,
-                                             max_items=self.headlines_per_rotation)
+                                             max_items=self._pool_size(self.headlines_per_rotation))
                 fetched = self._store_items(f"_feed_{feed_name}", items) or fetched
                 self._feed_last_fetch[feed_name] = now
                 break  # one feed per update() call
@@ -515,24 +526,7 @@ class StockNewsTickerPlugin(BasePlugin):
 
     def _rebuild_all_news_items(self) -> None:
         """Rebuild all_news_items from per-symbol cached data."""
-        configured = self.feeds_config.get('stock_symbols', [])
-        stock_symbols = list(dict.fromkeys(configured + self._get_stocks_plugin_symbols()))
-        custom_feeds = self._get_custom_feeds()
-
-        all_items: list = []
-        for sym in stock_symbols:
-            all_items.extend(self._symbol_data.get(sym, []))
-        for fn in custom_feeds:
-            all_items.extend(self._symbol_data.get(f"_feed_{fn}", []))
-
-        max_total = (
-            sum(self._get_symbol_max_headlines(s) for s in stock_symbols)
-            + len(custom_feeds) * self.headlines_per_rotation
-        )
-        self.all_news_items = all_items[:max_total] if len(all_items) > max_total else all_items
-
-        if self.shuffle_headlines and self.all_news_items:
-            random.shuffle(self.all_news_items)
+        self.all_news_items, n_symbols, n_feeds = self._select_items()
 
         self.last_update = time.time()
         # A new strip is built between passes, not now: this runs after every
@@ -544,7 +538,82 @@ class StockNewsTickerPlugin(BasePlugin):
         self._rotation_count = 0
         self._items_rotated = 0
         self.logger.info("[Stock News] Rebuilt: %d items (%d symbols, %d custom feeds)",
-                         len(self.all_news_items), len(stock_symbols), len(custom_feeds))
+                         len(self.all_news_items), n_symbols, n_feeds)
+
+    # -------------------------------------------------------------------------
+    # Choosing what to show
+    # -------------------------------------------------------------------------
+
+    def _pool_size(self, shown: int) -> int:
+        """Stories to fetch for a source that shows `shown` per pass."""
+        return max(int(getattr(self, 'headline_pool_size', 10)), int(shown))
+
+    @staticmethod
+    def _story_key(item: Dict) -> str:
+        """Identity of a story: its title, so one syndicated under two tickers is one story."""
+        return ' '.join(str(item.get('title', '')).casefold().split())
+
+    def _is_stale_story(self, item: Dict) -> bool:
+        limit = float(getattr(self, 'max_headline_age_hours', 0) or 0)
+        ts = item.get('published_ts') or 0
+        if limit <= 0 or not ts:
+            return False
+        return (time.time() - float(ts)) > limit * 3600
+
+    def _pick_items(self, pool: List[Dict], n: int, taken: set) -> List[Dict]:
+        """The n stories of one pool to show next.
+
+        Fresh before stale, then never-shown before shown (longest ago first),
+        then the order the source gave them in (newest first). A story already
+        picked for another symbol is skipped. Returned in the source's order.
+        """
+        shown = self.__dict__.setdefault('_shown_headlines', {})
+        ranked = []
+        for idx, item in enumerate(pool):
+            key = self._story_key(item)
+            if not key or key in taken:
+                continue
+            ranked.append((self._is_stale_story(item), shown.get(key, 0), idx, key, item))
+        ranked.sort(key=lambda r: r[:3])
+        chosen = sorted(ranked[:max(int(n), 0)], key=lambda r: r[2])
+        taken.update(r[3] for r in chosen)
+        return [r[4] for r in chosen]
+
+    def _select_items(self) -> Tuple[List[Dict], int, int]:
+        """Pick the next strip's stories from every pool: (items, symbols, feeds)."""
+        configured = self.feeds_config.get('stock_symbols', [])
+        stock_symbols = list(dict.fromkeys(configured + self._get_stocks_plugin_symbols()))
+        custom_feeds = self._get_custom_feeds()
+
+        taken: set = set()
+        items: List[Dict] = []
+        live: set = set()
+        for sym in stock_symbols:
+            pool = self._symbol_data.get(sym, [])
+            live.update(self._story_key(i) for i in pool)
+            items.extend(self._pick_items(pool, self._get_symbol_max_headlines(sym), taken))
+        for fn in custom_feeds:
+            pool = self._symbol_data.get(f"_feed_{fn}", [])
+            live.update(self._story_key(i) for i in pool)
+            items.extend(self._pick_items(pool, self.headlines_per_rotation, taken))
+
+        # Forget stories that have left every pool; the table stays small.
+        shown = self.__dict__.setdefault('_shown_headlines', {})
+        for key in [k for k in shown if k not in live]:
+            del shown[key]
+
+        if self.shuffle_headlines and items:
+            random.shuffle(items)
+        return items, len(stock_symbols), len(custom_feeds)
+
+    def _commit_shown(self, items: List[Dict]) -> None:
+        """Record that `items` have been on the panel, so the next pick moves on."""
+        self._show_seq = getattr(self, '_show_seq', 0) + 1
+        shown = self.__dict__.setdefault('_shown_headlines', {})
+        for item in items:
+            key = self._story_key(item)
+            if key:
+                shown[key] = self._show_seq
 
     # -------------------------------------------------------------------------
     # Data fetching
@@ -558,7 +627,8 @@ class StockNewsTickerPlugin(BasePlugin):
         return int(cfg)
 
     def _fetch_stock_news(self, symbol: str, max_h: int) -> List[Dict]:
-        """Try YF search API first; fall back to RSS."""
+        """Try YF search API first; fall back to RSS. Fetches the whole pool."""
+        max_h = self._pool_size(max_h)
         items = self._fetch_yf_api(symbol, max_h)
         if items:
             return items
@@ -572,7 +642,8 @@ class StockNewsTickerPlugin(BasePlugin):
     def _fetch_yf_api(self, symbol: str, max_h: int) -> List[Dict]:
         """Yahoo Finance search API — returns publisher, timestamp, optional price."""
         bucket = int(time.time() // self.update_interval)
-        cache_key = f"stock_yf_{symbol}_{bucket}"
+        max_h = self._pool_size(max_h)
+        cache_key = f"stock_yf_{symbol}_{max_h}_{bucket}"
         cached = self.cache_manager.get(cache_key)
         if cached:
             self.logger.debug("[Stock News] Cache hit (YF): %s", symbol)
@@ -927,6 +998,7 @@ class StockNewsTickerPlugin(BasePlugin):
                 self.scroll_helper.clear_cache()
                 return
             self.scroll_helper.create_scrolling_image(item_images, item_gap=self.item_gap)
+            self._strip_items = list(self.all_news_items)
             self._cycle_complete = False
             # Any build reads every logo already on disk.
             self._strip_rebuild_pending = False
@@ -1047,6 +1119,23 @@ class StockNewsTickerPlugin(BasePlugin):
             return None
 
     def _rotate_headlines(self) -> None:
+        """Move on to the next stories once a pass has been shown.
+
+        What the finished strip showed is recorded, then each symbol picks its
+        next least-recently-shown story. A source with nothing newer to offer
+        falls back to shifting the order, so the lead story still changes.
+        """
+        self._commit_shown(getattr(self, '_strip_items', None) or self.all_news_items)
+        items, _, _ = self._select_items()
+        if set(map(self._story_key, items)) != set(map(self._story_key, self.all_news_items)):
+            self.all_news_items = items
+            self._items_rotated = 0
+            self.logger.info("[Stock News] Rotated to %d fresh/unseen stories", len(items))
+            self._vegas_cache = None
+            return
+        self._shift_headlines()
+
+    def _shift_headlines(self) -> None:
         if len(self.all_news_items) <= 1:
             return
         first = self.all_news_items[0]
@@ -1071,6 +1160,11 @@ class StockNewsTickerPlugin(BasePlugin):
         if self._vegas_cache is None:
             rendered = [self._render_news_item(item) for item in self.all_news_items]
             self._vegas_cache = [img for img in rendered if img is not None]
+            # These stories are about to scroll: the next build picks others.
+            self._commit_shown(self.all_news_items)
+            upcoming = self._select_items()[0]
+            if upcoming:
+                self.all_news_items = upcoming
             total_px = sum(img.width for img in self._vegas_cache)
             self.logger.info("[Stock News] Vegas cache: %d items, %dpx total",
                              len(self._vegas_cache), total_px)
@@ -1234,6 +1328,8 @@ class StockNewsTickerPlugin(BasePlugin):
             'shuffle_headlines': self.shuffle_headlines,
             'rotation_enabled': self.rotation_enabled,
             'rotation_threshold': self.rotation_threshold,
+            'headline_pool_size': self.headline_pool_size,
+            'max_headline_age_hours': self.max_headline_age_hours,
             'logo_fetch_enabled': self.logo_fetch_enabled,
             'logo_size': self.logo_size,
             'respect_market_hours': self.respect_market_hours,

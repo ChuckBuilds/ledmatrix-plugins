@@ -203,7 +203,7 @@
           "default": 1,
           "minimum": 1,
           "maximum": 5,
-          "description": "Max headlines shown per stock symbol (1–5)."
+          "description": "Max headlines shown per stock symbol per pass (1–5)."
         },
         "headlines_per_rotation": {
           "x-advanced": true,
@@ -211,7 +211,23 @@
           "default": 2,
           "minimum": 1,
           "maximum": 10,
-          "description": "Max headlines pulled from each custom RSS feed"
+          "description": "Max headlines shown per pass from each custom RSS feed"
+        },
+        "headline_pool_size": {
+          "x-advanced": true,
+          "type": "integer",
+          "default": 10,
+          "minimum": 1,
+          "maximum": 30,
+          "description": "Stories fetched for each symbol or custom feed. Only max_headlines_per_symbol (headlines_per_rotation for custom feeds) of them are shown per pass; the rest are the pool later passes pick from, so the same top story is not shown every time. Never fewer than the number shown."
+        },
+        "max_headline_age_hours": {
+          "x-advanced": true,
+          "type": "number",
+          "default": 48,
+          "minimum": 0,
+          "maximum": 720,
+          "description": "A story older than this is only shown when a symbol has too few newer ones. 0 turns the age check off."
         },
         "update_interval_seconds": {
           "x-advanced": true,
