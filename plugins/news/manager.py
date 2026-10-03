@@ -140,6 +140,12 @@ class NewsTickerPlugin(BasePlugin):
         self.rotation_enabled = self.global_config.get('rotation_enabled', True)
         self.rotation_threshold = self.global_config.get('rotation_threshold', 3)
         self.headlines_per_feed = self.global_config.get('headlines_per_feed', 2)
+        # Stories fetched per feed, and how old one can be before a newer story
+        # always goes first. headlines_per_feed of them are shown at a time;
+        # the rest is the pool later cycles draw from (see _select_headlines).
+        self.headline_pool_size = max(1, int(self.global_config.get('headline_pool_size', 10)))
+        self.max_headline_age_hours = max(
+            0.0, float(self.global_config.get('max_headline_age_hours', 48)))
         # PressStart2P's pixel grid is 8; 12 was off it and anti-aliased on the
         # panel. A stored 12 is the old schema default, not a choice.
         self.font_size = self._resolve_font_size(self.global_config)
@@ -179,6 +185,13 @@ class NewsTickerPlugin(BasePlugin):
 
         # State
         self.current_headlines = []
+        # Each feed's whole fetched pool, in feed order, and what has been shown:
+        # story -> sequence number of the last cycle that showed it. Stories seen
+        # on a cycle that is still running wait in _pending_shown until it ends.
+        self._headline_pools = []
+        self._shown_headlines = {}
+        self._pending_shown = set()
+        self._show_seq = 0
         # Headline set the current scroll strip was rendered from
         self._headlines_signature = None
         self._last_good_headlines = {}  # feed -> its last non-empty fetch; see update()
@@ -846,6 +859,12 @@ class NewsTickerPlugin(BasePlugin):
         self.rotation_enabled = self.global_config.get('rotation_enabled', True)
         self.rotation_threshold = self.global_config.get('rotation_threshold', 3)
         self.headlines_per_feed = self.global_config.get('headlines_per_feed', 2)
+        # Stories fetched per feed, and how old one can be before a newer story
+        # always goes first. headlines_per_feed of them are shown at a time;
+        # the rest is the pool later cycles draw from (see _select_headlines).
+        self.headline_pool_size = max(1, int(self.global_config.get('headline_pool_size', 10)))
+        self.max_headline_age_hours = max(
+            0.0, float(self.global_config.get('max_headline_age_hours', 48)))
         # Same resolution as __init__ (default 16; it was 12 here).
         self.font_size = self._resolve_font_size(self.global_config)
 
@@ -918,6 +937,7 @@ class NewsTickerPlugin(BasePlugin):
 
         try:
             self.current_headlines = []
+            pools = []
             feed_stats = {'success': 0, 'failed': 0, 'total': 0}
 
             # Each feed's last good headlines. A feed that fails now shows
@@ -942,7 +962,7 @@ class NewsTickerPlugin(BasePlugin):
                 if feed_name in self.DEFAULT_FEEDS:
                     feed_stats['total'] += 1
                     headlines = self._fetch_feed_headlines(feed_name, self.DEFAULT_FEEDS[feed_name])
-                    self.current_headlines.extend(take(('default', feed_name), headlines))
+                    pools.append(take(('default', feed_name), headlines))
 
             # Fetch from custom feeds (use array order)
             custom_feeds = self.feeds_config.get('custom_feeds', [])
@@ -966,13 +986,17 @@ class NewsTickerPlugin(BasePlugin):
                     continue
                 feed_stats['total'] += 1
                 headlines = self._fetch_feed_headlines(feed_name, feed_url)
-                self.current_headlines.extend(take(('custom', feed_name, feed_url), headlines))
+                pools.append(take(('custom', feed_name, feed_url), headlines))
+
+            self._headline_pools = pools
+            self.current_headlines = self._select_headlines(pools)
 
             # Log feed status summary
             if feed_stats['total'] > 0:
                 self.logger.info(
                     f"Feed update complete: {feed_stats['success']}/{feed_stats['total']} feeds successful, "
-                    f"{len(self.current_headlines)} headlines retrieved"
+                    f"{len(self.current_headlines)} headlines chosen from "
+                    f"{sum(len(pool) for pool in pools)}"
                 )
                 if feed_stats['failed'] > 0:
                     self.logger.warning(f"{feed_stats['failed']} feed(s) failed to fetch headlines")
@@ -1020,6 +1044,97 @@ class NewsTickerPlugin(BasePlugin):
         except Exception as e:
             self.logger.error(f"Error updating news headlines: {e}")
 
+    def _pool_size(self) -> int:
+        """Stories to fetch per feed: the pool, never fewer than are shown."""
+        return max(int(getattr(self, 'headline_pool_size', 10)),
+                   int(getattr(self, 'headlines_per_feed', 2)))
+
+    @staticmethod
+    def _story_key(headline: Dict[str, Any]) -> str:
+        """Identity of a story: its title, so one carried by two feeds is one story."""
+        return ' '.join(str(headline.get('title', '')).casefold().split())
+
+    def _is_stale_story(self, headline: Dict[str, Any]) -> bool:
+        """Older than max_headline_age_hours; an undated story is never stale."""
+        limit = float(getattr(self, 'max_headline_age_hours', 0) or 0)
+        published = headline.get('published')
+        if limit <= 0 or not published:
+            return False
+        try:
+            from email.utils import parsedate_to_datetime
+            age_seconds = time.time() - parsedate_to_datetime(published).timestamp()
+        except (TypeError, ValueError, IndexError, OverflowError):
+            return False
+        return age_seconds > limit * 3600
+
+    def _select_headlines(self, pools: List[List[Dict]]) -> List[Dict]:
+        """Choose the headlines to show next, headlines_per_feed from each pool.
+
+        Within a feed: fresh before stale, then never-shown before shown (the
+        one shown longest ago first), then the feed's own order (newest first).
+        A story another feed already supplied is skipped. Each feed's picks keep
+        the feed's order, and feeds keep theirs.
+        """
+        per_feed = max(int(getattr(self, 'headlines_per_feed', 2)), 0)
+        shown = self.__dict__.setdefault('_shown_headlines', {})
+        taken = set()
+        live = set()
+        chosen = []
+        for pool in pools:
+            ranked = []
+            for idx, headline in enumerate(pool):
+                key = self._story_key(headline)
+                if not key:
+                    continue
+                live.add(key)
+                if key in taken:
+                    continue
+                ranked.append((self._is_stale_story(headline), shown.get(key, 0), idx, key, headline))
+            ranked.sort(key=lambda r: r[:3])
+            picked = sorted(ranked[:per_feed], key=lambda r: r[2])
+            taken.update(r[3] for r in picked)
+            chosen.extend(r[4] for r in picked)
+
+        # Forget stories that have left every feed; the table stays small.
+        for key in [k for k in shown if k not in live]:
+            del shown[key]
+        return chosen
+
+    def _note_shown(self, headlines: List[Dict]) -> None:
+        """Remember that these were on the panel; counted when the cycle ends."""
+        pending = self.__dict__.setdefault('_pending_shown', set())
+        pending.update(key for key in map(self._story_key, headlines) if key)
+
+    def _reselect_headlines(self) -> bool:
+        """Close the cycle just shown and pick the next headlines.
+
+        Returns True when the headline set changed. False means the feeds have
+        nothing newer or unseen to offer, so the caller falls back to
+        reordering what it has.
+        """
+        shown = self.__dict__.setdefault('_shown_headlines', {})
+        pending = self.__dict__.setdefault('_pending_shown', set())
+        self._show_seq = getattr(self, '_show_seq', 0) + 1
+        for key in pending:
+            shown[key] = self._show_seq
+        pending.clear()
+
+        pools = getattr(self, '_headline_pools', None)
+        if not pools:
+            return False
+        chosen = self._select_headlines(pools)
+        if not chosen or set(map(self._story_key, chosen)) == set(map(self._story_key, self.current_headlines)):
+            return False
+        self.current_headlines = chosen
+        self._headlines_signature = self._headline_signature()
+        wanted = {(h.get('feed_name', ''), h.get('title', '')) for h in chosen}
+        self._headline_image_cache = {
+            k: v for k, v in self._headline_image_cache.items() if k in wanted
+        }
+        self.logger.info("Headlines moved on: %d chosen from %d fetched",
+                         len(chosen), sum(len(pool) for pool in pools))
+        return True
+
     def _fetch_feed_headlines(self, feed_name: str, feed_url: str) -> List[Dict]:
         """Fetch headlines from a specific RSS feed."""
         cache_key = f"news_{feed_name}_{datetime.now().strftime('%Y%m%d%H')}"
@@ -1044,7 +1159,7 @@ class NewsTickerPlugin(BasePlugin):
             headlines = []
 
             # Extract headlines from RSS items
-            for item in root.findall('.//item')[:self.headlines_per_feed]:
+            for item in root.findall('.//item')[:self._pool_size()]:
                 title = item.find('title')
                 description = item.find('description')
                 pub_date = item.find('pubDate')
@@ -1182,7 +1297,9 @@ class NewsTickerPlugin(BasePlugin):
             self.logger.debug(f"Rotation count: {self.rotation_count}/{self.rotation_threshold}")
 
             if self.rotation_count >= self.rotation_threshold:
-                self._rotate_headlines()
+                self._note_shown(self.current_headlines)
+                if not self._reselect_headlines():
+                    self._rotate_headlines()
                 self.rotation_count = 0
                 # Clear scroll cache to force recreation with new headline order
                 self.scroll_helper.clear_cache()
@@ -1249,7 +1366,16 @@ class NewsTickerPlugin(BasePlugin):
         if total == 0:
             return
         step = self._page_count if self._page_count > 0 else 1
-        self._page_start = (self._page_start + step) % total
+        old_start = self._page_start
+        self._note_shown([
+            self.current_headlines[(old_start + i) % total] for i in range(min(step, total))
+        ])
+        self._page_start = (old_start + step) % total
+        if self._page_start <= old_start and self._reselect_headlines():
+            # The window came back round: everything chosen has had its turn,
+            # so start over on the next unseen stories.
+            self._page_start = 0
+            total = len(self.current_headlines)
         self.logger.info(
             "Advanced to next headline page: starting at headline %d/%d ('%s')",
             self._page_start + 1,
@@ -1672,6 +1798,8 @@ class NewsTickerPlugin(BasePlugin):
             'scroll_speed': self.scroll_speed,
             'rotation_enabled': self.rotation_enabled,
             'rotation_threshold': self.rotation_threshold,
+            'headline_pool_size': self.headline_pool_size,
+            'max_headline_age_hours': self.max_headline_age_hours,
             'headlines_per_feed': self.headlines_per_feed,
             'font_size': self.font_size,
             'text_color': self.text_color,

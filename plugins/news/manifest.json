@@ -1,7 +1,7 @@
 {
   "id": "news",
   "name": "News Ticker",
-  "version": "1.6.5",
+  "version": "1.7.0",
   "description": "Displays scrolling news headlines from RSS feeds including sports news from ESPN, NCAA updates, and custom RSS sources",
   "author": "ChuckBuilds",
   "category": "content",
@@ -20,6 +20,12 @@
   "branch": "main",
   "plugin_path": "plugins/news",
   "versions": [
+    {
+      "version": "1.7.0",
+      "released": "2026-10-02",
+      "changelog": "Headlines rotate through more stories. The ticker fetched only headlines_per_feed stories per feed (2 by default) and showed the same ones every cycle until the feed published something new; \"rotation\" only changed which of them led. It now fetches a pool of global.headline_pool_size stories per feed (default 10) and each cycle, or page, shows the ones shown least recently, newest first, so the 3rd to 10th story come round before any repeats. A story carried by two feeds is shown once, and one older than global.max_headline_age_hours (default 48) is used only when a feed has nothing newer. When a feed has nothing unseen, the old rotation of the lead headline still applies. headlines_per_feed now means headlines shown at a time.",
+      "ledmatrix_min_version": "3.4.0"
+    },
     {
       "released": "2026-10-02",
       "version": "1.6.5",
