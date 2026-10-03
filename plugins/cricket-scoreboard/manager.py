@@ -248,11 +248,9 @@ class CricketScoreboardPlugin(BasePlugin if BasePlugin else object):
             upcoming = list(self.upcoming_matches)
         for m in upcoming:
             start = m.get("start_time_utc")
-            try:
-                ts = start.timestamp()
-            except Exception:
+            if not hasattr(start, "timestamp"):
                 continue
-            if 0 <= now - ts <= 12 * 3600:
+            if 0 <= now - start.timestamp() <= 12 * 3600:
                 return True
         return False
 
@@ -603,10 +601,12 @@ class CricketScoreboardPlugin(BasePlugin if BasePlugin else object):
         self._lock = lock
         # The rebuilt fetcher opened its own HTTP session; close the old one
         # rather than leak a connection pool per settings save.
-        try:
-            old_fetcher.session.close()
-        except Exception:
-            pass
+        old_session = getattr(old_fetcher, "session", None)
+        if old_session is not None:
+            try:
+                old_session.close()
+            except Exception as e:
+                self.logger.debug("Closing the previous HTTP session failed: %s", e)
         # Force a re-discovery + refetch on next update.
         self._last_update = 0.0
 

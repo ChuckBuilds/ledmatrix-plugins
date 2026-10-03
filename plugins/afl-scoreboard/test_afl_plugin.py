@@ -42,7 +42,8 @@ def _install_thirdparty_stubs() -> None:
             # ``requests.models`` (fetch_service) would fail to load.
             try:
                 import importlib
-                m = importlib.import_module(name)
+                # name is one of the fixed module names passed below.
+                m = importlib.import_module(name)  # nosemgrep
             except ImportError:
                 m = None
         if m is None:
