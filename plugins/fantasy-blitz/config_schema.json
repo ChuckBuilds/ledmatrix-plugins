@@ -345,7 +345,7 @@
       ],
       "default": "scroll",
       "x-advanced": true,
-      "description": "How Fantasy Blitz behaves in Vegas mode: scroll its top scorers through the ticker, scroll the whole panel as one block, or pause the ticker and show normally"
+      "description": "How Fantasy Blitz behaves in Vegas mode: scroll its top scorers through the ticker, scroll each screen through it as a panel-sized block, or pause the ticker to show one screen per pass (the next screen each time round)"
     }
   }
 }

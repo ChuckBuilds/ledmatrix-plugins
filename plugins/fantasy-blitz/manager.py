@@ -74,6 +74,9 @@ SCREEN_TITLES = {
 #: Seconds each item stays up before a screen moves to the next one.
 ITEM_SECONDS_DEFAULT = 6
 PAGE_SECONDS = 8
+#: ``vegas_mode: fixed`` puts each screen in the ticker as a panel-sized block,
+#: this many items of a screen at most.
+FIXED_ITEMS_PER_SCREEN = 3
 ALERT_SECONDS = 8
 #: Screens whose frames keep moving after the intro (foil, sunburst, flame).
 _INTRO_SECONDS = {
@@ -138,6 +141,11 @@ class FantasyBlitzPlugin(BasePlugin):
         self._frame_cache: Dict[Tuple[Any, ...], Any] = {}
         self._shown_key: Optional[Tuple[Any, ...]] = None
         self._last_warning = 0.0
+        # Vegas "static" hands display() one call per pass, with no mode.
+        self._pause_turn = -1
+        self._pause_at = 0.0
+        self._pause_seconds = float(self.item_seconds)
+        self._in_pause = False
 
         self.logger.info(
             "Fantasy Blitz initialised: %sx%s panel, %s scoring, %s modes",
@@ -614,6 +622,9 @@ class FantasyBlitzPlugin(BasePlugin):
         return bool(self.animations and self._current_screen is not None)
 
     def display(self, force_clear: bool = False, display_mode: Optional[str] = None) -> bool:
+        if display_mode is None and self.enabled and self._vegas_pauses():
+            return self._display_pause(time.time())
+        self._in_pause = False
         mode = display_mode or self.modes[self.current_mode_index % len(self.modes)]
         screen = MODE_SCREENS.get(mode)
         if screen is None or not self.enabled:
@@ -635,11 +646,7 @@ class FantasyBlitzPlugin(BasePlugin):
             return False
         if screen == "big_play":
             return self._display_alert(now, force_clear)
-        if self.phase not in model.SCREEN_PHASES.get(screen, ()):
-            return False
-        items = self.content.get(screen) or []
-        if screen in LIST_SCREENS:
-            items = self._pages(items)
+        items = self._screen_items(screen)
         if not items:
             return False
 
@@ -648,6 +655,13 @@ class FantasyBlitzPlugin(BasePlugin):
         index = int(elapsed // per) % len(items)
         t = elapsed - int(elapsed // per) * per
         return self._show(screen, index, items[index], t, now, force_clear)
+
+    def _screen_items(self, screen: str) -> List[Dict[str, Any]]:
+        """What a screen would draw now: nothing in the wrong part of the week."""
+        if self.phase not in model.SCREEN_PHASES.get(screen, ()):
+            return []
+        items = self.content.get(screen) or []
+        return self._pages(items) if screen in LIST_SCREENS else items
 
     def _pages(self, items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """Split list items into pages that fit the panel."""
@@ -744,6 +758,8 @@ class FantasyBlitzPlugin(BasePlugin):
 
     def get_display_duration(self) -> float:
         """Seconds for the mode on screen; ``duration: 0`` means "long enough"."""
+        if self._in_pause:
+            return self._pause_seconds
         screen = self._current_screen
         if screen is None:
             return float(self.display_duration)
@@ -778,6 +794,10 @@ class FantasyBlitzPlugin(BasePlugin):
     # ------------------------------------------------------------------
 
     def get_vegas_content(self) -> Optional[List[Any]]:
+        if self.vegas_mode == "fixed":
+            blocks = self._panel_blocks()
+            if blocks:
+                return blocks
         top = self._vegas_players()
         if not top:
             return None
@@ -786,6 +806,82 @@ class FantasyBlitzPlugin(BasePlugin):
         cards = [render.vegas_title(height)]
         cards.extend(render.vegas_entry(ctx, p, height) for p in top)
         return cards
+
+    def _playlist(self) -> List[Tuple[str, List[Dict[str, Any]]]]:
+        """Every screen with something to draw right now, in show order."""
+        playlist = []
+        for screen in SCREEN_TITLES:
+            if screen == "big_play" or not self._on(screen):
+                continue
+            items = self._screen_items(screen)
+            if items:
+                playlist.append((screen, items))
+        return playlist
+
+    def _still_frame(self, screen: str, item: Dict[str, Any], w: int, h: int) -> Any:
+        """One finished frame, past every intro animation."""
+        title, color = SCREEN_TITLES.get(screen, ("FANTASY", draw.GOLD))
+        return render.render_frame(self._renderer_for(screen), self._ctx(), item, w, h, 99.0, title, color)
+
+    def _panel_blocks(self) -> List[Any]:
+        """``vegas_mode: fixed``: each screen as a panel-sized block in the ticker.
+
+        Every block is a finished screen -- the strip is a still image -- and a
+        screen contributes at most FIXED_ITEMS_PER_SCREEN of its items.
+        """
+        w, h = self.display_manager.width, self.display_manager.height
+        blocks: List[Any] = []
+        for screen, items in self._playlist():
+            for item in items[:FIXED_ITEMS_PER_SCREEN]:
+                try:
+                    blocks.append(self._still_frame(screen, item, w, h))
+                except Exception as exc:  # noqa: BLE001 - one bad screen must not blank the ticker
+                    self.logger.error("Could not draw %s for Vegas: %s", screen, exc, exc_info=True)
+        return blocks
+
+    def _vegas_pauses(self) -> bool:
+        """True when Vegas stops the scroll for this plugin (``vegas_mode: static``)."""
+        getter = getattr(self, "get_vegas_participation", None)
+        if getter is not None:
+            try:
+                return getter() == "pause"
+            except Exception:  # noqa: BLE001 - fall back to the setting itself
+                pass
+        return self.vegas_mode == "static"
+
+    def _display_pause(self, now: float) -> bool:
+        """One Vegas pause: a single display() call, then the scroll waits.
+
+        Vegas never calls display() again during the pause, so it can show one
+        finished frame only. Each pass shows the next screen in the playlist
+        (and, once the playlist has been round, the next item of each), so
+        the whole show comes round over successive passes instead of the top
+        scorers' first card every time.
+        """
+        self._in_pause = True
+        self._current_mode = None
+        self._current_screen = None
+        self._shown_key = None
+        playlist = self._playlist()
+        if not playlist:
+            self._pause_seconds = 1.0
+            return False
+        if now - self._pause_at >= 2.0 or self._pause_turn < 0:
+            # A second call inside the same pause redraws the same frame.
+            self._pause_turn += 1
+        self._pause_at = now
+        screen, items = playlist[self._pause_turn % len(playlist)]
+        item = items[(self._pause_turn // len(playlist)) % len(items)]
+        w, h = self.display_manager.width, self.display_manager.height
+        self._pause_seconds = float(PAGE_SECONDS if screen in LIST_SCREENS else self.item_seconds)
+        try:
+            frame = self._still_frame(screen, item, w, h)
+        except Exception as exc:  # noqa: BLE001 - never lose the loop to a draw
+            self.logger.error("Could not draw %s: %s", screen, exc, exc_info=True)
+            return False
+        self.display_manager.image.paste(frame, (0, 0))
+        self.display_manager.update_display()
+        return True
 
     def get_vegas_content_type(self) -> str:
         return "multi"
