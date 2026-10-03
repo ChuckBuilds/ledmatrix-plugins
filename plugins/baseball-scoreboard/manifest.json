@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.54.3",
+  "version": "1.56.1",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,24 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.56.1",
+      "released": "2026-10-02",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "The has_live_content() summary is logged at INFO only when the answer changes; the once-a-minute re-log of an unchanged answer is now DEBUG. At INFO it wrote a persistent-journal line a minute to the SD card for as long as the device ran. No change in behaviour."
+    },
+    {
+      "version": "1.56.0",
+      "released": "2026-10-02",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "Game activity pop-ups, as in the hockey scoreboard: a one-line banner along the bottom of the live scorebug for the plays between runs (a single, a stolen base, a strikeout, a walk, a double play, a pitching change), holding for a few seconds and fading back to the scorebug. New per-league settings, off by default and for MLB and NCAA only (MiLB has no play data): display_options.show_game_activity, game_activity_detail (hits_and_steals, highlights or everything), game_activity_dwell_seconds and game_activity_fade_seconds. Runs are left to the celebration and the scorer card. Costs one extra ESPN request per live update for the game on screen."
+    },
+    {
+      "version": "1.55.0",
+      "released": "2026-10-02",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "Run and home-run celebrations: when a team scores in a live game the panel is taken over for a few seconds, as the hockey scoreboard does for a goal. A run shows a ball diamond with a runner circling the bases; a home run shows the ball leaving the park over the outfield wall with fireworks, a bat-crack starburst and a panel shake (2-RUN HOMER and GRAND SLAM by runs driven in); a favourite's win gets a sunburst. The score ticks up with a floating +N and a glint sweeps the headline. New per-league settings: celebration_enabled, celebration_duration, celebrate_opponent_runs, celebration_home_runs_only, celebration_team_colors, celebration_confetti. A home run is told from a run by ESPN's play-by-play (MLB, NCAA); MiLB celebrates every run as a run. Also new and off by default (MLB and NCAA): display_options.show_scorer_card, a card after a run naming the batter with headshot, number, season line and ESPN's sentence for the play, with scorer_card_dwell_seconds and scorer_card_favorites_only. The plugin asks the core for the high-FPS loop while a celebration is on screen."
+    },
     {
       "version": "1.54.3",
       "released": "2026-10-01",

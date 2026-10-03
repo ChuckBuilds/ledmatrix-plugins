@@ -457,6 +457,80 @@
           "default": true,
           "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available."
         },
+        "scorer_card_dwell_seconds": {
+          "x-advanced": true,
+          "type": "integer",
+          "default": 6,
+          "minimum": 3,
+          "maximum": 20,
+          "description": "How long the scorer card stays on screen (seconds). Needs Display Options > Show Scorer Card."
+        },
+        "scorer_card_favorites_only": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": false,
+          "description": "Only show the scorer card for a favorite team's runs. Needs Display Options > Show Scorer Card."
+        },
+        "game_activity_detail": {
+          "x-advanced": true,
+          "type": "string",
+          "enum": ["hits_and_steals", "highlights", "everything"],
+          "default": "highlights",
+          "description": "Which plays get a pop-up. Hits and steals: singles, doubles, triples and stolen bases. Highlights: those plus strikeouts, walks, double plays, errors and pitching changes. Everything: also outs and sacrifices. Needs Display Options > Show Game Activity."
+        },
+        "game_activity_dwell_seconds": {
+          "x-advanced": true,
+          "type": "integer",
+          "default": 6,
+          "minimum": 2,
+          "maximum": 20,
+          "description": "How long each pop-up stays on screen (seconds), fade included. Needs Display Options > Show Game Activity."
+        },
+        "game_activity_fade_seconds": {
+          "x-advanced": true,
+          "type": "integer",
+          "default": 3,
+          "minimum": 0,
+          "maximum": 10,
+          "description": "How much of that time the pop-up spends fading out; 0 removes it at once. Needs Display Options > Show Game Activity."
+        },
+        "celebration_enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show a full-screen celebration takeover when a team scores or wins a live game: a ball diamond with a runner circling the bases for a run, a ball clearing the outfield wall under fireworks for a home run, both in the scoring team's colours with confetti and the scoring side's digits glowing. A home run is told apart from other runs by ESPN's play-by-play (a 2-run homer and a grand slam get their own headline)."
+        },
+        "celebration_duration": {
+          "x-advanced": true,
+          "type": "integer",
+          "default": 8,
+          "minimum": 3,
+          "maximum": 30,
+          "description": "How long the run / home run / win celebration stays on screen (seconds)"
+        },
+        "celebrate_opponent_runs": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": false,
+          "description": "Also celebrate when the opponent scores, not just favorites (off by default). With no favorites set, every run in a shown game is celebrated."
+        },
+        "celebration_home_runs_only": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": false,
+          "description": "Only celebrate home runs (and wins); plain runs just update the scorebug"
+        },
+        "celebration_team_colors": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": true,
+          "description": "Draw the celebration in the scoring team's colours, read from its logo. Off uses a fixed navy and amber palette"
+        },
+        "celebration_confetti": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": true,
+          "description": "Fall team-coloured confetti, and launch the home-run fireworks, across the celebration screen"
+        },
         "live_game_duration": {
           "x-advanced": true,
           "type": "integer",
@@ -720,6 +794,18 @@
               "type": "boolean",
               "default": false,
               "description": "Periodically show a full player card for the current batter (and optionally pitcher): headshot, jersey number, position, bat/throw, and season stats (AVG/HR/RBI for hitters, ERA/W-L/K for pitchers). Requires an extra ESPN athlete lookup; not available for MiLB. Configure look/timing under Customization > Player Card"
+            },
+            "show_scorer_card": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": false,
+              "description": "After a run, show a full-screen card for the batter who drove it in: headshot, a team-colour banner (HOME RUN, 2-RUN HOMER, GRAND SLAM, RUN SCORES), name, number and position, season line, and ESPN's sentence for the play, which names the runner. It follows the celebration as a second beat, or appears straight away with the celebration off. Costs one extra ESPN request per run, plus one for the batter's bio the first time that player is seen. MLB and NCAA Baseball only -- MiLB has no play data."
+            },
+            "show_game_activity": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": false,
+              "description": "Pop up a one-line banner along the bottom of the live scorebug for the plays between runs -- \"Harper SINGLE!  Top 8th\" -- fading out after a few seconds, so a scoreless inning still shows the action. Runs are left to the celebration and the scorer card. Only on panels 32 pixels tall or more; shorter panels have no row to spare. MLB and NCAA Baseball only -- MiLB has no play data. Costs one extra ESPN request per live update for the game on screen. Choose which plays under Game Activity Detail."
             },
             "show_traditional_scoreboard": {
               "x-advanced": true,
@@ -1077,6 +1163,43 @@
           "type": "boolean",
           "default": true,
           "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available."
+        },
+        "celebration_enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show a full-screen celebration takeover when a team scores or wins a live game: a ball diamond with a runner circling the bases for a run, a ball clearing the outfield wall under fireworks for a home run, both in the scoring team's colours with confetti and the scoring side's digits glowing. Home runs are told apart from other runs by ESPN's play-by-play. MiLB's feed has no plays, so there every run is celebrated as a run."
+        },
+        "celebration_duration": {
+          "x-advanced": true,
+          "type": "integer",
+          "default": 8,
+          "minimum": 3,
+          "maximum": 30,
+          "description": "How long the run / home run / win celebration stays on screen (seconds)"
+        },
+        "celebrate_opponent_runs": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": false,
+          "description": "Also celebrate when the opponent scores, not just favorites (off by default). With no favorites set, every run in a shown game is celebrated."
+        },
+        "celebration_home_runs_only": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": false,
+          "description": "Only celebrate home runs (and wins); plain runs just update the scorebug"
+        },
+        "celebration_team_colors": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": true,
+          "description": "Draw the celebration in the scoring team's colours, read from its logo. Off uses a fixed navy and amber palette"
+        },
+        "celebration_confetti": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": true,
+          "description": "Fall team-coloured confetti, and launch the home-run fireworks, across the celebration screen"
         },
         "live_game_duration": {
           "x-advanced": true,
@@ -1628,6 +1751,80 @@
           "default": true,
           "description": "Give live games priority over other modes. When enabled, live games will interrupt the normal mode rotation and be displayed immediately when available."
         },
+        "scorer_card_dwell_seconds": {
+          "x-advanced": true,
+          "type": "integer",
+          "default": 6,
+          "minimum": 3,
+          "maximum": 20,
+          "description": "How long the scorer card stays on screen (seconds). Needs Display Options > Show Scorer Card."
+        },
+        "scorer_card_favorites_only": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": false,
+          "description": "Only show the scorer card for a favorite team's runs. Needs Display Options > Show Scorer Card."
+        },
+        "game_activity_detail": {
+          "x-advanced": true,
+          "type": "string",
+          "enum": ["hits_and_steals", "highlights", "everything"],
+          "default": "highlights",
+          "description": "Which plays get a pop-up. Hits and steals: singles, doubles, triples and stolen bases. Highlights: those plus strikeouts, walks, double plays, errors and pitching changes. Everything: also outs and sacrifices. Needs Display Options > Show Game Activity."
+        },
+        "game_activity_dwell_seconds": {
+          "x-advanced": true,
+          "type": "integer",
+          "default": 6,
+          "minimum": 2,
+          "maximum": 20,
+          "description": "How long each pop-up stays on screen (seconds), fade included. Needs Display Options > Show Game Activity."
+        },
+        "game_activity_fade_seconds": {
+          "x-advanced": true,
+          "type": "integer",
+          "default": 3,
+          "minimum": 0,
+          "maximum": 10,
+          "description": "How much of that time the pop-up spends fading out; 0 removes it at once. Needs Display Options > Show Game Activity."
+        },
+        "celebration_enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show a full-screen celebration takeover when a team scores or wins a live game: a ball diamond with a runner circling the bases for a run, a ball clearing the outfield wall under fireworks for a home run, both in the scoring team's colours with confetti and the scoring side's digits glowing. A home run is told apart from other runs by ESPN's play-by-play (a 2-run homer and a grand slam get their own headline)."
+        },
+        "celebration_duration": {
+          "x-advanced": true,
+          "type": "integer",
+          "default": 8,
+          "minimum": 3,
+          "maximum": 30,
+          "description": "How long the run / home run / win celebration stays on screen (seconds)"
+        },
+        "celebrate_opponent_runs": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": false,
+          "description": "Also celebrate when the opponent scores, not just favorites (off by default). With no favorites set, every run in a shown game is celebrated."
+        },
+        "celebration_home_runs_only": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": false,
+          "description": "Only celebrate home runs (and wins); plain runs just update the scorebug"
+        },
+        "celebration_team_colors": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": true,
+          "description": "Draw the celebration in the scoring team's colours, read from its logo. Off uses a fixed navy and amber palette"
+        },
+        "celebration_confetti": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": true,
+          "description": "Fall team-coloured confetti, and launch the home-run fireworks, across the celebration screen"
+        },
         "live_game_duration": {
           "x-advanced": true,
           "type": "integer",
@@ -1891,6 +2088,18 @@
               "type": "boolean",
               "default": false,
               "description": "Periodically show a full player card for the current batter (and optionally pitcher): headshot, jersey number, position, bat/throw, and season stats (AVG/HR/RBI for hitters, ERA/W-L/K for pitchers). Requires an extra ESPN athlete lookup; not available for MiLB. Configure look/timing under Customization > Player Card"
+            },
+            "show_scorer_card": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": false,
+              "description": "After a run, show a full-screen card for the batter who drove it in: headshot, a team-colour banner (HOME RUN, 2-RUN HOMER, GRAND SLAM, RUN SCORES), name, number and position, season line, and ESPN's sentence for the play, which names the runner. It follows the celebration as a second beat, or appears straight away with the celebration off. Costs one extra ESPN request per run, plus one for the batter's bio the first time that player is seen. MLB and NCAA Baseball only -- MiLB has no play data."
+            },
+            "show_game_activity": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": false,
+              "description": "Pop up a one-line banner along the bottom of the live scorebug for the plays between runs -- \"Harper SINGLE!  Top 8th\" -- fading out after a few seconds, so a scoreless inning still shows the action. Runs are left to the celebration and the scorer card. Only on panels 32 pixels tall or more; shorter panels have no row to spare. MLB and NCAA Baseball only -- MiLB has no play data. Costs one extra ESPN request per live update for the game on screen. Choose which plays under Game Activity Detail."
             },
             "show_traditional_scoreboard": {
               "x-advanced": true,

@@ -77,12 +77,12 @@
       "plugin_path": "plugins/baseball-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-01",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.54.3",
+      "latest_version": "1.56.1",
       "ledmatrix_min_version": "3.8.0",
-      "commit": "56e3f7a0070a26bd7b3fcd80b0214445ded480ac"
+      "commit": "f9ced936bab32e05df5dd71bcabbc94972aa634b"
     },
     {
       "id": "basketball-scoreboard",
@@ -104,12 +104,12 @@
       "plugin_path": "plugins/basketball-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-01",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.41.1",
+      "latest_version": "1.41.2",
       "ledmatrix_min_version": "3.8.0",
-      "commit": "56e3f7a0070a26bd7b3fcd80b0214445ded480ac"
+      "commit": "f9ced936bab32e05df5dd71bcabbc94972aa634b"
     },
     {
       "id": "calendar",
@@ -129,12 +129,12 @@
       "plugin_path": "plugins/calendar",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-28",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.9",
+      "latest_version": "1.2.10",
       "ledmatrix_min_version": "3.3.0",
-      "commit": "53e42a489c235fc99246c309a44980cdf50a5b9e"
+      "commit": "f9ced936bab32e05df5dd71bcabbc94972aa634b"
     },
     {
       "id": "christmas-countdown",
@@ -201,13 +201,13 @@
       "plugin_path": "plugins/countdown",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-28",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "3.3.3",
+      "latest_version": "3.3.4",
       "icon": "fa-clock",
       "ledmatrix_min_version": "2.0.0",
-      "commit": "74edbbf59b86336b3f8030b9d86d3eb06d8b2035"
+      "commit": "a6a38144d3544b236032926bf844ad730c825917"
     },
     {
       "id": "f1-scoreboard",
@@ -280,12 +280,12 @@
       "plugin_path": "plugins/football-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-01",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "3.18.3",
+      "latest_version": "3.18.4",
       "ledmatrix_min_version": "3.8.0",
-      "commit": "e5dd1c3dc87dcd0dea00c9209feab6e9138471c4"
+      "commit": "f9ced936bab32e05df5dd71bcabbc94972aa634b"
     },
     {
       "id": "geochron",
@@ -382,13 +382,13 @@
       "plugin_path": "plugins/hockey-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-01",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.42.0",
+      "latest_version": "1.42.1",
       "icon": "fas fa-hockey-puck",
       "ledmatrix_min_version": "3.8.0",
-      "commit": "27785a3eea0e6e40bc456c57bd2a0bae2a873376"
+      "commit": "f9ced936bab32e05df5dd71bcabbc94972aa634b"
     },
     {
       "id": "lacrosse-scoreboard",
@@ -408,13 +408,13 @@
       "plugin_path": "plugins/lacrosse-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-01",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.36.1",
+      "latest_version": "1.36.2",
       "icon": "fas fa-baseball-ball",
       "ledmatrix_min_version": "3.8.0",
-      "commit": "56e3f7a0070a26bd7b3fcd80b0214445ded480ac"
+      "commit": "f9ced936bab32e05df5dd71bcabbc94972aa634b"
     },
     {
       "id": "birdnet-go",
@@ -599,15 +599,15 @@
       "plugin_path": "plugins/ledmatrix-music",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-28",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.5.2",
+      "latest_version": "1.5.3",
       "ledmatrix_min_version": "2.0.0",
       "aliases": [
         "ledmatrix-music"
       ],
-      "commit": "62fa95853476715b833abfe0b207d4f50876b6b4"
+      "commit": "988f1a9e5c4d037a81ae4ec4bfc7b0aec3fcda21"
     },
     {
       "id": "news",
@@ -762,12 +762,12 @@
       "plugin_path": "plugins/olympics",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-28",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "3.1.3",
+      "latest_version": "3.1.4",
       "ledmatrix_min_version": "2.0.0",
-      "commit": "62fa95853476715b833abfe0b207d4f50876b6b4"
+      "commit": "f9ced936bab32e05df5dd71bcabbc94972aa634b"
     },
     {
       "id": "pga-tour-leaderboard",
@@ -1004,13 +1004,13 @@
       "plugin_path": "plugins/ufc-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-01",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.19.1",
+      "latest_version": "1.19.2",
       "icon": "fas fa-fist-raised",
       "ledmatrix_min_version": "3.8.0",
-      "commit": "56e3f7a0070a26bd7b3fcd80b0214445ded480ac"
+      "commit": "f9ced936bab32e05df5dd71bcabbc94972aa634b"
     },
     {
       "id": "weather",
@@ -1340,13 +1340,13 @@
       "plugin_path": "plugins/blackjack",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-16",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "https://raw.githubusercontent.com/ChuckBuilds/ledmatrix-plugins/main/plugins/blackjack/assets/hero.png",
-      "latest_version": "1.3.0",
+      "latest_version": "1.3.1",
       "icon": "fa-diamond",
       "ledmatrix_min_version": "3.2.0",
-      "commit": "912724bccbf6c56985be2b1fcdf16b79a33dd0c2"
+      "commit": "f9ced936bab32e05df5dd71bcabbc94972aa634b"
     },
     {
       "id": "ledmatrix-nascar",
@@ -1395,12 +1395,12 @@
       "plugin_path": "plugins/nfl-stat-leaders",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-27",
+      "last_updated": "2026-10-02",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.0.1",
+      "latest_version": "1.0.2",
       "ledmatrix_min_version": "3.4.0",
-      "commit": "764eb4d05342252cb2677f0fa4ba9f3cd8e5706a"
+      "commit": "cb04ac4a25ed580fea02b506b2cff90cc55de241"
     },
     {
       "id": "fantasy-blitz",

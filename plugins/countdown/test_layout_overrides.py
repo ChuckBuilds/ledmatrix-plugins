@@ -10,6 +10,9 @@ Regressions under test:
 3. Setting only image_width / image_height counted as a position override,
    which placed the image at x=0: an image-right image jumped to the left,
    with the text beside it on the right.
+4. A size typed into the form arrives as text ("40.0", ""); int() on it
+   raised out of the constructor. And a box reaching past the panel edge was
+   scaled to its full size and then cropped by the panel.
 
 Run: <core-venv>/bin/python plugins/countdown/test_layout_overrides.py
 """
@@ -132,6 +135,30 @@ frame = render(layout_preset="image-right", image_path=str(RED),
 span = extent(frame, range(H), red)
 check("image_x 10 places the image there", span is not None and span[0] >= 10 and span[1] <= 40,
       str(span))
+
+print("a size typed into the form arrives as text")
+frame = render(layout_preset="image-left", image_path=str(RED),
+               layout={"image_width": "40.0", "image_height": "20"})
+span = extent(frame, range(H), red)
+rows = [y for y in range(H) if any(red(frame.getpixel((x, y))) for x in range(W))]
+check("image_width '40.0' and image_height '20' scale the image into 20x20",
+      span is not None and span[1] - span[0] == 20 and rows and rows[-1] - rows[0] + 1 == 20,
+      "%s rows %s" % (span, (rows[0], rows[-1]) if rows else None))
+frame = render(layout_preset="image-left", image_path=str(RED),
+               layout={"image_width": "wide", "image_height": ""})
+span = extent(frame, range(H), red)
+check("a non-numeric size counts as unset, not a crash",
+      span is not None and span[1] - span[0] == W // 3, str(span))
+
+print("a box that reaches past the panel is scaled to what is visible")
+frame = render(layout_preset="image-left", image_path=str(RED),
+               layout={"image_x": 100, "image_width": 100})
+span = extent(frame, range(H), red)
+rows = [y for y in range(H) if any(red(frame.getpixel((x, y))) for x in range(W))]
+check("the whole image fits between image_x and the right edge, uncropped",
+      span is not None and span[1] == W and span[1] - span[0] == 28
+      and rows and rows[-1] - rows[0] + 1 == 28,
+      "%s rows %s" % (span, (rows[0], rows[-1]) if rows else None))
 
 print()
 print("%d failed" % len(failures))

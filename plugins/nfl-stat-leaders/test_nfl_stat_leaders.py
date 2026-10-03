@@ -350,6 +350,117 @@ def test_season_resolution():
           fetcher.resolve_season(0, 2, 3600) == current_season_year() - 1)
 
 
+def test_request_goes_to_the_season_scoped_core_endpoint():
+    """The unscoped /leagues/nfl/leaders path is career leaders."""
+    import nfl_stat_fetcher as fetcher_module
+
+    calls = []
+
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return fake_payload()
+
+    def fake_get(url, params=None, headers=None, timeout=None):
+        calls.append((url, params))
+        return Response()
+
+    real_get = fetcher_module.requests.get
+    fetcher_module.requests.get = fake_get
+    try:
+        payload = StatFetcher(FakeCache())._request_payload(2025, 3)
+    finally:
+        fetcher_module.requests.get = real_get
+
+    check("a payload comes back", payload is not None)
+    check("one request, to the season-scoped core URL",
+          [c[0] for c in calls] == [
+              "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl"
+              "/seasons/2025/types/3/leaders"], str(calls))
+
+
+def test_athlete_refs_are_resolved_once_and_cached():
+    """Core leaders carry only an athlete $ref; the name comes from a lookup."""
+    import nfl_stat_fetcher as fetcher_module
+
+    ref = ("http://sports.core.api.espn.com/v2/sports/football/leagues/nfl"
+           "/seasons/2025/athletes/12483?lang=en&region=us")
+    payload = {"categories": [{"name": "passingYards", "leaders": [{
+        "displayValue": "4707",
+        "athlete": {"$ref": ref},
+        "team": {"$ref": "http://sports.core.api.espn.com/v2/sports/football"
+                         "/leagues/nfl/seasons/2025/teams/14?lang=en"},
+    }]}]}
+    cache = FakeCache({"nfl-stat-leaders_2025_2":
+                       {"fetched_at": 0, "payload": payload}})
+    urls = []
+
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"shortName": "M. Stafford",
+                    "position": {"abbreviation": "QB"}}
+
+    def fake_get(url, params=None, headers=None, timeout=None):
+        urls.append(url)
+        return Response()
+
+    real_get = fetcher_module.requests.get
+    fetcher_module.requests.get = fake_get
+    try:
+        fetcher = StatFetcher(cache)
+        first = fetcher.fetch_boards([CATEGORIES_BY_KEY["passing_yards"]],
+                                     2025, 2, 5, 3600)
+        second = fetcher.fetch_boards([CATEGORIES_BY_KEY["passing_yards"]],
+                                      2025, 2, 5, 3600)
+    finally:
+        fetcher_module.requests.get = real_get
+
+    row = first[0]["leaders"][0]
+    check("name and position come from the athlete lookup",
+          (row["name"], row["position"], row["value"]) ==
+          ("M. Stafford", "QB", "4707"), str(row))
+    check("the lookup is made over https", urls and urls[0].startswith("https://"),
+          str(urls))
+    check("the second refresh reuses the cached athlete", len(urls) == 1,
+          str(urls))
+    check("both refreshes agree", first == second)
+
+
+def test_failed_athlete_lookups_stop_after_a_few():
+    import nfl_stat_fetcher as fetcher_module
+
+    def leader(i):
+        return {"displayValue": str(i), "athlete": {
+            "$ref": "http://x/athletes/%d?lang=en" % i}}
+
+    payload = {"categories": [{"name": "passingYards",
+                               "leaders": [leader(i) for i in range(1, 11)]}]}
+    cache = FakeCache({"nfl-stat-leaders_2025_2":
+                       {"fetched_at": 0, "payload": payload}})
+    attempts = []
+
+    def fake_get(url, params=None, headers=None, timeout=None):
+        attempts.append(url)
+        raise fetcher_module.requests.ConnectionError("down")
+
+    real_get = fetcher_module.requests.get
+    fetcher_module.requests.get = fake_get
+    try:
+        boards = StatFetcher(cache).fetch_boards(
+            [CATEGORIES_BY_KEY["passing_yards"]], 2025, 2, 10, 3600)
+    finally:
+        fetcher_module.requests.get = real_get
+
+    check("an outage costs a few attempts, not one per leader",
+          len(attempts) == 3, str(attempts))
+    check("nameless rows are dropped, so no board", boards == [])
+
+
 def _fail_no_network():
     raise AssertionError("the fetcher went to the network with a fresh cache")
 

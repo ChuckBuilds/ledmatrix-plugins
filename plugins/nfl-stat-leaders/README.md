@@ -140,15 +140,18 @@ happens. To fit more in: turn off categories you do not care about, lower
 
 ## Data
 
-`https://site.web.api.espn.com/apis/common/v3/sports/football/nfl/leaders`,
-with ESPN's older `site/v2` leaders endpoint as a fallback. Both are public and
-need no key.
+`https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/seasons/{season}/types/{type}/leaders`
+(ESPN's core API; public, no key). The season-scoped path matters: the bare
+`/leagues/nfl/leaders` URL is all-time career leaders and ignores the season.
 
-The one thing neither embeds reliably is which club a player is on — it usually
-arrives as a reference URL. Resolving those would be one request per player per
-category, so the franchise id inside the reference is mapped locally instead
-(`nfl_stat_teams.py`), which is also what makes the crest load from the core's
-own assets with no network at all.
+Each leader arrives as a value plus two reference URLs, one to the player and
+one to the club. The club is not looked up: the franchise id inside its
+reference is mapped locally (`nfl_stat_teams.py`), which is also what lets the
+crest load from the core's own assets with no network at all. The player is
+looked up once for the name and position, then cached for a month, so only the
+first refresh of a season makes a burst of requests (up to one per player
+shown). If those lookups start failing the plugin stops trying for that
+refresh instead of waiting out a timeout per player.
 
 Everything is fetched in `update()` and cached; `display()` only draws. If ESPN
 is unreachable the last successful leaderboards stay on the panel rather than

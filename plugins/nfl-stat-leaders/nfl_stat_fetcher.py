@@ -4,22 +4,22 @@ ESPN serves season leaders without an API key, so this plugin needs no
 credentials of any kind -- nothing is read from ``config_secrets.json`` and
 nothing is ever logged that could leak one.
 
-Two shapes of the same feed are tried in order. The ``common/v3`` endpoint
-embeds the athlete object inside each leader, which is what makes a player's
-name and position available without a second request; the older ``site/v2``
-endpoint is the fallback for the day ESPN moves something. Both are parsed
-by the same normaliser, because the leader objects inside them agree even
-where the envelopes do not.
+The feed is ESPN's core API, scoped to a season and season type. Its leader
+objects carry the value and two ``$ref`` links -- one to the athlete, one to
+the club -- rather than embedding either. The club is mapped locally from the
+franchise id in its ref (``nfl_stat_teams``); the athlete is fetched once per
+player and cached for weeks, because a player's name and position do not
+change and the same names recur across categories and refreshes.
 
-The one thing neither endpoint reliably embeds is the club: it is usually a
-``$ref``. Resolving those would be one request per leader, so the franchise
-id in the ref is mapped locally instead (``nfl_stat_teams``).
+(The unscoped ``/leagues/nfl/leaders`` path is all-time career leaders and
+ignores the season, so it is not used.)
 
 Module name is plugin-unique so the core's flat module loading cannot bind
 another plugin's ``data_fetcher`` (monorepo CLAUDE.md non-negotiable #4).
 """
 
 import logging
+import re
 import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
@@ -33,13 +33,11 @@ from nfl_stat_teams import abbr_from_ref, abbr_from_team_id, normalize_abbr
 #: getting 403s in August 2026 (see nfl-draft 1.4.1); this one is accepted.
 USER_AGENT = "LEDMatrix/1.0 (+https://github.com/ChuckBuilds/LEDMatrix)"
 
-#: Embeds the athlete object in each leader -- preferred.
-LEADERS_URL_V3 = (
-    "https://site.web.api.espn.com/apis/common/v3/sports/football/nfl/leaders"
-)
-#: Older envelope, same leader objects. Tried only if the first yields nothing.
-LEADERS_URL_V2 = (
-    "https://site.api.espn.com/apis/site/v2/sports/football/nfl/leaders"
+#: Season-scoped leaders. ``{season}`` is the year the season kicks off in and
+#: ``{season_type}`` is 2 (regular) or 3 (postseason).
+LEADERS_URL = (
+    "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl"
+    "/seasons/{season}/types/{season_type}/leaders"
 )
 
 #: ESPN season types.
@@ -55,6 +53,18 @@ SEASON_TYPE_LABELS = {
 #: most ``players_per_category``; asking for a few more costs nothing and
 #: leaves room to drop a malformed entry without shortening the board.
 MAX_LEADERS_REQUESTED = 20
+
+#: A player's name and position are cached this long. They effectively never
+#: change within a season; a month keeps a first run's burst of lookups from
+#: repeating on every refresh.
+_ATHLETE_MAX_AGE = 30 * 24 * 3600
+
+#: Give up resolving athletes for the rest of one refresh after this many
+#: lookups fail in a row, so an outage costs seconds rather than one timeout
+#: per leader.
+_MAX_CONSECUTIVE_ATHLETE_FAILURES = 3
+
+_ATHLETE_REF_ID = re.compile(r"/athletes/(\d+)")
 
 
 def current_season_year(now: Optional[datetime] = None) -> int:
@@ -86,6 +96,7 @@ class StatFetcher:
         self.cache_manager = cache_manager
         self.logger = logger or logging.getLogger(__name__)
         self.request_timeout = request_timeout
+        self._athlete_failures = 0
 
     # ------------------------------------------------------------------
     # Public API
@@ -116,6 +127,7 @@ class StatFetcher:
             )
             return []
 
+        self._athlete_failures = 0
         boards = []
         for category in categories:
             entry = match_feed_category(category, feed_categories)
@@ -219,38 +231,79 @@ class StatFetcher:
 
     def _request_payload(self, season: int,
                          season_type: int) -> Optional[Dict[str, Any]]:
-        """Ask ESPN, preferring the endpoint that embeds athletes."""
-        params = {
-            "season": season,
-            "seasontype": season_type,
-            "limit": MAX_LEADERS_REQUESTED,
-        }
-        headers = {"User-Agent": USER_AGENT, "Accept": "application/json"}
-
-        for url in (LEADERS_URL_V3, LEADERS_URL_V2):
-            try:
-                response = requests.get(
-                    url, params=params, headers=headers,
-                    timeout=self.request_timeout,
-                )
-                response.raise_for_status()
-                payload = response.json()
-            except requests.RequestException as exc:
-                self.logger.warning("Leaders request to %s failed: %s", url, exc)
-                continue
-            except ValueError as exc:
-                self.logger.warning("Leaders response from %s was not JSON: %s",
-                                    url, exc)
-                continue
-
-            if isinstance(payload, dict) and _feed_categories(payload):
-                self.logger.info(
-                    "Fetched NFL leaders for season %s type %s from %s",
-                    season, season_type, url,
-                )
-                return payload
-            self.logger.debug("No categories in the response from %s", url)
+        """Ask ESPN for the season's leaders."""
+        url = LEADERS_URL.format(season=season, season_type=season_type)
+        payload = self._get_json(url, {"limit": MAX_LEADERS_REQUESTED})
+        if isinstance(payload, dict) and _feed_categories(payload):
+            self.logger.info(
+                "Fetched NFL leaders for season %s type %s", season, season_type
+            )
+            return payload
+        self.logger.debug("No categories in the response from %s", url)
         return None
+
+    def _get_json(self, url: str, params: Optional[Dict[str, Any]] = None):
+        """GET ``url`` as JSON, or None (logged) on any failure."""
+        headers = {"User-Agent": USER_AGENT, "Accept": "application/json"}
+        try:
+            response = requests.get(
+                url, params=params, headers=headers,
+                timeout=self.request_timeout,
+            )
+            response.raise_for_status()
+            return response.json()
+        except requests.RequestException as exc:
+            self.logger.warning("Request to %s failed: %s", url, exc)
+        except ValueError as exc:
+            self.logger.warning("Response from %s was not JSON: %s", url, exc)
+        return None
+
+    # ------------------------------------------------------------------
+    # Athletes
+    # ------------------------------------------------------------------
+
+    def _resolve_athlete(self, ref: Any) -> Dict[str, str]:
+        """``{"name", "position"}`` for an athlete ``$ref``, or ``{}``.
+
+        Cached per athlete id. Runs from ``update()`` only; ``display()``
+        reads the finished boards.
+        """
+        match = _ATHLETE_REF_ID.search(str(ref or ""))
+        if not match:
+            return {}
+        cache_key = f"nfl-stat-leaders_athlete_{match.group(1)}"
+
+        try:
+            record = self.cache_manager.get(cache_key, max_age=_ATHLETE_MAX_AGE)
+        except Exception as exc:  # noqa: BLE001 - a broken cache is not fatal
+            self.logger.warning("Could not read cached athlete: %s", exc)
+            record = None
+        if isinstance(record, dict) and record.get("name"):
+            return {"name": record["name"],
+                    "position": record.get("position", "")}
+
+        if self._athlete_failures >= _MAX_CONSECUTIVE_ATHLETE_FAILURES:
+            return {}
+
+        # ESPN hands out http:// refs; the API answers on https.
+        url = str(ref).replace("http://", "https://", 1)
+        athlete = self._get_json(url)
+        if not isinstance(athlete, dict):
+            self._athlete_failures += 1
+            return {}
+        self._athlete_failures = 0
+
+        resolved = {
+            "name": _athlete_name(athlete),
+            "position": _athlete_position(athlete),
+        }
+        if not resolved["name"]:
+            return {}
+        try:
+            self.cache_manager.set(cache_key, dict(resolved))
+        except Exception as exc:  # noqa: BLE001 - see _get_payload
+            self.logger.warning("Could not cache athlete: %s", exc)
+        return resolved
 
     # ------------------------------------------------------------------
     # Normalising
@@ -267,7 +320,7 @@ class StatFetcher:
         for item in raw:
             if len(rows) >= limit:
                 break
-            row = _leader_row(item, len(rows) + 1)
+            row = _leader_row(item, len(rows) + 1, self._resolve_athlete)
             if row is not None:
                 rows.append(row)
         return rows
@@ -283,8 +336,9 @@ _STALE_MAX_AGE = 14 * 24 * 3600
 def _feed_categories(payload: Any) -> List[dict]:
     """The category list, whichever envelope ESPN used.
 
-    ``common/v3`` puts it at the root; ``site/v2`` nests it under
-    ``leaders``, and has also served ``leaders`` as the list itself.
+    The core API puts it at the root. Older ESPN envelopes nested it under
+    ``leaders`` (or served ``leaders`` as the list itself), which is still
+    accepted so a recorded payload in either shape parses.
     """
     if not isinstance(payload, dict):
         return []
@@ -303,8 +357,12 @@ def _feed_categories(payload: Any) -> List[dict]:
     return []
 
 
-def _leader_row(item: Any, rank: int) -> Optional[LeaderEntry]:
+def _leader_row(item: Any, rank: int,
+                resolve_athlete=None) -> Optional[LeaderEntry]:
     """One normalised row, or None if the entry is unusable.
+
+    ``resolve_athlete`` is called with the athlete's ``$ref`` when the leader
+    does not embed the athlete.
 
     A leader with no name is dropped: an anonymous row on a leaderboard is
     worse than a shorter leaderboard.
@@ -316,6 +374,11 @@ def _leader_row(item: Any, rank: int) -> Optional[LeaderEntry]:
     athlete = athlete if isinstance(athlete, dict) else {}
 
     name = _athlete_name(athlete)
+    position = _athlete_position(athlete)
+    if not name and resolve_athlete is not None and athlete.get("$ref"):
+        resolved = resolve_athlete(athlete["$ref"])
+        name = resolved.get("name", "")
+        position = position or resolved.get("position", "")
     if not name:
         return None
 
@@ -326,7 +389,7 @@ def _leader_row(item: Any, rank: int) -> Optional[LeaderEntry]:
     return LeaderEntry(
         rank=rank,
         name=name,
-        position=_athlete_position(athlete),
+        position=position,
         team=_leader_team(item, athlete) or "",
         value=value,
     )

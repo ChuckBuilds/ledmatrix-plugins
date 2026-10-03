@@ -146,7 +146,6 @@ endlessly-scrolling strip. A plugin opts in by implementing:
 | `get_vegas_content` | `(self) -> Optional[list[Image]]` | The PIL image(s) to splice into the strip, or `None` |
 | `get_vegas_content_type` | `(self) -> str` | `'single'` or `'multi'` (multiple scrollable items, e.g. games) |
 | `get_vegas_display_mode` | `(self) -> VegasDisplayMode` | How this plugin behaves in the strip |
-| `get_supported_vegas_modes` | `(self) -> list[VegasDisplayMode]` | (Optional) modes the plugin supports |
 
 Import the enum defensively — older cores don't ship it:
 
@@ -185,8 +184,12 @@ See the Vegas section of
 and the `vegas_mode` config declarations in
 [`plugins/nfl-draft/config_schema.json`](../../plugins/nfl-draft/config_schema.json)
 and [`plugins/olympics/config_schema.json`](../../plugins/olympics/config_schema.json).
-[`plugins/calendar/manager.py`](../../plugins/calendar/manager.py) shows
-`get_supported_vegas_modes` returning multiple modes.
+Core 3.8.0 adds `vegas_participation` (`"scroll"`, `"pause"` or `"exclude"`)
+in the manifest as the way to declare a fixed answer; the hooks above still
+decide it when the manifest and the user's config say nothing, and only
+`STATIC` (pauses) and content type `'none'` (excluded) change anything. Do not
+implement `get_supported_vegas_modes`: core never read it and removes it in
+3.9.0. See the core's `docs/PLUGIN_API_REFERENCE.md`, "Vegas participation".
 
 ---
 

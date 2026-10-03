@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
-"""Tests that a countdown row saves when its advanced sections were never opened.
+"""Tests that a countdown row saves, and keeps, its layout and style sections.
 
-`countdowns` uses the array-table editor, which keeps every non-column property
-in a hidden input. An untouched row sends those back as null and a cleared one
-as an empty string. `layout` and `style` were declared as strict "object", so
-Draft-7 rejected both and the whole config save failed with HTTP 400 -- with
-nothing to say which field was at fault.
+`countdowns` uses the array-table editor. It builds the advanced sections
+(`layout`, `style`) as nested form inputs -- `countdowns.0.layout.image_width`
+and so on -- but only when the schema declares the property as a plain
+"object". Declared as a union (`["object", "string", "null"]`, which 3.x
+briefly did so a blank row would validate), the settings page falls through to
+a single hidden input holding Python's repr of the stored dict. The save
+parses that as an object and gets `{}`: every size, position and colour
+override was wiped on every save, and the modal's edits had no input to land
+in. That was the "image size settings don't save" report.
 
-The same defect was reported against soccer-scoreboard as "cannot add eng.2";
-it is a property of the widget, not of any one plugin, so it lands wherever an
-array-table row carries an object-typed property.
+A row the user never expanded still saves: the nested inputs carry the schema
+defaults, so nothing is blank, and the server coerces any blank container to {}.
 
 Run: <core-venv>/bin/python plugins/countdown/test_countdown_row_save.py
 """
@@ -81,28 +84,38 @@ def _valid(row):
 
 
 def main():
-    print("a plain row saves")
+    print("the sections are plain objects, so the editor builds real inputs")
+    for key in CONTAINERS:
+        prop = ITEM["properties"][key]
+        check("%s is declared as a plain object" % key, prop.get("type") == "object",
+              repr(prop.get("type")))
+        check("%s declares its fields" % key, bool(prop.get("properties")))
+
+    print("\na plain row saves")
     check("baseline row validates", _valid(_row()) is None, _valid(_row()) or "")
 
-    print("\nand so does one whose advanced sections were never opened")
-    for label, blank in (("null", None), ("empty string", "")):
-        row = _row(**{k: blank for k in CONTAINERS})
-        message = _valid(row)
-        check("untouched layout/style save (%s)" % label, message is None,
-              message or "")
+    print("\nand so does what the editor posts for a row nobody expanded")
+    # Every nested input at its schema default; a blank number box comes back
+    # from the server as null, which the nullable fields accept.
+    untouched = {}
+    for key in CONTAINERS:
+        untouched[key] = {
+            name: (sub.get("default") if "default" in sub else None)
+            for name, sub in ITEM["properties"][key]["properties"].items()
+        }
+    message = _valid(_row(**untouched))
+    check("untouched layout/style validate", message is None, message or "")
 
     print("\na real object is still accepted")
-    row = _row(layout={"image_x": 4}, style={"font_size": 8})
+    row = _row(layout={"image_x": 4, "image_width": 64, "image_height": 32},
+               style={"font_size": 8})
     check("populated sections validate", _valid(row) is None, _valid(row) or "")
 
     print("\nand a wrong shape is still rejected")
-    # The relaxation is for the editor's blanks, not a licence for anything.
     check("a number is not a layout", _valid(_row(layout=17)) is not None)
 
-    print("\nthe plugin survives what the schema now permits")
-    # The schema was the only thing standing in the way: the normalizers
-    # already coerce a non-mapping to {}. Assert that rather than restating
-    # the schema, which the cases above already cover.
+    print("\nthe plugin survives a hand-edited config")
+    # Blank, null or junk in a config file must not take the plugin down.
     plugin = _plugin_class()
     if plugin is None:
         print("  SKIP  manager not importable without a core checkout")

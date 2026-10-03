@@ -1,7 +1,7 @@
 {
   "id": "nfl-stat-leaders",
   "name": "NFL Stat Leaders",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": "ChuckBuilds",
   "description": "A scrolling ticker of the NFL's statistical leaders -- passing, rushing and receiving yards and touchdowns, plus receptions, sacks, interceptions, tackles and passer rating. Each category is a separate leaderboard you can turn on or off, drawn with club crests and club colours. Data comes from ESPN's public feed, so no API key is needed.",
   "entry_point": "manager.py",
@@ -31,6 +31,12 @@
     ">=3.4.0"
   ],
   "versions": [
+    {
+      "version": "1.0.2",
+      "released": "2026-10-02",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Fix: the leaders endpoint moved and the plugin showed nothing. ESPN's site.web common/v3 and site/v2 leaders URLs now return 404, so the fetcher now reads the core API's season-scoped leaders (sports.core.api.espn.com .../seasons/{season}/types/{type}/leaders). Those leaders reference the player rather than embedding them, so names and positions are looked up once per player and cached for a month; this happens in update(), never display(). A run of failed lookups stops that refresh early instead of waiting out a timeout per player."
+    },
     {
       "version": "1.0.1",
       "released": "2026-09-27",
@@ -62,7 +68,7 @@
       "name": "ESPN API",
       "required": true,
       "description": "ESPN's public NFL leaders feed. No API key and no account are required.",
-      "url": "https://site.web.api.espn.com/apis/common/v3/sports/football/nfl/leaders"
+      "url": "https://sports.core.api.espn.com/v2/sports/football/leagues/nfl/leaders"
     }
   ],
   "assets": {
@@ -74,5 +80,5 @@
   "verified": true,
   "screenshot": "",
   "license": "GPL-3.0",
-  "last_updated": "2026-09-27"
+  "last_updated": "2026-10-02"
 }

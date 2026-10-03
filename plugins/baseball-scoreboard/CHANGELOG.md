@@ -1,5 +1,58 @@
 # Changelog
 
+## [1.56.1] - 2026-10-02
+
+### Changed
+- The `has_live_content() returning ...` summary is logged at INFO only
+  when the answer changes. The once-a-minute re-log of an unchanged answer
+  is now DEBUG: at INFO it was a persistent-journal line a minute, each one
+  an SD-card write, for as long as the device ran.
+
+## [1.56.0] - 2026-10-02
+
+### Added
+- Game activity pop-ups: a one-line banner along the bottom of the live scorebug
+  for the plays between runs -- `Harper SINGLE!  Top 8th`,
+  `Acuna Jr. STEALS 3RD  Bot 1st`, `McFarlane IN RELIEF  Bot 7th` -- holding for
+  a few seconds and fading back to the scorebug. Runs are left to the
+  celebration and the scorer card.
+- Per-league `display_options.show_game_activity` (off by default; MLB and NCAA
+  Baseball, which have play-by-play), `game_activity_detail`
+  (`hits_and_steals`, `highlights`, `everything`), `game_activity_dwell_seconds`
+  and `game_activity_fade_seconds`.
+- One extra ESPN request per live update for the game on screen, shared with the
+  celebration's when a run has just scored. A first look at a game only records
+  where the feed is, so joining mid-inning replays nothing.
+
+## [1.55.0] - 2026-10-02
+
+### Added
+- Run and home-run celebrations. When a team scores in a live game the panel is
+  taken over for a few seconds, drawn by core's `SportsCelebrationMixin` in the
+  scoring team's colours. A run shows a ball diamond with a runner circling the
+  bases; a home run shows the ball leaving the park over the outfield wall with
+  fireworks (`2-RUN HOMER!`, `3-RUN HOMER!` and `GRAND SLAM!` by runs driven in);
+  a favourite's win gets the sunburst. A home run is told from a run by ESPN's
+  play-by-play, so MiLB (no plays) celebrates every run as a run.
+- Per-league `celebration_enabled`, `celebration_duration`,
+  `celebrate_opponent_runs`, `celebration_home_runs_only`,
+  `celebration_team_colors` and `celebration_confetti`.
+- `BaseballScoreboardPlugin.needs_high_fps`, true while a celebration is on
+  screen, so the runner and fireworks are not sampled once a second.
+- Impact on the takeover: the score ticks up from the old total with a floating
+  `+N`, a glint sweeps the headline, and a home run opens with a bat-crack
+  starburst and shakes the panel as it settles.
+- The scorer card (`display_options.show_scorer_card`, off by default; MLB and
+  NCAA Baseball): after a run, a full-screen card for the batter who drove it in
+  -- headshot, team-colour banner, name, number and position, season line and
+  ESPN's sentence for the play. It follows the celebration, or appears straight
+  away with the celebration off. `scorer_card_dwell_seconds` and
+  `scorer_card_favorites_only` tune it. One extra ESPN request per run, shared
+  with the celebration's home-run check.
+- A home run is only called when the play-by-play's newest scoring play agrees
+  with the scoreboard's score, so a summary one poll behind is "a run", never
+  the previous run's home run.
+
 ## [1.54.3] - 2026-10-01
 
 ### Changed
@@ -26,6 +79,34 @@
 
 No behaviour change: the code is the same, and every safety-harness render,
 scroll card and celebration golden is pixel-identical.
+
+## [1.54.2] - 2026-10-01
+
+### Fixed
+- The series line on the full-screen Recent card now fits vertically as
+  well as horizontally (#593). The width fallback in 1.54.1 never stepped
+  a large `period_text` font down on a wide panel, so "Final/N" and the
+  series row together still covered the score. With a series line shown,
+  the card is drawn in the largest face that keeps the status row, score
+  and series row apart: the configured time face, stepped down a pixel at
+  a time to 8 px, then the 4x6 record face. Cards without a series line,
+  and the default font, draw as before.
+
+## [1.54.1] - 2026-10-01
+
+### Fixed
+- `display_options.show_series_summary` no longer prints the series line
+  ("Series tied 1-1") over the score and "Final/N" on the full-screen
+  Recent card (#588). The line now shares the card's bottom row with the
+  date, taking the first of these that fits between the record corners:
+  date and series, the series alone, a compact spelling (`Tied 1-1`,
+  `NYY 2-1`, `NYY W 4-2`), then the same in the small 4x6 font with the
+  date row cleared. The line is never dropped. Off by default; Recent card
+  only.
+
+### Known issues
+- On a 64-wide panel with both team records on there is no room between
+  the record corners, so the series line is drawn and can touch them.
 
 ## [1.54.0] - 2026-09-30
 
