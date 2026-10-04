@@ -59,8 +59,14 @@ class ScrollDisplayManager:
     - Implements dynamic duration based on total content width
     """
 
-    # Path to UFC separator icon
+    # Path to UFC separator icon, relative to the core install (the cwd on a
+    # Pi). The core has never shipped one, so a file here is only an
+    # override. The default is the icon this plugin has always shipped,
+    # found relative to this file rather than the cwd: looking only here,
+    # every install logged a warning and scrolled with no separator.
     UFC_SEPARATOR_ICON = "assets/sports/ufc_logos/UFC.png"
+    BUNDLED_SEPARATOR_ICON = str(
+        Path(__file__).resolve().parent / "assets" / "sports" / "ufc_logos" / "UFC.png")
 
     def _scroll_frame_hold(self) -> int:
         """Refreshes to hold each frame for, from the resolved scroll settings."""
@@ -200,9 +206,12 @@ class ScrollDisplayManager:
         """Load and resize UFC separator icon."""
         separator_height = self.display_height - 4
 
-        if os.path.exists(self.UFC_SEPARATOR_ICON):
+        icon_path = next(
+            (p for p in (self.UFC_SEPARATOR_ICON, self.BUNDLED_SEPARATOR_ICON)
+             if os.path.exists(p)), None)
+        if icon_path:
             try:
-                with Image.open(self.UFC_SEPARATOR_ICON) as ufc_icon:
+                with Image.open(icon_path) as ufc_icon:
                     if ufc_icon.mode != "RGBA":
                         ufc_icon = ufc_icon.convert("RGBA")
                     aspect = ufc_icon.width / ufc_icon.height
@@ -215,7 +224,10 @@ class ScrollDisplayManager:
             except Exception as e:
                 self.logger.error(f"Error loading UFC separator icon: {e}")
         else:
-            self.logger.warning(f"UFC separator icon not found at {self.UFC_SEPARATOR_ICON}")
+            # Only reachable if the bundled icon was deleted from the install.
+            self.logger.debug(
+                f"UFC separator icon not found at {self.UFC_SEPARATOR_ICON} or "
+                f"{self.BUNDLED_SEPARATOR_ICON} (will skip separator)")
 
     def _determine_fight_type(self, fight: Dict) -> str:
         """Determine fight type from its data."""
