@@ -11,11 +11,19 @@ soccer, afl, nrl and ufc, which is what "too low on some sports" looked like.
 
 The row existed for a reason, though: baseball is the only scoreboard with
 text centred on that row (the inning), and the odds are drawn hard left and
-hard right. Measured on a 64px panel, "O/U: 8.5" clears the inning by 2px but
-"O/U: 12.5" overlaps it by 1-3px, and double-digit over/unders are ordinary in
-baseball. So the odds now start at the top edge and step down only when these
-particular strings would actually collide -- a measurement, not a panel-size
-rule, since it is the text widths that decide.
+hard right. With the card's default fonts on a 64px panel, the inning spans
+x=24-40; a spread alone (15px, at an edge) clears it, but any "O/U: ..."
+(30px and up) reaches it. So the odds now start at the top edge and step down
+only when these particular strings would actually collide -- a measurement,
+not a panel-size rule, since it is the text widths that decide.
+
+Measured with the card's default fonts, at sizes on their pixel grid (4x6 at
+7, PressStart2P at 8). Off the grid, Pillow's two layout engines disagree:
+Raqm (the Linux wheels, so CI and the Pi) keeps fractional advances while the
+basic engine (the Windows wheel ships without it) rounds each one. These tests
+once used 4x6 at 6, where "O/U: 8.5" measures 25.7px on the Pi and 30px on
+Windows -- so the same checks passed in CI and failed on a Windows checkout.
+On the grid both engines give whole pixels and agree.
 
 Run: <core-venv>/bin/python plugins/baseball-scoreboard/test_odds_placement.py
 """
@@ -32,32 +40,30 @@ except ImportError:
     print("SKIP: Pillow not installed")
     sys.exit(2)
 
-import game_renderer as gr  # noqa: E402
 
-
-def _font():
-    """The core's 4x6, or PIL's default if the core tree is not to hand."""
+def _core_font(name, size):
+    """A font the core ships, or None if the core tree is not to hand."""
     import os
     core = os.environ.get("LEDMATRIX_CORE", "")
     for base in (core, "."):
-        p = Path(base) / "assets" / "fonts" / "4x6-font.ttf"
-        if p.exists():
-            return ImageFont.truetype(str(p), 6)
-    return ImageFont.load_default()
-
-
-FONT = _font()
-
-
-def _font_at(size):
-    """The core's 4x6 at a given size, or PIL's default."""
-    import os
-    core = os.environ.get("LEDMATRIX_CORE", "")
-    for base in (core, "."):
-        p = Path(base) / "assets" / "fonts" / "4x6-font.ttf"
+        p = Path(base) / "assets" / "fonts" / name
         if p.exists():
             return ImageFont.truetype(str(p), size)
-    return ImageFont.load_default()
+    return None
+
+
+# The card's defaults: odds (and detail) in 4x6 at 7; the inning, "Final" and
+# the upcoming time in PressStart2P at 8.
+ODDS_FONT = _core_font("4x6-font.ttf", 7)
+TIME_FONT = _core_font("PressStart2P-Regular.ttf", 8)
+if ODDS_FONT is None or TIME_FONT is None:
+    # PIL's default font has other widths, and they change between Pillow
+    # versions, so every expectation below would be measuring something else.
+    print("SKIP: the core's fonts were not found (set LEDMATRIX_CORE)")
+    sys.exit(2)
+
+import game_renderer as gr  # noqa: E402
+
 failures = []
 
 
@@ -78,7 +84,7 @@ def odds_y(width, height, over_under, inning_half="top", inning=3,
     r.config = {}
     r.logger = type("L", (), {m: (lambda *a, **k: None)
                               for m in ("exception", "error", "warning", "debug")})()
-    r.fonts = {"detail": FONT, "time": FONT}
+    r.fonts = {"detail": ODDS_FONT, "odds": ODDS_FONT, "time": TIME_FONT}
     r._get_layout_offset = lambda e, a, default=0: (
         y_offset if a == "y_offset" else x_offset)
     drawn = []
@@ -91,7 +97,7 @@ def odds_y(width, height, over_under, inning_half="top", inning=3,
         "home_team_odds": {"spread_odds": -1.5},
         "away_team_odds": {"spread_odds": 1.5},
     }, game=game, **({} if top_text is None else {'top_span':
-        r._top_row_span(draw, top_text, top_font or FONT, top_x_offset)}))
+        r._top_row_span(draw, top_text, top_font or TIME_FONT, top_x_offset)}))
     if not drawn:
         return None, drawn
     return max(y for _t, _x, y in drawn), drawn
@@ -106,20 +112,28 @@ def main():
         check("%dx%d top edge with a two-digit O/U" % (w, h), y == 0, "y=%s" % y)
 
     print("\nexcept where they would actually hit the centred inning text")
+    # On 64px the inning spans x=24-40. The spread alone sits at x=49-64 and
+    # clears it; "O/U: 8.5" sits at x=0-30 and does not.
+    y_spread, _ = odds_y(64, 32, None)
     y_short, _ = odds_y(64, 32, 8.5)
     y_long, _ = odds_y(64, 32, 12.5)
-    check("64x32 stays at the top when the O/U is short", y_short == 0,
+    check("64x32 stays at the top when only the spread is drawn",
+          y_spread == 0, "y=%s" % y_spread)
+    check("64x32 steps down when an O/U is drawn", y_short > 0,
           "y=%s" % y_short)
-    check("64x32 steps down when the O/U is wide", y_long > 0, "y=%s" % y_long)
+    check("and when the O/U is wide", y_long > 0, "y=%s" % y_long)
     check("and steps down by about one text row", 4 <= y_long <= 12,
           "y=%s" % y_long)
 
     print("\nthe step is decided by the text, not the panel size")
-    # A long inning label ("FINAL") is wider than a short one, so it can push
-    # the odds down at a width where a short label does not.
-    y_final, _ = odds_y(64, 32, 8.5, inning_half="top")
+    # Same panel, same odds: the spread clears the inning (16px wide) but not
+    # a recent card's "Final" (40px, x=12-52), so only the latter moves it.
+    y_inning, _ = odds_y(64, 32, None)
+    y_final, _ = odds_y(64, 32, None, top_text="Final")
     check("a narrow panel with short strings still uses the top edge",
-          y_final == 0, "y=%s" % y_final)
+          y_inning == 0, "y=%s" % y_inning)
+    check("but the same strings step down beside a wider top row",
+          y_final > 0, "y=%s" % y_final)
 
     print("\neach card type is measured against the text it actually draws")
     # _draw_dynamic_odds is called from the live, recent and upcoming
@@ -153,22 +167,23 @@ def main():
     r.display_width, r.display_height = 128, 32
     d = ImageDraw.Draw(Image.new("RGB", (128, 32)))
 
-    small = r._top_row_span(d, "Sep 19", FONT)
-    big = r._top_row_span(d, "Sep 19", _font_at(10))
+    small = r._top_row_span(d, "Sep 19", ODDS_FONT)
+    big = r._top_row_span(d, "Sep 19", _core_font("4x6-font.ttf", 14))
     check("a wider font gives a wider span",
           (big[1] - big[0]) > (small[1] - small[0]),
           "%r vs %r" % (big, small))
-    # Within a couple of pixels: the width is fractional and both ends are
+    # Within a couple of pixels: the width can be fractional and both ends are
     # truncated to int, so the midpoint can sit just under centre.
     check("and both stay centred", abs((small[0] + small[1]) - 128) <= 2
           and abs((big[0] + big[1]) - 128) <= 2, "%r %r" % (small, big))
 
-    shifted = r._top_row_span(d, "Sep 19", FONT, x_offset=-20)
+    shifted = r._top_row_span(d, "Sep 19", ODDS_FONT, x_offset=-20)
     check("an x_offset moves the span with the text",
           shifted[0] == small[0] - 20 and shifted[1] == small[1] - 20,
           "%r vs %r" % (shifted, small))
 
-    check("an empty top row has no span", r._top_row_span(d, "", FONT) is None)
+    check("an empty top row has no span",
+          r._top_row_span(d, "", ODDS_FONT) is None)
 
     print("\nthe manual offsets still apply")
     y0, _ = odds_y(256, 64, 8.5)
@@ -186,7 +201,7 @@ def main():
     r.config = {}
     r.logger = type("L", (), {m: (lambda *a, **k: None)
                               for m in ("exception", "error", "warning", "debug")})()
-    r.fonts = {"detail": FONT, "time": FONT}
+    r.fonts = {"detail": ODDS_FONT, "odds": ODDS_FONT, "time": TIME_FONT}
     r._get_layout_offset = lambda e, a, default=0: 0
     got = []
     r._draw_text_with_outline = lambda *a, **k: got.append(a)

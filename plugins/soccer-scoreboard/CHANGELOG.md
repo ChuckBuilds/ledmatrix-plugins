@@ -11,6 +11,23 @@
   consulted now; when it has nothing to show the mode returns `False` and the
   core's empty-mode handling moves on.
 
+## [2.39.3] - 2026-10-03
+
+### Fixed
+- A start or reload no longer floods ESPN. With eight leagues, every start
+  logged ~90 `NameResolutionError`s for site.api.espn.com within a minute
+  (plus `update() timed out`), and six hours made 3,812 requests. On a cache
+  miss `_fetch_soccer_api_data` submitted the league's schedule window to the
+  core's background service *and* fetched the same window on the spot as
+  stand-in data (`_get_weeks_data`), in both the recent and the upcoming
+  manager -- and ESPN's rejection of date ranges makes each window 29 day
+  requests. A miss now fetches the window once on the calling thread
+  (`_fetch_season_directly`, which caches it), under a lock per cache key so
+  the league's other manager waits and reads the cache.
+- Every manager shares the core's connection pool (`share_connection_pool`,
+  on cores that have the fetch service) instead of opening its own, so a
+  connection -- and its DNS lookup -- is reused across leagues.
+
 ## [2.39.2] - 2026-10-02
 
 ### Fixed

@@ -60,6 +60,12 @@
       "notes": "A per-league mode in switch mode (soccer_esp.1_recent, soccer_usa.1_upcoming, ...) now shows only that league's games. It used to try every enabled league's manager and draw the first with games, so La Liga's slot could show the Premier League card. When the named league has nothing to show, the mode returns False and the display moves on."
     },
     {
+      "version": "2.39.3",
+      "released": "2026-10-03",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "Startup and hourly ESPN traffic cut sharply. A league's schedule window is now fetched once per cache miss: it used to be submitted to the core's background service and fetched again on the spot as stand-in data, by both the recent and the upcoming manager, so each league asked for its window up to four times. A per-window lock makes the league's other manager wait and reuse the cached result, and every manager shares the core's connection pool (on cores that have it), so connections and DNS lookups are reused. Measured against live ESPN with eight leagues on core main: ~440 requests per start became ~260, and ~470 per hourly refresh became ~250; with LEDMatrix core's month-sized date fetches (LEDMatrix #751) a start is 39 requests and a refresh about 20. No display change."
+    },
+    {
       "version": "2.39.2",
       "released": "2026-10-02",
       "ledmatrix_min_version": "3.8.0",
