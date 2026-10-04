@@ -5,7 +5,8 @@ test_logo_cache_league_scope.py covers the classic logo cache. The adaptive
 path (layout_mode: "adaptive") keeps two caches of its own, and both were
 keyed by abbreviation alone:
 
-* _raw_logo_cache, the unresized logos, keyed "MIA";
+* the renderer's logo cache, keyed "MIA" (now _fitted_logo_cache, which
+  holds the fitted logos; the unresized ones are no longer kept);
 * the LayoutContext's fitted-image cache, keyed "logo:MIA".
 
 One renderer draws a whole scroll strip, and a strip carries both leagues, so
@@ -103,13 +104,13 @@ def main():
               f"{_count(card, want)} px of its own logo, "
               f"{_count(card, wrong)} px of the other league's")
 
-    # The same file twice is one cached logo, not two.
+    # The same file twice is one cached fitted logo, not two.
     r = GameRenderer(128, 64, {"layout_mode": "adaptive"})
     r._render_game_card_adaptive(game("nfl_logos"), "live")
     r._render_game_card_adaptive(game("nfl_logos"), "live")
-    check("the same directory and abbreviation share one raw entry",
-          sum(1 for k in r._raw_logo_cache if k.endswith(":MIA")) == 1,
-          str(sorted(r._raw_logo_cache)))
+    check("the same directory and abbreviation share one fitted entry",
+          sum(1 for k in r._fitted_logo_cache if k[1] == "MIA") == 1,
+          str(sorted(r._fitted_logo_cache)))
 
     failed = [c for c, ok in results if not ok]
     print("\n%d passed, %d failed" % (len(results) - len(failed), len(failed)))
