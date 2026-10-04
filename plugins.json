@@ -81,7 +81,8 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "1.57.1",
-      "ledmatrix_min_version": "3.8.0"
+      "ledmatrix_min_version": "3.8.0",
+      "commit": "c202cd9a6f4b421d7cee4445b707a4e300b45490"
     },
     {
       "id": "basketball-scoreboard",
@@ -107,7 +108,8 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "1.42.1",
-      "ledmatrix_min_version": "3.8.0"
+      "ledmatrix_min_version": "3.8.0",
+      "commit": "c202cd9a6f4b421d7cee4445b707a4e300b45490"
     },
     {
       "id": "calendar",
@@ -385,7 +387,8 @@
       "screenshot": "",
       "latest_version": "1.42.3",
       "icon": "fas fa-hockey-puck",
-      "ledmatrix_min_version": "3.8.0"
+      "ledmatrix_min_version": "3.8.0",
+      "commit": "c202cd9a6f4b421d7cee4445b707a4e300b45490"
     },
     {
       "id": "lacrosse-scoreboard",
@@ -469,7 +472,8 @@
       "ledmatrix_min_version": "3.4.0",
       "aliases": [
         "ledmatrix-leaderboard"
-      ]
+      ],
+      "commit": "c202cd9a6f4b421d7cee4445b707a4e300b45490"
     },
     {
       "id": "ledmatrix-flights",
