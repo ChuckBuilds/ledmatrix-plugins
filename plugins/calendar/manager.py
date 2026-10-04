@@ -16,6 +16,7 @@ Features:
 API Version: 1.0.1
 """
 
+import hashlib
 import os
 import logging
 import time
@@ -407,8 +408,13 @@ class CalendarPlugin(BasePlugin):
             self.logger.warning("Calendar service not available - authentication may be required")
             return
         
-        # Check cache first
-        cache_key = f"{self.plugin_id}_events_{'_'.join(sorted(self.calendars))}"
+        # Check cache first. The calendar IDs are hashed, not joined into the
+        # key: the key becomes a filename, and a few long Google calendar IDs
+        # (holidays, sports) push it past the filesystem's 255-byte limit.
+        calendars_digest = hashlib.sha256(
+            '\n'.join(sorted(self.calendars)).encode('utf-8')
+        ).hexdigest()[:16]
+        cache_key = f"{self.plugin_id}_events_{calendars_digest}"
         cached_events = self.cache_manager.get(cache_key, max_age=self.update_interval)
         
         if cached_events is not None:
