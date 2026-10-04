@@ -844,12 +844,11 @@
       "plugin_path": "plugins/soccer-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-02",
+      "last_updated": "2026-10-03",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.39.2",
-      "ledmatrix_min_version": "3.8.0",
-      "commit": "886d2038d22a35c962beac0ea261543339cffec9"
+      "latest_version": "2.39.3",
+      "ledmatrix_min_version": "3.8.0"
     },
     {
       "id": "static-image",
