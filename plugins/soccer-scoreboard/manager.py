@@ -2080,17 +2080,21 @@ class SoccerScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
                     )
                     return False
                 
-                # Get managers for this mode type across all enabled leagues (switch mode)
-                # Use _get_enabled_leagues_for_mode to respect per-mode enablement
+                # Switch mode: only the league named in the mode. A per-league
+                # mode such as soccer_esp.1_recent must never fall through to
+                # another league's manager -- that showed the eng.1 card in
+                # the esp.1 slot. When this league has nothing to show we
+                # return False and let the core's empty-mode handling move on.
+                # _get_enabled_leagues_for_mode still gates it, so a league (or
+                # this mode for it) that is switched off shows nothing.
                 # Refresh before reading the managers -- a stale manager can
                 # look like it has nothing to show and be skipped entirely.
                 self._refresh_switch_mode_managers(mode_type)
                 managers_to_try = []
-                enabled_league_keys = self._get_enabled_leagues_for_mode(mode_type)
-                for key in enabled_league_keys:
-                    manager = self._get_league_manager_for_mode(key, mode_type)
+                if league_key in self._get_enabled_leagues_for_mode(mode_type):
+                    manager = self._get_league_manager_for_mode(league_key, mode_type)
                     if manager and self._manager_has_displayable_games(manager, mode_type):
-                        managers_to_try.append((key, manager))
+                        managers_to_try.append((league_key, manager))
                 
                 # Try each manager until one returns True (has content)
                 first_manager = True

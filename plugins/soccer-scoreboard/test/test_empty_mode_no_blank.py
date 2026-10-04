@@ -8,9 +8,11 @@ Run standalone from the plugin directory:
 
 Background
 ----------
-In switch mode the plugin pools every enabled league's manager for a given mode
-(e.g. ``soccer_usa.1_recent`` tries the recent managers of *all* enabled
-leagues). A recent/upcoming manager with no games clears the shared canvas in
+In switch mode the plugin used to pool every enabled league's manager for a
+given mode (e.g. ``soccer_usa.1_recent`` tried the recent managers of *all*
+enabled leagues); since 2.39.4 a per-league mode only reaches its own league
+(see ``test_per_league_mode_scope.py``), but the gate below still matters. A
+recent/upcoming manager with no games clears the shared canvas in
 its ``display()`` (see ``SportsRecent.display`` / ``SportsUpcoming.display`` in
 ``sports.py``) and returns False. If that empty manager runs *before* the league
 that actually has a game, it wipes the panel; the league with content then hits
@@ -115,13 +117,22 @@ def test_empty_manager_is_skipped() -> None:
 
     result = plugin.display("soccer_usa.1_recent")
 
-    assert result is True, f"expected content to display, got {result!r}"
+    assert result is False, (
+        f"usa.1 has nothing, so its mode must return False, got {result!r}"
+    )
     assert empty.display_calls == 0, (
         "empty manager's display() was called — it clears the canvas and blanks "
-        "the league that has content"
+        "the panel"
     )
+    assert populated.display_calls == 0, (
+        "another league's manager was drawn in the usa.1 slot"
+    )
+
+    result = plugin.display("soccer_fifa.world_recent")
+    assert result is True, f"expected fifa.world's game to display, got {result!r}"
     assert populated.display_calls == 1, "manager with the game should have displayed once"
-    print("  [ok] empty manager skipped; populated manager drawn")
+    assert empty.display_calls == 0
+    print("  [ok] empty manager skipped; populated manager drawn in its own slot")
 
 
 def test_all_empty_mode_returns_false() -> None:

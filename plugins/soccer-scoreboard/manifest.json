@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.39.2",
+  "version": "2.39.4",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -53,6 +53,12 @@
     "soccer_usa.1_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.39.4",
+      "released": "2026-10-04",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "A per-league mode in switch mode (soccer_esp.1_recent, soccer_usa.1_upcoming, ...) now shows only that league's games. It used to try every enabled league's manager and draw the first with games, so La Liga's slot could show the Premier League card. When the named league has nothing to show, the mode returns False and the display moves on."
+    },
     {
       "version": "2.39.2",
       "released": "2026-10-02",

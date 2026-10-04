@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.39.4] - 2026-10-04
+
+### Fixed
+- A per-league mode in switch mode (`soccer_esp.1_recent`,
+  `soccer_usa.1_upcoming`, ...) showed another league's game: `display()`
+  parsed the league out of the mode name and then tried every enabled
+  league's manager for that mode type, drawing the first with games -- so
+  La Liga's slot showed the Premier League card. Only the named league is
+  consulted now; when it has nothing to show the mode returns `False` and the
+  core's empty-mode handling moves on.
+
 ## [2.39.2] - 2026-10-02
 
 ### Fixed
