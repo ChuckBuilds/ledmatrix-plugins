@@ -112,7 +112,9 @@ cannot be selected; use the per-league names above.
 
 Each mode renders as **switch** (one match at a time, timed) or **scroll** (all
 matches scroll horizontally at high FPS), set per league and per mode with
-`leagues.<slug>.display_modes.<mode>_display_mode`.
+`leagues.<slug>.display_modes.<mode>_display_mode`. In switch mode a league's
+mode shows only that league's matches: when it has none, the mode is skipped
+rather than filled with another league's game.
 
 The mode toggles are named `live`, `recent`, `upcoming` — no `show_` prefix,
 unlike the football and basketball scoreboards.
