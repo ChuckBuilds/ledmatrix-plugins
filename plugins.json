@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-10-03",
+  "last_updated": "2026-10-04",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -77,12 +77,11 @@
       "plugin_path": "plugins/baseball-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-02",
+      "last_updated": "2026-10-04",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.57.0",
-      "ledmatrix_min_version": "3.8.0",
-      "commit": "886d2038d22a35c962beac0ea261543339cffec9"
+      "latest_version": "1.57.1",
+      "ledmatrix_min_version": "3.8.0"
     },
     {
       "id": "basketball-scoreboard",

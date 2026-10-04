@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.57.0",
+  "version": "1.57.1",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.57.1",
+      "released": "2026-10-04",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "Comment-only: corrects the odds step-down note in game_renderer.py. It said \"O/U: 8.5\" clears the inning by 2px on a 64px panel; with the card's default fonts any O/U reaches the inning there and only a spread alone clears it. No change to what is drawn."
+    },
     {
       "version": "1.57.0",
       "released": "2026-10-02",
@@ -842,7 +848,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-10-02",
+  "last_updated": "2026-10-04",
   "stars": 0,
   "downloads": 0,
   "verified": true,
