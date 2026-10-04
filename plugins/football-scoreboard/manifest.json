@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "3.18.5",
+  "version": "3.18.6",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "3.18.6",
+      "released": "2026-10-04",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "Adaptive layout no longer keeps every team's logo at full size: each card renderer held up to 128 unresized logos (2.3 MB each for the NFL), which grew the display's memory by hundreds of MB over a day of live games. Only the fitted logos are kept now; cards are pixel-identical."
+    },
     {
       "version": "3.18.5",
       "released": "2026-10-02",

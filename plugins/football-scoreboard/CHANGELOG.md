@@ -1,5 +1,22 @@
 # Changelog
 
+## [3.18.6] - 2026-10-04
+
+### Fixed
+- Adaptive layout (`layout_mode: "adaptive"`) no longer keeps team logos at
+  full size. `GameRenderer._load_raw_logo` cached every logo it loaded,
+  unresized, up to 128 per renderer -- and the plugin builds several
+  renderers (a scorebug per manager, scroll cards, Vegas cards). The source
+  files are 768x768 RGBA for the NFL (2.3 MB decoded) and 500x500 for most of
+  NCAA, so those caches grew by hundreds of MB over a day of live games as new
+  teams came on, and the display's memory rose all day with them. The card
+  only draws the logo fitted into its slot, so that is what is cached now
+  (`_fit_logo`, keyed by logo directory, abbreviation and slot size); a miss
+  reads the file, fits it and lets the source go. Cards are pixel-identical.
+  `test_adaptive_logos_not_kept_full_size.py` draws 40 teams through one
+  renderer: it held 94.7 MB of logo pixels before and holds none larger than
+  the panel now.
+
 ## [3.18.5] - 2026-10-02
 
 ### Documentation

@@ -284,7 +284,9 @@ class GameRenderer(SportsCardWrappersMixin, SportsGameRendererMixin):
             self._ctx = LayoutContext(display_width, display_height,
                                       _get_font_manager(),
                                       design_size=(128, 32))
-            self._raw_logo_cache: Dict[str, Image.Image] = {}
+            # Logos as fitted into their slot, keyed by team and slot size.
+            # The unresized source is NOT kept: see _fit_logo.
+            self._fitted_logo_cache: Dict[Any, Any] = {}
 
         # Rankings cache (populated externally)
         self._team_rankings_cache: Dict[str, int] = {}
@@ -1059,27 +1061,47 @@ class GameRenderer(SportsCardWrappersMixin, SportsGameRendererMixin):
         return bands, rebuilt
 
     def _load_raw_logo(self, team_abbrev: str, logo_path) -> Optional[Image.Image]:
-        """Load a logo unresized (the adaptive path fits it per region;
-        results are cached per size by the LayoutContext).
+        """Load a logo unresized, for _fit_logo to fit into its slot.
 
-        Keyed by logo directory as well as abbreviation, as the classic cache
-        is (see _logo_scope): one renderer draws a strip carrying both
-        leagues, and keyed by "MIA" alone the Hurricanes' card drew the
-        Dolphins' logo, or the other way round."""
-        key = f"{self._logo_scope(logo_path)}:{team_abbrev}"
-        cached = self._lru_get(self._raw_logo_cache, key)
-        if cached is not None:
-            return cached
+        Not cached. These are the source files at full size -- 768x768 RGBA
+        for the NFL, 2.3 MB decoded, and 500x500 for most of NCAA -- and they
+        used to be kept, up to 128 per renderer, in every renderer the plugin
+        builds (a scorebug per manager, scroll cards, Vegas cards). On a
+        Saturday slate that was hundreds of MB that grew all day as new teams
+        came on; a display measured on a Pi 4 went from 325 MB to 549 MB in
+        six hours of live games. The card only ever draws the fitted logo,
+        which _fit_logo keeps instead."""
         try:
             if logo_path and os.path.exists(logo_path):
-                logo = Image.open(logo_path)
-                if logo.mode != "RGBA":
-                    logo = logo.convert("RGBA")
-                self._lru_put(self._raw_logo_cache, key, logo)
-                return logo
+                with Image.open(logo_path) as source:
+                    return source.convert("RGBA")
         except Exception as e:
             self.logger.error(f"Error loading logo for {team_abbrev}: {e}")
         return None
+
+    def _fit_logo(self, team_abbrev: str, logo_path, slot: "Region"):
+        """The team's logo fitted into ``slot``, or None if it has no logo.
+
+        Cached per renderer by logo directory, abbreviation and slot size --
+        the directory as well as the abbreviation, as the classic cache is
+        (see _logo_scope): one renderer draws a strip carrying both leagues,
+        and keyed by "MIA" alone the Hurricanes' card drew the Dolphins'
+        logo, or the other way round. A hit costs no disk read and no decode;
+        a miss loads the source, fits it and lets it go.
+        """
+        scope = self._logo_scope(logo_path)
+        key = (scope, team_abbrev, slot.w, slot.h)
+        cached = self._lru_get(self._fitted_logo_cache, key)
+        if cached is not None:
+            return cached
+        raw = self._load_raw_logo(team_abbrev, logo_path)
+        if not raw:
+            return None
+        ifit = self._ctx.fit_image(raw, slot, mode="fill_height",
+                                   crop_to_ink=True,
+                                   cache_key=f"logo:{scope}:{team_abbrev}")
+        self._lru_put(self._fitted_logo_cache, key, ifit)
+        return ifit
 
     #: Ladder rung the adaptive score should be able to reach. 8 is what fits
     #: a 48px gap and matches classic, but reads thin on a tall card; 24 needs
@@ -1251,9 +1273,16 @@ class GameRenderer(SportsCardWrappersMixin, SportsGameRendererMixin):
             scoreboard_regions(Region(0, 0, width, height), ctx=self._ctx))
         self._adaptive_score_px = 0
 
-        away_raw = self._load_raw_logo(game.get("away_abbr", ""), game.get("away_logo_path"))
-        home_raw = self._load_raw_logo(game.get("home_abbr", ""), game.get("home_logo_path"))
-        if not away_raw or not home_raw:
+        fits = [
+            self._fit_logo(abbr, path, self._region_for(slot, element))
+            for slot, element, abbr, path in (
+                (regs.away_slot, 'away_logo', game.get("away_abbr", ""),
+                 game.get("away_logo_path")),
+                (regs.home_slot, 'home_logo', game.get("home_abbr", ""),
+                 game.get("home_logo_path")),
+            )
+        ]
+        if fits[0] is None or fits[1] is None:
             draw = ImageDraw.Draw(main_img)
             draw.fontmode = "1"  # Pixel fonts on an LED panel: 1-bit text so every lit pixel is fully lit (no AA fringe).
             self._draw_text_with_outline(
@@ -1264,18 +1293,11 @@ class GameRenderer(SportsCardWrappersMixin, SportsGameRendererMixin):
             )
             return main_img.convert('RGB')
 
-        for raw, slot, element, abbr, path in (
-            (away_raw, regs.away_slot, 'away_logo', game.get("away_abbr", ""),
-             game.get("away_logo_path")),
-            (home_raw, regs.home_slot, 'home_logo', game.get("home_abbr", ""),
-             game.get("home_logo_path")),
+        for ifit, slot, element in (
+            (fits[0], regs.away_slot, 'away_logo'),
+            (fits[1], regs.home_slot, 'home_logo'),
         ):
             slot = self._region_for(slot, element)
-            # Scoped like the raw logo: the fitted-image cache is keyed by
-            # name, so "logo:MIA" would hand one league's fit to the other.
-            ifit = self._ctx.fit_image(raw, slot, mode="fill_height",
-                                       crop_to_ink=True,
-                                       cache_key=f"logo:{self._logo_scope(path)}:{abbr}")
             if not ifit.is_empty:
                 x, y = slot.align_xy(ifit.width, ifit.height)
                 main_img.paste(ifit.image, (x, y), ifit.image)
