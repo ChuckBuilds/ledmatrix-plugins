@@ -1,7 +1,7 @@
 {
   "id": "ufc-scoreboard",
   "name": "UFC Scoreboard",
-  "version": "1.19.3",
+  "version": "1.19.4",
   "author": "LegoGuy1000",
   "contributors": [
     {
@@ -32,6 +32,12 @@
   "default_duration": 15,
   "config_schema": "config_schema.json",
   "versions": [
+    {
+      "version": "1.19.4",
+      "released": "2026-10-04",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "The Vegas ticker draws the UFC separator icon before the fight cards. The icon has always shipped with the plugin, but the scroll display only looked for it relative to the LEDMatrix install, where the core has never shipped one, so there was no separator and every install logged 'UFC separator icon not found' each time the scroll display was built. It now falls back to the plugin's own copy; a PNG at assets/sports/ufc_logos/UFC.png in the install still overrides it, and with neither the separator is skipped at DEBUG."
+    },
     {
       "version": "1.19.3",
       "released": "2026-10-02",
