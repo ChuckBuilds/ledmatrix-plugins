@@ -7,12 +7,19 @@ Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Champions League, an
 
 import logging
 import shutil
+import threading
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, ClassVar, Dict, Optional
 import pytz
 
 from sports import SportsCore, SportsLive, SportsRecent, SportsUpcoming
+
+try:
+    # Core's shared connection pool (core #702); older cores have none.
+    from src.common.fetch_service import share_connection_pool
+except ImportError:
+    share_connection_pool = None
 
 # ESPN API base URL for soccer
 ESPN_SOCCER_BASE_URL = "https://site.api.espn.com/apis/site/v2/sports/soccer"
@@ -42,6 +49,18 @@ class BaseSoccerManager(SportsCore):
     _shared_data = None
     _last_shared_update = 0
 
+    # One schedule fetch per cache key at a time, across every manager. A
+    # league's recent and upcoming managers read the same key and come due in
+    # the same update(), so without this both missed the cache and both
+    # fetched the window.
+    _window_locks: ClassVar[Dict[str, threading.Lock]] = {}
+    _window_locks_guard: ClassVar[threading.Lock] = threading.Lock()
+
+    @classmethod
+    def _window_lock(cls, cache_key: str) -> threading.Lock:
+        with cls._window_locks_guard:
+            return cls._window_locks.setdefault(cache_key, threading.Lock())
+
     def __init__(self, config: Dict[str, Any], display_manager, cache_manager, league_key: str):
         """
         Initialize base soccer manager.
@@ -67,6 +86,19 @@ class BaseSoccerManager(SportsCore):
         # Set sport and league for ESPN API (after parent init to avoid overwrite)
         self.sport = "soccer"
         self.league = league_key
+
+        # Every manager -- three per league -- built its own Session and so
+        # its own connection pool: each new connection a DNS lookup, all at
+        # once at startup. On a core with the shared fetch service they now
+        # share one pool per retry policy (the same policy they mount), so a
+        # connection one league opened serves the next.
+        if share_connection_pool is not None:
+            try:
+                share_connection_pool(
+                    self.session, self.session.get_adapter("https://").max_retries
+                )
+            except Exception as e:  # noqa: BLE001 - its own pool still works
+                self.logger.debug(f"Could not share the connection pool: {e}")
 
         # National-team flags (FIFA World Cup) live in a dedicated subdirectory so
         # they never collide with club logos that share an abbreviation — e.g. ESP
@@ -131,12 +163,21 @@ class BaseSoccerManager(SportsCore):
         return flags_dir
 
     def _fetch_soccer_api_data(self, use_cache: bool = True) -> Optional[Dict]:
-        """
-        Fetches game data for the soccer league using background threading.
-        Returns cached data immediately if available, otherwise starts background fetch.
+        """The league's schedule over the configured window: cached, or
+        fetched once on this thread and cached.
+
+        This used to submit the window to the core's background service *and*
+        fetch the same window here at once, for "immediate" partial data --
+        the same request twice, every time the cache missed. With ESPN
+        rejecting date ranges, each was 29 day requests per league; eight
+        leagues at startup made ~450 requests and ~90 NameResolutionErrors
+        on a Pi. A fetch here costs what the stand-in did and nothing else.
+
+        The window lock makes the league's other manager wait for this
+        fetch and read its result from the cache instead of repeating it.
         """
         now = datetime.now(pytz.utc)
-        
+
         # The window the user configured, not a fixed fortnight. This is the
         # authoritative fetch; leaving it hard-coded meant a widened setting
         # showed briefly from the stand-in fetch and then vanished when this
@@ -144,87 +185,40 @@ class BaseSoccerManager(SportsCore):
         start_date = now - timedelta(days=self.schedule_lookback_days)
         end_date = now + timedelta(days=self.schedule_lookahead_days)
         date_str = f"{start_date.strftime('%Y%m%d')}-{end_date.strftime('%Y%m%d')}"
-        
+
         cache_key = f"soccer_{self.league_key}_schedule_{date_str}"
         url = f"{ESPN_SOCCER_BASE_URL}/{self.league_key}/scoreboard"
 
-        # Check cache first
-        if use_cache:
-            cached_data = self.cache_manager.get(cache_key)
-            if cached_data:
-                # Validate cached data structure
-                if isinstance(cached_data, dict) and "events" in cached_data:
-                    self.logger.info(f"Using cached schedule for {self.league_name}")
-                    return cached_data
-                elif isinstance(cached_data, list):
-                    # Handle old cache format (list of events)
-                    self.logger.info(
-                        f"Using cached schedule for {self.league_name} (legacy format)"
-                    )
-                    return {"events": cached_data}
-                else:
-                    self.logger.warning(
-                        f"Invalid cached data format for {self.league_name}: {type(cached_data)}"
-                    )
-                    # Clear invalid cache
-                    self.cache_manager.delete(cache_key)
-
-        # Start background fetch if service is available
-        if (
-            self.background_service
-            and self.background_enabled
-            and self._background_fetches_espn_ranges()
-        ):
-            self.logger.info(
-                f"Starting background fetch for {self.league_name} schedule..."
-            )
-
-            def fetch_callback(result):
-                """Callback when background fetch completes."""
-                if result.success:
-                    self.logger.info(
-                        f"Background fetch completed for {self.league_name}: {len(result.data.get('events', []))} events"
-                    )
-                else:
-                    self.logger.error(
-                        f"Background fetch failed for {self.league_name}: {result.error}"
-                    )
-
-            # Get background service configuration
-            background_config = self.mode_config.get("background_service", {})
-            timeout = background_config.get("request_timeout", 30)
-            max_retries = background_config.get("max_retries", 3)
-            priority = background_config.get("priority", 2)
-
-            # Submit background fetch request
-            request_id = self.background_service.submit_fetch_request(
-                sport="soccer",
-                year=now.year,
-                url=url,
-                cache_key=cache_key,
-                params={"dates": date_str, "limit": 1000},
-                headers=self.headers,
-                timeout=timeout,
-                max_retries=max_retries,
-                priority=priority,
-                callback=fetch_callback,
-            )
-
-            # Track the request
-            if not hasattr(self, 'background_fetch_requests'):
-                self.background_fetch_requests = {}
-            self.background_fetch_requests[date_str] = request_id
-
-            # For immediate response, try to get partial data
-            partial_data = self._get_weeks_data()
-            if partial_data:
-                return partial_data
-        else:
-            # No background service, or a core that would send this range to
-            # ESPN as-is (rejected with 400 since 2026-09-15): fetch it here.
+        with self._window_lock(cache_key):
+            if use_cache:
+                cached = self._cached_window(cache_key)
+                if cached is not None:
+                    return cached
             return self._fetch_season_directly(
                 url, date_str, cache_key, f"{self.league_name}"
             )
+
+    def _cached_window(self, cache_key: str) -> Optional[Dict]:
+        """The schedule cached under ``cache_key``, or None."""
+        cached_data = self.cache_manager.get(cache_key)
+        if not cached_data:
+            return None
+        # Validate cached data structure
+        if isinstance(cached_data, dict) and "events" in cached_data:
+            self.logger.info(f"Using cached schedule for {self.league_name}")
+            return cached_data
+        if isinstance(cached_data, list):
+            # Handle old cache format (list of events)
+            self.logger.info(
+                f"Using cached schedule for {self.league_name} (legacy format)"
+            )
+            return {"events": cached_data}
+        self.logger.warning(
+            f"Invalid cached data format for {self.league_name}: {type(cached_data)}"
+        )
+        # Clear invalid cache
+        self.cache_manager.delete(cache_key)
+        return None
 
     def _fetch_data(self) -> Optional[Dict]:
         """Fetch data using shared data mechanism or direct fetch for live."""
