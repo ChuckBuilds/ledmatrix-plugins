@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-10-03",
+  "last_updated": "2026-10-04",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -133,7 +133,8 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "1.2.12",
-      "ledmatrix_min_version": "3.3.0"
+      "ledmatrix_min_version": "3.3.0",
+      "commit": "738fe34597055fe045c2eb0b5e94be0040b9c3fd"
     },
     {
       "id": "christmas-countdown",
