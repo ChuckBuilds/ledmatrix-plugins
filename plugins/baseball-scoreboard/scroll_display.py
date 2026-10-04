@@ -46,7 +46,10 @@ class ScrollDisplay(_ScrollDisplayBase):
     # The ladder the legacy _get_scroll_settings walked, same order.
     SCROLL_LEAGUE_KEYS = ("mlb", "milb", "ncaa_baseball")
 
-    # Paths to league separator icons
+    # Paths to league separator icons. The core ships MLB.png only: it has no
+    # MiLB or NCAA baseball league logo (its NCAA badges show a basketball or
+    # hockey player), so those two leagues scroll without a separator unless
+    # a file is added at these paths. A missing icon is skipped quietly.
     MLB_SEPARATOR_ICON = "assets/sports/mlb_logos/MLB.png"
     MILB_SEPARATOR_ICON = "assets/sports/milb_logos/MiLB.png"
     NCAA_BASEBALL_SEPARATOR_ICON = "assets/sports/ncaa_logos/ncaa_baseball.png"
@@ -163,7 +166,9 @@ class ScrollDisplay(_ScrollDisplayBase):
             target_height: Target height for the resized icon
         """
         if not os.path.exists(icon_path):
-            self.logger.warning(f"{league_key.upper()} separator icon not found at {icon_path}")
+            # Debug, not warning: the core ships no MiLB or NCAA baseball
+            # icon, so every install logged these on every load.
+            self.logger.debug(f"{league_key.upper()} separator icon not found at {icon_path} (will skip separator)")
             return
 
         try:

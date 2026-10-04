@@ -246,6 +246,11 @@ The plugin supports the following sports leagues (the `enabled_sports` keys):
 - **ncaam_hockey**: NCAA Men's Hockey poll
 - **ncaa_baseball**: NCAA Baseball standings
 
+Each league opens with its logo from the LEDMatrix install's `assets/sports/`.
+Both college basketball polls use the NCAA basketball badge. The core ships no
+NCAA baseball logo, so that league's logo column stays blank unless you add
+`assets/sports/ncaa_logos/ncaa_baseball.png`.
+
 ## Data fetching
 
 - Standings are fetched in `update()`, never while drawing, and cached.

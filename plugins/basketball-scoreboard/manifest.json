@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.42.0",
+  "version": "1.42.1",
   "update_interval": 60,
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
@@ -19,6 +19,12 @@
   "branch": "main",
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
+    {
+      "version": "1.42.1",
+      "released": "2026-10-03",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "NCAA men's and women's slates get a league separator again: it named an NCAA.png the core has never shipped, and now uses the core's NCAA basketball badge (ncaam.png). The core ships no WNBA icon, so that separator is skipped at debug instead of warning on every scroll display load."
+    },
     {
       "version": "1.42.0",
       "released": "2026-10-02",

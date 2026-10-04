@@ -374,7 +374,7 @@ three league blocks, and all are **Advanced**.
 | `<league>.scroll_settings.scroll_speed` | `50.0` | Pixels per second. Higher scrolls faster. |
 | `<league>.scroll_settings.scroll_delay` | `0.01` | **Hidden.** Ignored; kept declared so saved configs still load. Scrolling is paced to the panel refresh; `scroll_speed` sets the speed. |
 | `<league>.scroll_settings.gap_between_games` | `48` | Pixels between game cards. |
-| `<league>.scroll_settings.show_league_separators` | `true` | Draw a league icon between leagues in a mixed ticker. |
+| `<league>.scroll_settings.show_league_separators` | `true` | Draw a league icon between leagues in a mixed ticker. Only MLB has one: the core ships no MiLB or NCAA baseball icon, so those leagues scroll without one unless you add `assets/sports/milb_logos/MiLB.png` or `assets/sports/ncaa_logos/ncaa_baseball.png` to the LEDMatrix install. |
 | `<league>.scroll_settings.dynamic_duration` | `true` | Size the mode's duration from how long the scroll actually takes, so a long slate is not cut off mid-scroll. |
 | `<league>.scroll_settings.game_card_width` | `128` | Width of each card. Lower it on a multi-panel chain to fit more games on screen at once. |
 

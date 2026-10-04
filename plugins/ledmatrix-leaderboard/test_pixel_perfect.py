@@ -54,7 +54,7 @@ def _league_data(logo_dir="assets/sports/nfl_logos"):
         "league": "nfl",
         "league_config": {
             "logo_dir": logo_dir,
-            "league_logo": os.path.join(logo_dir, "nfl.png") if logo_dir else "",
+            "league_logo": os.path.join(logo_dir, "NFL.png") if logo_dir else "",
         },
         "teams": _teams(),
     }]

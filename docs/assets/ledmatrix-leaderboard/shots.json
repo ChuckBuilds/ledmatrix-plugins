@@ -19,7 +19,7 @@
             "sport": "football",
             "league": "nfl",
             "logo_dir": "assets/sports/nfl_logos",
-            "league_logo": "assets/sports/nfl_logos/nfl.png",
+            "league_logo": "assets/sports/nfl_logos/NFL.png",
             "top_teams": 6,
             "level": 1,
             "show_ranking": false
