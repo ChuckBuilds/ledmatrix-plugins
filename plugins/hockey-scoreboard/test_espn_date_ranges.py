@@ -145,7 +145,8 @@ def test_the_window_is_fetched_here_when_the_service_cannot_fetch_ranges(service
     # fixed position; which chunk answers first is not significant.
     assert sorted(sent[1:]) == sorted(chunks)
     assert len(data["events"]) == len(chunks)
-    assert manager.cache_manager.store[f"nhl_schedule_{window}"] is data
+    # Cached under core's canonical scoreboard key for this window.
+    assert manager.cache_manager.store[f"espn_scoreboard_hockey_nhl_{expected}"] is data
 
 
 def test_the_window_is_the_configured_lookback_and_lookahead():

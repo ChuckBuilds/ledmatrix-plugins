@@ -5,6 +5,7 @@ This module provides manager classes for various soccer leagues including
 Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Champions League, and Europa League.
 """
 
+from src.common.espn_dates import espn_scoreboard_cache_key_for_url
 import logging
 import shutil
 import threading
@@ -186,21 +187,25 @@ class BaseSoccerManager(SportsCore):
         end_date = now + timedelta(days=self.schedule_lookahead_days)
         date_str = f"{start_date.strftime('%Y%m%d')}-{end_date.strftime('%Y%m%d')}"
 
-        cache_key = f"soccer_{self.league_key}_schedule_{date_str}"
         url = f"{ESPN_SOCCER_BASE_URL}/{self.league_key}/scoreboard"
+        # The canonical key (core espn_scoreboard_cache_key), shared with
+        # every plugin showing this league; the old one is read until it ages out.
+        legacy_key = f"soccer_{self.league_key}_schedule_{date_str}"
+        cache_key = espn_scoreboard_cache_key_for_url(url, date_str) or legacy_key
 
         with self._window_lock(cache_key):
             if use_cache:
-                cached = self._cached_window(cache_key)
+                cached = self._cached_window(cache_key, (legacy_key,))
                 if cached is not None:
                     return cached
             return self._fetch_season_directly(
                 url, date_str, cache_key, f"{self.league_name}"
             )
 
-    def _cached_window(self, cache_key: str) -> Optional[Dict]:
-        """The schedule cached under ``cache_key``, or None."""
-        cached_data = self.cache_manager.get(cache_key)
+    def _cached_window(self, cache_key: str, legacy_keys=()) -> Optional[Dict]:
+        """The schedule cached under ``cache_key`` (or, until it ages out,
+        under one of ``legacy_keys``), or None."""
+        cached_data = self._cached_schedule(cache_key, legacy_keys)
         if not cached_data:
             return None
         # Validate cached data structure

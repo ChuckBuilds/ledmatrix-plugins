@@ -59,6 +59,8 @@ class _Cache:
 
 class _Stub:
     _fetch_todays_games = SportsCore._fetch_todays_games
+    _needs_previous_day = SportsCore._needs_previous_day
+    _LOOKBACK_CUTOFF_HOUR = SportsCore._LOOKBACK_CUTOFF_HOUR
 
     def __init__(self, league):
         self.sport = "basketball"
@@ -73,7 +75,9 @@ class _Stub:
 for league in ("nba", "wnba", "mens-college-basketball", "womens-college-basketball"):
     stub = _Stub(league)
     data = stub._fetch_todays_games()
-    ages = [age for key, age in stub.cache_manager.asked if key.endswith("_scoreboard_current")]
+    # Core's shared key (espn_scoreboard_cache_key) or the one used before it.
+    ages = [age for key, age in stub.cache_manager.asked
+            if key.startswith("espn_scoreboard_") or key.endswith("_scoreboard_current")]
     check(f"{league}: served from cache without a request", bool(data and data.get("events")))
     check(f"{league}: the live scoreboard cache is at most {LIVE_CACHE_SECONDS}s",
           bool(ages) and all(age is not None and age <= LIVE_CACHE_SECONDS for age in ages),

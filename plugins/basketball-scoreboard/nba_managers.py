@@ -60,11 +60,14 @@ class BaseNBAManager(Basketball):
             season_year = now.year - 1
         # Only what Recent and Upcoming can show; see _schedule_window.
         datestring, window = self._schedule_window()
-        cache_key = f"{self.sport_key}_schedule_{window}"
+        # The canonical key (core espn_scoreboard_cache_key), shared with
+        # every plugin showing this league; the old one is read until it ages out.
+        cache_key = self._schedule_cache_key(datestring)
+        legacy_key = f"{self.sport_key}_schedule_{window}"
 
         # Check cache first
         if use_cache:
-            cached_data = self.cache_manager.get(cache_key)
+            cached_data = self._cached_schedule(cache_key, (legacy_key,))
             if cached_data:
                 # Validate cached data structure
                 if isinstance(cached_data, dict) and "events" in cached_data:

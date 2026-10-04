@@ -30,7 +30,11 @@ from src.logo_downloader import LogoDownloader, download_missing_logo
 from src.base_odds_manager import BaseOddsManager
 from data_sources import ESPNDataSource
 # ESPN date-range helper: core ships it from 3.5.0, the manifest's floor.
-from src.common.espn_dates import ESPN_MAX_LIMIT, fetch_espn_scoreboard
+from src.common.espn_dates import (
+    ESPN_MAX_LIMIT,
+    fetch_espn_scoreboard,
+    get_espn_scoreboard,
+)
 from football_timezone import resolve_timezone
 # Imported at module load time on purpose (see the monorepo module-naming
 # rules): a deferred bare-name import could bind another plugin's
@@ -1548,13 +1552,14 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
                 f"Fetching games for {self.sport}/{self.league} over date range "
                 f"{dates_param}"
             )
-            data = fetch_espn_scoreboard(
-                self.session,
-                url,
-                params={"dates": dates_param, "limit": ESPN_MAX_LIMIT},
-                headers=self.headers,
-                timeout=10,
-                logger=self.logger,
+            # Always asked (max_age=0: the live poll's own interval decides),
+            # and left under core's shared key for this scoreboard and date
+            # (espn_scoreboard_cache_key), so odds-ticker and anything else
+            # showing the same day reuse it instead of fetching it again.
+            data = get_espn_scoreboard(
+                self.session, self.sport, self.league, dates_param,
+                cache_manager=self.cache_manager, max_age=0,
+                headers=self.headers, timeout=10, logger=self.logger,
             )
             events = data.get("events", [])
 
