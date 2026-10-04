@@ -1,11 +1,15 @@
 """Generate a placeholder UFC separator icon for scroll display.
 
-Run this script once to create assets/sports/ufc_logos/UFC.png.
-Replace with an official UFC octagon logo when available.
+The icon this writes ships with the plugin, at
+assets/sports/ufc_logos/UFC.png next to this script, and the scroll display
+loads it from there; nobody needs to run this to get a separator. Run it to
+regenerate that file. A PNG at the same path under the LEDMatrix install
+overrides it, if you want an official UFC logo instead.
 """
 
 import os
 import math
+from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont
 
 
@@ -99,4 +103,5 @@ def create_ufc_octagon_icon(output_path: str, size: int = 64):
 
 
 if __name__ == "__main__":
-    create_ufc_octagon_icon("assets/sports/ufc_logos/UFC.png")
+    create_ufc_octagon_icon(
+        str(Path(__file__).resolve().parent / "assets" / "sports" / "ufc_logos" / "UFC.png"))

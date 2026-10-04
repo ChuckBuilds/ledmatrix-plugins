@@ -44,7 +44,7 @@ ASSET_RE = re.compile(
 
 #: Separator icons a scoreboard names but the core does not ship. Each is a
 #: drop-in: the league scrolls without a separator until a file is added at
-#: that path. A path NOT listed here
+#: that path (ufc falls back to the icon it ships). A path NOT listed here
 #: must name a file the core ships -- hockey named ncaa_hockey.png for years
 #: while the core's NCAA hockey badge sat at ncaah.png. An entry that the core
 #: starts shipping fails too, so this list only shrinks.
@@ -54,7 +54,7 @@ UNSHIPPED_SEPARATOR_ICONS = {
     "assets/sports/wnba_logos/WNBA.png",  # basketball: no WNBA league logo
     "assets/sports/ncaa_logos/NCAA.png",  # hockey, lacrosse: no sport-neutral NCAA badge
     "assets/sports/ncaa_logos/ncaa_lacrosse.png",  # lacrosse: no NCAA lacrosse badge
-    "assets/sports/ufc_logos/UFC.png",  # ufc: generate_placeholder_icon.py writes one
+    "assets/sports/ufc_logos/UFC.png",  # ufc: an override; the plugin ships its own copy
 }
 
 SEPARATOR_RE = re.compile(r"""^\s+\w+_SEPARATOR_ICON\s*=\s*["']([^"']+)["']""", re.M)

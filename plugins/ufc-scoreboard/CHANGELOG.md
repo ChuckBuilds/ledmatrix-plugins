@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.19.4] - 2026-10-04
+
+### Fixed
+- The Vegas ticker draws the UFC separator icon before the fight cards. The
+  icon has always shipped with the plugin, but the scroll display only looked
+  for it relative to the LEDMatrix install, where the core has never shipped
+  one. So there was no separator, and every install logged
+  `UFC separator icon not found` each time the scroll display was built. It
+  now falls back to the plugin's own copy. A PNG at
+  `assets/sports/ufc_logos/UFC.png` in the install still overrides it, and
+  if neither exists the separator is skipped with a debug line.
+
 ## [1.19.3] - 2026-10-02
 
 ### Changed

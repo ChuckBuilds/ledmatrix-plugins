@@ -1156,9 +1156,11 @@ class GameRenderer(SportsCardWrappersMixin, SportsGameRendererMixin):
             if self._odds_would_hit_top_row(obstacle, placements):
                 # Step down one text row, which is where these used to live
                 # unconditionally. Measured rather than keyed to a panel size:
-                # it is the text widths that decide, and a two-digit over/under
-                # ("O/U: 12.5") overlaps on a 64px panel where "O/U: 8.5" clears
-                # it by 2px. Wider panels never reach the centre and never move.
+                # it is the text widths that decide. With the default fonts on
+                # a 64px panel a spread alone clears the inning but any O/U
+                # reaches it, and a recent card's wider "Final" catches the
+                # spread too. From 128px up they fit beside all three cards'
+                # top rows and stay at the edge.
                 row = draw.textbbox((0, 0), "A", font=font)[3] + 2
                 odds_y += row
 
