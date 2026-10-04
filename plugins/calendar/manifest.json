@@ -1,7 +1,7 @@
 {
   "id": "calendar",
   "name": "Google Calendar",
-  "version": "1.2.11",
+  "version": "1.2.12",
   "author": "ChuckBuilds",
   "description": "Display upcoming events from Google Calendar with date, time, and event details. Shows next 1-3 events with automatic rotation and timezone support.",
   "category": "productivity",
@@ -35,6 +35,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.2.12",
+      "released": "2026-10-03",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "The events cache key now carries a short hash of the selected calendar IDs instead of the IDs themselves. The key becomes a filename, and with a few long Google calendar IDs (holidays, sports) it ran past the 255-byte filename limit, so every write failed with 'Could not write cache' and the calendar refetched from Google on every update. Core floor unchanged."
+    },
     {
       "version": "1.2.11",
       "released": "2026-10-02",

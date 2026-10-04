@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.57.1",
+  "version": "1.57.2",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -32,10 +32,16 @@
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
     {
-      "version": "1.57.1",
+      "version": "1.57.2",
       "released": "2026-10-04",
       "ledmatrix_min_version": "3.8.0",
       "notes": "Comment-only: corrects the odds step-down note in game_renderer.py. It said \"O/U: 8.5\" clears the inning by 2px on a 64px panel; with the card's default fonts any O/U reaches the inning there and only a spread alone clears it. No change to what is drawn."
+    },
+    {
+      "version": "1.57.1",
+      "released": "2026-10-03",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "The MiLB and NCAA baseball separator icons are skipped quietly (debug) instead of warning on every scroll display load: the core ships neither (MiLB.png, ncaa_baseball.png), and its NCAA badges show a basketball or hockey player. MLB keeps its separator. Adding either file to the LEDMatrix install still turns its separator on."
     },
     {
       "version": "1.57.0",
