@@ -1009,7 +1009,8 @@
       "screenshot": "",
       "latest_version": "1.19.4",
       "icon": "fas fa-fist-raised",
-      "ledmatrix_min_version": "3.8.0"
+      "ledmatrix_min_version": "3.8.0",
+      "commit": "bf7fcf0170ebce40f0c561979cadd85bdf974205"
     },
     {
       "id": "weather",
