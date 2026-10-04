@@ -16,7 +16,13 @@ only do that if this loop hands it the upcoming games it already downloaded, so
 what is pinned here is the *wiring*, which is what a future edit would silently
 drop:
 
-  * every event the live fetch returns is offered, upcoming ones included;
+  * every event the live fetch returns is offered, upcoming ones included --
+    every event the board would show once live, that is: a favourites-only
+    board offers only its favourites' games, and an excluded team's game is
+    never offered. A kickoff holds the poll at live cadence for 15 minutes,
+    and a college Saturday has one every half hour, so offering games the
+    board then filters out kept a favourites-only board polling the whole
+    scoreboard every 30 s all day;
   * the offer happens even when nothing is live, which is the only case the
     back-off is running in;
   * the call is getattr-guarded, so a core without the method still loads.
@@ -100,6 +106,7 @@ def _prime(live):
     live.sport = "football"
     live._games_lock = threading.RLock()
     live.favorite_teams = []
+    live.exclude_teams = []
     live.show_all_live = True
     live.show_favorite_teams_only = False
     live.show_odds = False
@@ -115,9 +122,11 @@ def _prime(live):
     return live
 
 
-def _drive(live, events, offered):
+def _drive(live, events, offered, **settings):
     """Run one update() pass over a canned payload, recording what was offered."""
     _prime(live)
+    for name, value in settings.items():
+        setattr(live, name, value)
     live._fetch_data = lambda *a, **k: {"events": list(events)}
     live._extract_game_details = lambda game: dict(game)
     live._note_scheduled_start_candidate = lambda details: offered.append(details)
@@ -145,6 +154,32 @@ def main():
     print("\nit still happens when nothing is live")
     check("the back-off's own case is covered", len(offered) == 3)
     check("and no game was treated as live", live.live_games == [])
+
+    print("\na favourites-only board offers only its favourites' games")
+    games = [
+        {"id": "fav", "home_abbr": "UGA", "away_abbr": "VAN",
+         "is_live": False, "is_halftime": False, "is_final": False},
+        {"id": "other", "home_abbr": "MSST", "away_abbr": "ALA",
+         "is_live": False, "is_halftime": False, "is_final": False},
+    ]
+    offered = _drive(_live(), games, [], favorite_teams=["UGA"],
+                     show_all_live=False, show_favorite_teams_only=True)
+    check("only the favourite's game was offered",
+          [d.get("id") for d in offered] == ["fav"])
+
+    offered = _drive(_live(), games, [], favorite_teams=["UGA"],
+                     show_all_live=True, show_favorite_teams_only=True)
+    check("show_all_live still offers every game",
+          sorted(d.get("id") for d in offered) == ["fav", "other"])
+
+    offered = _drive(_live(), games, [], favorite_teams=["UGA"],
+                     show_all_live=False, show_favorite_teams_only=False)
+    check("a board showing every live game offers every game",
+          sorted(d.get("id") for d in offered) == ["fav", "other"])
+
+    offered = _drive(_live(), games, [], exclude_teams=["ALA"])
+    check("an excluded team's game is never offered",
+          [d.get("id") for d in offered] == ["fav"])
 
     print("\nthe call is getattr-guarded")
     live2 = _live()
