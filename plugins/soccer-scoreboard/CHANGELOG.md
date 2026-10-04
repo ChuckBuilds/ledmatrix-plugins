@@ -1,5 +1,21 @@
 # Changelog
 
+## [2.41.0] - 2026-10-05
+
+### Changed
+- Schedule windows are cached under core's shared ESPN scoreboard key
+  (espn_scoreboard_cache_key, fetch service stage 2), so every plugin showing
+  a league shares one fetch and one cached copy. The key this plugin used
+  before is still read, so an upgrade serves the copy already on disk instead
+  of refetching every league at once; a window that moves on a day deletes its
+  copy from the day before. Requires LEDMatrix core 3.8.1.
+- The live poll's 30-second cache moves from `<sport_key>_scoreboard_current`,
+  whatever the dates, to the shared key for the dates it asks, so odds-ticker
+  and the scoreboard read each other's copy; the old key is read for a
+  release.
+- 2.39.3's single fetch per cache miss and its per-window lock are unchanged;
+  the lock is now taken on the shared key.
+
 ## [2.40.0] - 2026-10-05
 
 ### Changed
