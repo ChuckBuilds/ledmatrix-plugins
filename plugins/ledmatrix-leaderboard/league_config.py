@@ -44,6 +44,15 @@ class LeagueConfig:
         hand-edited config or a hot reload without enabled_sports. They used to
         enable ncaam_hockey and not nba, mlb or nhl, the opposite of what the
         settings form shows for a fresh install.
+
+        ``league_logo`` names a file the core ships, spelled exactly as it is
+        on disk: the Pi's filesystem is case-sensitive, so ``nfl.png`` misses
+        ``NFL.png`` there while a Windows or macOS checkout finds it. Core
+        3.3.0 dropped the lowercase copies these used to name (core #506).
+        The core has no women's NCAA or NCAA baseball league logo:
+        ncaaw_basketball borrows the NCAA basketball badge, and ncaa_baseball
+        names a file nothing ships, so its column draws blank unless one is
+        added there. ``scripts/test_core_asset_paths.py`` checks the spelling.
         """
         # Default enabled values per config schema
         DEFAULT_ENABLED = {
@@ -63,7 +72,7 @@ class LeagueConfig:
                 'sport': 'football',
                 'league': 'nfl',
                 'logo_dir': 'assets/sports/nfl_logos',
-                'league_logo': 'assets/sports/nfl_logos/nfl.png',
+                'league_logo': 'assets/sports/nfl_logos/NFL.png',
                 'standings_url': 'https://site.api.espn.com/apis/v2/sports/football/nfl/standings',
                 'enabled': self.enabled_sports.get('nfl', {}).get('enabled', get_enabled_default('nfl')),
                 'top_teams': self.enabled_sports.get('nfl', {}).get('top_teams', 10),
@@ -75,7 +84,7 @@ class LeagueConfig:
                 'sport': 'basketball',
                 'league': 'nba',
                 'logo_dir': 'assets/sports/nba_logos',
-                'league_logo': 'assets/sports/nba_logos/nba.png',
+                'league_logo': 'assets/sports/nba_logos/NBA.png',
                 'teams_url': 'https://site.api.espn.com/apis/site/v2/sports/basketball/nba/teams',
                 'standings_url': 'https://site.api.espn.com/apis/v2/sports/basketball/nba/standings',
                 'enabled': self.enabled_sports.get('nba', {}).get('enabled', get_enabled_default('nba')),
@@ -85,7 +94,7 @@ class LeagueConfig:
                 'sport': 'baseball',
                 'league': 'mlb',
                 'logo_dir': 'assets/sports/mlb_logos',
-                'league_logo': 'assets/sports/mlb_logos/mlb.png',
+                'league_logo': 'assets/sports/mlb_logos/MLB.png',
                 'standings_url': 'https://site.api.espn.com/apis/v2/sports/baseball/mlb/standings',
                 'enabled': self.enabled_sports.get('mlb', {}).get('enabled', get_enabled_default('mlb')),
                 'top_teams': self.enabled_sports.get('mlb', {}).get('top_teams', 10),
@@ -108,7 +117,7 @@ class LeagueConfig:
                 'sport': 'hockey',
                 'league': 'nhl',
                 'logo_dir': 'assets/sports/nhl_logos',
-                'league_logo': 'assets/sports/nhl_logos/nhl.png',
+                'league_logo': 'assets/sports/nhl_logos/NHL.png',
                 'standings_url': 'https://site.api.espn.com/apis/v2/sports/hockey/nhl/standings',
                 'enabled': self.enabled_sports.get('nhl', {}).get('enabled', get_enabled_default('nhl')),
                 'top_teams': self.enabled_sports.get('nhl', {}).get('top_teams', 10),
@@ -131,7 +140,7 @@ class LeagueConfig:
                 'sport': 'basketball',
                 'league': 'womens-college-basketball',
                 'logo_dir': 'assets/sports/ncaa_womens_logos',
-                'league_logo': 'assets/sports/ncaa_womens_logos/ncaaw.png',
+                'league_logo': 'assets/sports/ncaa_logos/ncaam.png',
                 'teams_url': 'https://site.api.espn.com/apis/site/v2/sports/basketball/womens-college-basketball/teams',
                 'rankings_url': 'https://site.api.espn.com/apis/site/v2/sports/basketball/womens-college-basketball/rankings',
                 'enabled': self.enabled_sports.get('ncaaw_basketball', {}).get('enabled', get_enabled_default('ncaaw_basketball')),

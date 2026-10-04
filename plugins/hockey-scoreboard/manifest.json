@@ -1,7 +1,7 @@
 {
   "id": "hockey-scoreboard",
   "name": "Hockey Scoreboard",
-  "version": "1.42.2",
+  "version": "1.42.3",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, and NCAA Women's hockey with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/hockey-scoreboard",
@@ -54,6 +54,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.42.3",
+      "released": "2026-10-03",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "NCAA men's and women's hockey slates get a league separator: it named an ncaa_hockey.png the core has never shipped, and now uses the core's NCAA hockey badge (ncaah.png)."
+    },
     {
       "version": "1.42.2",
       "released": "2026-10-02",

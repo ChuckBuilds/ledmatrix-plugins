@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-leaderboard",
   "name": "Sports Leaderboard",
-  "version": "1.5.5",
+  "version": "1.5.6",
   "description": "Displays scrolling leaderboards and standings for multiple sports leagues including NFL, NBA, MLB, NCAA Football, NCAA Basketball, and more",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -31,6 +31,12 @@
   "requirements_file": "requirements.txt",
   "min_ledmatrix_version": "3.4.0",
   "versions": [
+    {
+      "version": "1.5.6",
+      "released": "2026-10-03",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "Fixes the NFL, NBA, MLB and NHL league logos on the Pi: they named nfl.png etc. while the core ships NFL.png (its lowercase copies went in core 3.3.0), and the Pi's filesystem is case-sensitive, so those leagues drew a blank logo column and warned every rebuild. NCAA women's basketball now uses the core's NCAA basketball badge (it named an ncaaw.png nothing ships). The core has no NCAA baseball logo, so that column stays blank; a missing league logo is now warned about once per path, then logged at debug."
+    },
     {
       "version": "1.5.5",
       "released": "2026-10-02",

@@ -77,12 +77,11 @@
       "plugin_path": "plugins/baseball-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-02",
+      "last_updated": "2026-10-03",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.57.0",
-      "ledmatrix_min_version": "3.8.0",
-      "commit": "886d2038d22a35c962beac0ea261543339cffec9"
+      "latest_version": "1.57.1",
+      "ledmatrix_min_version": "3.8.0"
     },
     {
       "id": "basketball-scoreboard",
@@ -104,12 +103,11 @@
       "plugin_path": "plugins/basketball-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-02",
+      "last_updated": "2026-10-03",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.42.0",
-      "ledmatrix_min_version": "3.8.0",
-      "commit": "886d2038d22a35c962beac0ea261543339cffec9"
+      "latest_version": "1.42.1",
+      "ledmatrix_min_version": "3.8.0"
     },
     {
       "id": "calendar",
@@ -382,13 +380,12 @@
       "plugin_path": "plugins/hockey-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-02",
+      "last_updated": "2026-10-03",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.42.2",
+      "latest_version": "1.42.3",
       "icon": "fas fa-hockey-puck",
-      "ledmatrix_min_version": "3.8.0",
-      "commit": "886d2038d22a35c962beac0ea261543339cffec9"
+      "ledmatrix_min_version": "3.8.0"
     },
     {
       "id": "lacrosse-scoreboard",
@@ -465,15 +462,14 @@
       "plugin_path": "plugins/ledmatrix-leaderboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-02",
+      "last_updated": "2026-10-03",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.5.5",
+      "latest_version": "1.5.6",
       "ledmatrix_min_version": "3.4.0",
       "aliases": [
         "ledmatrix-leaderboard"
-      ],
-      "commit": "886d2038d22a35c962beac0ea261543339cffec9"
+      ]
     },
     {
       "id": "ledmatrix-flights",

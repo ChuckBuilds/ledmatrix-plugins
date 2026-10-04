@@ -58,10 +58,16 @@ class ScrollDisplay(_ScrollDisplayBase):
     # and reads them off self, and the core base calls it from __init__ --
     # so a missing constant is not a degraded icon, it is an AttributeError
     # that stops the scroll display being constructed at all.
+    #
+    # Spelled exactly as the core ships them: the Pi's filesystem is
+    # case-sensitive. ncaah.png is the core's NCAA hockey badge; these named
+    # an ncaa_hockey.png it never shipped, so NCAA hockey scrolled with no
+    # separator. There is no generic NCAA.png either; the "ncaa" key keeps
+    # its path so a file added there is still picked up.
     NHL_SEPARATOR_ICON = "assets/sports/nhl_logos/NHL.png"
     NCAA_SEPARATOR_ICON = "assets/sports/ncaa_logos/NCAA.png"
-    NCAAM_HOCKEY_SEPARATOR_ICON = "assets/sports/ncaa_logos/ncaa_hockey.png"
-    NCAAW_HOCKEY_SEPARATOR_ICON = "assets/sports/ncaa_logos/ncaa_hockey.png"
+    NCAAM_HOCKEY_SEPARATOR_ICON = "assets/sports/ncaa_logos/ncaah.png"
+    NCAAW_HOCKEY_SEPARATOR_ICON = "assets/sports/ncaa_logos/ncaah.png"
 
 
     def _default_game_card_width(self) -> int:
