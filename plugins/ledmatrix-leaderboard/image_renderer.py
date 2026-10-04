@@ -97,6 +97,9 @@ class ImageRenderer:
         # changed. On a live rig this ran on the render thread and was the
         # largest single contributor to a 3.2s freeze of the scroll.
         self._logo_cache: Dict[Any, Optional[Image.Image]] = {}
+        # League logo paths already reported missing. A miss is not cached
+        # (see _cached_prepared_logo), so without this every rebuild warned.
+        self._missing_league_logos: set = set()
         self.text_outline = bool(appearance.get('text_outline', True))
         self.logo_scale = self._clamp_float(appearance.get('logo_scale', 1.0), 0.5, 1.5, 1.0)
         self.font_size_override = self._clamp_int(appearance.get('font_size', 0), 0, 32, 0)
@@ -362,7 +365,12 @@ class ImageRenderer:
                     self.logger.error("Error downloading missing logo for %s: %s", team_abbr, e)
 
     def _get_league_logo(self, league_logo_path: str) -> Optional[Image.Image]:
-        """Get league logo from the configured path."""
+        """Get league logo from the configured path.
+
+        A missing file is warned about once per path, then logged at debug:
+        the league still draws, with a blank logo column, and the rebuild
+        that asks again comes round every cycle.
+        """
         if not league_logo_path:
             return None
         try:
@@ -370,9 +378,14 @@ class ImageRenderer:
                 logo = Image.open(league_logo_path)
                 self.logger.debug(f"Successfully loaded league logo from {league_logo_path}")
                 return logo
+            if league_logo_path in self._missing_league_logos:
+                self.logger.debug("League logo still missing: %s", league_logo_path)
             else:
-                self.logger.warning(f"League logo not found at path: {league_logo_path}")
-                return None
+                self._missing_league_logos.add(league_logo_path)
+                self.logger.warning(
+                    "League logo not found at path: %s (drawing the league without one)",
+                    league_logo_path)
+            return None
         except Exception as e:
             self.logger.error(f"Error loading league logo: {e}")
             return None

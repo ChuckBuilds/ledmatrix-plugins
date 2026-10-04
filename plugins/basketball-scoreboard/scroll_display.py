@@ -61,9 +61,15 @@ class ScrollDisplay(_ScrollDisplayBase):
     # and reads them off self, and the core base calls it from __init__ --
     # so a missing constant is not a degraded icon, it is an AttributeError
     # that stops the scroll display being constructed at all.
+    #
+    # Spelled exactly as the core ships them: the Pi's filesystem is
+    # case-sensitive. The core has no generic NCAA.png; ncaam.png is its NCAA
+    # basketball badge, so the men's and women's slates share it. It has no
+    # WNBA icon either, so the WNBA scrolls without a separator unless one is
+    # added at this path.
     NBA_SEPARATOR_ICON = "assets/sports/nba_logos/NBA.png"
     WNBA_SEPARATOR_ICON = "assets/sports/wnba_logos/WNBA.png"
-    NCAA_SEPARATOR_ICON = "assets/sports/ncaa_logos/NCAA.png"  # Generic NCAA logo, or use league-specific if available
+    NCAA_SEPARATOR_ICON = "assets/sports/ncaa_logos/ncaam.png"
     MARCH_MADNESS_SEPARATOR_ICON = "assets/sports/ncaa_logos/MARCH_MADNESS.png"
 
 
@@ -153,7 +159,9 @@ class ScrollDisplay(_ScrollDisplayBase):
             display_name: Name for logging purposes
         """
         if not os.path.exists(icon_path):
-            self.logger.warning(f"{display_name} separator icon not found at {icon_path}")
+            # Debug, not warning: the core ships no WNBA icon, so every
+            # install logged this on every load.
+            self.logger.debug(f"{display_name} separator icon not found at {icon_path} (will skip separator)")
             return
 
         try:
@@ -252,8 +260,8 @@ class ScrollDisplay(_ScrollDisplayBase):
     def vegas_separator(self, league: str) -> Optional[Image.Image]:
         """Core's league separator, or the March Madness one ahead of tournament games.
 
-        Built as prepare_scroll_content builds it. The core ships no NCAA.png,
-        so without this a tournament slate would lose its separator altogether.
+        Built as prepare_scroll_content builds it. Without this a tournament
+        slate would show the regular NCAA badge rather than March Madness.
         """
         icon = self._separator_icons.get(f"{league}_tournament")
         if icon is None or league not in getattr(self, "_vegas_tournament_leagues", ()):

@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.57.0",
+  "version": "1.57.1",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.57.1",
+      "released": "2026-10-03",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "The MiLB and NCAA baseball separator icons are skipped quietly (debug) instead of warning on every scroll display load: the core ships neither (MiLB.png, ncaa_baseball.png), and its NCAA badges show a basketball or hockey player. MLB keeps its separator. Adding either file to the LEDMatrix install still turns its separator on."
+    },
     {
       "version": "1.57.0",
       "released": "2026-10-02",
