@@ -848,7 +848,8 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "2.39.3",
-      "ledmatrix_min_version": "3.8.0"
+      "ledmatrix_min_version": "3.8.0",
+      "commit": "47bc85c726534ae87b4e66a686b1220b347a79bb"
     },
     {
       "id": "static-image",
