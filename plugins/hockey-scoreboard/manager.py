@@ -2147,13 +2147,20 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
         # No global fallback - return None
         return None
 
-    def _get_active_celebration_manager(self):
+    def _get_active_celebration_manager(self, live_priority_only=False):
         """Return the (league_key, live_manager) of an enabled league whose live
-        manager currently has an active goal/win celebration, else None."""
+        manager currently has an active goal/win celebration, else None.
+
+        ``live_priority_only`` also skips leagues with live priority off -- the
+        same gate get_live_modes() applies, so has_live_content() never reports
+        a celebration that no live mode can show.
+        """
         if not self.is_enabled:
             return None
         for league_key, league_data in self._league_registry.items():
             if not league_data.get("enabled", False):
+                continue
+            if live_priority_only and not league_data.get("live_priority", True):
                 continue
             live_manager = self._get_league_manager_for_mode(league_key, "live")
             if (
@@ -2240,7 +2247,7 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
 
         # An active celebration (notably a win, whose game has already left the
         # live list) must keep the live mode on screen.
-        if self._get_active_celebration_manager() is not None:
+        if self._get_active_celebration_manager(live_priority_only=True) is not None:
             return True
 
         # Check NHL live content
@@ -2376,6 +2383,14 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
             and self.nhl_live_priority
             and hasattr(self, "nhl_live")
         ):
+            # A celebrating league must be selectable even if its live list is
+            # already empty (a win fires as the game goes final).
+            if (
+                hasattr(self.nhl_live, "has_active_celebration")
+                and self.nhl_live.has_active_celebration()
+            ):
+                live_modes.append("nhl_live")
+
             live_games = getattr(self.nhl_live, "live_games", [])
             if live_games:
                 # Filter out any games that are final or appear over
@@ -2405,6 +2420,14 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
             and self.ncaa_mens_live_priority
             and hasattr(self, "ncaa_mens_live")
         ):
+            # A celebrating league must be selectable even if its live list is
+            # already empty (a win fires as the game goes final).
+            if (
+                hasattr(self.ncaa_mens_live, "has_active_celebration")
+                and self.ncaa_mens_live.has_active_celebration()
+            ):
+                live_modes.append("ncaa_mens_live")
+
             live_games = getattr(self.ncaa_mens_live, "live_games", [])
             if live_games:
                 # Filter out any games that are final or appear over
@@ -2434,6 +2457,14 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
             and self.ncaa_womens_live_priority
             and hasattr(self, "ncaa_womens_live")
         ):
+            # A celebrating league must be selectable even if its live list is
+            # already empty (a win fires as the game goes final).
+            if (
+                hasattr(self.ncaa_womens_live, "has_active_celebration")
+                and self.ncaa_womens_live.has_active_celebration()
+            ):
+                live_modes.append("ncaa_womens_live")
+
             live_games = getattr(self.ncaa_womens_live, "live_games", [])
             if live_games:
                 # Filter out any games that are final or appear over
@@ -2457,7 +2488,8 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
                         # No favorite teams configured, include if any live games exist
                         live_modes.append("ncaa_womens_live")
         
-        return live_modes
+        # A celebration and live games for the same league can both append it.
+        return list(dict.fromkeys(live_modes))
 
     def _has_any_scroll_mode(self) -> bool:
         """Return True if any enabled league uses scroll display for any mode.
