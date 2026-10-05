@@ -7,6 +7,7 @@ scoreboard (which this plugin was forked from) there is only one set of
 Live/Recent/Upcoming managers.
 """
 
+from src.common.espn_dates import espn_scoreboard_cache_key_for_url
 import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
@@ -97,14 +98,17 @@ class BaseNrlManager(SportsCore):
         end_date = now + timedelta(days=self.schedule_lookahead_days)
         date_str = f"{start_date.strftime('%Y%m%d')}-{end_date.strftime('%Y%m%d')}"
 
-        cache_key = f"nrl_schedule_{date_str}"
         # NOTE: NRL_LEAGUE_SLUG is "3" (ESPN's NRL slug) — the resulting URL is
         # .../sports/rugby-league/3/scoreboard. Do NOT replace "3" with "nrl".
         url = f"{ESPN_NRL_BASE_URL}/{NRL_LEAGUE_SLUG}/scoreboard"
+        # The canonical key (core espn_scoreboard_cache_key), shared with
+        # every plugin showing this league; the old one is read until it ages out.
+        legacy_key = f"nrl_schedule_{date_str}"
+        cache_key = espn_scoreboard_cache_key_for_url(url, date_str) or legacy_key
 
         # Check cache first
         if use_cache:
-            cached_data = self.cache_manager.get(cache_key)
+            cached_data = self._cached_schedule(cache_key, (legacy_key,))
             if cached_data:
                 if isinstance(cached_data, dict) and "events" in cached_data:
                     self.logger.info("Using cached schedule for NRL")

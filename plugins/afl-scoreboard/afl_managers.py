@@ -7,6 +7,7 @@ multi-league soccer plugin this fork was based on, there is exactly one set of
 Live/Recent/Upcoming managers.
 """
 
+from src.common.espn_dates import espn_scoreboard_cache_key_for_url
 import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
@@ -92,12 +93,15 @@ class BaseAflManager(SportsCore):
         end_date = now + timedelta(days=self.schedule_lookahead_days)
         date_str = f"{start_date.strftime('%Y%m%d')}-{end_date.strftime('%Y%m%d')}"
 
-        cache_key = f"afl_schedule_{date_str}"
         url = f"{ESPN_AFL_BASE_URL}/{self.league_key}/scoreboard"
+        # The canonical key (core espn_scoreboard_cache_key), shared with
+        # every plugin showing this league; the old one is read until it ages out.
+        legacy_key = f"afl_schedule_{date_str}"
+        cache_key = espn_scoreboard_cache_key_for_url(url, date_str) or legacy_key
 
         # Check cache first
         if use_cache:
-            cached_data = self.cache_manager.get(cache_key)
+            cached_data = self._cached_schedule(cache_key, (legacy_key,))
             if cached_data:
                 # Validate cached data structure
                 if isinstance(cached_data, dict) and "events" in cached_data:

@@ -258,14 +258,20 @@ recorder = _Recorder()
 response = requests.Response()
 response.status_code = 404
 real_logger = manager.logger
+class _NotFound:
+    """The schedule goes through core's fetch_espn_scoreboard on the
+    plugin's session; ESPN answering 404 raises HTTPError from it."""
+
+    def get(self, url, **kwargs):
+        raise requests.exceptions.HTTPError("404", response=response)
+
+
 try:
     manager.logger = recorder
-    manager.requests.get = lambda *a, **k: (_ for _ in ()).throw(
-        requests.exceptions.HTTPError("404", response=response))
+    p.session = _NotFound()
     p._fetch_league_games({"sport": "football", "league": "nfl"},
                           datetime.now(timezone.utc), "nfl")
 finally:
-    manager.requests.get = real_get
     manager.logger = real_logger
 levels = [lvl for lvl, msg in recorder.records if "on " in msg and ("404" in msg or "HTTP error" in msg)]
 check("an ESPN 404 takes the 404 branch (debug), not the generic HTTP error",
