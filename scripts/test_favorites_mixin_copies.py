@@ -22,8 +22,9 @@ scoreboard:
    ``SportsCoreSharedMixin`` (whose ``_favorites_first`` calls
    ``_is_favorite_game``) and ``SportsHelpersMixin``; ``SportsUpcoming`` and
    ``SportsRecent`` first.
-3. Only nrl overrides ``_favorite_key``, on ``SportsCore``, and it returns
-   the side's ESPN team id as a string, None when the id is missing.
+3. Only nrl overrides ``_favorite_key``, on ``SportsCore``. What it returns
+   (the side's ESPN team id as a string, None when the id is missing) is
+   pinned by ``scripts/test_favourite_matching.py`` on the real managers.
 4. With a core checkout, each mixin defines exactly the names listed here.
 
 Self-check: planted sources must fail each of the checks above, so a broken
@@ -64,14 +65,6 @@ BASES = {
 
 #: The sports that name a team by something other than its abbreviation.
 OVERRIDES_FAVORITE_KEY = {"nrl"}
-
-#: (game, side) -> what nrl's _favorite_key must return: the id, as a string.
-KEY_CASES = (
-    ({"home_id": "41", "home_abbr": "NEW"}, "home", "41"),
-    ({"away_id": 42, "away_abbr": "NEW"}, "away", "42"),
-    ({"home_id": None, "home_abbr": "NEW"}, "home", None),
-    ({"home_abbr": "NEW"}, "home", None),
-)
 
 _ALL_METHODS = {m for names in METHODS.values() for m in names}
 _CATCHES_IMPORT_ERROR = {"ImportError", "ModuleNotFoundError", "Exception", "BaseException"}
@@ -134,26 +127,17 @@ def adoption_problems(source: str) -> list[str]:
 
 
 def key_problems(source: str) -> list[str]:
-    """nrl's ``SportsCore._favorite_key``: the side's team id, None when missing."""
+    """nrl's ``SportsCore._favorite_key`` override is still there.
+
+    Its answers are pinned by ``scripts/test_favourite_matching.py``, which
+    calls it on the real managers; this guard only checks it was not dropped.
+    """
     tree = ast.parse(source)
     core = next((n for n in tree.body if isinstance(n, ast.ClassDef) and n.name == "SportsCore"), None)
-    func = _defs(core.body, {"_favorite_key"}) if core else []
-    if not func:
+    if not (core and _defs(core.body, {"_favorite_key"})):
         return ["SportsCore._favorite_key is gone: nrl matches favourites by team id, "
                 "not by its non-unique abbreviations"]
-    module = ast.Module(body=[*ast.parse("from typing import Dict, Optional").body, func[0]],
-                        type_ignores=[])
-    namespace: dict = {}
-    exec(compile(module, "<_favorite_key>", "exec"), namespace)  # nosec B102 - the repo's own source
-    problems = []
-    for game, side, want in KEY_CASES:
-        try:
-            got = namespace["_favorite_key"](None, dict(game), side)
-        except Exception as e:  # noqa: BLE001 - any failure is the finding
-            got = f"raised {type(e).__name__}"
-        if got != want:
-            problems.append(f"SportsCore._favorite_key({game}, {side!r}) is {got!r}, expected {want!r}")
-    return problems
+    return []
 
 
 def runtime_files(plugin: Path):
@@ -264,11 +248,7 @@ def self_check() -> list[str]:
         if not any(expect in p for p in adoption_problems(source)):
             failures.append(f"self-check: {label} was not flagged")
     for label, source, expect in (
-            ("nrl's override gone", GOOD.replace("_favorite_key", "_other_key"), "is gone"),
-            ("nrl's key by abbreviation", GOOD.replace('f"{side}_id"', 'f"{side}_abbr"'), "expected '41'"),
-            ("nrl's key str(None)",
-             GOOD.replace("return None if team_id is None else str(team_id)", "return str(team_id)"),
-             "expected None")):
+            ("nrl's override gone", GOOD.replace("_favorite_key", "_other_key"), "is gone"),):
         if not any(expect in p for p in key_problems(source)):
             failures.append(f"self-check: {label} was not flagged")
     if key_overrides(GOOD) != ["SportsCore"]:
