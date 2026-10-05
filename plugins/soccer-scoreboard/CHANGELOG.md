@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.41.1] - 2026-10-05
+
+### Fixed
+- A board showing only its favourites' live matches no longer wakes for other
+  teams' matches. The live loop handed every match on the scoreboard to core's
+  idle back-off as a start to wake for, and each one holds the poll at the
+  live update interval for 15 minutes, so on a busy slate the board fetched
+  the whole scoreboard about every 30 s for matches it then filtered out. Only
+  matches the live filter would show are offered now (football-scoreboard
+  3.18.7 made the same change). Excluded teams' matches are never offered.
+  Boards showing every live match are unchanged.
+  `test_kickoff_offer_follows_the_live_filter.py` covers the filter.
+
 ## [2.41.0] - 2026-10-05
 
 ### Changed

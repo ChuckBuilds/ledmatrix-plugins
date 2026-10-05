@@ -3734,9 +3734,18 @@ class SportsLive(SportsCelebrationMixin, SportsGameOverMixin, SportsLiveSharedMi
                     # starts, so it cannot sleep through a kickoff.
                     # getattr-guarded: the core version floor is
                     # advisory, so an older core must stay loadable.
+                    #
+                    # Only a game this board would show once it is live.
+                    # Every kickoff holds the poll at the live cadence for a
+                    # quarter of an hour, so offering the games the live
+                    # filter then drops kept a favourites-only board polling
+                    # the whole scoreboard all day (football 3.18.7).
                     _note_start = getattr(
                         self, "_note_scheduled_start_candidate", None)
-                    if _note_start is not None:
+                    if (_note_start is not None and details
+                            and self._classify_live_game(
+                                details.get("home_id"),
+                                details.get("away_id"))):
                         _note_start(details)
                     if details:
                         # Log game status for debugging

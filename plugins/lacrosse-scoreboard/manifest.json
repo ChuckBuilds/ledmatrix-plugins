@@ -1,7 +1,7 @@
 {
   "id": "lacrosse-scoreboard",
   "name": "Lacrosse Scoreboard",
-  "version": "1.37.0",
+  "version": "1.37.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NCAA men's and women's lacrosse games with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/lacrosse-scoreboard",
@@ -50,6 +50,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.37.1",
+      "released": "2026-10-05",
+      "ledmatrix_min_version": "3.8.1",
+      "notes": "A favourites-only board no longer wakes for other teams' games. Every game the live fetch saw held the live poll at 30 s for 15 minutes, so on a busy slate it fetched the whole scoreboard about every 30 s for games it then filtered out. Only games the live filter would show are offered now, and excluded teams are honoured the same way. Boards that show every live game are unchanged."
+    },
     {
       "version": "1.37.0",
       "released": "2026-10-05",
