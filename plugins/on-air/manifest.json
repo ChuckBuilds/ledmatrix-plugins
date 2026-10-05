@@ -1,7 +1,7 @@
 {
   "id": "on-air",
   "name": "On Air Light",
-  "version": "1.2.14",
+  "version": "1.2.15",
   "author": "ChuckBuilds",
   "description": "Retro broadcast ON AIR tally light. Activate remotely via MQTT or Home Assistant to signal you're on a call, recording, or live \u2014 stays on until you turn it off.",
   "entry_point": "manager.py",
@@ -22,6 +22,12 @@
     ">=2.0.0"
   ],
   "versions": [
+    {
+      "version": "1.2.15",
+      "released": "2026-10-05",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "ON and OFF reach the panel within a frame on LEDMatrix cores that have BasePlugin.request_on_demand() / end_on_demand(): the plugin asks the display directly from its MQTT thread instead of writing the display_on_demand_request cache file, which the display reads only once a second while its control socket is up and which a future core removes. On those cores OFF ends only the sign's own on-demand session, so it no longer stops something else the user put on screen meanwhile. On older cores, or when no display answers, it writes the file as before."
+    },
     {
       "version": "1.2.14",
       "released": "2026-10-02",

@@ -313,6 +313,32 @@ def test_pin_request_follows_the_timer():
     assert p.cache_manager.get("display_on_demand_request")["action"] == "stop"
 
 
+def test_pin_uses_the_cores_in_process_api_when_it_has_one():
+    """A core with BasePlugin.request_on_demand() gets no mailbox write."""
+    p = make_plugin(pin_while_running=True)
+    calls = []
+    p.request_on_demand = lambda **kw: calls.append(("start", kw)) or "rid-start"
+    p.end_on_demand = lambda: calls.append(("stop", {})) or "rid-stop"
+    p._apply_command("START", {})
+    p._apply_command("STOP", {})
+    assert calls == [("start", {"mode": "pomodoro", "duration": None, "pinned": True}),
+                     ("stop", {})]
+    assert p.cache_manager.get("display_on_demand_request") is None
+
+
+def test_pin_falls_back_to_the_mailbox_when_the_core_cannot_take_it():
+    """None (no display in this process) or an error: the mailbox, as before."""
+    for answer in (lambda **kw: None, lambda **kw: (_ for _ in ()).throw(RuntimeError("x"))):
+        p = make_plugin(pin_while_running=True)
+        p.request_on_demand = answer
+        p.end_on_demand = lambda: None
+        p._apply_command("START", {})
+        request = p.cache_manager.get("display_on_demand_request")
+        assert request["action"] == "start" and request["pinned"] is True
+        p._apply_command("STOP", {})
+        assert p.cache_manager.get("display_on_demand_request")["action"] == "stop"
+
+
 def test_pin_is_not_requested_when_disabled():
     p = make_plugin(pin_while_running=False, alert_seconds=0)
     p._apply_command("START", {})

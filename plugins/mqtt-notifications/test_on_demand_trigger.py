@@ -64,5 +64,42 @@ if isinstance(request, dict):
 check("the message is stored for display()",
       p.cache_manager.store.get("mqtt-notifications_current_message", {}).get("text") == "Door open")
 
+
+# A core with BasePlugin.request_on_demand() takes the request in-process: it
+# reaches the display within a frame, and nothing goes to the mailbox (read
+# once a second, and going away). Without a display in this process (above,
+# no plugin_manager) or on an older core, the mailbox, as before.
+from src.plugin_system.plugin_manager import PluginManager  # noqa: E402
+
+if not hasattr(PluginManager, "set_on_demand_handler"):
+    print("SKIP-PART: this core has no BasePlugin.request_on_demand()")
+else:
+    seen = []
+    manager = PluginManager.__new__(PluginManager)
+    manager.logger = logging.getLogger("test-plugin-manager")
+    manager.set_on_demand_handler(lambda request: seen.append(request) or True)
+    p.cache_manager = SignatureCheckedCache()
+    p.plugin_manager = manager
+    p._trigger_on_demand_display({"type": "text", "text": "Door open", "duration": 7})
+    check("with the core API, no mailbox write",
+          "display_on_demand_request" not in p.cache_manager.store)
+    check("the start reaches the display",
+          len(seen) == 1 and seen[0]["action"] == "start"
+          and seen[0]["plugin_id"] == "mqtt-notifications"
+          and seen[0]["mode"] == "mqtt_notification" and seen[0]["duration"] == 7.0
+          and seen[0]["source"] == "plugin")
+    check("the message is still stored for display()",
+          p.cache_manager.store.get("mqtt-notifications_current_message", {}).get("text")
+          == "Door open")
+
+    # A duration the API refuses (a string from the JSON) keeps the old path,
+    # which parses it as it always has.
+    seen.clear()
+    p.cache_manager = SignatureCheckedCache()
+    p._trigger_on_demand_display({"type": "text", "text": "Hi", "duration": "15"})
+    check("a string duration falls back to the mailbox",
+          not seen and p.cache_manager.store.get("display_on_demand_request", {})
+          .get("duration") == "15")
+
 print("%d failed" % len(failures))
 sys.exit(1 if failures else 0)

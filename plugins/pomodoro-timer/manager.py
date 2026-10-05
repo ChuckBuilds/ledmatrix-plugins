@@ -1367,6 +1367,10 @@ class PomodoroTimerPlugin(BasePlugin):
             if want == self._pinned:
                 return
             self._pinned = want
+            if self._sync_pin_in_process(want):
+                return
+            # A core without request_on_demand() (3.8.0 and older), or no
+            # display in this process: the mailbox, as before.
             request: Dict[str, Any] = {
                 "request_id": str(uuid.uuid4()),
                 "plugin_id":  self.plugin_id,
@@ -1380,6 +1384,30 @@ class PomodoroTimerPlugin(BasePlugin):
             except Exception as e:
                 self.logger.debug("On-demand display request failed: %s", e)
                 self._pinned = not want   # let the next tick retry
+
+    def _sync_pin_in_process(self, want: bool) -> bool:
+        """Take or give back the panel directly, where the core has the API.
+
+        BasePlugin.request_on_demand() / end_on_demand() reach the display
+        within a frame, from whichever thread called _sync_pin; the file
+        mailbox is read once a second and is going away. end_on_demand()
+        ends only this plugin's own session, so a timer that finishes no
+        longer stops something the user put on screen meanwhile. Both only
+        queue, so calling them under state_lock keeps the requests in order
+        without waiting on the display. False on a core without them, or
+        when they answer None (no display in this process, or its queue is
+        full), so the caller writes the mailbox.
+        """
+        try:
+            if want:
+                if hasattr(self, "request_on_demand"):
+                    return bool(self.request_on_demand(mode="pomodoro", duration=None,
+                                                       pinned=True))
+            elif hasattr(self, "end_on_demand"):
+                return bool(self.end_on_demand())
+        except Exception as e:
+            self.logger.debug("In-process on-demand request failed: %s", e)
+        return False
 
     def _timer_loop(self) -> None:
         """Drive the state machine independently of the render loop, so the

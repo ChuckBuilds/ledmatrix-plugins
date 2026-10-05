@@ -538,6 +538,10 @@ class OnAirPlugin(BasePlugin):
         return None, None, None, None  # unrecognised plain string — ignore
 
     def _trigger_display(self, on: bool) -> None:
+        if self._trigger_display_in_process(on):
+            return
+        # A core without request_on_demand() (3.8.0 and older), or no display
+        # in this process: the mailbox, as before.
         req: Dict[str, Any] = {
             'request_id': str(uuid.uuid4()),
             'plugin_id':  self.plugin_id,
@@ -547,6 +551,28 @@ class OnAirPlugin(BasePlugin):
         if on:
             req.update({'mode': 'on_air', 'duration': None, 'pinned': True})
         self.cache_manager.set('display_on_demand_request', req)
+
+    def _trigger_display_in_process(self, on: bool) -> bool:
+        """Take or give back the screen directly, where the core has the API.
+
+        BasePlugin.request_on_demand() / end_on_demand() reach the display
+        within a frame, from this MQTT thread; the file mailbox is read once
+        a second and is going away. end_on_demand() ends only this plugin's
+        own session, so turning the sign off no longer stops something the
+        user put on screen meanwhile. False on a core without them, or when
+        they answer None (no display in this process), so the caller writes
+        the mailbox.
+        """
+        try:
+            if on:
+                if hasattr(self, 'request_on_demand'):
+                    return bool(self.request_on_demand(mode='on_air', duration=None,
+                                                       pinned=True))
+            elif hasattr(self, 'end_on_demand'):
+                return bool(self.end_on_demand())
+        except Exception as e:
+            self.logger.debug("In-process on-demand request failed: %s", e)
+        return False
 
     def _publish_state(self, on: bool) -> None:
         if not self.mqtt_client or not self.mqtt_connected:
