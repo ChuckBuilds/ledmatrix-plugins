@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.45.0] - 2026-10-05
+
+### Changed
+- Requires LEDMatrix core 3.8.2 (`ledmatrix_min_version` and
+  `compatible_versions`), the first release that ships
+  `src/common/sports_favorites.py`. The store refuses to install or update
+  this version onto an older core.
+- Uses core's favourite matching: `SportsCore` inherits
+  `SportsFavoritesMixin`, `SportsUpcoming` `SportsUpcomingFavoritesMixin` and
+  `SportsRecent` `SportsRecentFavoritesMixin` (`src.common.sports_favorites`).
+
+### Removed
+- This plugin's copies of core's favourite matching:
+  `SportsCore._is_favorite_game` and `_favorite_code`,
+  `SportsUpcoming._select_games_for_display` and
+  `SportsRecent._select_recent_games_for_display`.
+
+No change in behaviour: every favourite-matching answer and every
+safety-harness render is identical.
+
 ## [1.44.2] - 2026-10-05
 
 ### Fixed
