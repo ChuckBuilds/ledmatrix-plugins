@@ -164,14 +164,15 @@ MODULE_FIRST_VERSION = {
     "src.ipc.client": "3.8.0",  # core #706
     "src.ipc.contract": "3.8.0",  # core #706
     "src.ipc.server": "3.8.0",  # core #706
+    # 3.8.1 (core #702-#770)
+    "src.common.fetch_service": "3.8.1",  # core #702 (shared fetch service)
+    "src.common.sports_game_over": "3.8.1",  # core #770 (sports family 5, game-over check)
+    "src.display_arbiter": "3.8.1",  # core #733 (run() stage 2 arbiter)
+    "src.screen_runner": "3.8.1",  # core #762 (run() stage 3 screen runner)
+    "src.plugin_system.plugin_local_files": "3.8.1",  # core #755 (tokens and local files kept across store updates)
     # on core main, in no tagged release yet: add as None. When the next
     # release is tagged, set each None entry here to that tag -- the test's
     # tag-verification section insists on it once the tag is in its list.
-    "src.common.fetch_service": None,  # core #702 (shared fetch service)
-    "src.common.sports_game_over": None,  # core #770 (sports family 5, game-over check)
-    "src.display_arbiter": None,  # core #733 (run() stage 2 arbiter)
-    "src.screen_runner": None,  # core #762 (run() stage 3 screen runner)
-    "src.plugin_system.plugin_local_files": None,  # core #755 (tokens and local files kept across store updates)
 }
 
 #: Releases whose ``src/__init__.py`` ``__version__`` lags their tag. The
