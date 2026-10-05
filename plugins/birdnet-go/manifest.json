@@ -1,7 +1,7 @@
 {
   "id": "birdnet-go",
   "name": "BirdNET-Go",
-  "version": "1.2.8",
+  "version": "1.2.9",
   "author": "ChuckBuilds",
   "description": "Show what BirdNET-Go is hearing. One screen cycles a different species each turn \u2014 name, confidence, how many times it has been heard today, and a photo \u2014 and a second shows today's stats: species count, total detections and the most-heard species. Polls the BirdNET-Go REST API, with optional MQTT for instant pop-ups.",
   "category": "integration",
@@ -21,6 +21,12 @@
   "entry_point": "manager.py",
   "class_name": "BirdNetGoPlugin",
   "versions": [
+    {
+      "released": "2026-10-05",
+      "version": "1.2.9",
+      "changelog": "A detection reaches the panel within a frame on LEDMatrix cores that have BasePlugin.request_on_demand(): the plugin asks the display directly instead of writing the display_on_demand_request cache file, which the display reads only once a second while its control socket is up and which a future core removes. On older cores, or when no display answers, it writes the file as before.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-10-02",
       "version": "1.2.8",
