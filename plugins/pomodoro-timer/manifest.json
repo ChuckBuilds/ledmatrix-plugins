@@ -1,7 +1,7 @@
 {
   "id": "pomodoro-timer",
   "name": "Pomodoro Timer",
-  "version": "1.3.10",
+  "version": "1.3.11",
   "author": "ChuckBuilds",
   "description": "A configurable Pomodoro focus/break timer for your matrix. Set the work and break lengths, then start, pause, skip, or reset it over MQTT \u2014 with Home Assistant auto-discovery so the whole timer shows up as a device with no YAML.",
   "entry_point": "manager.py",
@@ -22,6 +22,12 @@
     ">=2.0.0"
   ],
   "versions": [
+    {
+      "version": "1.3.11",
+      "released": "2026-10-05",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Pinning and releasing the panel reaches the display within a frame on LEDMatrix cores that have BasePlugin.request_on_demand() / end_on_demand(): the plugin asks the display directly instead of writing the display_on_demand_request cache file, which the display reads only once a second while its control socket is up and which a future core removes. On those cores a timer that stops or finishes ends only its own on-demand session, so it no longer stops something else the user put on screen meanwhile. On older cores, or when no display answers, it writes the file as before."
+    },
     {
       "version": "1.3.10",
       "released": "2026-10-02",

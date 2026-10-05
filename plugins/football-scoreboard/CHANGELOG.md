@@ -1,5 +1,25 @@
 # Changelog
 
+## [3.18.7] - 2026-10-04
+
+### Fixed
+- A favourites-only board (`show_favorite_teams_only`, the default) no longer
+  wakes for other teams' kickoffs. The live loop handed every game on the
+  scoreboard to the idle back-off as a kickoff to wake for, and each kickoff
+  holds the poll at `live_update_interval` for 15 minutes. A college Saturday
+  has one every half hour from late morning to midnight, so the board fetched
+  the whole 54-game scoreboard (865 KB decoded, 63 KB gzipped) about every
+  30 s all day, for games it then filtered out. Worse, a kickoff it had
+  already woken for blocks a later one from being stored until its 15 minutes
+  are up: replaying 2026-10-03, the 12:30 games kept UGA's 12:45 kickoff
+  from being noticed until 12:59. Only games the live filter would show are offered now; the excluded
+  teams list is honoured the same way. Boards showing every live game
+  (`show_all_live`, or `show_favorite_teams_only` off) are unchanged.
+  Replaying the 2026-10-03 Saturday (09:00-03:00 ET, favourites UGA and AUB):
+  1,285 -> 995 requests, 52.5 -> 38.3 MB on the wire (765 -> 558 MB decoded),
+  with the favourites' games shown from kickoff. `test_kickoff_wakes_the_idle_poll.py`
+  covers the filter.
+
 ## [3.18.6] - 2026-10-04
 
 ### Fixed

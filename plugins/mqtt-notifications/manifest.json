@@ -1,7 +1,7 @@
 {
   "id": "mqtt-notifications",
   "name": "MQTT Notifications",
-  "version": "1.2.8",
+  "version": "1.2.9",
   "author": "ChuckBuilds",
   "description": "Display text or images from HomeAssistant via MQTT. Supports dynamic MQTT topics with wildcard support for flexible notification handling that interrupts the normal display rotation.",
   "category": "integration",
@@ -18,6 +18,12 @@
   "entry_point": "manager.py",
   "class_name": "MQTTNotificationsPlugin",
   "versions": [
+    {
+      "released": "2026-10-05",
+      "version": "1.2.9",
+      "changelog": "A notification reaches the panel within a frame on LEDMatrix cores that have BasePlugin.request_on_demand(): the plugin asks the display directly from its MQTT thread instead of writing the display_on_demand_request cache file, which the display reads only once a second while its control socket is up and which a future core removes. On older cores, when no display answers, or for a duration the core refuses (a string), it writes the file as before.",
+      "ledmatrix_min_version": "2.0.0"
+    },
     {
       "released": "2026-10-02",
       "version": "1.2.8",

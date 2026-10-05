@@ -448,20 +448,39 @@ class BirdNetGoPlugin(BasePlugin):
 
     def _trigger_on_demand(self, detection: Dict[str, Any]) -> None:
         try:
-            request_payload = {
-                'request_id': str(uuid.uuid4()),
-                'action': 'start',
-                'plugin_id': self.plugin_id,
-                'mode': DETECTION_MODE,
-                'duration': self.interrupt_duration,
-                'pinned': False,
-                'timestamp': time.time(),
-            }
             self._on_demand_until = time.time() + self.interrupt_duration
-            self.cache_manager.set('display_on_demand_request', request_payload)
+            if not self._request_on_demand_in_process():
+                # A core without request_on_demand() (3.8.0 and older), or no
+                # display in this process: the mailbox, as before.
+                self.cache_manager.set('display_on_demand_request', {
+                    'request_id': str(uuid.uuid4()),
+                    'action': 'start',
+                    'plugin_id': self.plugin_id,
+                    'mode': DETECTION_MODE,
+                    'duration': self.interrupt_duration,
+                    'pinned': False,
+                    'timestamp': time.time(),
+                })
             self.logger.info("Triggered on-demand display for %s", detection['common_name'])
         except Exception as e:
             self.logger.error("Error triggering on-demand display: %s", e, exc_info=True)
+
+    def _request_on_demand_in_process(self) -> bool:
+        """Ask the core for the screen directly, where it has the API.
+
+        BasePlugin.request_on_demand() reaches the display within a frame,
+        from this (MQTT or poll) thread; the file mailbox is read once a
+        second and is going away. False on a core without it, or when it
+        answers None (no display in this process), so the caller writes the
+        mailbox.
+        """
+        if hasattr(self, 'request_on_demand'):
+            try:
+                return bool(self.request_on_demand(
+                    mode=DETECTION_MODE, duration=self.interrupt_duration, pinned=False))
+            except Exception as e:
+                self.logger.debug("In-process on-demand request failed: %s", e)
+        return False
 
     def _connect_mqtt(self) -> bool:
         try:

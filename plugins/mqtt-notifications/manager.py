@@ -333,30 +333,49 @@ class MQTTNotificationsPlugin(BasePlugin):
             self.logger.error(f"Error processing MQTT message: {e}", exc_info=True)
     
     def _trigger_on_demand_display(self, message: Dict[str, Any]):
-        """Trigger on-demand display via cache manager."""
+        """Store the message, then ask the core to show it now."""
         try:
-            request_id = str(uuid.uuid4())
-            request_payload = {
-                'request_id': request_id,
-                'action': 'start',
-                'plugin_id': self.plugin_id,
-                'mode': 'mqtt_notification',
-                'duration': message.get('duration', self.default_duration),
-                'pinned': False,
-                'timestamp': time.time()
-            }
-            
+            duration = message.get('duration', self.default_duration)
+
             # Store message in cache for display method
             self.cache_manager.set(f'{self.plugin_id}_current_message', message, ttl=3600)
-            
-            # Trigger on-demand display
-            self.cache_manager.set('display_on_demand_request', request_payload)
+
+            if not self._request_on_demand_in_process(duration):
+                # A core without request_on_demand() (3.8.0 and older), or
+                # no display in this process: the mailbox, as before.
+                self.cache_manager.set('display_on_demand_request', {
+                    'request_id': str(uuid.uuid4()),
+                    'action': 'start',
+                    'plugin_id': self.plugin_id,
+                    'mode': 'mqtt_notification',
+                    'duration': duration,
+                    'pinned': False,
+                    'timestamp': time.time()
+                })
             
             self.logger.info("Triggered on-demand display for %s notification", message['type'])
             
         except Exception as e:
             self.logger.error(f"Error triggering on-demand display: {e}", exc_info=True)
     
+    def _request_on_demand_in_process(self, duration: Any) -> bool:
+        """Ask the core for the screen directly, where it has the API.
+
+        BasePlugin.request_on_demand() reaches the display within a frame,
+        from this MQTT thread; the file mailbox is read once a second and is
+        going away. False on a core without it, when it answers None (no
+        display in this process), or when it refuses the message's duration
+        (a string from the JSON, say, which the mailbox path parses as it
+        always has), so the caller writes the mailbox.
+        """
+        if hasattr(self, 'request_on_demand'):
+            try:
+                return bool(self.request_on_demand(
+                    mode='mqtt_notification', duration=duration, pinned=False))
+            except Exception as e:
+                self.logger.debug("In-process on-demand request failed: %s", e)
+        return False
+
     def _connect_mqtt(self):
         """Connect to MQTT broker."""
         try:
