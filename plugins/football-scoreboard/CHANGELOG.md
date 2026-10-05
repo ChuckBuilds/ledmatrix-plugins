@@ -1,5 +1,15 @@
 # Changelog
 
+## [3.18.9] - 2026-10-05
+
+### Fixed
+- A win celebration in a league with `live_priority` off no longer makes
+  `has_live_content()` true. `get_live_modes()` only returns a celebrating
+  league's live mode when that league is enabled with `live_priority` on, so
+  `has_live_content()` reported live content that no live mode of this plugin
+  could show. It now applies the same `live_priority` gate (NFL, NCAA
+  football).
+
 ## [3.18.8] - 2026-10-05
 
 ### Fixed

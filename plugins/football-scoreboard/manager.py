@@ -2053,13 +2053,21 @@ class FootballScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
             self.logger.error(f"Error in display method: {e}")
             return False
 
-    def _get_active_celebration_manager(self):
+    def _get_active_celebration_manager(self, live_priority_only=False):
         """Return the (league_key, live_manager) of an enabled league whose live
-        manager currently has an active score/win celebration, else None."""
+        manager currently has an active score/win celebration, else None.
+
+        ``live_priority_only`` also skips leagues with live priority off -- the
+        same gate get_live_modes() applies, so has_live_content() never reports
+        a celebration that no live mode can show.
+        """
         if not self.is_enabled:
             return None
         for league_key in self._league_registry:
             if not self._league_registry[league_key].get("enabled", False):
+                continue
+            if live_priority_only and not self._league_registry[league_key].get(
+                    "live_priority", False):
                 continue
             live_manager = self._get_league_manager_for_mode(league_key, "live")
             if (
@@ -2150,7 +2158,7 @@ class FootballScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
 
         # An active celebration (notably a win, whose game has already left the
         # live list) must keep the live mode on screen.
-        if self._get_active_celebration_manager() is not None:
+        if self._get_active_celebration_manager(live_priority_only=True) is not None:
             return True
 
         # Live game counts per league, folded into the single throttled summary

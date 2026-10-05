@@ -283,9 +283,8 @@
       "last_updated": "2026-10-05",
       "verified": true,
       "screenshot": "",
-      "latest_version": "3.18.8",
-      "ledmatrix_min_version": "3.8.0",
-      "commit": "8db9d3ebe374dc4155906ad29f6f5baa5536fe1c"
+      "latest_version": "3.18.9",
+      "ledmatrix_min_version": "3.8.0"
     },
     {
       "id": "geochron",
