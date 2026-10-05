@@ -535,6 +535,17 @@ def observe():
     return tables, problems
 
 
+#: The committed tables by name, as `observe()` keys them.
+EXPECTED = {
+    "IS_FAVORITE": EXPECTED_IS_FAVORITE,
+    "IS_FAVORITE_HELPER": EXPECTED_IS_FAVORITE_HELPER,
+    "FAVORITE_KEY": EXPECTED_FAVORITE_KEY,
+    "SELECT": EXPECTED_SELECT,
+    "UPDATE": EXPECTED_UPDATE,
+    "INFO_LOG": EXPECTED_INFO_LOG,
+}
+
+
 def print_tables(tables):
     for name, rows in tables.items():
         print(f"EXPECTED_{name} = {{")
@@ -579,7 +590,7 @@ def main() -> int:
         return 0
 
     for name, observed in tables.items():
-        problems += diff(name, globals()[f"EXPECTED_{name}"], observed, changed_plugins)
+        problems += diff(name, EXPECTED[name], observed, changed_plugins)
     for p in problems:
         print(f"  [FAIL] {p}")
     if problems:
