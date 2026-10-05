@@ -46,6 +46,11 @@ from src.common.sports_fetch import SportsFetchMixin
 from src.common.sports_display_rules import SportsCardOptionsMixin, SportsGameRulesMixin
 from src.common.sports_font_path import resolve_font_path as _resolve_font_path
 from src.common.sports_game_over import SportsGameOverMixin
+from src.common.sports_favorites import (
+    SportsFavoritesMixin,
+    SportsRecentFavoritesMixin,
+    SportsUpcomingFavoritesMixin,
+)
 from src.common.sports_celebration import SportsCelebrationMixin
 # Helpers every scoreboard carried a private copy of; core ships them from
 # 3.5.0 (the manifest's floor). The private aliases keep this module's names.
@@ -186,7 +191,7 @@ class _LogoFetcher:
 
 
 class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
-                 SportsCoreSharedMixin, SportsHelpersMixin, ABC):
+                 SportsFavoritesMixin, SportsCoreSharedMixin, SportsHelpersMixin, ABC):
     #: Absolute path of this plugin, handed to the shared mixin. It cannot
     #: deduce it: __file__ there is src/common/, and inferring the directory
     #: from the MRO returns None under the real plugin loader, which silently
@@ -1605,30 +1610,6 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
         end = (now + timedelta(days=lookahead)).strftime("%Y%m%d")
         return f"{start}-{end}", f"window_{lookback}_{lookahead}"
 
-    @staticmethod
-    def _favorite_code(value) -> Optional[str]:
-        """``value`` as favourites are compared: stripped and upper-cased.
-
-        None for a missing or blank value, which matches nothing.
-        """
-        if value is None:
-            return None
-        return str(value).strip().upper() or None
-
-    def _is_favorite_game(self, game: Dict) -> bool:
-        """Does either side of this game belong to a favourite team?
-
-        ``_favorite_key`` names each side (the abbreviation; nrl overrides it
-        with the ESPN team id), and both it and ``favorite_teams`` are compared
-        as ``_favorite_code`` normalises them, so " bos" matches BOS.
-        """
-        favorites = {self._favorite_code(team) for team in self.favorite_teams or ()}
-        favorites.discard(None)
-        return any(
-            self._favorite_code(self._favorite_key(game, side)) in favorites
-            for side in ("home", "away")
-        )
-
     # Class-level defaults for everything the selection path reads. __init__
     # sets all of these from config; these exist so a missing one can never
     # raise. That failure is invisible where it matters: the read happens
@@ -2041,7 +2022,7 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
         return self._compose_selection()
 
 
-class SportsUpcoming(SportsCore):
+class SportsUpcoming(SportsUpcomingFavoritesMixin, SportsCore):
     SKIN_MODE = "upcoming"
     #: This screen shows the date and the time, never a score.
     _DRAWS_SCORE: ClassVar[bool] = False
@@ -2067,73 +2048,6 @@ class SportsUpcoming(SportsCore):
         self.warning_cooldown = 300
         self.last_game_switch = 0
         self.game_display_duration = self.mode_config.get("upcoming_game_duration", 15)
-
-    def _select_games_for_display(
-        self, processed_games: List[Dict], favorite_teams: List[str]
-    ) -> List[Dict]:
-        """
-        Single-pass game selection with proper deduplication and counting.
-
-        When a game involves two favorite teams, it counts toward BOTH teams' limits.
-        This prevents unexpected game counts from the multi-pass algorithm.
-        Teams are matched as _is_favorite_game matches them. Only a game with
-        an id can be a duplicate: two games without one are two games.
-        """
-        sorted_games = sorted(
-            processed_games,
-            key=lambda g: g.get("start_time_utc")
-            or datetime.max.replace(tzinfo=timezone.utc),
-        )
-
-        if not favorite_teams:
-            return sorted_games
-
-        selected_games = []
-        selected_ids = set()
-        team_counts: Dict[Optional[str], int] = {
-            code: 0 for code in map(self._favorite_code, favorite_teams) if code
-        }
-
-        for game in sorted_games:
-            game_id = game.get("id")
-            if game_id is not None and game_id in selected_ids:
-                continue
-
-            home = self._favorite_code(self._favorite_key(game, "home"))
-            away = self._favorite_code(self._favorite_key(game, "away"))
-
-            home_fav = home in team_counts
-            away_fav = away in team_counts
-
-            if not home_fav and not away_fav:
-                continue
-
-            home_needs = home_fav and team_counts[home] < self.upcoming_games_to_show
-            away_needs = away_fav and team_counts[away] < self.upcoming_games_to_show
-
-            if home_needs or away_needs:
-                selected_games.append(game)
-                if game_id is not None:
-                    selected_ids.add(game_id)
-                if home_fav:
-                    team_counts[home] += 1
-                if away_fav:
-                    team_counts[away] += 1
-
-                self.logger.debug(
-                    f"Selected game {game.get('away_abbr')}@{game.get('home_abbr')}: "
-                    f"team_counts={team_counts}"
-                )
-
-            if all(c >= self.upcoming_games_to_show for c in team_counts.values()):
-                self.logger.debug("All favorite teams satisfied, stopping selection")
-                break
-
-        self.logger.info(
-            f"Selected {len(selected_games)} games for {len(favorite_teams)} "
-            f"favorite teams: {team_counts}"
-        )
-        return selected_games
 
     def update(self):
         """Update upcoming games data."""
@@ -2628,76 +2542,8 @@ class SportsUpcoming(SportsCore):
         return True
 
 
-class SportsRecent(SportsRecentSharedMixin, SportsCore):
+class SportsRecent(SportsRecentFavoritesMixin, SportsRecentSharedMixin, SportsCore):
     SKIN_MODE = "recent"
-
-    def _select_recent_games_for_display(
-        self, processed_games: List[Dict], favorite_teams: List[str]
-    ) -> List[Dict]:
-        """
-        Single-pass game selection for recent games with proper deduplication.
-
-        When a game involves two favorite teams, it counts toward BOTH teams' limits.
-        Games are sorted by most recent first.
-        Teams are matched as _is_favorite_game matches them. Only a game with
-        an id can be a duplicate: two games without one are two games.
-        """
-        sorted_games = sorted(
-            processed_games,
-            key=lambda g: g.get("start_time_utc")
-            or datetime.min.replace(tzinfo=timezone.utc),
-            reverse=True,
-        )
-
-        if not favorite_teams:
-            return sorted_games
-
-        selected_games = []
-        selected_ids = set()
-        team_counts: Dict[Optional[str], int] = {
-            code: 0 for code in map(self._favorite_code, favorite_teams) if code
-        }
-
-        for game in sorted_games:
-            game_id = game.get("id")
-            if game_id is not None and game_id in selected_ids:
-                continue
-
-            home = self._favorite_code(self._favorite_key(game, "home"))
-            away = self._favorite_code(self._favorite_key(game, "away"))
-
-            home_fav = home in team_counts
-            away_fav = away in team_counts
-
-            if not home_fav and not away_fav:
-                continue
-
-            home_needs = home_fav and team_counts[home] < self.recent_games_to_show
-            away_needs = away_fav and team_counts[away] < self.recent_games_to_show
-
-            if home_needs or away_needs:
-                selected_games.append(game)
-                if game_id is not None:
-                    selected_ids.add(game_id)
-                if home_fav:
-                    team_counts[home] += 1
-                if away_fav:
-                    team_counts[away] += 1
-
-                self.logger.debug(
-                    f"Selected recent game {game.get('away_abbr')}@{game.get('home_abbr')}: "
-                    f"team_counts={team_counts}"
-                )
-
-            if all(c >= self.recent_games_to_show for c in team_counts.values()):
-                self.logger.debug("All favorite teams satisfied, stopping selection")
-                break
-
-        self.logger.info(
-            f"Selected {len(selected_games)} recent games for {len(favorite_teams)} "
-            f"favorite teams: {team_counts}"
-        )
-        return selected_games
 
     def update(self):
         """Update recent games data."""
