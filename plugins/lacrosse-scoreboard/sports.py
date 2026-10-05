@@ -1375,13 +1375,28 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
             )
             return None
 
+    @staticmethod
+    def _favorite_code(value) -> Optional[str]:
+        """``value`` as favourites are compared: stripped and upper-cased.
+
+        None for a missing or blank value, which matches nothing.
+        """
+        if value is None:
+            return None
+        return str(value).strip().upper() or None
+
     def _is_favorite_game(self, game: Dict) -> bool:
-        """Does either side of this game belong to a favourite team?"""
-        if not self.favorite_teams:
-            return False
-        return (
-            game.get("home_abbr") in self.favorite_teams
-            or game.get("away_abbr") in self.favorite_teams
+        """Does either side of this game belong to a favourite team?
+
+        ``_favorite_key`` names each side (the abbreviation; nrl overrides it
+        with the ESPN team id), and both it and ``favorite_teams`` are compared
+        as ``_favorite_code`` normalises them, so " bos" matches BOS.
+        """
+        favorites = {self._favorite_code(team) for team in self.favorite_teams or ()}
+        favorites.discard(None)
+        return any(
+            self._favorite_code(self._favorite_key(game, side)) in favorites
+            for side in ("home", "away")
         )
 
     # Class-level defaults for everything the selection path reads. __init__
@@ -1763,6 +1778,8 @@ class SportsUpcoming(SportsCore):
 
         When a game involves two favorite teams, it counts toward BOTH teams' limits.
         This prevents unexpected game counts from the multi-pass algorithm.
+        Teams are matched as _is_favorite_game matches them. Only a game with
+        an id can be a duplicate: two games without one are two games.
         """
         sorted_games = sorted(
             processed_games,
@@ -1775,18 +1792,20 @@ class SportsUpcoming(SportsCore):
 
         selected_games = []
         selected_ids = set()
-        team_counts = {team: 0 for team in favorite_teams}
+        team_counts: Dict[Optional[str], int] = {
+            code: 0 for code in map(self._favorite_code, favorite_teams) if code
+        }
 
         for game in sorted_games:
             game_id = game.get("id")
-            if game_id in selected_ids:
+            if game_id is not None and game_id in selected_ids:
                 continue
 
-            home = game.get("home_abbr")
-            away = game.get("away_abbr")
+            home = self._favorite_code(self._favorite_key(game, "home"))
+            away = self._favorite_code(self._favorite_key(game, "away"))
 
-            home_fav = home in favorite_teams
-            away_fav = away in favorite_teams
+            home_fav = home in team_counts
+            away_fav = away in team_counts
 
             if not home_fav and not away_fav:
                 continue
@@ -1796,14 +1815,16 @@ class SportsUpcoming(SportsCore):
 
             if home_needs or away_needs:
                 selected_games.append(game)
-                selected_ids.add(game_id)
+                if game_id is not None:
+                    selected_ids.add(game_id)
                 if home_fav:
                     team_counts[home] += 1
                 if away_fav:
                     team_counts[away] += 1
 
                 self.logger.debug(
-                    f"Selected game {away}@{home}: team_counts={team_counts}"
+                    f"Selected game {game.get('away_abbr')}@{game.get('home_abbr')}: "
+                    f"team_counts={team_counts}"
                 )
 
             if all(c >= self.upcoming_games_to_show for c in team_counts.values()):
@@ -1875,17 +1896,11 @@ class SportsUpcoming(SportsCore):
                     # Only fetch odds for games that will be displayed
                     # If show_favorite_teams_only is True but no favorites configured, show all
                     if self.show_favorite_teams_only and self.favorite_teams:
-                        if (
-                            game["home_abbr"] not in self.favorite_teams
-                            and game["away_abbr"] not in self.favorite_teams
-                        ):
+                        if not self._is_favorite_game(game):
                             continue
                     processed_games.append(game)
                     # Count favorite team games for logging
-                    if self.favorite_teams and (
-                        game["home_abbr"] in self.favorite_teams
-                        or game["away_abbr"] in self.favorite_teams
-                    ):
+                    if self._is_favorite_game(game):
                         favorite_games_found += 1
 
             # Enhanced logging for debugging
@@ -2305,6 +2320,8 @@ class SportsRecent(SportsRecentSharedMixin, SportsCore):
 
         When a game involves two favorite teams, it counts toward BOTH teams' limits.
         Games are sorted by most recent first.
+        Teams are matched as _is_favorite_game matches them. Only a game with
+        an id can be a duplicate: two games without one are two games.
         """
         sorted_games = sorted(
             processed_games,
@@ -2318,18 +2335,20 @@ class SportsRecent(SportsRecentSharedMixin, SportsCore):
 
         selected_games = []
         selected_ids = set()
-        team_counts = {team: 0 for team in favorite_teams}
+        team_counts: Dict[Optional[str], int] = {
+            code: 0 for code in map(self._favorite_code, favorite_teams) if code
+        }
 
         for game in sorted_games:
             game_id = game.get("id")
-            if game_id in selected_ids:
+            if game_id is not None and game_id in selected_ids:
                 continue
 
-            home = game.get("home_abbr")
-            away = game.get("away_abbr")
+            home = self._favorite_code(self._favorite_key(game, "home"))
+            away = self._favorite_code(self._favorite_key(game, "away"))
 
-            home_fav = home in favorite_teams
-            away_fav = away in favorite_teams
+            home_fav = home in team_counts
+            away_fav = away in team_counts
 
             if not home_fav and not away_fav:
                 continue
@@ -2339,14 +2358,16 @@ class SportsRecent(SportsRecentSharedMixin, SportsCore):
 
             if home_needs or away_needs:
                 selected_games.append(game)
-                selected_ids.add(game_id)
+                if game_id is not None:
+                    selected_ids.add(game_id)
                 if home_fav:
                     team_counts[home] += 1
                 if away_fav:
                     team_counts[away] += 1
 
                 self.logger.debug(
-                    f"Selected recent game {away}@{home}: team_counts={team_counts}"
+                    f"Selected recent game {game.get('away_abbr')}@{game.get('home_abbr')}: "
+                    f"team_counts={team_counts}"
                 )
 
             if all(c >= self.recent_games_to_show for c in team_counts.values()):
@@ -2919,12 +2940,6 @@ class SportsLive(SportsGameOverMixin, SportsLiveSharedMixin, SportsCore):
         self.game_update_timestamps = {}
         self.stale_game_timeout = self.mode_config.get("stale_game_timeout", 300)  # 5 minutes default
 
-    def _is_favorite_game(self, game) -> bool:
-        return bool(self.favorite_teams) and (
-            game.get("home_abbr") in self.favorite_teams
-            or game.get("away_abbr") in self.favorite_teams
-        )
-
     def _classify_live_game(self, home_abbr, away_abbr) -> bool:
         """Whether a live game should be included in the live rotation.
 
@@ -3191,19 +3206,10 @@ class SportsLive(SportsGameOverMixin, SportsLiveSharedMixin, SportsCore):
                                 # non-favorite game gets. With boost=1 (or no
                                 # favorites live) this is identical to a plain
                                 # round robin over self.live_games.
-                                def _is_favorite(g):
-                                    return bool(
-                                        self.favorite_teams
-                                        and (
-                                            g["home_abbr"] in self.favorite_teams
-                                            or g["away_abbr"] in self.favorite_teams
-                                        )
-                                    )
-
                                 weighted_ids = [
                                     (
                                         g["id"],
-                                        self.favorite_live_boost if _is_favorite(g) else 1,
+                                        self.favorite_live_boost if self._is_favorite_game(g) else 1,
                                     )
                                     for g in self.live_games
                                 ]

@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.20.2] - 2026-10-05
+
+### Changed
+- No change in behaviour. `_is_favorite_game`, `_select_games_for_display` and
+  `_select_recent_games_for_display` are now one body in all nine scoreboards.
+  Each side of a game is named by `_favorite_key` and compared with
+  `favorite_teams` stripped and upper-cased. ufc favourites are fighters
+  (`favorite_fighters`), which its MMA managers match themselves, so these
+  methods are not used here yet.
+
 ## [1.20.1] - 2026-10-05
 
 ### Fixed

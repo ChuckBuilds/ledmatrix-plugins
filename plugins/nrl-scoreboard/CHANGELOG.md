@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.36.2] - 2026-10-05
+
+### Fixed
+- A favourite entered as "None" no longer matches every game whose team id is
+  missing.
+- Two games without an ESPN id are no longer taken for the same game, so
+  favourites-only selection keeps both.
+- `_is_favorite_game`, `_select_games_for_display` and
+  `_select_recent_games_for_display` are now one body in all nine scoreboards.
+  Each side of a game is named by `_favorite_key` and compared with
+  `favorite_teams` stripped and upper-cased. Here `_favorite_key` is the ESPN
+  team id, as before: NRL abbreviations collide (NEW, CAN), so an ambiguous
+  one still matches nothing and is logged.
+
 ## [1.36.1] - 2026-10-05
 
 ### Fixed

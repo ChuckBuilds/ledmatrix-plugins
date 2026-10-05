@@ -4,13 +4,16 @@
 WHY THIS EXISTS
 ---------------
 Favourite matching is family 6 of the sports consolidation (LEDMatrix
-docs/SPORTS_UNIFICATION.md): ``_is_favorite_game`` (16 copies, 7 bodies across
-SportsCore, SportsUpcoming and SportsLive), ``_select_games_for_display`` (2
-bodies) and ``_select_recent_games_for_display`` (3), plus the helpers they
-call (nrl's ``_team_in``; ``_is_favorite`` in the five live classes that have
-it). Before those copies are reconciled onto the ``_favorite_key`` seam, the
-tables below record what every plugin answers today, so the reconcile shows up
-in its PR as a diff of them, cell by cell.
+docs/SPORTS_UNIFICATION.md): ``SportsCore._is_favorite_game``,
+``SportsUpcoming._select_games_for_display`` and
+``SportsRecent._select_recent_games_for_display``. They were 7, 2 and 3 bodies
+across the nine plugins; they are now one each, on the ``_favorite_key`` seam
+(the abbreviation; nrl overrides it with the ESPN team id) with both sides
+compared through ``_favorite_code`` (stripped, upper-cased). The tables below
+record what every plugin answers, so any later change to the family, a
+plugin's ``_favorite_key`` or its resolver shows up in a PR as a diff of them,
+cell by cell. The live ``_is_favorite`` helper the celebrations use is pinned
+too; it is not part of the family.
 
 For each plugin it builds the primary league's real Upcoming, Recent and Live
 managers (fake display and cache, no network), with ``favorite_teams`` set in
@@ -23,7 +26,7 @@ Then:
   list x game shape. Cells are U, R, L (Upcoming, Recent, Live) per plugin.
 * ``IS_FAVORITE_HELPER``: the live ``_is_favorite(value)`` helper (``-``: the
   plugin has none).
-* ``FAVORITE_KEY``: core's ``_favorite_key`` seam as each plugin inherits it.
+* ``FAVORITE_KEY``: the ``_favorite_key`` seam as each plugin has it.
 * ``SELECT``: the two selection methods over one shuffled slate, for every
   favourites list x per-team limit (``upcoming_games_to_show`` /
   ``recent_games_to_show``): the game ids picked, in order.
@@ -32,6 +35,10 @@ Then:
   ``_favorites_first``, which asks ``_is_favorite_game``). ufc is ``n/a``:
   its MMA managers override ``update()`` and select by fighter.
 * ``INFO_LOG``: whether each selection method logs its summary at INFO.
+* ``LIVE_BOOST``: the live manager's favourite weighting
+  (``favorite_live_boost`` 2) over a favourite's game and another: the order
+  the rotation shows them in. lacrosse weights inline in ``update()`` and ufc
+  has no boost, so both are ``n/a``.
 
 Every league's managers in a plugin must resolve to the same family methods,
 so one league per plugin covers them all; that is checked too.
@@ -136,11 +143,21 @@ LIMITS = (1, 2, 5)
 SELECT_METHODS = {"Upcoming": "_select_games_for_display",
                   "Recent": "_select_recent_games_for_display"}
 
-UPDATE_FAVORITES = ("none", "abbr AAA", "two AAA,CCC", "colliding NEW",
-                    "name Newcastle Knights")
+UPDATE_FAVORITES = ("none", "abbr AAA", "lower aaa", "padded ' AAA '", "two AAA,CCC",
+                    "colliding NEW", "name Newcastle Knights")
 #: id, home, away, hours from now -- the slate update() is given.
 UPDATE_SLATE = (("u1", "1", "2", 1), ("u2", "3", "4", 2), ("u3", "2", "1", 3),
                 ("u4", "41", "3", 4), ("u5", "4", "42", 5), ("u6", "1", "3", 6))
+
+#: plugin -> the live manager method that weights a favourite's game.
+BOOST_METHODS = {
+    "afl": "_swrr_advance", "baseball": "_build_weighted_schedule",
+    "basketball": "_build_weighted_schedule", "football": "_build_weighted_schedule",
+    "hockey": "_build_rotation_schedule", "nrl": "_swrr_advance", "soccer": "_swrr_advance",
+}
+BOOST_FAVORITES = ("none", "abbr AAA", "lower aaa", "padded ' AAA '", "id 1")
+#: A favourite's game (AAA v BBB) and another (CCC v DDD).
+BOOST_GAMES = (("b1", "1", "2"), ("b2", "3", "4"))
 
 NOW = datetime.now(timezone.utc)
 
@@ -177,23 +194,23 @@ EXPECTED_IS_FAVORITE = {
     ('id 1', 'ids 1 v 2, no abbrs'): '... ... ... ... ... ... YYY ... ...',
     ('id 1', 'AAA v BBB, int ids'): '... ... ... ... ... ... YYY ... ...',
     ('id 1', 'empty game'): '... ... ... ... ... ... ... ... ...',
-    ('lower aaa', 'AAA home v BBB'): '... ... ... ... ... ... YYY ... ...',
-    ('lower aaa', 'BBB home v AAA'): '... ... ... ... ... ... YYY ... ...',
+    ('lower aaa', 'AAA home v BBB'): 'YYY YYY YYY YYY YYY YYY YYY YYY YYY',
+    ('lower aaa', 'BBB home v AAA'): 'YYY YYY YYY YYY YYY YYY YYY YYY YYY',
     ('lower aaa', 'CCC v DDD'): '... ... ... ... ... ... ... ... ...',
     ('lower aaa', 'Knights (NEW 41) v CCC'): '... ... ... ... ... ... ... ... ...',
     ('lower aaa', 'Warriors (NEW 42) v CCC'): '... ... ... ... ... ... ... ... ...',
-    ('lower aaa', 'AAA v BBB, no ids'): '... ... ... ... ... ... ... ... ...',
+    ('lower aaa', 'AAA v BBB, no ids'): 'YYY YYY YYY YYY YYY YYY ... YYY YYY',
     ('lower aaa', 'ids 1 v 2, no abbrs'): '... ... ... ... ... ... YYY ... ...',
-    ('lower aaa', 'AAA v BBB, int ids'): '... ... ... ... ... ... YYY ... ...',
+    ('lower aaa', 'AAA v BBB, int ids'): 'YYY YYY YYY YYY YYY YYY YYY YYY YYY',
     ('lower aaa', 'empty game'): '... ... ... ... ... ... ... ... ...',
-    ("padded ' AAA '", 'AAA home v BBB'): '... ... ... ... ... ... YYY ... ...',
-    ("padded ' AAA '", 'BBB home v AAA'): '... ... ... ... ... ... YYY ... ...',
+    ("padded ' AAA '", 'AAA home v BBB'): 'YYY YYY YYY YYY YYY YYY YYY YYY YYY',
+    ("padded ' AAA '", 'BBB home v AAA'): 'YYY YYY YYY YYY YYY YYY YYY YYY YYY',
     ("padded ' AAA '", 'CCC v DDD'): '... ... ... ... ... ... ... ... ...',
     ("padded ' AAA '", 'Knights (NEW 41) v CCC'): '... ... ... ... ... ... ... ... ...',
     ("padded ' AAA '", 'Warriors (NEW 42) v CCC'): '... ... ... ... ... ... ... ... ...',
-    ("padded ' AAA '", 'AAA v BBB, no ids'): '... ... ... ... ... ... ... ... ...',
+    ("padded ' AAA '", 'AAA v BBB, no ids'): 'YYY YYY YYY YYY YYY YYY ... YYY YYY',
     ("padded ' AAA '", 'ids 1 v 2, no abbrs'): '... ... ... ... ... ... YYY ... ...',
-    ("padded ' AAA '", 'AAA v BBB, int ids'): '... ... ... ... ... ... YYY ... ...',
+    ("padded ' AAA '", 'AAA v BBB, int ids'): 'YYY YYY YYY YYY YYY YYY YYY YYY YYY',
     ("padded ' AAA '", 'empty game'): '... ... ... ... ... ... ... ... ...',
     ('two AAA,CCC', 'AAA home v BBB'): 'YYY YYY YYY YYY YYY YYY YYY YYY YYY',
     ('two AAA,CCC', 'BBB home v AAA'): 'YYY YYY YYY YYY YYY YYY YYY YYY YYY',
@@ -254,10 +271,10 @@ EXPECTED_IS_FAVORITE = {
     ("literal 'None'", 'CCC v DDD'): '... ... ... ... ... ... ... ... ...',
     ("literal 'None'", 'Knights (NEW 41) v CCC'): '... ... ... ... ... ... ... ... ...',
     ("literal 'None'", 'Warriors (NEW 42) v CCC'): '... ... ... ... ... ... ... ... ...',
-    ("literal 'None'", 'AAA v BBB, no ids'): '... ... ... ... ... ... YYY ... ...',
+    ("literal 'None'", 'AAA v BBB, no ids'): '... ... ... ... ... ... ... ... ...',
     ("literal 'None'", 'ids 1 v 2, no abbrs'): '... ... ... ... ... ... ... ... ...',
     ("literal 'None'", 'AAA v BBB, int ids'): '... ... ... ... ... ... ... ... ...',
-    ("literal 'None'", 'empty game'): '... ... ... ... ... ... YYY ... ...',
+    ("literal 'None'", 'empty game'): '... ... ... ... ... ... ... ... ...',
 }
 # (favourites, argument): the live manager's _is_favorite(argument).
 EXPECTED_IS_FAVORITE_HELPER = {
@@ -282,14 +299,14 @@ EXPECTED_IS_FAVORITE_HELPER = {
     ("literal 'None'", "'41'"): '..-..-..-',
     ("literal 'None'", 'None'): '..-..-Y.-',
 }
-# (game, side): _favorite_key(game, side). Core's default; no plugin overrides it.
+# (game, side): _favorite_key(game, side). Core's default; nrl overrides it with the id.
 EXPECTED_FAVORITE_KEY = {
-    ('AAA home v BBB', 'home'): "'AAA' | 'AAA' | 'AAA' | 'AAA' | 'AAA' | 'AAA' | 'AAA' | 'AAA' | 'AAA'",
-    ('AAA home v BBB', 'away'): "'BBB' | 'BBB' | 'BBB' | 'BBB' | 'BBB' | 'BBB' | 'BBB' | 'BBB' | 'BBB'",
-    ('Knights (NEW 41) v CCC', 'home'): "'NEW' | 'NEW' | 'NEW' | 'NEW' | 'NEW' | 'NEW' | 'NEW' | 'NEW' | 'NEW'",
-    ('Knights (NEW 41) v CCC', 'away'): "'CCC' | 'CCC' | 'CCC' | 'CCC' | 'CCC' | 'CCC' | 'CCC' | 'CCC' | 'CCC'",
-    ('ids 1 v 2, no abbrs', 'home'): 'None | None | None | None | None | None | None | None | None',
-    ('ids 1 v 2, no abbrs', 'away'): 'None | None | None | None | None | None | None | None | None',
+    ('AAA home v BBB', 'home'): "'AAA' | 'AAA' | 'AAA' | 'AAA' | 'AAA' | 'AAA' | '1' | 'AAA' | 'AAA'",
+    ('AAA home v BBB', 'away'): "'BBB' | 'BBB' | 'BBB' | 'BBB' | 'BBB' | 'BBB' | '2' | 'BBB' | 'BBB'",
+    ('Knights (NEW 41) v CCC', 'home'): "'NEW' | 'NEW' | 'NEW' | 'NEW' | 'NEW' | 'NEW' | '41' | 'NEW' | 'NEW'",
+    ('Knights (NEW 41) v CCC', 'away'): "'CCC' | 'CCC' | 'CCC' | 'CCC' | 'CCC' | 'CCC' | '3' | 'CCC' | 'CCC'",
+    ('ids 1 v 2, no abbrs', 'home'): "None | None | None | None | None | None | '1' | None | None",
+    ('ids 1 v 2, no abbrs', 'away'): "None | None | None | None | None | None | '2' | None | None",
 }
 # (role, favourites, per-team limit): the selection method's picks over SLATE.
 EXPECTED_SELECT = {
@@ -298,13 +315,13 @@ EXPECTED_SELECT = {
     ('Upcoming', 'none', 5): 's1,s2,s3,s4,s5,s6,s7,s2,~,~,s9 | s1,s2,s3,s4,s5,s6,s7,s2,~,~,s9 | s1,s2,s3,s4,s5,s6,s7,s2,~,~,s9 | s1,s2,s3,s4,s5,s6,s7,s2,~,~,s9 | s1,s2,s3,s4,s5,s6,s7,s2,~,~,s9 | s1,s2,s3,s4,s5,s6,s7,s2,~,~,s9 | s1,s2,s3,s4,s5,s6,s7,s2,~,~,s9 | s1,s2,s3,s4,s5,s6,s7,s2,~,~,s9 | s1,s2,s3,s4,s5,s6,s7,s2,~,~,s9',
     ('Upcoming', 'abbr AAA', 1): 's1 | s1 | s1 | s1 | s1 | s1 | s1 | s1 | s1',
     ('Upcoming', 'abbr AAA', 2): 's1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2',
-    ('Upcoming', 'abbr AAA', 5): 's1,s2,s4,~,s9 | s1,s2,s4,~,s9 | s1,s2,s4,~,s9 | s1,s2,s4,~,s9 | s1,s2,s4,~,s9 | s1,s2,s4,~,s9 | s1,s2,s4,~,s9 | s1,s2,s4,~,s9 | s1,s2,s4,~,s9',
+    ('Upcoming', 'abbr AAA', 5): 's1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~',
     ('Upcoming', 'two AAA,CCC', 1): 's1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2',
     ('Upcoming', 'two AAA,CCC', 2): 's1,s2,s3 | s1,s2,s3 | s1,s2,s3 | s1,s2,s3 | s1,s2,s3 | s1,s2,s3 | s1,s2,s3 | s1,s2,s3 | s1,s2,s3',
-    ('Upcoming', 'two AAA,CCC', 5): 's1,s2,s3,s4,s7,~,s9 | s1,s2,s3,s4,s7,~,s9 | s1,s2,s3,s4,s7,~,s9 | s1,s2,s3,s4,s7,~,s9 | s1,s2,s3,s4,s7,~,s9 | s1,s2,s3,s4,s7,~,s9 | s1,s2,s3,s4,s7,~,s9 | s1,s2,s3,s4,s7,~,s9 | s1,s2,s3,s4,s7,~,s9',
-    ('Upcoming', 'lower aaa', 1): 'none | none | none | none | none | none | s1 | none | none',
-    ('Upcoming', 'lower aaa', 2): 'none | none | none | none | none | none | s1,s2 | none | none',
-    ('Upcoming', 'lower aaa', 5): 'none | none | none | none | none | none | s1,s2,s4,~,s9 | none | none',
+    ('Upcoming', 'two AAA,CCC', 5): 's1,s2,s3,s4,s7,~,~,s9 | s1,s2,s3,s4,s7,~,~,s9 | s1,s2,s3,s4,s7,~,~,s9 | s1,s2,s3,s4,s7,~,~,s9 | s1,s2,s3,s4,s7,~,~,s9 | s1,s2,s3,s4,s7,~,~,s9 | s1,s2,s3,s4,s7,~,~,s9 | s1,s2,s3,s4,s7,~,~,s9 | s1,s2,s3,s4,s7,~,~,s9',
+    ('Upcoming', 'lower aaa', 1): 's1 | s1 | s1 | s1 | s1 | s1 | s1 | s1 | s1',
+    ('Upcoming', 'lower aaa', 2): 's1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2',
+    ('Upcoming', 'lower aaa', 5): 's1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~',
     ('Upcoming', 'colliding NEW', 1): 's5 | s5 | s5 | s5 | s5 | s5 | none | s5 | s5',
     ('Upcoming', 'colliding NEW', 2): 's5,s6 | s5,s6 | s5,s6 | s5,s6 | s5,s6 | s5,s6 | none | s5,s6 | s5,s6',
     ('Upcoming', 'colliding NEW', 5): 's5,s6 | s5,s6 | s5,s6 | s5,s6 | s5,s6 | s5,s6 | none | s5,s6 | s5,s6',
@@ -316,19 +333,19 @@ EXPECTED_SELECT = {
     ('Upcoming', 'id 41 (Knights)', 5): 'none | none | none | none | none | none | s5 | none | none',
     ('Upcoming', 'AAA + unknown ZZZ', 1): 's1 | s1 | s1 | s1 | s1 | s1 | s1 | s1 | s1',
     ('Upcoming', 'AAA + unknown ZZZ', 2): 's1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2',
-    ('Upcoming', 'AAA + unknown ZZZ', 5): 's1,s2,s4,~,s9 | s1,s2,s4,~,s9 | s1,s2,s4,~,s9 | s1,s2,s4,~,s9 | s1,s2,s4,~,s9 | s1,s2,s4,~,s9 | s1,s2,s4,~,s9 | s1,s2,s4,~,s9 | s1,s2,s4,~,s9',
+    ('Upcoming', 'AAA + unknown ZZZ', 5): 's1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~',
     ('Recent', 'none', 1): 's1,s2,s3,s4,s5,s6,s7,s2,~,~,s9 | s1,s2,s3,s4,s5,s6,s7,s2,~,~,s9 | s1,s2,s3,s4,s5,s6,s7,s2,~,~,s9 | s1,s2,s3,s4,s5,s6,s7,s2,~,~,s9 | s1,s2,s3,s4,s5,s6,s7,s2,~,~,s9 | s1,s2,s3,s4,s5,s6,s7,s2,~,~,s9 | s1,s2,s3,s4,s5,s6,s7,s2,~,~,s9 | s1,s2,s3,s4,s5,s6,s7,s2,~,~,s9 | s1,s2,s3,s4,s5,s6,s7,s2,~,~,s9',
     ('Recent', 'none', 2): 's1,s2,s3,s4,s5,s6,s7,s2,~,~,s9 | s1,s2,s3,s4,s5,s6,s7,s2,~,~,s9 | s1,s2,s3,s4,s5,s6,s7,s2,~,~,s9 | s1,s2,s3,s4,s5,s6,s7,s2,~,~,s9 | s1,s2,s3,s4,s5,s6,s7,s2,~,~,s9 | s1,s2,s3,s4,s5,s6,s7,s2,~,~,s9 | s1,s2,s3,s4,s5,s6,s7,s2,~,~,s9 | s1,s2,s3,s4,s5,s6,s7,s2,~,~,s9 | s1,s2,s3,s4,s5,s6,s7,s2,~,~,s9',
     ('Recent', 'none', 5): 's1,s2,s3,s4,s5,s6,s7,s2,~,~,s9 | s1,s2,s3,s4,s5,s6,s7,s2,~,~,s9 | s1,s2,s3,s4,s5,s6,s7,s2,~,~,s9 | s1,s2,s3,s4,s5,s6,s7,s2,~,~,s9 | s1,s2,s3,s4,s5,s6,s7,s2,~,~,s9 | s1,s2,s3,s4,s5,s6,s7,s2,~,~,s9 | s1,s2,s3,s4,s5,s6,s7,s2,~,~,s9 | s1,s2,s3,s4,s5,s6,s7,s2,~,~,s9 | s1,s2,s3,s4,s5,s6,s7,s2,~,~,s9',
     ('Recent', 'abbr AAA', 1): 's1 | s1 | s1 | s1 | s1 | s1 | s1 | s1 | s1',
     ('Recent', 'abbr AAA', 2): 's1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2',
-    ('Recent', 'abbr AAA', 5): 's1,s2,s4,~,s9 | s1,s2,s4,~,s9 | s1,s2,s4,~,s9 | s1,s2,s4,~,s9 | s1,s2,s4,~,s9 | s1,s2,s4,~,s9 | s1,s2,s4,~,s9 | s1,s2,s4,~,s9 | s1,s2,s4,~,s9',
+    ('Recent', 'abbr AAA', 5): 's1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~',
     ('Recent', 'two AAA,CCC', 1): 's1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2',
     ('Recent', 'two AAA,CCC', 2): 's1,s2,s3 | s1,s2,s3 | s1,s2,s3 | s1,s2,s3 | s1,s2,s3 | s1,s2,s3 | s1,s2,s3 | s1,s2,s3 | s1,s2,s3',
-    ('Recent', 'two AAA,CCC', 5): 's1,s2,s3,s4,s7,~,s9 | s1,s2,s3,s4,s7,~,s9 | s1,s2,s3,s4,s7,~,s9 | s1,s2,s3,s4,s7,~,s9 | s1,s2,s3,s4,s7,~,s9 | s1,s2,s3,s4,s7,~,s9 | s1,s2,s3,s4,s7,~,s9 | s1,s2,s3,s4,s7,~,s9 | s1,s2,s3,s4,s7,~,s9',
-    ('Recent', 'lower aaa', 1): 'none | none | none | none | none | none | s1 | none | none',
-    ('Recent', 'lower aaa', 2): 'none | none | none | none | none | none | s1,s2 | none | none',
-    ('Recent', 'lower aaa', 5): 'none | none | none | none | none | none | s1,s2,s4,~,s9 | none | none',
+    ('Recent', 'two AAA,CCC', 5): 's1,s2,s3,s4,s7,~,~,s9 | s1,s2,s3,s4,s7,~,~,s9 | s1,s2,s3,s4,s7,~,~,s9 | s1,s2,s3,s4,s7,~,~,s9 | s1,s2,s3,s4,s7,~,~,s9 | s1,s2,s3,s4,s7,~,~,s9 | s1,s2,s3,s4,s7,~,~,s9 | s1,s2,s3,s4,s7,~,~,s9 | s1,s2,s3,s4,s7,~,~,s9',
+    ('Recent', 'lower aaa', 1): 's1 | s1 | s1 | s1 | s1 | s1 | s1 | s1 | s1',
+    ('Recent', 'lower aaa', 2): 's1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2',
+    ('Recent', 'lower aaa', 5): 's1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~',
     ('Recent', 'colliding NEW', 1): 's5 | s5 | s5 | s5 | s5 | s5 | none | s5 | s5',
     ('Recent', 'colliding NEW', 2): 's5,s6 | s5,s6 | s5,s6 | s5,s6 | s5,s6 | s5,s6 | none | s5,s6 | s5,s6',
     ('Recent', 'colliding NEW', 5): 's5,s6 | s5,s6 | s5,s6 | s5,s6 | s5,s6 | s5,s6 | none | s5,s6 | s5,s6',
@@ -340,7 +357,7 @@ EXPECTED_SELECT = {
     ('Recent', 'id 41 (Knights)', 5): 'none | none | none | none | none | none | s5 | none | none',
     ('Recent', 'AAA + unknown ZZZ', 1): 's1 | s1 | s1 | s1 | s1 | s1 | s1 | s1 | s1',
     ('Recent', 'AAA + unknown ZZZ', 2): 's1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2 | s1,s2',
-    ('Recent', 'AAA + unknown ZZZ', 5): 's1,s2,s4,~,s9 | s1,s2,s4,~,s9 | s1,s2,s4,~,s9 | s1,s2,s4,~,s9 | s1,s2,s4,~,s9 | s1,s2,s4,~,s9 | s1,s2,s4,~,s9 | s1,s2,s4,~,s9 | s1,s2,s4,~,s9',
+    ('Recent', 'AAA + unknown ZZZ', 5): 's1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~ | s1,s2,s4,~,~',
 }
 # (role, favourites, show_favorite_teams_only): update()'s games_list over
 # UPDATE_SLATE, with a per-team limit of 2 and room for 1 other game.
@@ -349,6 +366,10 @@ EXPECTED_UPDATE = {
     ('Upcoming', 'none', 'not only'): 'u1,u2 | u1,u2 | u1,u2 | u1,u2 | u1,u2 | u1,u2 | u1,u2 | u1,u2 | n/a',
     ('Upcoming', 'abbr AAA', 'only'): 'u1,u3 | u1,u3 | u1,u3 | u1,u3 | u1,u3 | u1,u3 | u1,u3 | u1,u3 | n/a',
     ('Upcoming', 'abbr AAA', 'not only'): 'u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | n/a',
+    ('Upcoming', 'lower aaa', 'only'): 'u1,u3 | u1,u3 | u1,u3 | u1,u3 | u1,u3 | u1,u3 | u1,u3 | u1,u3 | n/a',
+    ('Upcoming', 'lower aaa', 'not only'): 'u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | n/a',
+    ('Upcoming', "padded ' AAA '", 'only'): 'u1,u3 | u1,u3 | u1,u3 | u1,u3 | u1,u3 | u1,u3 | u1,u3 | u1,u3 | n/a',
+    ('Upcoming', "padded ' AAA '", 'not only'): 'u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | n/a',
     ('Upcoming', 'two AAA,CCC', 'only'): 'u1,u2,u3,u4 | u1,u2,u3,u4 | u1,u2,u3,u4 | u1,u2,u3,u4 | u1,u2,u3,u4 | u1,u2,u3,u4 | u1,u2,u3,u4 | u1,u2,u3,u4 | n/a',
     ('Upcoming', 'two AAA,CCC', 'not only'): 'u1,u2,u5 | u1,u2,u5 | u1,u2,u5 | u1,u2,u5 | u1,u2,u5 | u1,u2,u5 | u1,u2,u5 | u1,u2,u5 | n/a',
     ('Upcoming', 'colliding NEW', 'only'): 'u4,u5 | u4,u5 | u4,u5 | u4,u5 | u4,u5 | u4,u5 | none | u4,u5 | n/a',
@@ -359,6 +380,10 @@ EXPECTED_UPDATE = {
     ('Recent', 'none', 'not only'): 'u1,u2 | u1,u2 | u1,u2 | u1,u2 | u1,u2 | u1,u2 | u1,u2 | u1,u2 | n/a',
     ('Recent', 'abbr AAA', 'only'): 'u1,u3 | u1,u3 | u1,u3 | u1,u3 | u1,u3 | u1,u3 | u1,u3 | u1,u3 | n/a',
     ('Recent', 'abbr AAA', 'not only'): 'u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | n/a',
+    ('Recent', 'lower aaa', 'only'): 'u1,u3 | u1,u3 | u1,u3 | u1,u3 | u1,u3 | u1,u3 | u1,u3 | u1,u3 | n/a',
+    ('Recent', 'lower aaa', 'not only'): 'u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | n/a',
+    ('Recent', "padded ' AAA '", 'only'): 'u1,u3 | u1,u3 | u1,u3 | u1,u3 | u1,u3 | u1,u3 | u1,u3 | u1,u3 | n/a',
+    ('Recent', "padded ' AAA '", 'not only'): 'u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | u1,u2,u3 | n/a',
     ('Recent', 'two AAA,CCC', 'only'): 'u1,u2,u3,u4 | u1,u2,u3,u4 | u1,u2,u3,u4 | u1,u2,u3,u4 | u1,u2,u3,u4 | u1,u2,u3,u4 | u1,u2,u3,u4 | u1,u2,u3,u4 | n/a',
     ('Recent', 'two AAA,CCC', 'not only'): 'u1,u2,u5 | u1,u2,u5 | u1,u2,u5 | u1,u2,u5 | u1,u2,u5 | u1,u2,u5 | u1,u2,u5 | u1,u2,u5 | n/a',
     ('Recent', 'colliding NEW', 'only'): 'u4,u5 | u4,u5 | u4,u5 | u4,u5 | u4,u5 | u4,u5 | none | u4,u5 | n/a',
@@ -366,10 +391,20 @@ EXPECTED_UPDATE = {
     ('Recent', 'name Newcastle Knights', 'only'): 'none | none | none | none | none | none | u4 | none | n/a',
     ('Recent', 'name Newcastle Knights', 'not only'): 'u1 | u1 | u1 | u1 | u1 | u1 | u1,u4 | u1 | n/a',
 }
+
+# favourites: the live rotation's order over BOOST_GAMES.
+EXPECTED_LIVE_BOOST = {
+    'none': 'b1,b2,b1,b2,b1,b2 | b1,b2 | b1,b2 | b1,b2 | b1,b2 | n/a | b1,b2,b1,b2,b1,b2 | b1,b2,b1,b2,b1,b2 | n/a',
+    'abbr AAA': 'b1,b2,b1,b1,b2,b1 | b1,b2,b1 | b1,b2,b1 | b1,b2,b1 | b1,b2,b1 | n/a | b1,b2,b1,b1,b2,b1 | b1,b2,b1,b1,b2,b1 | n/a',
+    'lower aaa': 'b1,b2,b1,b1,b2,b1 | b1,b2,b1 | b1,b2,b1 | b1,b2,b1 | b1,b2,b1 | n/a | b1,b2,b1,b1,b2,b1 | b1,b2,b1,b1,b2,b1 | n/a',
+    "padded ' AAA '": 'b1,b2,b1,b1,b2,b1 | b1,b2,b1 | b1,b2,b1 | b1,b2,b1 | b1,b2,b1 | n/a | b1,b2,b1,b1,b2,b1 | b1,b2,b1,b1,b2,b1 | n/a',
+    'id 1': 'b1,b2,b1,b2,b1,b2 | b1,b2 | b1,b2 | b1,b2 | b1,b2 | n/a | b1,b2,b1,b1,b2,b1 | b1,b2,b1,b2,b1,b2 | n/a',
+}
+
 # role: whether the selection method logs its summary at INFO.
 EXPECTED_INFO_LOG = {
     'Upcoming': 'YYYYYYYYY',
-    'Recent': 'Y.Y.YYYY.',
+    'Recent': 'YYYYYYYYY',
 }
 
 
@@ -492,10 +527,26 @@ def run_update(plugin, role, favorites, only):
     return picked(mgr.games_list)
 
 
+def boost_order(plugin, mgr):
+    """The ids the live rotation shows, in order, for BOOST_GAMES."""
+    method = BOOST_METHODS.get(plugin)
+    if method is None:
+        return "n/a"
+    mgr.favorite_live_boost = 2
+    mgr._swrr_weights = {}
+    games = [match(home, away, id=gid) for gid, home, away in BOOST_GAMES]
+    try:
+        if method == "_swrr_advance":     # one pick per call
+            return ",".join(mgr._swrr_advance(games)["id"] for _ in range(6))
+        return ",".join(getattr(mgr, method)(games))
+    except Exception as exc:                          # noqa: BLE001
+        return f"!{type(exc).__name__}"
+
+
 def observe():
     """Every table as this checkout answers it, plus structural problems."""
     tables = {name: {} for name in ("IS_FAVORITE", "IS_FAVORITE_HELPER", "FAVORITE_KEY",
-                                    "SELECT", "UPDATE", "INFO_LOG")}
+                                    "SELECT", "UPDATE", "INFO_LOG", "LIVE_BOOST")}
     problems = []
     managers = {}                    # (plugin, favorites label) -> {role: manager}
     for plugin in SPORTS:
@@ -532,6 +583,9 @@ def observe():
             for only in (True, False):
                 tables["UPDATE"][(role, fav, "only" if only else "not only")] = " | ".join(
                     run_update(p, role, fav, only) for p in SPORTS)
+    for fav in BOOST_FAVORITES:
+        tables["LIVE_BOOST"][fav] = " | ".join(
+            boost_order(p, managers[p, fav]["Live"]) for p in SPORTS)
     return tables, problems
 
 
@@ -543,6 +597,7 @@ EXPECTED = {
     "SELECT": EXPECTED_SELECT,
     "UPDATE": EXPECTED_UPDATE,
     "INFO_LOG": EXPECTED_INFO_LOG,
+    "LIVE_BOOST": EXPECTED_LIVE_BOOST,
 }
 
 

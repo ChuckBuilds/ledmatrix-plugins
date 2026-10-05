@@ -62,6 +62,8 @@ class Live:
     the real SportsLive methods rather than reimplementing them."""
 
     _is_favorite_game = SportsLive._is_favorite_game
+    _favorite_key = SportsLive._favorite_key
+    _favorite_code = staticmethod(SportsLive._favorite_code)
     _effective_live_duration = SportsLive._effective_live_duration
 
     def __init__(self, favorite_teams, game_display_duration=30,
