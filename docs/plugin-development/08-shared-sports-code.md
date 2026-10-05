@@ -148,6 +148,15 @@ the core actually ships:
   `_swrr_advance` and `_refresh_switch_mode_managers`, or the multi-league
   plugins' `_resolve_managers_for_mode` and `_extract_mode_type`). They go
   when the code around them is reconciled.
+- **Converged at 3.8.1 (sports family 5, the game-over check):**
+  `src.common.sports_game_over`. `SportsLive` (all nine) inherits
+  `SportsGameOverMixin`, listed before `SportsLiveSharedMixin`, and keeps
+  declaring `FINAL_PERIOD`, the period from which a 0:00 clock ends a game
+  (hockey 3; basketball, football and lacrosse 4; the rest `None`). Baseball's
+  `BaseballLive` keeps its postponed/suspended override, which calls
+  `super()`. `scripts/test_game_over_mixin_copies.py` fails if a copy, a
+  guarded import, a missing or misplaced base or a changed `FINAL_PERIOD`
+  comes back; `scripts/test_game_over_check.py` pins the answers.
 - **Not converging (documented forks):** `dynamic_team_resolver` (plugin copies
   take `cache_manager` in the constructor; the core's does not — different
   API), ufc's `base_odds_manager` (MMA athlete-odds fork), and — until the core
