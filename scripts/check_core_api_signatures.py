@@ -58,9 +58,8 @@ which contains the untagged API. When that version is tagged, replace each
 ``None`` with it. While any ``None`` entry exists, the test (with
 LEDMATRIX_CORE) insists HEAD reports ``UNTAGGED_SATISFIED_BY`` and no tag does.
 
-Every entry below first shipped in v3.4.0 (tagged at core 9e3f184d), so none
-is ``None`` today. ``UNTAGGED_SATISFIED_BY`` is only consulted by a ``None``
-row: before adding one, set it to the version core main reports once main is
+No entry below is ``None`` today: each names the tag that first ships it.
+``UNTAGGED_SATISFIED_BY`` is only consulted by a ``None`` row: before adding one, set it to the version core main reports once main is
 bumped past the latest tag.
 
 Limits: an API not in the table is assumed old enough (add a row when core
@@ -110,6 +109,10 @@ API_FIRST_VERSION: Tuple[ApiChange, ...] = (
               "3.4.0", "core #523"),
     ApiChange("set_pixels_per_frame", None, None, "src/common/scroll_helper.py",
               "3.4.0", "core scroll_helper"),
+    ApiChange("request_on_demand", None, None, "src/plugin_system/base_plugin.py",
+              "3.8.1", "core #768"),
+    ApiChange("end_on_demand", None, None, "src/plugin_system/base_plugin.py",
+              "3.8.1", "core #768"),
 )
 
 #: Floor that satisfies a ``None`` (untagged) entry; none exist today. See
