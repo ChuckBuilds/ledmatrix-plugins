@@ -57,6 +57,7 @@ from src.common.sports_shared import (
 from src.common.sports_fetch import SportsFetchMixin
 from src.common.sports_display_rules import SportsCardOptionsMixin, SportsGameRulesMixin
 from src.common.sports_font_path import resolve_font_path as _resolve_font_path
+from src.common.sports_game_over import SportsGameOverMixin
 # Helpers every scoreboard carried a private copy of; core ships them from
 # 3.5.0 (the manifest's floor). The private aliases keep this module's names.
 from src.common.sports_helpers import (
@@ -2986,9 +2987,9 @@ class SportsRecent(SportsRecentSharedMixin, SportsCore):
         return True
 
 
-class SportsLive(SportsLiveSharedMixin, SportsCore):
+class SportsLive(SportsGameOverMixin, SportsLiveSharedMixin, SportsCore):
     SKIN_MODE = "live"
-    #: Period from which a 0:00 clock ends a game (see _is_game_really_over).
+    #: Period from which a 0:00 clock ends a game (core's SportsGameOverMixin).
     #: None: innings, not a clock.
     FINAL_PERIOD: Optional[int] = None
 
@@ -3048,58 +3049,6 @@ class SportsLive(SportsLiveSharedMixin, SportsCore):
         # Track game update timestamps for stale data detection
         self.game_update_timestamps = {}  # {game_id: {"clock": timestamp, "score": timestamp, "last_seen": timestamp}}
         self.stale_game_timeout = self.mode_config.get("stale_game_timeout", 300)  # 5 minutes default
-
-    def _is_game_really_over(self, game: Dict) -> bool:
-        """Whether a game ESPN still lists as live has in fact ended.
-
-        It has when its period text says final. From period ``FINAL_PERIOD``
-        on, a clock at 0:00 ends it too, unless the score is level: a tie at
-        the end of regulation goes to overtime, and a game that does end tied
-        says final. With ``FINAL_PERIOD = None`` the clock never ends a game.
-        """
-        game_str = f"{game.get('away_abbr')}@{game.get('home_abbr')}"
-
-        # ESPN can send the key as null, and .get()'s default only covers a
-        # missing key, so a None here crashed the whole live update.
-        raw_period_text = game.get("period_text")
-        period_text = raw_period_text.lower() if isinstance(raw_period_text, str) else ""
-        if "final" in period_text:
-            self.logger.debug(
-                f"_is_game_really_over({game_str}): "
-                f"returning True - 'final' in period_text='{period_text}'"
-            )
-            return True
-
-        # Same for a null or non-numeric period: treat it as period 0.
-        try:
-            period = int(game.get("period") or 0)
-        except (TypeError, ValueError, OverflowError):
-            period = 0
-        # Only a clock string is read: "0:00" and ":00" are zero; ":40" is not.
-        clock = game.get("clock")
-        clock_at_zero = isinstance(clock, str) and clock.replace(":", "").strip() in ("000", "00")
-
-        if self.FINAL_PERIOD is not None and period >= self.FINAL_PERIOD and clock_at_zero:
-            try:
-                tied = int(game["away_score"]) == int(game["home_score"])
-            except (KeyError, TypeError, ValueError, OverflowError):
-                tied = False  # a missing or unreadable score leaves it to the clock
-            if not tied:
-                self.logger.debug(
-                    f"_is_game_really_over({game_str}): "
-                    f"returning True - clock at 0:00 (clock='{clock}', period={period})"
-                )
-                return True
-            self.logger.debug(
-                f"_is_game_really_over({game_str}): "
-                f"returning False - tied at 0:00 (period={period}), overtime next"
-            )
-            return False
-
-        self.logger.debug(
-            f"_is_game_really_over({game_str}): returning False"
-        )
-        return False
 
     def _is_favorite_game(self, game: Dict) -> bool:
         return (
