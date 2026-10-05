@@ -169,6 +169,7 @@ MODULE_FIRST_VERSION = {
     # tag-verification section insists on it once the tag is in its list.
     "src.common.fetch_service": None,  # core #702 (shared fetch service)
     "src.display_arbiter": None,  # core #733 (run() stage 2 arbiter)
+    "src.screen_runner": None,  # core #762 (run() stage 3 screen runner)
 }
 
 #: Releases whose ``src/__init__.py`` ``__version__`` lags their tag. The
