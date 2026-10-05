@@ -157,6 +157,18 @@ the core actually ships:
   `super()`. `scripts/test_game_over_mixin_copies.py` fails if a copy, a
   guarded import, a missing or misplaced base or a changed `FINAL_PERIOD`
   comes back; `scripts/test_game_over_check.py` pins the answers.
+- **Converged at 3.8.2 (sports family 6, favourite matching):**
+  `src.common.sports_favorites`. `SportsCore` (all nine) inherits
+  `SportsFavoritesMixin` (`_is_favorite_game`, `_favorite_code`), listed
+  before `SportsCoreSharedMixin`; `SportsUpcoming` inherits
+  `SportsUpcomingFavoritesMixin` (`_select_games_for_display`) and
+  `SportsRecent` `SportsRecentFavoritesMixin`
+  (`_select_recent_games_for_display`), each first in its bases. Each side of
+  a game is named by `_favorite_key` (`SportsHelpersMixin`); nrl keeps its
+  override, which returns the ESPN team id. `scripts/test_favorites_mixin_copies.py`
+  fails if a copy, a guarded import, a missing or misplaced base or a change
+  to nrl's override comes back; `scripts/test_favourite_matching.py` pins the
+  answers.
 - **Not converging (documented forks):** `dynamic_team_resolver` (plugin copies
   take `cache_manager` in the constructor; the core's does not — different
   API), ufc's `base_odds_manager` (MMA athlete-odds fork), and — until the core

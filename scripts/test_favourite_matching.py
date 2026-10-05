@@ -307,6 +307,10 @@ EXPECTED_FAVORITE_KEY = {
     ('Knights (NEW 41) v CCC', 'away'): "'CCC' | 'CCC' | 'CCC' | 'CCC' | 'CCC' | 'CCC' | '3' | 'CCC' | 'CCC'",
     ('ids 1 v 2, no abbrs', 'home'): "None | None | None | None | None | None | '1' | None | None",
     ('ids 1 v 2, no abbrs', 'away'): "None | None | None | None | None | None | '2' | None | None",
+    ('AAA v BBB, no ids', 'home'): "'AAA' | 'AAA' | 'AAA' | 'AAA' | 'AAA' | 'AAA' | None | 'AAA' | 'AAA'",
+    ('AAA v BBB, no ids', 'away'): "'BBB' | 'BBB' | 'BBB' | 'BBB' | 'BBB' | 'BBB' | None | 'BBB' | 'BBB'",
+    ('AAA v BBB, int ids', 'home'): "'AAA' | 'AAA' | 'AAA' | 'AAA' | 'AAA' | 'AAA' | '1' | 'AAA' | 'AAA'",
+    ('AAA v BBB, int ids', 'away'): "'BBB' | 'BBB' | 'BBB' | 'BBB' | 'BBB' | 'BBB' | '2' | 'BBB' | 'BBB'",
 }
 # (role, favourites, per-team limit): the selection method's picks over SLATE.
 EXPECTED_SELECT = {
@@ -566,7 +570,8 @@ def observe():
             live = [managers[p, fav]["Live"] for p in SPORTS]
             tables["IS_FAVORITE_HELPER"][(fav, arg_label)] = "".join(
                 cell(m._is_favorite, arg) if hasattr(m, "_is_favorite") else "-" for m in live)
-    for game_label in ("AAA home v BBB", "Knights (NEW 41) v CCC", "ids 1 v 2, no abbrs"):
+    for game_label in ("AAA home v BBB", "Knights (NEW 41) v CCC", "ids 1 v 2, no abbrs",
+                       "AAA v BBB, no ids", "AAA v BBB, int ids"):
         for s in ("home", "away"):
             tables["FAVORITE_KEY"][(game_label, s)] = " | ".join(
                 repr(managers[p, "none"]["Live"]._favorite_key(dict(GAMES[game_label]), s))
