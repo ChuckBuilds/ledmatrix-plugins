@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.40.0] - 2026-10-05
+
+### Changed
+- Requires LEDMatrix core 3.8.1 (`ledmatrix_min_version` and
+  `compatible_versions`), the first release that ships
+  `src/common/sports_game_over.py`. The store refuses to install or update
+  this version onto an older core.
+- `SportsLive` inherits `SportsGameOverMixin` (`src.common.sports_game_over`)
+  and keeps declaring `FINAL_PERIOD` (None).
+
+### Removed
+- `SportsLive._is_game_really_over`, this plugin's copy of core's game-over
+  check.
+
+No change in behaviour: every game-over answer and every safety-harness
+render is identical.
+
 ## [2.39.5] - 2026-10-05
 
 ### Changed

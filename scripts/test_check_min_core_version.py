@@ -217,7 +217,7 @@ def tree(ref):
     return set(out.stdout.split()) if out.returncode == 0 else None
 
 
-tags = ["3.0.0", "3.1.0", "3.2.0", "3.3.0", "3.3.1", "3.4.0", "3.5.0", "3.6.0", "3.6.1", "3.6.2", "3.7.0", "3.8.0"]
+tags = ["3.0.0", "3.1.0", "3.2.0", "3.3.0", "3.3.1", "3.4.0", "3.5.0", "3.6.0", "3.6.1", "3.6.2", "3.7.0", "3.8.0", "3.8.1"]
 trees = {t: tree(f"v{t}") for t in tags} if core and os.path.isdir(core) else {}
 if not trees or any(v is None for v in trees.values()):
     print("  SKIP  LEDMATRIX_CORE is not a core git checkout with release tags")

@@ -1,7 +1,7 @@
 {
   "id": "afl-scoreboard",
   "name": "AFL Scoreboard",
-  "version": "1.35.3",
+  "version": "1.36.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming AFL (Australian Football League) games with real-time scores and game status.",
   "category": "sports",
@@ -18,6 +18,12 @@
     "afl_upcoming"
   ],
   "versions": [
+    {
+      "version": "1.36.0",
+      "released": "2026-10-05",
+      "ledmatrix_min_version": "3.8.1",
+      "notes": "Requires LEDMatrix core 3.8.1, the first release that ships src.common.sports_game_over. SportsLive uses core's game-over check (SportsGameOverMixin) and its own copy of _is_game_really_over is removed; FINAL_PERIOD stays declared here (None). No change in behaviour: every game-over answer and every safety-harness render is identical."
+    },
     {
       "version": "1.35.3",
       "released": "2026-10-05",
@@ -552,6 +558,6 @@
   "class_name": "AflScoreboardPlugin",
   "config_schema": "config_schema.json",
   "compatible_versions": [
-    ">=3.8.0"
+    ">=3.8.1"
   ]
 }

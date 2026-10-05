@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.57.4",
+  "version": "1.58.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.58.0",
+      "released": "2026-10-05",
+      "ledmatrix_min_version": "3.8.1",
+      "notes": "Requires LEDMatrix core 3.8.1, the first release that ships src.common.sports_game_over. SportsLive uses core's game-over check (SportsGameOverMixin) and its own copy of _is_game_really_over is removed; FINAL_PERIOD stays declared here (None). BaseballLive keeps its postponed/suspended check, which now defers to core's. No change in behaviour: every game-over answer and every safety-harness render is identical."
+    },
     {
       "version": "1.57.4",
       "released": "2026-10-05",
@@ -874,6 +880,6 @@
   "class_name": "BaseballScoreboardPlugin",
   "entry_point": "manager.py",
   "compatible_versions": [
-    ">=3.8.0"
+    ">=3.8.1"
   ]
 }

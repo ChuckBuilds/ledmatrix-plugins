@@ -1,7 +1,7 @@
 {
   "id": "ufc-scoreboard",
   "name": "UFC Scoreboard",
-  "version": "1.19.5",
+  "version": "1.20.0",
   "author": "LegoGuy1000",
   "contributors": [
     {
@@ -32,6 +32,12 @@
   "default_duration": 15,
   "config_schema": "config_schema.json",
   "versions": [
+    {
+      "version": "1.20.0",
+      "released": "2026-10-05",
+      "ledmatrix_min_version": "3.8.1",
+      "notes": "Requires LEDMatrix core 3.8.1, the first release that ships src.common.sports_game_over. SportsLive uses core's game-over check (SportsGameOverMixin) and its own copy of _is_game_really_over is removed; FINAL_PERIOD stays declared here (None). No change in behaviour: every game-over answer and every safety-harness render is identical."
+    },
     {
       "version": "1.19.5",
       "released": "2026-10-05",
@@ -409,6 +415,6 @@
   "verified": true,
   "screenshot": "",
   "compatible_versions": [
-    ">=3.8.0"
+    ">=3.8.1"
   ]
 }
