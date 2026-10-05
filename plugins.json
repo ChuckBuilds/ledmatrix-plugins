@@ -440,7 +440,8 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "1.2.9",
-      "ledmatrix_min_version": "2.0.0"
+      "ledmatrix_min_version": "2.0.0",
+      "commit": "650b0f53b24d1ac830c8a97be49841974a12ca30"
     },
     {
       "id": "leaderboard",
@@ -577,7 +578,8 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "1.2.9",
-      "ledmatrix_min_version": "2.0.0"
+      "ledmatrix_min_version": "2.0.0",
+      "commit": "650b0f53b24d1ac830c8a97be49841974a12ca30"
     },
     {
       "id": "music",
@@ -657,7 +659,8 @@
       "screenshot": "",
       "latest_version": "1.2.15",
       "icon": "fa-circle-dot",
-      "ledmatrix_min_version": "2.0.0"
+      "ledmatrix_min_version": "2.0.0",
+      "commit": "650b0f53b24d1ac830c8a97be49841974a12ca30"
     },
     {
       "id": "nfl-draft",
@@ -1291,7 +1294,8 @@
       "screenshot": "",
       "latest_version": "1.3.11",
       "icon": "fa-hourglass-half",
-      "ledmatrix_min_version": "2.0.0"
+      "ledmatrix_min_version": "2.0.0",
+      "commit": "650b0f53b24d1ac830c8a97be49841974a12ca30"
     },
     {
       "id": "sleeper-fantasy",
