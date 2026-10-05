@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.39.5] - 2026-10-05
+
+### Changed
+- No change in behaviour. `SportsLive._is_game_really_over` is now one body in
+  all nine scoreboards; each declares `FINAL_PERIOD`, the period from which a
+  0:00 clock ends a game (None: the clock never does). Here it is None: the
+  clock counts up.
+
 ## [2.39.4] - 2026-10-04
 
 ### Fixed

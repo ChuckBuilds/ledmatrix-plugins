@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.19.5] - 2026-10-05
+
+### Changed
+- A fight leaves the live display only when ESPN calls it final. The shared
+  check also called one over when its clock read 0:00 (or was missing) from
+  round 4 on, so a five-round fight could drop off for the moment its clock
+  sat at 0:00 at the horn. `SportsLive._is_game_really_over` is now one body
+  in all nine scoreboards; each declares `FINAL_PERIOD`, the period from which
+  a 0:00 clock ends a game (None: the clock never does). Here it is None.
+
 ## [1.19.4] - 2026-10-04
 
 ### Fixed

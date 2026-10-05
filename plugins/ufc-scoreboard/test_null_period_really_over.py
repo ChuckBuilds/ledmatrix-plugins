@@ -12,7 +12,8 @@ try/except, so one such game abandoned the whole live refresh for that league:
 the live list was never replaced and the panel kept showing the last one.
 
 These checks pin that a null or junk value is treated as empty / period 0, and
-that the UFC end-of-game rules themselves are unchanged.
+that the UFC end-of-game rules themselves hold: FINAL_PERIOD is None,
+so only a final period text ends a game, never a 0:00 clock.
 
 Run: <core-venv>/bin/python plugins/ufc-scoreboard/test_null_period_really_over.py
 Exit 0 pass, 1 fail, 2 skip (no LEDMatrix core checkout found).
@@ -67,8 +68,9 @@ def check(label, is_over, game, expected):
         FAILURES.append(label)
 
 
-# The method only touches self.logger, so a stand-in instance is enough.
-_probe = SimpleNamespace(logger=logging.getLogger("null_period_probe"))
+# The method reads only self.logger and FINAL_PERIOD, so a stand-in is enough.
+_probe = SimpleNamespace(logger=logging.getLogger("null_period_probe"),
+                         FINAL_PERIOD=sports.SportsLive.FINAL_PERIOD)
 
 
 def shared_is_over(game):
@@ -82,16 +84,16 @@ check("live game is not over", shared_is_over,
       {"period_text": "R2", "period": 2, "clock": "5:00"}, False)
 check("'Final' in period_text is over", shared_is_over,
       {"period_text": "Final", "period": 4, "clock": "0:00"}, True)
-check("0:00 in period 4 is over", shared_is_over,
-      {"period_text": "R4", "period": 4, "clock": "0:00"}, True)
+check("0:00 in period 4 is not over", shared_is_over,
+      {"period_text": "R4", "period": 4, "clock": "0:00"}, False)
 check("0:00 in period 1 is not over", shared_is_over,
       {"period_text": "R2", "period": 1, "clock": "0:00"}, False)
 
 # Null / junk values.
 check("period_text None, live", shared_is_over,
       {"period_text": None, "period": 2, "clock": "5:00"}, False)
-check("period_text None still reaches the 0:00 check", shared_is_over,
-      {"period_text": None, "period": 4, "clock": "0:00"}, True)
+check("period_text None, 0:00 in period 4 is not over", shared_is_over,
+      {"period_text": None, "period": 4, "clock": "0:00"}, False)
 check("period None is period 0 (not over at 0:00)", shared_is_over,
       {"period_text": "R2", "period": None, "clock": "0:00"}, False)
 check("non-numeric period string is period 0", shared_is_over,

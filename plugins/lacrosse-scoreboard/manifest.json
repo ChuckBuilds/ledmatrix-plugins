@@ -1,7 +1,7 @@
 {
   "id": "lacrosse-scoreboard",
   "name": "Lacrosse Scoreboard",
-  "version": "1.36.3",
+  "version": "1.36.4",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NCAA men's and women's lacrosse games with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/lacrosse-scoreboard",
@@ -50,6 +50,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.36.4",
+      "released": "2026-10-05",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "A game level at 0:00 at the end of the fourth quarter (or of an overtime) stays on the live display through the break instead of leaving it as if over; it leaves when ESPN calls it final, as a game that really ends tied does. SportsLive._is_game_really_over is now one body in all nine scoreboards; each declares FINAL_PERIOD, the period from which a 0:00 clock ends a game (None: the clock never does). Here it is 4."
+    },
     {
       "version": "1.36.3",
       "released": "2026-10-02",
@@ -592,7 +598,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-10-02",
+  "last_updated": "2026-10-05",
   "stars": 0,
   "downloads": 0,
   "verified": true,

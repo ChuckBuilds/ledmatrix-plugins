@@ -3127,6 +3127,9 @@ class SportsRecent(SportsRecentSharedMixin, SportsCore):
 
 class SportsLive(SportsCelebrationMixin, SportsLiveSharedMixin, SportsCore):
     SKIN_MODE = "live"
+    #: Period from which a 0:00 clock ends a game (see _is_game_really_over).
+    #: None: the clock counts up, so only the final status ends a game.
+    FINAL_PERIOD: Optional[int] = None
 
     def __init__(
         self,
@@ -3571,15 +3574,15 @@ class SportsLive(SportsCelebrationMixin, SportsLiveSharedMixin, SportsCore):
             self.logger.error(f"Error displaying live game: {e}", exc_info=True)
 
     def _is_game_really_over(self, game: Dict) -> bool:
-        """Check if a game appears to be over even if API says it's live.
+        """Whether a game ESPN still lists as live has in fact ended.
 
-        Soccer-specific: clock counts UP (e.g., 75', 90+3'), so we check for
-        'final' in period_text. The 0:00 clock check used in countdown-clock
-        sports doesn't apply here.
+        It has when its period text says final. From period ``FINAL_PERIOD``
+        on, a clock at 0:00 ends it too, unless the score is level: a tie at
+        the end of regulation goes to overtime, and a game that does end tied
+        says final. With ``FINAL_PERIOD = None`` the clock never ends a game.
         """
         game_str = f"{game.get('away_abbr')}@{game.get('home_abbr')}"
 
-        # Check if period_text indicates final
         # ESPN can send the key as null, and .get()'s default only covers a
         # missing key, so a None here crashed the whole live update.
         raw_period_text = game.get("period_text")
@@ -3591,9 +3594,34 @@ class SportsLive(SportsCelebrationMixin, SportsLiveSharedMixin, SportsCore):
             )
             return True
 
+        # Same for a null or non-numeric period: treat it as period 0.
+        try:
+            period = int(game.get("period") or 0)
+        except (TypeError, ValueError, OverflowError):
+            period = 0
+        # Only a clock string is read: "0:00" and ":00" are zero; ":40" is not.
+        clock = game.get("clock")
+        clock_at_zero = isinstance(clock, str) and clock.replace(":", "").strip() in ("000", "00")
+
+        if self.FINAL_PERIOD is not None and period >= self.FINAL_PERIOD and clock_at_zero:
+            try:
+                tied = int(game["away_score"]) == int(game["home_score"])
+            except (KeyError, TypeError, ValueError, OverflowError):
+                tied = False  # a missing or unreadable score leaves it to the clock
+            if not tied:
+                self.logger.debug(
+                    f"_is_game_really_over({game_str}): "
+                    f"returning True - clock at 0:00 (clock='{clock}', period={period})"
+                )
+                return True
+            self.logger.debug(
+                f"_is_game_really_over({game_str}): "
+                f"returning False - tied at 0:00 (period={period}), overtime next"
+            )
+            return False
+
         self.logger.debug(
-            f"_is_game_really_over({game_str}): returning False "
-            f"(period_text='{period_text}', period={game.get('period', 0)})"
+            f"_is_game_really_over({game_str}): returning False"
         )
         return False
 

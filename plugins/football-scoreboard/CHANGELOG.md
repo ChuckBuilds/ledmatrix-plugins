@@ -1,5 +1,15 @@
 # Changelog
 
+## [3.18.8] - 2026-10-05
+
+### Fixed
+- A game level at 0:00 at the end of the fourth quarter (or of an overtime)
+  stays on the live display through the break instead of leaving it as if
+  over; it leaves when ESPN calls it final, as a game that really ends tied
+  does. `SportsLive._is_game_really_over` is now one body in all nine
+  scoreboards; each declares `FINAL_PERIOD`, the period from which a 0:00
+  clock ends a game (None: the clock never does). Here it is 4.
+
 ## [3.18.7] - 2026-10-04
 
 ### Fixed

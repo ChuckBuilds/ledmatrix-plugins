@@ -162,17 +162,17 @@ def test_a_game_that_goes_final_keeps_its_card_and_shows_final(plugin, over):
 
 
 def test_a_level_game_at_the_end_of_the_fourth_is_not_kept_as_final(plugin):
-    # Level at 0:00 is the break before sudden-victory overtime: the poll
-    # still drops it (_is_game_really_over), but it is no result, so its card
-    # keeps its last live pixels rather than turning to "Final 7-7".
+    # Level at 0:00 is the break before sudden-victory overtime: the game
+    # stays live (_is_game_really_over's tie guard) and is no result, so its
+    # card does not turn to "Final 7-7".
     live = plugin.slate.pop("401")
     manager = plugin.ncaa_mens_live
     manager.live_games = [live]
     _poll(manager, dict(live, period=4, clock="0:00", period_text="Q4",
                         home_score="7", away_score="7"))
-    assert manager.live_games == []
+    assert [g["id"] for g in manager.live_games] == ["401"]
     assert manager.finished_games_snapshot() == []
-    assert f"game:{LEAGUE}:401" not in _cards(plugin)
+    assert f"game:{LEAGUE}:401" not in _cards(plugin)   # nothing held as a final
 
 
 @pytest.mark.parametrize("size", [(128, 32), (128, 64)])

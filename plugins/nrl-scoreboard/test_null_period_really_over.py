@@ -67,8 +67,9 @@ def check(label, is_over, game, expected):
         FAILURES.append(label)
 
 
-# The method only touches self.logger, so a stand-in instance is enough.
-_probe = SimpleNamespace(logger=logging.getLogger("null_period_probe"))
+# The method reads only self.logger and FINAL_PERIOD, so a stand-in is enough.
+_probe = SimpleNamespace(logger=logging.getLogger("null_period_probe"),
+                         FINAL_PERIOD=sports.SportsLive.FINAL_PERIOD)
 
 
 def shared_is_over(game):

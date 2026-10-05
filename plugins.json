@@ -77,12 +77,11 @@
       "plugin_path": "plugins/baseball-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-04",
+      "last_updated": "2026-10-05",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.57.2",
-      "ledmatrix_min_version": "3.8.0",
-      "commit": "39a7a451aa6e13679e7319300248102e4597a1c5"
+      "latest_version": "1.57.3",
+      "ledmatrix_min_version": "3.8.0"
     },
     {
       "id": "basketball-scoreboard",
@@ -104,12 +103,11 @@
       "plugin_path": "plugins/basketball-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-03",
+      "last_updated": "2026-10-05",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.42.1",
-      "ledmatrix_min_version": "3.8.0",
-      "commit": "c202cd9a6f4b421d7cee4445b707a4e300b45490"
+      "latest_version": "1.42.2",
+      "ledmatrix_min_version": "3.8.0"
     },
     {
       "id": "calendar",
@@ -280,12 +278,11 @@
       "plugin_path": "plugins/football-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-04",
+      "last_updated": "2026-10-05",
       "verified": true,
       "screenshot": "",
-      "latest_version": "3.18.7",
-      "ledmatrix_min_version": "3.8.0",
-      "commit": "37f2f954c06f24ffb760b9ddbb019e0b0c7156d5"
+      "latest_version": "3.18.8",
+      "ledmatrix_min_version": "3.8.0"
     },
     {
       "id": "geochron",
@@ -382,13 +379,12 @@
       "plugin_path": "plugins/hockey-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-03",
+      "last_updated": "2026-10-05",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.42.3",
+      "latest_version": "1.42.4",
       "icon": "fas fa-hockey-puck",
-      "ledmatrix_min_version": "3.8.0",
-      "commit": "c202cd9a6f4b421d7cee4445b707a4e300b45490"
+      "ledmatrix_min_version": "3.8.0"
     },
     {
       "id": "lacrosse-scoreboard",
@@ -408,13 +404,12 @@
       "plugin_path": "plugins/lacrosse-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-02",
+      "last_updated": "2026-10-05",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.36.3",
+      "latest_version": "1.36.4",
       "icon": "fas fa-baseball-ball",
-      "ledmatrix_min_version": "3.8.0",
-      "commit": "886d2038d22a35c962beac0ea261543339cffec9"
+      "ledmatrix_min_version": "3.8.0"
     },
     {
       "id": "birdnet-go",
@@ -844,12 +839,11 @@
       "plugin_path": "plugins/soccer-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-04",
+      "last_updated": "2026-10-05",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.39.4",
-      "ledmatrix_min_version": "3.8.0",
-      "commit": "e73d2090f04bd9f3df1d8af4563bbbc028d70012"
+      "latest_version": "2.39.5",
+      "ledmatrix_min_version": "3.8.0"
     },
     {
       "id": "static-image",
@@ -1004,13 +998,12 @@
       "plugin_path": "plugins/ufc-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-04",
+      "last_updated": "2026-10-05",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.19.4",
+      "latest_version": "1.19.5",
       "icon": "fas fa-fist-raised",
-      "ledmatrix_min_version": "3.8.0",
-      "commit": "bf7fcf0170ebce40f0c561979cadd85bdf974205"
+      "ledmatrix_min_version": "3.8.0"
     },
     {
       "id": "weather",
@@ -1164,10 +1157,9 @@
       "downloads": 0,
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.35.2",
-      "last_updated": "2026-10-02",
-      "ledmatrix_min_version": "3.8.0",
-      "commit": "886d2038d22a35c962beac0ea261543339cffec9"
+      "latest_version": "1.35.3",
+      "last_updated": "2026-10-05",
+      "ledmatrix_min_version": "3.8.0"
     },
     {
       "id": "tidbyt-baseball-scoreboard",
@@ -1210,12 +1202,11 @@
       "plugin_path": "plugins/nrl-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-02",
+      "last_updated": "2026-10-05",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.34.2",
-      "ledmatrix_min_version": "3.8.0",
-      "commit": "886d2038d22a35c962beac0ea261543339cffec9"
+      "latest_version": "1.34.3",
+      "ledmatrix_min_version": "3.8.0"
     },
     {
       "id": "jellyfin-now-playing",

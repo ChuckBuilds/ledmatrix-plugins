@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
-"""What each scoreboard's live manager calls "over", pinned before it is reconciled.
+"""What each scoreboard's live manager calls "over", cell by cell.
 
 WHY THIS EXISTS
 ---------------
 ``SportsLive._is_game_really_over`` drops a game ESPN still lists as live
 from the live rotation (and the plugin's live-priority filters). The nine
-copies are five different bodies (LEDMatrix docs/SPORTS_UNIFICATION.md,
-family 5), and the reconcile that makes them one must change only the cells
-the owner decides to change. This records what every plugin answers today,
-so that PR's diff of the tables below is the behaviour change, cell by cell.
+copies were five different bodies (LEDMatrix docs/SPORTS_UNIFICATION.md,
+family 5). They are now one body, and each plugin's ``FINAL_PERIOD`` says
+from which period a 0:00 clock ends a game (None: never). The tables below
+record what every plugin answers, so any later change to the method or a
+plugin's ``FINAL_PERIOD`` shows up in a PR as a diff of them, cell by cell.
 
 For each plugin it builds a real live manager (fake display and cache) and
 calls ``_is_game_really_over`` on:
@@ -23,8 +24,9 @@ calls ``_is_game_really_over`` on:
   its own ``_extract_game_details``, including the round breaks ESPN sends
   as STATUS_END_OF_ROUND with displayClock "-".
 
-The method reads only ``period_text``, ``clock``, ``period`` and (baseball)
-``status``, so each status is given the period text its feed would carry.
+The method reads only ``period_text``, ``clock``, ``period``, the two scores
+(level at 0:00 is not over) and (baseball) ``status``, so each status is
+given the period text its feed would carry; the matrix scores are 1-2.
 Every league's live manager in a plugin must resolve to the same method, so
 one manager per plugin covers them all; that is checked too.
 
@@ -113,37 +115,37 @@ UFC_FIXTURES = (REPO / "plugins" / "ufc-scoreboard" / "test" / "fixtures"
 # --------------------------------------------------------------------------
 EXPECTED_MATRIX = {
     ("STATUS_IN_PROGRESS", "12:00"): "....... ....... ....... ....... ....... ....... ....... ....... .......",
-    ("STATUS_IN_PROGRESS", "0:00"): "....... ....YYY ....YYY ....YYY ...YYYY ....YYY ....... ....... ....YYY",
-    ("STATUS_IN_PROGRESS", ":00"): "....... ....YYY ....YYY ....YYY ...YYYY ....YYY ....... ....... ....YYY",
+    ("STATUS_IN_PROGRESS", "0:00"): "....... ....... ....YYY ....YYY ...YYYY ....YYY ....... ....... .......",
+    ("STATUS_IN_PROGRESS", ":00"): "....... ....... ....YYY ....YYY ...YYYY ....YYY ....... ....... .......",
     ("STATUS_IN_PROGRESS", "0.0"): "....... ....... ....... ....... ....... ....... ....... ....... .......",
     ("STATUS_IN_PROGRESS", "-"): "....... ....... ....... ....... ....... ....... ....... ....... .......",
     ("STATUS_IN_PROGRESS", "''"): "....... ....... ....... ....... ....... ....... ....... ....... .......",
-    ("STATUS_IN_PROGRESS", "None"): "....... ....YYY ....... ....... ....... ....... ....... ....... ....YYY",
-    ("STATUS_IN_PROGRESS", "missing"): "....... ....YYY ....... ....... ....... ....... ....... ....... ....YYY",
+    ("STATUS_IN_PROGRESS", "None"): "....... ....... ....... ....... ....... ....... ....... ....... .......",
+    ("STATUS_IN_PROGRESS", "missing"): "....... ....... ....... ....... ....... ....... ....... ....... .......",
     ("STATUS_END_PERIOD", "12:00"): "....... ....... ....... ....... ....... ....... ....... ....... .......",
-    ("STATUS_END_PERIOD", "0:00"): "....... ....YYY ....YYY ....YYY ...YYYY ....YYY ....... ....... ....YYY",
-    ("STATUS_END_PERIOD", ":00"): "....... ....YYY ....YYY ....YYY ...YYYY ....YYY ....... ....... ....YYY",
+    ("STATUS_END_PERIOD", "0:00"): "....... ....... ....YYY ....YYY ...YYYY ....YYY ....... ....... .......",
+    ("STATUS_END_PERIOD", ":00"): "....... ....... ....YYY ....YYY ...YYYY ....YYY ....... ....... .......",
     ("STATUS_END_PERIOD", "0.0"): "....... ....... ....... ....... ....... ....... ....... ....... .......",
     ("STATUS_END_PERIOD", "-"): "....... ....... ....... ....... ....... ....... ....... ....... .......",
     ("STATUS_END_PERIOD", "''"): "....... ....... ....... ....... ....... ....... ....... ....... .......",
-    ("STATUS_END_PERIOD", "None"): "....... ....YYY ....... ....... ....... ....... ....... ....... ....YYY",
-    ("STATUS_END_PERIOD", "missing"): "....... ....YYY ....... ....... ....... ....... ....... ....... ....YYY",
+    ("STATUS_END_PERIOD", "None"): "....... ....... ....... ....... ....... ....... ....... ....... .......",
+    ("STATUS_END_PERIOD", "missing"): "....... ....... ....... ....... ....... ....... ....... ....... .......",
     ("STATUS_HALFTIME", "12:00"): "....... ....... ....... ....... ....... ....... ....... ....... .......",
-    ("STATUS_HALFTIME", "0:00"): "....... ....YYY ....YYY ....YYY ...YYYY ....YYY ....... ....... ....YYY",
-    ("STATUS_HALFTIME", ":00"): "....... ....YYY ....YYY ....YYY ...YYYY ....YYY ....... ....... ....YYY",
+    ("STATUS_HALFTIME", "0:00"): "....... ....... ....YYY ....YYY ...YYYY ....YYY ....... ....... .......",
+    ("STATUS_HALFTIME", ":00"): "....... ....... ....YYY ....YYY ...YYYY ....YYY ....... ....... .......",
     ("STATUS_HALFTIME", "0.0"): "....... ....... ....... ....... ....... ....... ....... ....... .......",
     ("STATUS_HALFTIME", "-"): "....... ....... ....... ....... ....... ....... ....... ....... .......",
     ("STATUS_HALFTIME", "''"): "....... ....... ....... ....... ....... ....... ....... ....... .......",
-    ("STATUS_HALFTIME", "None"): "....... ....YYY ....... ....... ....... ....... ....... ....... ....YYY",
-    ("STATUS_HALFTIME", "missing"): "....... ....YYY ....... ....... ....... ....... ....... ....... ....YYY",
+    ("STATUS_HALFTIME", "None"): "....... ....... ....... ....... ....... ....... ....... ....... .......",
+    ("STATUS_HALFTIME", "missing"): "....... ....... ....... ....... ....... ....... ....... ....... .......",
     ("STATUS_END_OF_ROUND", "12:00"): "....... ....... ....... ....... ....... ....... ....... ....... .......",
-    ("STATUS_END_OF_ROUND", "0:00"): "....... ....YYY ....YYY ....YYY ...YYYY ....YYY ....... ....... ....YYY",
-    ("STATUS_END_OF_ROUND", ":00"): "....... ....YYY ....YYY ....YYY ...YYYY ....YYY ....... ....... ....YYY",
+    ("STATUS_END_OF_ROUND", "0:00"): "....... ....... ....YYY ....YYY ...YYYY ....YYY ....... ....... .......",
+    ("STATUS_END_OF_ROUND", ":00"): "....... ....... ....YYY ....YYY ...YYYY ....YYY ....... ....... .......",
     ("STATUS_END_OF_ROUND", "0.0"): "....... ....... ....... ....... ....... ....... ....... ....... .......",
     ("STATUS_END_OF_ROUND", "-"): "....... ....... ....... ....... ....... ....... ....... ....... .......",
     ("STATUS_END_OF_ROUND", "''"): "....... ....... ....... ....... ....... ....... ....... ....... .......",
-    ("STATUS_END_OF_ROUND", "None"): "....... ....YYY ....... ....... ....... ....... ....... ....... ....YYY",
-    ("STATUS_END_OF_ROUND", "missing"): "....... ....YYY ....... ....... ....... ....... ....... ....... ....YYY",
+    ("STATUS_END_OF_ROUND", "None"): "....... ....... ....... ....... ....... ....... ....... ....... .......",
+    ("STATUS_END_OF_ROUND", "missing"): "....... ....... ....... ....... ....... ....... ....... ....... .......",
     ("STATUS_FINAL", "12:00"): "YYYYYYY YYYYYYY YYYYYYY YYYYYYY YYYYYYY YYYYYYY YYYYYYY YYYYYYY YYYYYYY",
     ("STATUS_FINAL", "0:00"): "YYYYYYY YYYYYYY YYYYYYY YYYYYYY YYYYYYY YYYYYYY YYYYYYY YYYYYYY YYYYYYY",
     ("STATUS_FINAL", ":00"): "YYYYYYY YYYYYYY YYYYYYY YYYYYYY YYYYYYY YYYYYYY YYYYYYY YYYYYYY YYYYYYY",
@@ -153,25 +155,25 @@ EXPECTED_MATRIX = {
     ("STATUS_FINAL", "None"): "YYYYYYY YYYYYYY YYYYYYY YYYYYYY YYYYYYY YYYYYYY YYYYYYY YYYYYYY YYYYYYY",
     ("STATUS_FINAL", "missing"): "YYYYYYY YYYYYYY YYYYYYY YYYYYYY YYYYYYY YYYYYYY YYYYYYY YYYYYYY YYYYYYY",
     ("STATUS_POSTPONED", "12:00"): "....... YYYYYYY ....... ....... ....... ....... ....... ....... .......",
-    ("STATUS_POSTPONED", "0:00"): "....... YYYYYYY ....YYY ....YYY ...YYYY ....YYY ....... ....... ....YYY",
-    ("STATUS_POSTPONED", ":00"): "....... YYYYYYY ....YYY ....YYY ...YYYY ....YYY ....... ....... ....YYY",
+    ("STATUS_POSTPONED", "0:00"): "....... YYYYYYY ....YYY ....YYY ...YYYY ....YYY ....... ....... .......",
+    ("STATUS_POSTPONED", ":00"): "....... YYYYYYY ....YYY ....YYY ...YYYY ....YYY ....... ....... .......",
     ("STATUS_POSTPONED", "0.0"): "....... YYYYYYY ....... ....... ....... ....... ....... ....... .......",
     ("STATUS_POSTPONED", "-"): "....... YYYYYYY ....... ....... ....... ....... ....... ....... .......",
     ("STATUS_POSTPONED", "''"): "....... YYYYYYY ....... ....... ....... ....... ....... ....... .......",
-    ("STATUS_POSTPONED", "None"): "....... YYYYYYY ....... ....... ....... ....... ....... ....... ....YYY",
-    ("STATUS_POSTPONED", "missing"): "....... YYYYYYY ....... ....... ....... ....... ....... ....... ....YYY",
+    ("STATUS_POSTPONED", "None"): "....... YYYYYYY ....... ....... ....... ....... ....... ....... .......",
+    ("STATUS_POSTPONED", "missing"): "....... YYYYYYY ....... ....... ....... ....... ....... ....... .......",
 }
 
 # One cell per plugin, in SPORTS order.
 EXPECTED_EDGES = {
-    "period_text None, P4 0:00": ".YYYYY..Y",
+    "period_text None, P4 0:00": "..YYYY...",
     "period None, 0:00": ".........",
     "period 'OT', 0:00": ".........",
-    "period '4' (str), 0:00": ".YYYYY..Y",
-    "clock int 0, P4": ".Y......Y",
-    "clock float 0.0, P4": ".Y......Y",
-    "tied, end of P3, 0:00": "....Y....",
-    "tied, end of P4, 0:00": ".YYYYY..Y",
+    "period '4' (str), 0:00": "..YYYY...",
+    "clock int 0, P4": ".........",
+    "clock float 0.0, P4": ".........",
+    "tied, end of P3, 0:00": ".........",
+    "tied, end of P4, 0:00": ".........",
     "period_text 'Final/OT', P5 0:00": "YYYYYYYYY",
 }
 
