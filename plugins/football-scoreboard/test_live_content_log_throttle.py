@@ -78,7 +78,7 @@ class _Stub:
         self._last_live_content_state = None
         self._live_content_log_interval = 60.0
 
-    def _get_active_celebration_manager(self):
+    def _get_active_celebration_manager(self, live_priority_only=False):
         # No celebration in flight, so has_live_content() runs its full body
         # instead of short-circuiting to True.
         return None

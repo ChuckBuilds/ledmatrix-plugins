@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "3.18.8",
+  "version": "3.18.9",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "3.18.9",
+      "released": "2026-10-05",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "A win celebration in a league with live_priority off no longer makes has_live_content() true. get_live_modes() only returns a celebrating league's live mode when that league is enabled with live_priority on, so has_live_content() reported live content that no live mode of this plugin could show; it now applies the same live_priority gate (NFL, NCAA football)."
+    },
     {
       "version": "3.18.8",
       "released": "2026-10-05",
