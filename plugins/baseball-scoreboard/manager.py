@@ -2296,13 +2296,20 @@ class BaseballScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
             self.logger.error(f"Error in display method: {e}")
             return False
 
-    def _get_active_celebration_manager(self):
+    def _get_active_celebration_manager(self, live_priority_only=False):
         """Return the (league_key, live_manager) of an enabled league whose live
-        manager currently has a celebration running, else None."""
+        manager currently has a celebration running, else None.
+
+        ``live_priority_only`` also skips leagues with live priority off -- the
+        same gate get_live_modes() applies, so has_live_content() never reports
+        a celebration that no live mode can show.
+        """
         if not self.is_enabled:
             return None
         for league_key, league_data in self._league_registry.items():
             if not league_data.get("enabled", False):
+                continue
+            if live_priority_only and not league_data.get("live_priority", True):
                 continue
             live_manager = self._get_league_manager_for_mode(league_key, "live")
             if live_manager is not None and getattr(
@@ -2386,7 +2393,7 @@ class BaseballScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
 
         # A running celebration (notably a win, whose game has already left
         # the live list) keeps the live mode on screen.
-        if self._get_active_celebration_manager() is not None:
+        if self._get_active_celebration_manager(live_priority_only=True) is not None:
             return True
 
         # Live game counts per league, folded into the single throttled summary
@@ -2688,6 +2695,14 @@ class BaseballScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
             and self.mlb_live_priority
             and hasattr(self, "mlb_live")
         ):
+            # A celebrating league must be selectable even if its live list is
+            # already empty (a win fires as the game goes final).
+            if (
+                hasattr(self.mlb_live, "has_active_celebration")
+                and self.mlb_live.has_active_celebration()
+            ):
+                live_modes.append("mlb_live")
+
             live_games = getattr(self.mlb_live, "live_games", [])
             if live_games:
                 # Filter out any games that are final or appear over
@@ -2716,6 +2731,14 @@ class BaseballScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
             and self.milb_live_priority
             and hasattr(self, "milb_live")
         ):
+            # A celebrating league must be selectable even if its live list is
+            # already empty (a win fires as the game goes final).
+            if (
+                hasattr(self.milb_live, "has_active_celebration")
+                and self.milb_live.has_active_celebration()
+            ):
+                live_modes.append("milb_live")
+
             live_games = getattr(self.milb_live, "live_games", [])
             if live_games:
                 live_games = [g for g in live_games if not g.get("is_final", False)]
@@ -2740,6 +2763,14 @@ class BaseballScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
             and self.ncaa_baseball_live_priority
             and hasattr(self, "ncaa_baseball_live")
         ):
+            # A celebrating league must be selectable even if its live list is
+            # already empty (a win fires as the game goes final).
+            if (
+                hasattr(self.ncaa_baseball_live, "has_active_celebration")
+                and self.ncaa_baseball_live.has_active_celebration()
+            ):
+                live_modes.append("ncaa_baseball_live")
+
             live_games = getattr(self.ncaa_baseball_live, "live_games", [])
             if live_games:
                 live_games = [g for g in live_games if not g.get("is_final", False)]
@@ -2758,7 +2789,8 @@ class BaseballScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
                     else:
                         live_modes.append("ncaa_baseball_live")
 
-        return live_modes
+        # A celebration and live games for the same league can both append it.
+        return list(dict.fromkeys(live_modes))
 
     def _get_game_duration(self, league: str, mode_type: str, manager=None) -> float:
         """Get game duration for a league and mode type combination.

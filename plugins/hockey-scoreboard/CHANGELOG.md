@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.42.5] - 2026-10-05
+
+### Fixed
+- A win celebration can take the live-priority slot. A win fires as the
+  game goes final, so the game has already left the live list:
+  `has_live_content()` reported the celebration but `get_live_modes()`
+  returned no mode for it. `get_live_modes()` now returns a celebrating
+  league's live mode (NHL and NCAA men's and women's hockey), once, and only for a
+  league that is enabled with `live_priority` on; `has_live_content()`
+  applies the same `live_priority` gate.
+
 ## [1.42.4] - 2026-10-05
 
 ### Fixed
