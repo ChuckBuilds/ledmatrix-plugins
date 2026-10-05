@@ -1,7 +1,7 @@
 {
   "id": "ufc-scoreboard",
   "name": "UFC Scoreboard",
-  "version": "1.20.1",
+  "version": "1.20.2",
   "author": "LegoGuy1000",
   "contributors": [
     {
@@ -32,6 +32,12 @@
   "default_duration": 15,
   "config_schema": "config_schema.json",
   "versions": [
+    {
+      "version": "1.20.2",
+      "released": "2026-10-05",
+      "ledmatrix_min_version": "3.8.1",
+      "notes": "No change in behaviour. _is_favorite_game, _select_games_for_display and _select_recent_games_for_display are now one body in all nine scoreboards. Each side of a game is named by _favorite_key and compared with favorite_teams stripped and upper-cased. ufc favourites are fighters (favorite_fighters), which its MMA managers match themselves, so these methods are not used here yet."
+    },
     {
       "version": "1.20.1",
       "released": "2026-10-05",

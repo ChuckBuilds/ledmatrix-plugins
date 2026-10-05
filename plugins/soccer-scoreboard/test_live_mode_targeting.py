@@ -186,6 +186,8 @@ class Games:
     """
 
     _is_favorite_game = SportsLive._is_favorite_game
+    _favorite_key = SportsLive._favorite_key
+    _favorite_code = staticmethod(SportsLive._favorite_code)
 
     def __init__(self, favorite_teams, boost, exclude_teams=None,
                  show_all_live=False, show_favorite_teams_only=False):

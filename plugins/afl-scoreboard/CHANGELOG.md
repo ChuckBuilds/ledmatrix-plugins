@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.37.2] - 2026-10-05
+
+### Fixed
+- A favourite team entered in lower case or with spaces around it ("bos", "
+  BOS ") now counts as a favourite on the Upcoming and Recent screens,
+  favourites-only included, and gets the live favourite boost and dwell. The
+  live screen's favourites-only filter still compares the exact abbreviation.
+- Two games without an ESPN id are no longer taken for the same game, so
+  favourites-only selection keeps both.
+- `_is_favorite_game`, `_select_games_for_display` and
+  `_select_recent_games_for_display` are now one body in all nine scoreboards.
+  Each side of a game is named by `_favorite_key` and compared with
+  `favorite_teams` stripped and upper-cased.
+
 ## [1.37.1] - 2026-10-05
 
 ### Fixed
