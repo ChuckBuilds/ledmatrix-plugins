@@ -82,7 +82,7 @@
       "screenshot": "",
       "latest_version": "1.59.0",
       "ledmatrix_min_version": "3.8.1",
-      "commit": "80aba717c9cd67d91d047ae9c5eb9607b9d584ad"
+      "commit": "751e973768d3205b420e9bed9c03df8601678601"
     },
     {
       "id": "basketball-scoreboard",
@@ -109,7 +109,7 @@
       "screenshot": "",
       "latest_version": "1.44.0",
       "ledmatrix_min_version": "3.8.1",
-      "commit": "80aba717c9cd67d91d047ae9c5eb9607b9d584ad"
+      "commit": "751e973768d3205b420e9bed9c03df8601678601"
     },
     {
       "id": "calendar",
@@ -285,7 +285,7 @@
       "screenshot": "",
       "latest_version": "3.20.0",
       "ledmatrix_min_version": "3.8.1",
-      "commit": "80aba717c9cd67d91d047ae9c5eb9607b9d584ad"
+      "commit": "751e973768d3205b420e9bed9c03df8601678601"
     },
     {
       "id": "geochron",
@@ -388,7 +388,7 @@
       "latest_version": "1.44.0",
       "icon": "fas fa-hockey-puck",
       "ledmatrix_min_version": "3.8.1",
-      "commit": "80aba717c9cd67d91d047ae9c5eb9607b9d584ad"
+      "commit": "751e973768d3205b420e9bed9c03df8601678601"
     },
     {
       "id": "lacrosse-scoreboard",
@@ -715,7 +715,7 @@
       "screenshot": "",
       "latest_version": "1.8.0",
       "ledmatrix_min_version": "3.8.1",
-      "commit": "80aba717c9cd67d91d047ae9c5eb9607b9d584ad"
+      "commit": "751e973768d3205b420e9bed9c03df8601678601"
     },
     {
       "id": "of-the-day",
@@ -849,7 +849,7 @@
       "screenshot": "",
       "latest_version": "2.41.0",
       "ledmatrix_min_version": "3.8.1",
-      "commit": "80aba717c9cd67d91d047ae9c5eb9607b9d584ad"
+      "commit": "751e973768d3205b420e9bed9c03df8601678601"
     },
     {
       "id": "static-image",
@@ -1167,7 +1167,7 @@
       "latest_version": "1.37.0",
       "last_updated": "2026-10-05",
       "ledmatrix_min_version": "3.8.1",
-      "commit": "80aba717c9cd67d91d047ae9c5eb9607b9d584ad"
+      "commit": "751e973768d3205b420e9bed9c03df8601678601"
     },
     {
       "id": "tidbyt-baseball-scoreboard",
@@ -1215,7 +1215,7 @@
       "screenshot": "",
       "latest_version": "1.36.0",
       "ledmatrix_min_version": "3.8.1",
-      "commit": "80aba717c9cd67d91d047ae9c5eb9607b9d584ad"
+      "commit": "751e973768d3205b420e9bed9c03df8601678601"
     },
     {
       "id": "jellyfin-now-playing",
