@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.20.1] - 2026-10-05
+
+### Fixed
+- A board showing only its favourites' live bouts no longer wakes for other
+  fighters' bouts. The live loop handed every bout on the scoreboard to core's
+  idle back-off as a start to wake for, and each one holds the poll at the
+  live update interval for 15 minutes, so on a busy slate the board fetched
+  the whole scoreboard about every 30 s for bouts it then filtered out. Only
+  bouts the live filter would show are offered now (football-scoreboard 3.18.7
+  made the same change). Boards showing every live bout are unchanged. The
+  live filter moved out of `update()` into `_classify_live_game()`, as in the
+  other scoreboards, so the live list and the kickoff offer share one rule.
+  `test_kickoff_offer_follows_the_live_filter.py` covers the filter.
+
 ## [1.20.0] - 2026-10-05
 
 ### Changed

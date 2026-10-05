@@ -2694,6 +2694,20 @@ class SportsLive(SportsGameOverMixin, SportsLiveSharedMixin, SportsCore):
         self.game_update_timestamps = {}  # {game_id: {"clock": timestamp, "score": timestamp, "last_seen": timestamp}}
         self.stale_game_timeout = self.mode_config.get("stale_game_timeout", 300)  # 5 minutes default
 
+    def _classify_live_game(self, home_abbr, away_abbr) -> bool:
+        """Whether a live bout should be included in the live rotation.
+
+        Priority: show_all_live > show_favorite_teams_only disabled > no
+        favorites configured (fallback: show all) > favorite membership.
+        """
+        if self.show_all_live:
+            return True
+        if not self.show_favorite_teams_only:
+            return True
+        if not self.favorite_teams:
+            return True
+        return home_abbr in self.favorite_teams or away_abbr in self.favorite_teams
+
     def _keep_final_for_vegas(self, details: Dict) -> None:
         """Hold a fight that just ended, so its live Vegas card shows the result.
 
@@ -2778,9 +2792,18 @@ class SportsLive(SportsGameOverMixin, SportsLiveSharedMixin, SportsCore):
                     # starts, so it cannot sleep through a kickoff.
                     # getattr-guarded: the core version floor is
                     # advisory, so an older core must stay loadable.
+                    #
+                    # Only a game this board would show once it is live.
+                    # Every kickoff holds the poll at the live cadence for a
+                    # quarter of an hour, so offering the games the live
+                    # filter then drops kept a favourites-only board polling
+                    # the whole scoreboard all day (football 3.18.7).
                     _note_start = getattr(
                         self, "_note_scheduled_start_candidate", None)
-                    if _note_start is not None:
+                    if (_note_start is not None and details
+                            and self._classify_live_game(
+                                details.get("home_abbr"),
+                                details.get("away_abbr"))):
                         _note_start(details)
                     if details:
                         # Log game status for debugging - use INFO level to see what's happening
@@ -2869,30 +2892,15 @@ class SportsLive(SportsGameOverMixin, SportsLiveSharedMixin, SportsCore):
                             home_abbr = details.get("home_abbr")
                             away_abbr = details.get("away_abbr")
 
-                            if self.show_all_live:
-                                # Always show all live games if show_all_live is enabled
-                                should_include = True
-                                include_reason = "show_all_live=True"
-                            elif not self.show_favorite_teams_only:
-                                # If favorite teams filtering is disabled, show all games
-                                should_include = True
-                                include_reason = "show_favorite_teams_only=False"
-                            elif not self.favorite_teams:
-                                # If favorite teams filtering is enabled but no favorites are configured,
-                                # show all games (same behavior as SportsUpcoming)
-                                should_include = True
-                                include_reason = "favorite_teams is empty"
-                            else:
-                                # Favorite teams filtering is enabled AND favorites are configured
-                                # Only show games involving favorite teams
-                                home_match = home_abbr in self.favorite_teams
-                                away_match = away_abbr in self.favorite_teams
-                                should_include = home_match or away_match
-                                include_reason = (
-                                    f"favorite_teams={self.favorite_teams}, "
-                                    f"home_abbr='{home_abbr}' in_favorites={home_match}, "
-                                    f"away_abbr='{away_abbr}' in_favorites={away_match}"
-                                )
+                            # See _classify_live_game for the precedence order
+                            # (show_all_live > favourites-only); the kickoff
+                            # offer above applies the same rule.
+                            should_include = self._classify_live_game(home_abbr, away_abbr)
+                            include_reason = (
+                                f"show_all_live={self.show_all_live}, "
+                                f"show_favorite_teams_only={self.show_favorite_teams_only}, "
+                                f"favorite_teams={self.favorite_teams}"
+                            )
 
                             self.logger.debug(
                                 f"[LIVE_PRIORITY_DEBUG] {self.sport_key.upper()} filter decision for {game_str}: "

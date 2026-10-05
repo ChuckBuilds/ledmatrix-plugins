@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.59.0",
+  "version": "1.59.1",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.59.1",
+      "released": "2026-10-05",
+      "ledmatrix_min_version": "3.8.1",
+      "notes": "A favourites-only board no longer wakes for other teams' games. Every game the live fetch saw held the live poll at 30 s for 15 minutes, so on a busy slate it fetched the whole scoreboard about every 30 s for games it then filtered out. Only games the live filter would show are offered now, and excluded teams are honoured the same way. Replaying Friday 2026-09-25 (09:00-03:00 ET, favourite LAD): 927 -> 620 scoreboard requests, 19.6 -> 13.1 MB on the wire (273 -> 183 MB decoded). Boards that show every live game are unchanged."
+    },
     {
       "version": "1.59.0",
       "released": "2026-10-05",

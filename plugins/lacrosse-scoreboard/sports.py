@@ -2925,6 +2925,23 @@ class SportsLive(SportsGameOverMixin, SportsLiveSharedMixin, SportsCore):
             or game.get("away_abbr") in self.favorite_teams
         )
 
+    def _classify_live_game(self, home_abbr, away_abbr) -> bool:
+        """Whether a live game should be included in the live rotation.
+
+        Priority: excluded team (never shown, overrides everything) >
+        show_all_live > show_favorite_teams_only disabled > no favorites
+        configured (fallback: show all) > favorite-teams-only membership.
+        """
+        if home_abbr in self.exclude_teams or away_abbr in self.exclude_teams:
+            return False
+        if self.show_all_live:
+            return True
+        if not self.show_favorite_teams_only:
+            return True
+        if not self.favorite_teams:
+            return True
+        return home_abbr in self.favorite_teams or away_abbr in self.favorite_teams
+
     def _keep_final_for_vegas(self, details: Dict) -> None:
         """Hold a game that just went final, so its live Vegas card shows Final.
 
@@ -3014,9 +3031,18 @@ class SportsLive(SportsGameOverMixin, SportsLiveSharedMixin, SportsCore):
                         # starts, so it cannot sleep through a kickoff.
                         # getattr-guarded: the core version floor is
                         # advisory, so an older core must stay loadable.
+                        #
+                        # Only a game this board would show once it is live.
+                        # Every kickoff holds the poll at the live cadence for a
+                        # quarter of an hour, so offering the games the live
+                        # filter then drops kept a favourites-only board polling
+                        # the whole scoreboard all day (football 3.18.7).
                         _note_start = getattr(
                             self, "_note_scheduled_start_candidate", None)
-                        if _note_start is not None:
+                        if (_note_start is not None and details
+                                and self._classify_live_game(
+                                    details.get("home_abbr"),
+                                    details.get("away_abbr"))):
                             _note_start(details)
                         if details:
                             # Filter out final games and games that appear to be over
@@ -3043,35 +3069,12 @@ class SportsLive(SportsGameOverMixin, SportsLiveSharedMixin, SportsCore):
 
                             live_or_halftime_count += 1
 
-                            # Filtering logic matching SportsUpcoming:
-                            # - If show_all_live = True → show all games
-                            # - If show_favorite_teams_only = False → show all games
-                            # - If show_favorite_teams_only = True but favorite_teams is empty → show all games (fallback)
-                            # - If show_favorite_teams_only = True and favorite_teams has teams → only show games with those teams
-                            if (
-                                details["home_abbr"] in self.exclude_teams
-                                or details["away_abbr"] in self.exclude_teams
-                            ):
-                                # Excluded teams are always hidden, regardless of
-                                # every other filter (spoiler protection)
-                                should_include = False
-                            elif self.show_all_live:
-                                # Always show all live games if show_all_live is enabled
-                                should_include = True
-                            elif not self.show_favorite_teams_only:
-                                # If favorite teams filtering is disabled, show all games
-                                should_include = True
-                            elif not self.favorite_teams:
-                                # If favorite teams filtering is enabled but no favorites are configured,
-                                # show all games (same behavior as SportsUpcoming)
-                                should_include = True
-                            else:
-                                # Favorite teams filtering is enabled AND favorites are configured
-                                # Only show games involving favorite teams
-                                should_include = (
-                                    details["home_abbr"] in self.favorite_teams
-                                    or details["away_abbr"] in self.favorite_teams
-                                )
+                            # Filtering logic (see _classify_live_game for the
+                            # full precedence order: exclude > show_all_live >
+                            # favorites-only membership; matches SportsUpcoming).
+                            should_include = self._classify_live_game(
+                                details["home_abbr"], details["away_abbr"]
+                            )
 
                             if not should_include:
                                 filtered_out_count += 1
