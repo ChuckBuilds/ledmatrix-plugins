@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.39.5",
+  "version": "2.40.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -53,6 +53,12 @@
     "soccer_usa.1_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.40.0",
+      "released": "2026-10-05",
+      "ledmatrix_min_version": "3.8.1",
+      "notes": "Requires LEDMatrix core 3.8.1, the first release that ships src.common.sports_game_over. SportsLive uses core's game-over check (SportsGameOverMixin) and its own copy of _is_game_really_over is removed; FINAL_PERIOD stays declared here (None). No change in behaviour: every game-over answer and every safety-harness render is identical."
+    },
     {
       "version": "2.39.5",
       "released": "2026-10-05",
@@ -732,6 +738,6 @@
     }
   ],
   "compatible_versions": [
-    ">=3.8.0"
+    ">=3.8.1"
   ]
 }
