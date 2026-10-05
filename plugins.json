@@ -81,7 +81,8 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "1.57.4",
-      "ledmatrix_min_version": "3.8.0"
+      "ledmatrix_min_version": "3.8.0",
+      "commit": "a5194139de39c4999562ee0d90d9e079943d1861"
     },
     {
       "id": "basketball-scoreboard",
@@ -386,7 +387,8 @@
       "screenshot": "",
       "latest_version": "1.42.5",
       "icon": "fas fa-hockey-puck",
-      "ledmatrix_min_version": "3.8.0"
+      "ledmatrix_min_version": "3.8.0",
+      "commit": "a5194139de39c4999562ee0d90d9e079943d1861"
     },
     {
       "id": "lacrosse-scoreboard",
