@@ -196,9 +196,10 @@ def test_a_game_that_goes_final_keeps_its_card_and_shows_final(
     (4, "End of OT"),                         # overtime over: a shootout next
 ])
 def test_a_level_game_at_0_00_is_not_held_as_final(plugin, period, short_detail):
-    """Level at 0:00 is not over in hockey. Held, the card would read "Final
-    3-3" and, the game gone from live_games, keep reading it after the
-    shootout, ahead of the recent list's real result."""
+    """Level at 0:00 is not over in hockey: the game stays live through the
+    break (_is_game_really_over's tie guard). Held, the card would read
+    "Final 3-3" and keep reading it after the shootout, ahead of the recent
+    list's real result."""
     live_manager = plugin.nhl_live
     live_manager.test_mode = False
     live_manager._fetch_data = lambda: {"events": [
@@ -208,9 +209,11 @@ def test_a_level_game_at_0_00_is_not_held_as_final(plugin, period, short_detail)
     ]}
     live_manager.last_update = 0
     live_manager.update()
-    assert [g["id"] for g in live_manager.live_games] == ["402"]   # dropped, as before
+    assert [g["id"] for g in live_manager.live_games] == ["401", "402"]  # still live
     assert live_manager.finished_games_snapshot() == []
-    assert list(_cards(plugin)) == ["game:nhl:402"]
+    cards = _cards(plugin)
+    assert sorted(cards) == ["game:nhl:401", "game:nhl:402"]
+    assert ("is_final", True) not in cards["game:nhl:401"].version[0]
 
 
 def test_the_harness_contract_holds(plugin):

@@ -67,8 +67,9 @@ def check(label, is_over, game, expected):
         FAILURES.append(label)
 
 
-# The method only touches self.logger, so a stand-in instance is enough.
-_probe = SimpleNamespace(logger=logging.getLogger("null_period_probe"))
+# The method reads only self.logger and FINAL_PERIOD, so a stand-in is enough.
+_probe = SimpleNamespace(logger=logging.getLogger("null_period_probe"),
+                         FINAL_PERIOD=sports.SportsLive.FINAL_PERIOD)
 
 
 def shared_is_over(game):
@@ -86,6 +87,9 @@ check("0:00 in period 3 is over", shared_is_over,
       {"period_text": "P3", "period": 3, "clock": "0:00"}, True)
 check("0:00 in period 1 is not over", shared_is_over,
       {"period_text": "P2", "period": 1, "clock": "0:00"}, False)
+check("tied at 0:00 in period 3 is not over (overtime next)", shared_is_over,
+      {"period_text": "P3", "period": 3, "clock": "0:00",
+       "away_score": "2", "home_score": "2"}, False)
 
 # Null / junk values.
 check("period_text None, live", shared_is_over,

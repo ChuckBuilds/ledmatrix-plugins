@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.57.3] - 2026-10-05
+
+### Changed
+- No change in behaviour: baseball games carry no period, so the 0:00 clock
+  rule never applied. `SportsLive._is_game_really_over` is now one body in all
+  nine scoreboards; each declares `FINAL_PERIOD`, the period from which a 0:00
+  clock ends a game (None: the clock never does). Here it is None. The
+  postponed/suspended check in `BaseballLive` is unchanged.
+
 ## [1.57.0] - 2026-10-02
 
 ### Added

@@ -1,7 +1,7 @@
 {
   "id": "afl-scoreboard",
   "name": "AFL Scoreboard",
-  "version": "1.35.2",
+  "version": "1.35.3",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming AFL (Australian Football League) games with real-time scores and game status.",
   "category": "sports",
@@ -18,6 +18,12 @@
     "afl_upcoming"
   ],
   "versions": [
+    {
+      "version": "1.35.3",
+      "released": "2026-10-05",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "No change in behaviour. SportsLive._is_game_really_over is now one body in all nine scoreboards; each declares FINAL_PERIOD, the period from which a 0:00 clock ends a game (None: the clock never does). Here it is None: the clock counts up."
+    },
     {
       "version": "1.35.2",
       "released": "2026-10-02",
@@ -537,7 +543,7 @@
       "ledmatrix_min": "2.0.0"
     }
   ],
-  "last_updated": "2026-10-02",
+  "last_updated": "2026-10-05",
   "stars": 0,
   "downloads": 0,
   "verified": true,

@@ -2988,6 +2988,9 @@ class SportsRecent(SportsRecentSharedMixin, SportsCore):
 
 class SportsLive(SportsLiveSharedMixin, SportsCore):
     SKIN_MODE = "live"
+    #: Period from which a 0:00 clock ends a game (see _is_game_really_over).
+    #: None: innings, not a clock.
+    FINAL_PERIOD: Optional[int] = None
 
     def __init__(
         self,
@@ -3047,54 +3050,54 @@ class SportsLive(SportsLiveSharedMixin, SportsCore):
         self.stale_game_timeout = self.mode_config.get("stale_game_timeout", 300)  # 5 minutes default
 
     def _is_game_really_over(self, game: Dict) -> bool:
-        """Check if a game appears to be over even if API says it's live."""
+        """Whether a game ESPN still lists as live has in fact ended.
+
+        It has when its period text says final. From period ``FINAL_PERIOD``
+        on, a clock at 0:00 ends it too, unless the score is level: a tie at
+        the end of regulation goes to overtime, and a game that does end tied
+        says final. With ``FINAL_PERIOD = None`` the clock never ends a game.
+        """
         game_str = f"{game.get('away_abbr')}@{game.get('home_abbr')}"
 
-        # Check if period_text indicates final
         # ESPN can send the key as null, and .get()'s default only covers a
         # missing key, so a None here crashed the whole live update.
         raw_period_text = game.get("period_text")
         period_text = raw_period_text.lower() if isinstance(raw_period_text, str) else ""
         if "final" in period_text:
             self.logger.debug(
-                f"[LIVE_PRIORITY_DEBUG] _is_game_really_over({game_str}): "
+                f"_is_game_really_over({game_str}): "
                 f"returning True - 'final' in period_text='{period_text}'"
             )
             return True
 
-        # Check if clock is 0:00 in Q4 or OT
-        # Safely coerce clock to string to handle None or non-string values
-        raw_clock = game.get("clock")
-        if raw_clock is None or not isinstance(raw_clock, str):
-            clock = "0:00"
-        else:
-            clock = raw_clock
         # Same for a null or non-numeric period: treat it as period 0.
         try:
             period = int(game.get("period") or 0)
         except (TypeError, ValueError, OverflowError):
             period = 0
-        # Handle various clock formats: "0:00", ":00", "0", ":40" (stuck at :40)
-        clock_normalized = clock.replace(":", "").strip()
+        # Only a clock string is read: "0:00" and ":00" are zero; ":40" is not.
+        clock = game.get("clock")
+        clock_at_zero = isinstance(clock, str) and clock.replace(":", "").strip() in ("000", "00")
 
-        self.logger.debug(
-            f"[LIVE_PRIORITY_DEBUG] _is_game_really_over({game_str}): "
-            f"raw_clock={raw_clock!r}, clock='{clock}', clock_normalized='{clock_normalized}', period={period}, period_text='{period_text}'"
-        )
-
-        if period >= 4:
-            # In Q4 or OT, if clock is 0:00 or appears stuck (like :40), consider it over
-            # Check for clock at 0:00 - various formats: "0:00", ":00", normalized "000"/"00"
-            # Note: Clocks like ":40", ":50" are legitimate (under 1 minute remaining)
-            if clock_normalized == "000" or clock_normalized == "00" or clock == "0:00" or clock == ":00":
+        if self.FINAL_PERIOD is not None and period >= self.FINAL_PERIOD and clock_at_zero:
+            try:
+                tied = int(game["away_score"]) == int(game["home_score"])
+            except (KeyError, TypeError, ValueError, OverflowError):
+                tied = False  # a missing or unreadable score leaves it to the clock
+            if not tied:
                 self.logger.debug(
-                    f"[LIVE_PRIORITY_DEBUG] _is_game_really_over({game_str}): "
-                    f"returning True - clock appears to be 0:00 (clock='{clock}', normalized='{clock_normalized}', period={period})"
+                    f"_is_game_really_over({game_str}): "
+                    f"returning True - clock at 0:00 (clock='{clock}', period={period})"
                 )
                 return True
+            self.logger.debug(
+                f"_is_game_really_over({game_str}): "
+                f"returning False - tied at 0:00 (period={period}), overtime next"
+            )
+            return False
 
         self.logger.debug(
-            f"[LIVE_PRIORITY_DEBUG] _is_game_really_over({game_str}): returning False"
+            f"_is_game_really_over({game_str}): returning False"
         )
         return False
 

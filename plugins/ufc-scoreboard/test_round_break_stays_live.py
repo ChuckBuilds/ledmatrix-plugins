@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """A fight between rounds stays on the live display, and draws "End R4".
 
-SportsLive._is_game_really_over, shared with the team sports, calls a game over
+SportsLive._is_game_really_over, shared with the team sports, called a game over
 at clock 0:00 from period 4. LEDMatrix#680 flagged that for ufc: if ESPN sent
 the break between rounds 4 and 5 of a five-round fight as "0:00, period 4",
-the live manager would drop the fight for that minute. Checked against ESPN's
+the live manager would drop the fight for that minute. ufc now declares
+FINAL_PERIOD = None, so no clock ends a fight, but the payload checks stay. Checked against ESPN's
 MMA scoreboard it does not. The live clock counts down, but a round that goes
 the distance ends on a Round End play whose clock is "-", and the break arrives
 as STATUS_END_OF_ROUND, state "in", clock 0.0, displayClock "-". "-" is not a
@@ -100,7 +101,8 @@ check("a recorded break is STATUS_END_OF_ROUND, state in, displayClock '-'",
       == ("STATUS_END_OF_ROUND", "in", "-"), repr(real))
 
 print("\nthe round 4 break is not 'over'")
-_probe = SimpleNamespace(logger=logging.getLogger("round_break_probe"))
+_probe = SimpleNamespace(logger=logging.getLogger("round_break_probe"),
+                         FINAL_PERIOD=sports.SportsLive.FINAL_PERIOD)
 mgr = live_manager()
 brk = mgr._extract_game_details(CASES["break_after_round_4_of_5"]["event"])
 check("round 4 break extracts as period 4, clock '-', live, not final",

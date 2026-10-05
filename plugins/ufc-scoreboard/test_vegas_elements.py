@@ -227,8 +227,7 @@ def test_a_settings_change_redraws_every_card(plugin):
 
 
 def _clock_run_out():
-    """The five-rounder still "in progress" at R5 0:00: the live update's
-    _is_game_really_over branch, not its is_final one (derived, not recorded)."""
+    """The five-rounder still "in progress" at R5 0:00 (derived, not recorded)."""
     event = copy.deepcopy(CASES["break_after_round_4_of_5"])
     status = copy.deepcopy(CASES["in_round_3_of_3"]["competitions"][0]["status"])
     status.update(period=5, clock=0.0, displayClock="0:00")
@@ -237,7 +236,7 @@ def _clock_run_out():
     return event
 
 
-@pytest.mark.parametrize("ended", ["final_five_round_decision", "clock_run_out"])
+@pytest.mark.parametrize("ended", ["final_five_round_decision"])
 def test_a_fight_that_ends_keeps_its_card_and_shows_the_result(
         plugin, tmp_path, requests_made, ended):
     del plugin._collect_fights_for_scroll     # the plugin's own collector
@@ -247,7 +246,7 @@ def test_a_fight_that_ends_keeps_its_card_and_shows_the_result(
     live._fetch_missing_headshots = lambda *a, **k: None
     live._fetch_odds = lambda *a, **k: None
     ending, ongoing = "game:ufc:401903509", "game:ufc:401905378"
-    final = _clock_run_out() if ended == "clock_run_out" else CASES[ended]
+    final = CASES[ended]
 
     _poll(live, CASES["break_after_round_4_of_5"], CASES["in_round_3_of_3"])
     before = _cards(plugin)
@@ -263,6 +262,20 @@ def test_a_fight_that_ends_keeps_its_card_and_shows_the_result(
     # Next time round it follows the fights still live, ahead of the rest.
     assert list(after) == [ongoing, ending]
     assert requests_made == []
+
+
+def test_a_fight_at_0_00_stays_live_until_espn_calls_it_final(plugin, tmp_path):
+    """ufc declares FINAL_PERIOD = None: no clock ends a bout, only ESPN's
+    final status does, so the horn at R5 0:00 does not drop it."""
+    del plugin._collect_fights_for_scroll     # the plugin's own collector
+    live = plugin.ufc_live
+    live.update_interval = 0
+    live.logo_dir = tmp_path
+    live._fetch_missing_headshots = lambda *a, **k: None
+    live._fetch_odds = lambda *a, **k: None
+    _poll(live, _clock_run_out(), CASES["in_round_3_of_3"])
+    assert [f["id"] for f in live.live_games] == ["401903509", "401905378"]
+    assert live.finished_games_snapshot() == []
 
 
 def test_the_harness_contract_holds(plugin):

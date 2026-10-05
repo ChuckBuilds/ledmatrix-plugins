@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.57.2",
+  "version": "1.57.3",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.57.3",
+      "released": "2026-10-05",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "No change in behaviour: baseball games carry no period, so the 0:00 clock rule never applied. SportsLive._is_game_really_over is now one body in all nine scoreboards; each declares FINAL_PERIOD, the period from which a 0:00 clock ends a game (None: the clock never does). Here it is None. The postponed/suspended check in BaseballLive is unchanged."
+    },
     {
       "version": "1.57.2",
       "released": "2026-10-04",
@@ -854,7 +860,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-10-04",
+  "last_updated": "2026-10-05",
   "stars": 0,
   "downloads": 0,
   "verified": true,

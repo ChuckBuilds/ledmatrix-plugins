@@ -217,15 +217,16 @@ def test_a_game_over_at_the_buzzer_is_held_as_the_final_it_is(monkeypatch):
 
 
 def test_a_tie_at_the_end_of_regulation_is_not_held_as_a_final(plugin):
-    """Level at Q4 0:00 is overtime coming, not a result: nothing is held, and
-    the card is back, live, once the next poll has the game in overtime."""
+    """Level at Q4 0:00 is overtime coming, not a result: the game stays live
+    through the break (_is_game_really_over's tie guard), nothing is held,
+    and its card is still there, live, once the next poll has it in overtime."""
     event = plugin.events["6002"]
     for side in event["competitions"][0]["competitors"]:
         side["score"] = "100"
     event["status"].update(copy.deepcopy(BUZZER))
     _poll(plugin)
     assert plugin.nba_live.finished_games_snapshot() == []
-    assert "game:nba:6002" not in _cards(plugin)
+    assert "game:nba:6002" in _cards(plugin)
     event["status"].update(displayClock="5:00", period=5, type=dict(
         BUZZER["type"], detail="OT 5:00", shortDetail="OT 5:00"))
     _poll(plugin)
