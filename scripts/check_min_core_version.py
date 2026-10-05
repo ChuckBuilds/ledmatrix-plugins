@@ -170,6 +170,7 @@ MODULE_FIRST_VERSION = {
     "src.display_arbiter": "3.8.1",  # core #733 (run() stage 2 arbiter)
     "src.screen_runner": "3.8.1",  # core #762 (run() stage 3 screen runner)
     "src.plugin_system.plugin_local_files": "3.8.1",  # core #755 (tokens and local files kept across store updates)
+    "src.malloc_tuning": None,  # core #774 (malloc arena cap + malloc_trim)
     # on core main, in no tagged release yet: add as None. When the next
     # release is tagged, set each None entry here to that tag -- the test's
     # tag-verification section insists on it once the tag is in its list.
