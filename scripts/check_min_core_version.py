@@ -170,6 +170,7 @@ MODULE_FIRST_VERSION = {
     "src.common.fetch_service": None,  # core #702 (shared fetch service)
     "src.display_arbiter": None,  # core #733 (run() stage 2 arbiter)
     "src.screen_runner": None,  # core #762 (run() stage 3 screen runner)
+    "src.plugin_system.plugin_local_files": None,  # core #755 (tokens and local files kept across store updates)
 }
 
 #: Releases whose ``src/__init__.py`` ``__version__`` lags their tag. The
