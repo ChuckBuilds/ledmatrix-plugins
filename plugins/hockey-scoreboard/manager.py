@@ -1,8 +1,9 @@
 """
 Hockey Scoreboard Plugin for LEDMatrix - Using Existing Managers
 
-This plugin provides NHL, NCAA Men's, and NCAA Women's hockey scoreboard functionality by reusing
-the proven, working manager classes from the LEDMatrix core project.
+This plugin provides NHL, NCAA Men's, NCAA Women's, OHL and PWHL hockey scoreboard functionality
+by reusing the proven, working manager classes from the LEDMatrix core project. OHL and PWHL are
+not on ESPN; their managers read HockeyTech's scorebar feed instead (hockeytech_managers.py).
 """
 
 import logging
@@ -41,6 +42,8 @@ from ncaaw_hockey_managers import (
     NCAAWHockeyRecentManager,
     NCAAWHockeyUpcomingManager,
 )
+from ohl_managers import OHLLiveManager, OHLRecentManager, OHLUpcomingManager
+from pwhl_managers import PWHLLiveManager, PWHLRecentManager, PWHLUpcomingManager
 
 from hockey_timezone import resolve_timezone_name
 from src.common.favorite_team_check import FavoriteTeamCheck
@@ -73,6 +76,8 @@ _ROOT_CONFIG_KEYS = (
 
 
 # Which ESPN endpoint backs each league, for the favorite-team diagnostic.
+# OHL and PWHL are absent on purpose: ESPN does not carry them, so the check
+# could only ever report their (correct) abbreviations as unknown.
 FAVORITE_CHECK_LEAGUES = {
     'nhl': ('NHL', 'hockey/nhl'),
     'ncaa_mens': ("NCAA Men's Hockey", 'hockey/mens-college-hockey'),
@@ -149,8 +154,10 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
         self.nhl_enabled = config.get("nhl", {}).get("enabled", False)
         self.ncaa_mens_enabled = config.get("ncaa_mens", {}).get("enabled", False)
         self.ncaa_womens_enabled = config.get("ncaa_womens", {}).get("enabled", False)
-        
-        self.logger.info(f"League enabled states - NHL: {self.nhl_enabled}, NCAA Men's: {self.ncaa_mens_enabled}, NCAA Women's: {self.ncaa_womens_enabled}")
+        self.ohl_enabled = config.get("ohl", {}).get("enabled", False)
+        self.pwhl_enabled = config.get("pwhl", {}).get("enabled", False)
+
+        self.logger.info(f"League enabled states - NHL: {self.nhl_enabled}, NCAA Men's: {self.ncaa_mens_enabled}, NCAA Women's: {self.ncaa_womens_enabled}, OHL: {self.ohl_enabled}, PWHL: {self.pwhl_enabled}")
 
         # Live priority settings
         self.nhl_live_priority = self.config.get("nhl", {}).get("live_priority", True)
@@ -160,6 +167,8 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
         self.ncaa_womens_live_priority = self.config.get("ncaa_womens", {}).get(
             "live_priority", True
         )
+        self.ohl_live_priority = self.config.get("ohl", {}).get("live_priority", True)
+        self.pwhl_live_priority = self.config.get("pwhl", {}).get("live_priority", True)
 
         # Global settings - read from defaults section with fallback
         defaults = config.get("defaults", {})
@@ -217,7 +226,7 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
         self._league_registry: Dict[str, Dict[str, Any]] = {}
 
         # Track current display context for granular dynamic duration
-        self._current_display_league: Optional[str] = None  # 'nhl', 'ncaa_mens', or 'ncaa_womens'
+        self._current_display_league: Optional[str] = None  # 'nhl', 'ncaa_mens', 'ncaa_womens', 'ohl' or 'pwhl'
         self._current_display_mode_type: Optional[str] = None  # 'live', 'recent', 'upcoming'
 
         # Initialize managers
@@ -311,9 +320,13 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
         self.nhl_enabled = self.config.get("nhl", {}).get("enabled", False)
         self.ncaa_mens_enabled = self.config.get("ncaa_mens", {}).get("enabled", False)
         self.ncaa_womens_enabled = self.config.get("ncaa_womens", {}).get("enabled", False)
+        self.ohl_enabled = self.config.get("ohl", {}).get("enabled", False)
+        self.pwhl_enabled = self.config.get("pwhl", {}).get("enabled", False)
         self.nhl_live_priority = self.config.get("nhl", {}).get("live_priority", True)
         self.ncaa_mens_live_priority = self.config.get("ncaa_mens", {}).get("live_priority", True)
         self.ncaa_womens_live_priority = self.config.get("ncaa_womens", {}).get("live_priority", True)
+        self.ohl_live_priority = self.config.get("ohl", {}).get("live_priority", True)
+        self.pwhl_live_priority = self.config.get("pwhl", {}).get("live_priority", True)
         # Same precedence as __init__: the defaults section, then the root key.
         defaults = self.config.get("defaults", {})
         self.display_duration = float(defaults.get("display_duration", self.config.get("display_duration", 30)))
@@ -376,8 +389,9 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
         self._sticky_manager_start_time = {}
 
         self.logger.info(
-            "Hockey config updated live - nhl:%s ncaa_mens:%s ncaa_womens:%s, modes=%s",
-            self.nhl_enabled, self.ncaa_mens_enabled, self.ncaa_womens_enabled, self.modes,
+            "Hockey config updated live - nhl:%s ncaa_mens:%s ncaa_womens:%s ohl:%s pwhl:%s, modes=%s",
+            self.nhl_enabled, self.ncaa_mens_enabled, self.ncaa_womens_enabled,
+            self.ohl_enabled, self.pwhl_enabled, self.modes,
         )
 
         # Favorites may have changed, so let the diagnostic report on them again.
@@ -391,6 +405,8 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
             "nhl_live", "nhl_recent", "nhl_upcoming",
             "ncaa_mens_live", "ncaa_mens_recent", "ncaa_mens_upcoming",
             "ncaa_womens_live", "ncaa_womens_recent", "ncaa_womens_upcoming",
+            "ohl_live", "ohl_recent", "ohl_upcoming",
+            "pwhl_live", "pwhl_recent", "pwhl_upcoming",
         ):
             manager = getattr(self, attr, None)
             if manager is not None and hasattr(manager, "cleanup"):
@@ -408,6 +424,8 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
             nhl_config = self._adapt_config_for_manager("nhl")
             ncaa_mens_config = self._adapt_config_for_manager("ncaa_mens")
             ncaa_womens_config = self._adapt_config_for_manager("ncaa_womens")
+            ohl_config = self._adapt_config_for_manager("ohl")
+            pwhl_config = self._adapt_config_for_manager("pwhl")
 
             # Initialize NHL managers if enabled
             if self.nhl_enabled:
@@ -478,6 +496,52 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
                     if not hasattr(self, "ncaa_womens_upcoming"):
                         self.ncaa_womens_upcoming = None
 
+            # Initialize OHL managers if enabled (HockeyTech feed, not ESPN)
+            if self.ohl_enabled:
+                try:
+                    self.ohl_live = OHLLiveManager(
+                        ohl_config, self.display_manager, self.cache_manager
+                    )
+                    self.ohl_recent = OHLRecentManager(
+                        ohl_config, self.display_manager, self.cache_manager
+                    )
+                    self.ohl_upcoming = OHLUpcomingManager(
+                        ohl_config, self.display_manager, self.cache_manager
+                    )
+                    self.logger.info("OHL managers initialized")
+                except Exception as e:
+                    self.logger.error(f"Failed to initialize OHL managers: {e}", exc_info=True)
+                    # Set to None so hasattr checks work correctly
+                    if not hasattr(self, "ohl_live"):
+                        self.ohl_live = None
+                    if not hasattr(self, "ohl_recent"):
+                        self.ohl_recent = None
+                    if not hasattr(self, "ohl_upcoming"):
+                        self.ohl_upcoming = None
+
+            # Initialize PWHL managers if enabled (HockeyTech feed, not ESPN)
+            if self.pwhl_enabled:
+                try:
+                    self.pwhl_live = PWHLLiveManager(
+                        pwhl_config, self.display_manager, self.cache_manager
+                    )
+                    self.pwhl_recent = PWHLRecentManager(
+                        pwhl_config, self.display_manager, self.cache_manager
+                    )
+                    self.pwhl_upcoming = PWHLUpcomingManager(
+                        pwhl_config, self.display_manager, self.cache_manager
+                    )
+                    self.logger.info("PWHL managers initialized")
+                except Exception as e:
+                    self.logger.error(f"Failed to initialize PWHL managers: {e}", exc_info=True)
+                    # Set to None so hasattr checks work correctly
+                    if not hasattr(self, "pwhl_live"):
+                        self.pwhl_live = None
+                    if not hasattr(self, "pwhl_recent"):
+                        self.pwhl_recent = None
+                    if not hasattr(self, "pwhl_upcoming"):
+                        self.pwhl_upcoming = None
+
         except Exception as e:
             self.logger.error(f"Error initializing managers: {e}", exc_info=True)
 
@@ -541,6 +605,30 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
                 'live': getattr(self, 'ncaa_womens_live', None),
                 'recent': getattr(self, 'ncaa_womens_recent', None),
                 'upcoming': getattr(self, 'ncaa_womens_upcoming', None),
+            }
+        }
+
+        # OHL league entry - fourth priority (4)
+        self._league_registry['ohl'] = {
+            'enabled': self.ohl_enabled,
+            'priority': 4,  # Fourth priority - shows after NCAA Women's
+            'live_priority': self.ohl_live_priority,
+            'managers': {
+                'live': getattr(self, 'ohl_live', None),
+                'recent': getattr(self, 'ohl_recent', None),
+                'upcoming': getattr(self, 'ohl_upcoming', None),
+            }
+        }
+
+        # PWHL league entry - fifth priority (5)
+        self._league_registry['pwhl'] = {
+            'enabled': self.pwhl_enabled,
+            'priority': 5,  # Fifth priority - shows after OHL
+            'live_priority': self.pwhl_live_priority,
+            'managers': {
+                'live': getattr(self, 'pwhl_live', None),
+                'recent': getattr(self, 'pwhl_recent', None),
+                'upcoming': getattr(self, 'pwhl_upcoming', None),
             }
         }
         
@@ -689,6 +777,8 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
             'nhl': 'assets/sports/nhl_logos',
             'ncaa_mens': 'assets/sports/ncaa_logos',  # NCAA Men's Hockey uses ncaa_logos
             'ncaa_womens': 'assets/sports/ncaa_logos',  # NCAA Women's Hockey uses ncaa_logos
+            'ohl': 'assets/sports/ohl_logos',
+            'pwhl': 'assets/sports/pwhl_logos',
         }
         # Default to league-specific directory if not in map
         return logo_dir_map.get(league, f"assets/sports/{league}_logos")
@@ -703,7 +793,7 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
         """
         settings = {}
         
-        for league in ['nhl', 'ncaa_mens', 'ncaa_womens']:
+        for league in ['nhl', 'ncaa_mens', 'ncaa_womens', 'ohl', 'pwhl']:
             league_config = self.config.get(league, {})
             display_modes_config = league_config.get("display_modes", {})
             
@@ -722,7 +812,7 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
         Get the display mode for a specific league and game type.
         
         Args:
-            league: 'nhl', 'ncaa_mens', or 'ncaa_womens'
+            league: 'nhl', 'ncaa_mens', 'ncaa_womens', 'ohl', or 'pwhl'
             game_type: 'live', 'recent', or 'upcoming'
             
         Returns:
@@ -759,7 +849,7 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
         3. League-specific default (15 seconds)
         
         Args:
-            league: League name ('nhl', 'ncaa_mens', or 'ncaa_womens')
+            league: League name ('nhl', 'ncaa_mens', 'ncaa_womens', 'ohl' or 'pwhl')
             mode_type: Mode type ('live', 'recent', or 'upcoming')
             manager: Optional manager instance (if provided, checks manager's game_display_duration)
             
@@ -791,7 +881,7 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
         Returns None if not configured (uses dynamic calculation).
         
         Args:
-            league: League name ('nhl', 'ncaa_mens', or 'ncaa_womens')
+            league: League name ('nhl', 'ncaa_mens', 'ncaa_womens', 'ohl' or 'pwhl')
             mode_type: Mode type ('live', 'recent', or 'upcoming')
             
         Returns:
@@ -817,7 +907,7 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
         """
         Adapt plugin config format to manager expected format.
 
-        Plugin uses: nhl: {...}, ncaa_mens: {...}, ncaa_womens: {...}
+        Plugin uses: nhl: {...}, ncaa_mens: {...}, ncaa_womens: {...}, ohl: {...}, pwhl: {...}
         Managers expect: nhl_scoreboard: {...}, ncaa_mens_hockey_scoreboard: {...}, etc.
         
         Supports both new nested structure and old flat structure for backward compatibility.
@@ -830,6 +920,8 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
             "nhl": "nhl",
             "ncaa_mens": "ncaam_hockey",
             "ncaa_womens": "ncaaw_hockey",
+            "ohl": "ohl",
+            "pwhl": "pwhl",
         }
         sport_key = sport_key_map.get(league, league)
 
@@ -1002,6 +1094,8 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
                 # passing it through, SportsLive.test_mode could never be set
                 # from config and _test_mode_update() was unreachable.
                 "test_mode": league_config.get("test_mode", False),
+                # OHL/PWHL only: overrides the public HockeyTech feed key.
+                "hockeytech_key": league_config.get("hockeytech_key", ""),
                 "live_game_duration": resolve_live_duration(),
                 "non_favorite_live_game_duration": resolve_non_favorite_live_duration(),
                 # Per-game time for Recent and Upcoming. The managers read
@@ -1134,6 +1228,13 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
             elif mode_type == "upcoming":
                 return self.ncaa_womens_upcoming
 
+        elif current_mode.startswith(("ohl_", "pwhl_")):
+            league, mode_type = current_mode.split("_", 1)
+            if not getattr(self, f"{league}_enabled", False):
+                return None
+            if mode_type in ("live", "recent", "upcoming"):
+                return getattr(self, f"{league}_{mode_type}", None)
+
         return None
 
     def _ensure_manager_updated(self, manager) -> None:
@@ -1217,6 +1318,15 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
                     "ncaa_womens_upcoming",
                 ):
                     manager = getattr(self, attr, None)
+                    if manager:
+                        manager.update()
+
+            # Update OHL and PWHL managers if enabled
+            for league in ("ohl", "pwhl"):
+                if not getattr(self, f"{league}_enabled", False):
+                    continue
+                for mode_type in ("live", "recent", "upcoming"):
+                    manager = getattr(self, f"{league}_{mode_type}", None)
                     if manager:
                         manager.update()
 
@@ -1413,6 +1523,13 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
                         getattr(self, 'ncaa_womens_recent', None), 
                         getattr(self, 'ncaa_womens_upcoming', None)):
             self._current_display_league = 'ncaa_womens'
+        else:
+            for league in ('ohl', 'pwhl'):
+                if manager in (getattr(self, f'{league}_live', None),
+                               getattr(self, f'{league}_recent', None),
+                               getattr(self, f'{league}_upcoming', None)):
+                    self._current_display_league = league
+                    break
 
     @staticmethod
     def _get_all_game_ids_for_manager(manager) -> set:
@@ -1458,7 +1575,9 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
         # Try to get rankings from each manager
         for manager_attr in ['nhl_live', 'nhl_recent', 'nhl_upcoming', 
                             'ncaa_mens_live', 'ncaa_mens_recent', 'ncaa_mens_upcoming',
-                            'ncaa_womens_live', 'ncaa_womens_recent', 'ncaa_womens_upcoming']:
+                            'ncaa_womens_live', 'ncaa_womens_recent', 'ncaa_womens_upcoming',
+                            'ohl_live', 'ohl_recent', 'ohl_upcoming',
+                            'pwhl_live', 'pwhl_recent', 'pwhl_upcoming']:
             manager = getattr(self, manager_attr, None)
             if manager:
                 manager_rankings = getattr(manager, '_team_rankings_cache', {})
@@ -1474,7 +1593,7 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
         for consistency with football-scoreboard naming.
         
         Args:
-            league: 'nhl', 'ncaa_mens', or 'ncaa_womens'
+            league: 'nhl', 'ncaa_mens', 'ncaa_womens', 'ohl', or 'pwhl'
             mode_type: 'live', 'recent', or 'upcoming'
             
         Returns:
@@ -1674,6 +1793,12 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
                 return getattr(self, "ncaa_womens_recent", None)
             if suffix == "upcoming":
                 return getattr(self, "ncaa_womens_upcoming", None)
+        elif mode_name.startswith(("ohl_", "pwhl_")):
+            league, suffix = mode_name.split("_", 1)
+            if not getattr(self, f"{league}_enabled", False):
+                return None
+            if suffix in ("live", "recent", "upcoming"):
+                return getattr(self, f"{league}_{suffix}", None)
         return None
 
     def _track_single_game_progress(self, manager_key: str, manager, league: str, mode_type: str) -> None:
@@ -1682,7 +1807,7 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
         Args:
             manager_key: Unique key identifying this manager
             manager: Manager instance
-            league: League name ('nhl', 'ncaa_mens', or 'ncaa_womens')
+            league: League name ('nhl', 'ncaa_mens', 'ncaa_womens', 'ohl' or 'pwhl')
             mode_type: Mode type ('live', 'recent', or 'upcoming')
         """
         current_time = time.time()
@@ -1745,6 +1870,8 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
             elif current_mode.startswith('ncaa_womens_'):
                 league = 'ncaa_womens'
                 mode_type = current_mode.split('_', 2)[2]
+            elif current_mode.startswith(('ohl_', 'pwhl_')):
+                league, mode_type = current_mode.split('_', 1)
         
         # Log for debugging
         self.logger.debug(f"_record_dynamic_progress: current_mode={current_mode}, display_mode={display_mode}, manager={current_manager.__class__.__name__}, manager_key={manager_key}, _last_display_mode={self._last_display_mode}")
@@ -1967,7 +2094,7 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
                                 if manager_key in self._single_game_manager_start_times:
                                     start_time = self._single_game_manager_start_times[manager_key]
                                     # Extract league and mode_type from mode_name
-                                    league = 'nhl' if mode_name.startswith('nhl_') else ('ncaa_mens' if mode_name.startswith('ncaa_mens_') else ('ncaa_womens' if mode_name.startswith('ncaa_womens_') else None))
+                                    league = 'nhl' if mode_name.startswith('nhl_') else ('ncaa_mens' if mode_name.startswith('ncaa_mens_') else ('ncaa_womens' if mode_name.startswith('ncaa_womens_') else (mode_name.split('_', 1)[0] if mode_name.startswith(('ohl_', 'pwhl_')) else None)))
                                     mode_type_str = mode_name.split('_')[-1] if mode_name else None
                                     game_duration = self._get_game_duration(league, mode_type_str, manager) if league and mode_type_str else getattr(manager, 'game_display_duration', 15)
                                     current_time = time.time()
@@ -2006,7 +2133,7 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
                         if manager and manager.__class__.__name__ == manager_class_name:
                             start_time = self._single_game_manager_start_times[manager_key]
                             # Extract league and mode_type from mode_name
-                            league = 'nhl' if mode_name.startswith('nhl_') else ('ncaa_mens' if mode_name.startswith('ncaa_mens_') else ('ncaa_womens' if mode_name.startswith('ncaa_womens_') else None))
+                            league = 'nhl' if mode_name.startswith('nhl_') else ('ncaa_mens' if mode_name.startswith('ncaa_mens_') else ('ncaa_womens' if mode_name.startswith('ncaa_womens_') else (mode_name.split('_', 1)[0] if mode_name.startswith(('ohl_', 'pwhl_')) else None)))
                             mode_type_str = mode_name.split('_')[-1] if mode_name else None
                             game_duration = self._get_game_duration(league, mode_type_str, manager) if league and mode_type_str else getattr(manager, 'game_display_duration', 15)
                             elapsed = time.time() - start_time
@@ -2201,6 +2328,8 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
                 self.nhl_enabled and self.nhl_live_priority,
                 self.ncaa_mens_enabled and self.ncaa_mens_live_priority,
                 self.ncaa_womens_enabled and self.ncaa_womens_live_priority,
+                self.ohl_enabled and self.ohl_live_priority,
+                self.pwhl_enabled and self.pwhl_live_priority,
             ]
         )
 
@@ -2337,8 +2466,12 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
                         # No favorite teams configured, return True if any live games exist
                         ncaa_womens_live = True
 
-        result = nhl_live or ncaa_mens_live or ncaa_womens_live
-        
+        # Check OHL and PWHL live content, the same way as the leagues above
+        ohl_live = self._league_has_live_content("ohl")
+        pwhl_live = self._league_has_live_content("pwhl")
+
+        result = nhl_live or ncaa_mens_live or ncaa_womens_live or ohl_live or pwhl_live
+
         # has_live_content() is called once per frame on the display path, so
         # anything logged unconditionally here lands at frame rate. The old
         # throttle only covered the False answer -- "always log True
@@ -2346,7 +2479,7 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
         # long as it ran. Log when the answer changes, and otherwise once per
         # interval so a steady state stays visible.
         current_time = time.time()
-        state = (nhl_live, ncaa_mens_live, ncaa_womens_live)
+        state = (nhl_live, ncaa_mens_live, ncaa_womens_live, ohl_live, pwhl_live)
         changed = state != self._last_live_content_state
         due = current_time - self._last_live_content_log >= self._live_content_log_interval
 
@@ -2360,10 +2493,35 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
             log(
                 f"has_live_content() returning {result}: "
                 f"nhl_live={nhl_live}, ncaa_mens_live={ncaa_mens_live}, "
-                f"ncaa_womens_live={ncaa_womens_live}"
+                f"ncaa_womens_live={ncaa_womens_live}, ohl_live={ohl_live}, "
+                f"pwhl_live={pwhl_live}"
             )
 
         return result
+
+    def _league_has_live_content(self, league: str) -> bool:
+        """has_live_content()'s per-league test, for the leagues added after
+        the original three: enabled, live priority on, and a live game that is
+        not over -- a favourite's, when favourites are set."""
+        live_manager = getattr(self, f"{league}_live", None)
+        if not (getattr(self, f"{league}_enabled", False)
+                and getattr(self, f"{league}_live_priority", True)
+                and live_manager is not None):
+            return False
+        live_games = [g for g in (getattr(live_manager, "live_games", None) or [])
+                      if not g.get("is_final", False)]
+        if hasattr(live_manager, "_is_game_really_over"):
+            live_games = [g for g in live_games if not live_manager._is_game_really_over(g)]
+        if not live_games:
+            return False
+        favorite_teams = getattr(live_manager, "favorite_teams", [])
+        if favorite_teams:
+            return any(
+                game.get("home_abbr") in favorite_teams
+                or game.get("away_abbr") in favorite_teams
+                for game in live_games
+            )
+        return True
 
     def get_live_modes(self) -> list:
         """
@@ -2487,7 +2645,24 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
                     else:
                         # No favorite teams configured, include if any live games exist
                         live_modes.append("ncaa_womens_live")
-        
+
+        # Check OHL and PWHL live content
+        for league in ("ohl", "pwhl"):
+            live_manager = getattr(self, f"{league}_live", None)
+            if not (getattr(self, f"{league}_enabled", False)
+                    and getattr(self, f"{league}_live_priority", True)
+                    and live_manager is not None):
+                continue
+            # A celebrating league must be selectable even if its live list is
+            # already empty (a win fires as the game goes final).
+            if (
+                hasattr(live_manager, "has_active_celebration")
+                and live_manager.has_active_celebration()
+            ):
+                live_modes.append(f"{league}_live")
+            if self._league_has_live_content(league):
+                live_modes.append(f"{league}_live")
+
         # A celebration and live games for the same league can both append it.
         return list(dict.fromkeys(live_modes))
 
@@ -2513,7 +2688,7 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
         Check if a specific league should use scroll mode for this game type.
         
         Args:
-            league: League ID ('nhl', 'ncaa_mens', or 'ncaa_womens')
+            league: League ID ('nhl', 'ncaa_mens', 'ncaa_womens', 'ohl' or 'pwhl')
             mode_type: 'live', 'recent', or 'upcoming'
             
         Returns:
@@ -2552,7 +2727,7 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
         
         Args:
             display_mode: External mode name (e.g., 'nhl_recent')
-            league: League ID ('nhl', 'ncaa_mens', or 'ncaa_womens')
+            league: League ID ('nhl', 'ncaa_mens', 'ncaa_womens', 'ohl' or 'pwhl')
             mode_type: Game type ('live', 'recent', 'upcoming')
             force_clear: Whether to force clear display
             
@@ -2655,7 +2830,7 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
         rotation_order specifies granular modes like 'nhl_recent' or 'ncaa_mens_upcoming'.
         
         Args:
-            league: League ID ('nhl', 'ncaa_mens', or 'ncaa_womens')
+            league: League ID ('nhl', 'ncaa_mens', 'ncaa_womens', 'ohl' or 'pwhl')
             mode_type: Mode type ('live', 'recent', or 'upcoming')
             force_clear: Whether to force clear display
             
@@ -3022,7 +3197,8 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
             # re-evaluate it. Warn and load; the plugin contributes nothing
             # until a league is turned on, which is what "no leagues" should
             # look like.
-            if not (self.nhl_enabled or self.ncaa_mens_enabled or self.ncaa_womens_enabled):
+            if not (self.nhl_enabled or self.ncaa_mens_enabled or self.ncaa_womens_enabled
+                    or self.ohl_enabled or self.pwhl_enabled):
                 self.logger.warning(
                     "No leagues enabled in hockey scoreboard plugin - it will load but show nothing until one is enabled")
 
@@ -3163,7 +3339,12 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
                         ncaa_womens_manager = self._get_league_manager_for_mode('ncaa_womens', 'upcoming')
                         if ncaa_womens_manager:
                             managers_to_check.append(('ncaa_womens', ncaa_womens_manager))
-            
+                for extra_league in ('ohl', 'pwhl'):
+                    if getattr(self, f'{extra_league}_enabled', False):
+                        extra_manager = self._get_league_manager_for_mode(extra_league, mode_type)
+                        if extra_manager:
+                            managers_to_check.append((extra_league, extra_manager))
+
             # CRITICAL: Update managers BEFORE checking game counts!
             self.logger.debug(f"get_cycle_duration: updating {len(managers_to_check)} manager(s) before counting games")
             for league_name, manager in managers_to_check:
@@ -3250,6 +3431,8 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
                 "nhl_enabled": self.nhl_enabled,
                 "ncaa_mens_enabled": self.ncaa_mens_enabled,
                 "ncaa_womens_enabled": self.ncaa_womens_enabled,
+                "ohl_enabled": self.ohl_enabled,
+                "pwhl_enabled": self.pwhl_enabled,
                 "current_mode": current_mode,
                 "available_modes": self.modes,
                 "display_duration": self.display_duration,
@@ -3267,6 +3450,12 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
                     "ncaa_womens_live": hasattr(self, "ncaa_womens_live"),
                     "ncaa_womens_recent": hasattr(self, "ncaa_womens_recent"),
                     "ncaa_womens_upcoming": hasattr(self, "ncaa_womens_upcoming"),
+                    "ohl_live": hasattr(self, "ohl_live"),
+                    "ohl_recent": hasattr(self, "ohl_recent"),
+                    "ohl_upcoming": hasattr(self, "ohl_upcoming"),
+                    "pwhl_live": hasattr(self, "pwhl_live"),
+                    "pwhl_recent": hasattr(self, "pwhl_recent"),
+                    "pwhl_upcoming": hasattr(self, "pwhl_upcoming"),
                 },
                 "live_priority": {
                     "nhl": self.nhl_enabled and self.nhl_live_priority,
@@ -3274,6 +3463,8 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
                     and self.ncaa_mens_live_priority,
                     "ncaa_womens": self.ncaa_womens_enabled
                     and self.ncaa_womens_live_priority,
+                    "ohl": self.ohl_enabled and self.ohl_live_priority,
+                    "pwhl": self.pwhl_enabled and self.pwhl_live_priority,
                 },
             }
 
@@ -3375,6 +3566,29 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
                 all_games.extend(league_games)
                 leagues.append('ncaaw_hockey')
 
+        # Collect from OHL and PWHL if enabled - all game types
+        for extra_league in ('ohl', 'pwhl'):
+            if not getattr(self, f'{extra_league}_enabled', False):
+                continue
+            league_games = []
+            for mode_type in ['live', 'recent', 'upcoming']:
+                manager = self._get_manager_for_league_mode(extra_league, mode_type)
+                if manager:
+                    games = self._get_games_from_manager(manager, mode_type)
+                    for game in games:
+                        game['league'] = extra_league
+                        # Ensure game has status for type determination
+                        if 'status' not in game:
+                            game['status'] = {}
+                        if 'state' not in game['status']:
+                            state_map = {'live': 'in', 'recent': 'post', 'upcoming': 'pre'}
+                            game['status']['state'] = state_map.get(mode_type, 'pre')
+                    league_games.extend(games)
+
+            if league_games:
+                all_games.extend(league_games)
+                leagues.append(extra_league)
+
         return all_games, leagues
 
     def _get_manager_for_league_mode(self, league: str, mode_type: str):
@@ -3400,6 +3614,9 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
                 return self.ncaa_womens_recent
             elif mode_type == 'upcoming':
                 return self.ncaa_womens_upcoming
+        elif league in ('ohl', 'pwhl'):
+            if mode_type in ('live', 'recent', 'upcoming'):
+                return getattr(self, f'{league}_{mode_type}', None)
         return None
 
     # -------------------------------------------------------------------------
@@ -3550,7 +3767,9 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
         live_managers = [(league, self._get_manager_for_league_mode(league, 'live'))
                          for league, enabled in (('nhl', self.nhl_enabled),
                                                  ('ncaam_hockey', self.ncaa_mens_enabled),
-                                                 ('ncaaw_hockey', self.ncaa_womens_enabled))
+                                                 ('ncaaw_hockey', self.ncaa_womens_enabled),
+                                                 ('ohl', self.ohl_enabled),
+                                                 ('pwhl', self.pwhl_enabled))
                          if enabled]
         games, leagues = sports_vegas.with_finished_games(
             games, leagues, sports_vegas.finished_games(live_managers))

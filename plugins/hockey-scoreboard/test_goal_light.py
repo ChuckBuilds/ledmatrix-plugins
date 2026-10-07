@@ -5,7 +5,7 @@ With <league>.celebration_goal_light on, HockeyLive._draw_celebration_layout let
 core draw the takeover, catches the finished frame, lays hockey_goal_light over it
 and presents that. Covers:
 
-  1. The setting: off by default in all three leagues' schemas, forwarded by the
+  1. The setting: off by default in all five leagues' schemas, forwarded by the
      adapter, read by the live manager.
   2. Off, a win, or a panel too small: the frame is exactly core's.
   3. On, a goal, on a panel that fits: only the region round the lamp changes,
@@ -76,7 +76,7 @@ def main():
                 walk(v)
 
     walk(schema)
-    check("all three leagues carry the setting", len(found) == 3, len(found))
+    check("all five leagues carry the setting", len(found) == 5, len(found))
     check("it defaults to off", all(f.get("default") is False for f in found))
     check("it is an advanced boolean",
           all(f.get("type") == "boolean" and f.get("x-advanced") for f in found))

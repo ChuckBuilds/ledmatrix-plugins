@@ -1,9 +1,9 @@
 {
   "id": "hockey-scoreboard",
   "name": "Hockey Scoreboard",
-  "version": "1.45.0",
+  "version": "1.46.0",
   "author": "ChuckBuilds",
-  "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, and NCAA Women's hockey with real-time scores and schedules",
+  "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, NCAA Women's, OHL and PWHL hockey with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/hockey-scoreboard",
   "entry_point": "manager.py",
   "class_name": "HockeyScoreboardPlugin",
@@ -14,7 +14,11 @@
     "ncaa",
     "sports",
     "scoreboard",
-    "live-scores"
+    "live-scores",
+    "ohl",
+    "pwhl",
+    "chl",
+    "womens-hockey"
   ],
   "icon": "fas fa-hockey-puck",
   "compatible_versions": [
@@ -29,7 +33,7 @@
   },
   "config_schema": "config_schema.json",
   "assets": {
-    "logos": "Uses shared LEDMatrix assets/sports/nhl_logos and assets/sports/ncaa_logos directories"
+    "logos": "Uses shared LEDMatrix assets/sports/nhl_logos and assets/sports/ncaa_logos directories; OHL and PWHL logos are downloaded from the HockeyTech feed into assets/sports/ohl_logos and assets/sports/pwhl_logos"
   },
   "update_interval": 60,
   "default_duration": 15,
@@ -42,7 +46,13 @@
     "ncaa_mens_live",
     "ncaa_womens_recent",
     "ncaa_womens_upcoming",
-    "ncaa_womens_live"
+    "ncaa_womens_live",
+    "ohl_recent",
+    "ohl_upcoming",
+    "ohl_live",
+    "pwhl_recent",
+    "pwhl_upcoming",
+    "pwhl_live"
   ],
   "api_requirements": [
     {
@@ -51,9 +61,22 @@
       "description": "ESPN public API for NHL and NCAA hockey scores and schedules",
       "url": "https://site.api.espn.com/apis/site/v2/sports/hockey/",
       "rate_limit": "No official rate limit, but please use responsibly"
+    },
+    {
+      "name": "HockeyTech (LeagueStat) feed",
+      "required": false,
+      "description": "Scores and schedules for the OHL and PWHL, which ESPN does not carry. Uses the public scorebar feed and keys each league's own website uses; only contacted when OHL or PWHL is enabled",
+      "url": "https://lscluster.hockeytech.com/feed/index.php",
+      "rate_limit": "No published rate limit; schedules are cached for 5 minutes and live games are polled at the league's live update interval"
     }
   ],
   "versions": [
+    {
+      "version": "1.46.0",
+      "released": "2026-10-07",
+      "ledmatrix_min_version": "3.8.2",
+      "notes": "Adds the OHL and the PWHL, each with Recent, Upcoming and Live modes (ohl_recent, ohl_upcoming, ohl_live, pwhl_recent, pwhl_upcoming, pwhl_live), off by default. ESPN does not carry either league, so their games come from HockeyTech's public scorebar feed -- the one the leagues' own websites use -- reshaped into ESPN's event format, so they render, rotate, scroll, celebrate goals and join Vegas like the other leagues. Records show as W-L-OTL (overtime and shootout losses together). Odds, rankings, shots on goal, power plays, the goal scorer card and game activity pop-ups are not available for these leagues and their settings are hidden. Team logos download from the feed on first use. Optional per-league hockeytech_key overrides the public feed key."
+    },
     {
       "version": "1.45.0",
       "released": "2026-10-05",
@@ -741,7 +764,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-10-05",
+  "last_updated": "2026-10-07",
   "stars": 0,
   "downloads": 0,
   "verified": true,

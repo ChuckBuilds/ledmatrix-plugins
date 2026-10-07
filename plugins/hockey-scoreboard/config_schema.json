@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "title": "Hockey Scoreboard Plugin Configuration",
-  "description": "Configuration schema for the Hockey Scoreboard plugin - displays live, recent, and upcoming NHL and NCAA Hockey games",
+  "description": "Configuration schema for the Hockey Scoreboard plugin - displays live, recent, and upcoming NHL, NCAA, OHL and PWHL hockey games",
   "type": "object",
   "properties": {
     "scroll_card": {
@@ -1993,6 +1993,1138 @@
                       "minimum": 60,
                       "maximum": 600,
                       "description": "Maximum duration for NCAA Women's Hockey upcoming games"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "ohl": {
+      "type": "object",
+      "description": "Ontario Hockey League (OHL) configuration. ESPN does not carry the OHL; scores and schedules come from HockeyTech, the feed the league's own website uses. Odds, rankings, shots on goal, power plays and the goal scorer card are not available for this league.",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable OHL games"
+        },
+        "display_modes": {
+          "type": "object",
+          "title": "Display Modes",
+          "description": "Control which game types to show and how they are displayed",
+          "properties": {
+            "live": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show OHL live games"
+            },
+            "live_display_mode": {
+              "x-advanced": true,
+              "type": "string",
+              "enum": [
+                "switch",
+                "scroll"
+              ],
+              "default": "switch",
+              "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+            },
+            "recent": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show OHL recent games"
+            },
+            "recent_display_mode": {
+              "x-advanced": true,
+              "type": "string",
+              "enum": [
+                "switch",
+                "scroll"
+              ],
+              "default": "switch",
+              "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+            },
+            "upcoming": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show OHL upcoming games"
+            },
+            "upcoming_display_mode": {
+              "x-advanced": true,
+              "type": "string",
+              "enum": [
+                "switch",
+                "scroll"
+              ],
+              "default": "switch",
+              "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+            }
+          }
+        },
+        "scroll_settings": {
+          "type": "object",
+          "title": "Scroll Settings",
+          "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
+          "properties": {
+            "scroll_speed": {
+              "x-advanced": true,
+              "type": "number",
+              "default": 50.0,
+              "minimum": 1.0,
+              "maximum": 200.0,
+              "description": "Scroll speed in pixels per second (default: 50). Higher values scroll faster."
+            },
+            "scroll_delay": {
+              "x-advanced": true,
+              "type": "number",
+              "default": 0.01,
+              "minimum": 0.001,
+              "maximum": 0.1,
+              "description": "Kept so saved configs still load; ignored. Scrolling is paced to the panel's refresh rate, and scroll_speed sets how fast it moves. HIDDEN: nothing reads it; scroll_speed is the only pacing control.",
+              "x-display": "hidden"
+            },
+            "gap_between_games": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 48,
+              "minimum": 8,
+              "maximum": 128,
+              "description": "Gap in pixels between game cards when scrolling"
+            },
+            "show_league_separators": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": true,
+              "description": "Show league icons (NHL shield, NCAA logos) between different leagues"
+            },
+            "dynamic_duration": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": true,
+              "description": "Automatically calculate display duration based on content width"
+            },
+            "game_card_width": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 128,
+              "minimum": 32,
+              "maximum": 512,
+              "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously."
+            }
+          }
+        },
+        "teams": {
+          "type": "object",
+          "description": "Team filtering and favorites configuration",
+          "properties": {
+            "favorite_teams": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "default": [],
+              "description": "OHL favorite team abbreviations (e.g., ['LDN', 'OTT', 'KIT']). These are the league's own codes as HockeyTech lists them: BAR, BFD, BRAM, ER, FLNT, GUE, KGN, KIT, LDN, NB, NIAG, OS, OSH, OTT, PBO, SAG, SAR, SBY, SOO, WSR."
+            },
+            "exclude_teams": {
+              "x-advanced": true,
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "default": [],
+              "description": "OHL team abbreviations to always hide from live and recent games (spoiler protection), using the same codes as favorite teams."
+            },
+            "favorite_teams_only": {
+              "type": "boolean",
+              "default": false,
+              "description": "Only show OHL games with favorite teams"
+            },
+            "show_all_live": {
+              "type": "boolean",
+              "default": false,
+              "description": "Show all live OHL games, not just favorites"
+            },
+            "favorite_live_boost": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 2,
+              "minimum": 1,
+              "maximum": 5,
+              "description": "How many turns your favorite team's live OHL game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
+            }
+          }
+        },
+        "filtering": {
+          "type": "object",
+          "description": "Game filtering and quantity settings",
+          "properties": {
+            "recent_games_to_show": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 5,
+              "minimum": 1,
+              "maximum": 20,
+              "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
+            },
+            "upcoming_games_to_show": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "maximum": 50,
+              "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
+            },
+            "other_upcoming_games_to_show": {
+              "type": "integer",
+              "title": "Other upcoming games to show",
+              "description": "How many NON-favorite upcoming games to include when favorite teams are set but 'Show favorite teams only' is off. Your favorites are shown first, then this many other games. Set to 0 to show only your favorites. Ignored when 'Show favorite teams only' is on, or when no favorite teams are set.",
+              "default": 10,
+              "minimum": 0,
+              "maximum": 20,
+              "x-advanced": true
+            },
+            "other_recent_games_to_show": {
+              "type": "integer",
+              "title": "Other recent games to show",
+              "description": "How many NON-favorite recent games to include when favorite teams are set but 'Show favorite teams only' is off. Set to 0 to show only your favorites.",
+              "default": 5,
+              "minimum": 0,
+              "maximum": 20,
+              "x-advanced": true
+            },
+            "other_rotation_interval_seconds": {
+              "type": "integer",
+              "title": "Rotate other games every (seconds)",
+              "description": "How often (seconds) to advance the window of NON-favorite games, so the board works through the schedule over time instead of showing the same handful. Variety comes from this turnover rather than from a larger selection: a bigger selection makes a full cycle longer, which makes any given game appear less often. Set to 0 to keep a fixed selection. Only applies when favorite teams are set and 'Show favorite teams only' is off.",
+              "default": 1800,
+              "minimum": 0,
+              "maximum": 86400,
+              "x-advanced": true
+            },
+            "favorite_rotation_boost": {
+              "type": "integer",
+              "title": "Favorite game turns",
+              "description": "In switch mode, how many turns each favorite team's recent or upcoming game gets for every 1 turn other games get. The extra turns are spread through the rotation, and kept apart whenever there are enough other games to separate them. Set to 1 to show every game once per rotation.",
+              "default": 1,
+              "minimum": 1,
+              "maximum": 5,
+              "x-advanced": true
+            },
+            "other_games_min_quality": {
+              "type": "string",
+              "title": "Which other games to show",
+              "enum": [
+                "any",
+                "ranked"
+              ],
+              "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots. HIDDEN for this league: it comes from HockeyTech's scorebar, not ESPN, and the scorebar carries no rankings and the league publishes no poll, so 'ranked' has nothing to rank against, fails open and lets every game through. Kept declared so saved configs keep validating.",
+              "default": "ranked",
+              "x-advanced": true,
+              "x-display": "hidden"
+            },
+            "other_games_divisions": {
+              "type": "array",
+              "title": "Divisions to include (other games)",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "fbs",
+                  "fcs",
+                  "other"
+                ]
+              },
+              "uniqueItems": true,
+              "default": [
+                "fbs"
+              ],
+              "description": "Which divisions the NON-favorite games may come from. At least one team has to be in a checked division, so with only FBS checked you still see a ranked FBS team hosting an FCS school, but two FCS teams playing each other are left out. Check FCS or Other to bring those in as well. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted. HIDDEN: inert in this plugin. ESPN publishes FBS/FCS group rosters for college-football alone (sports.py _DIVISION_GROUPS_BY_LEAGUE), so the lookup here returns nothing, the filter fails open, and no choice can change what is shown. Kept declared so saved configs keep validating.",
+              "x-widget": "checkbox-group",
+              "x-advanced": true,
+              "x-display": "hidden"
+            }
+          }
+        },
+        "update_intervals": {
+          "type": "object",
+          "description": "Data update frequency settings (in seconds)",
+          "properties": {
+            "base": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 300,
+              "minimum": 60,
+              "maximum": 900,
+              "description": "Base update interval for OHL data HIDDEN: nothing reads it. It seeds each league's base update interval, which every manager then replaces with its own (live_update_interval, recent_update_interval, upcoming_update_interval) before anything reads it; the core scheduler reads update_interval, not this key.",
+              "x-display": "hidden"
+            },
+            "live": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 60,
+              "minimum": 10,
+              "maximum": 300,
+              "description": "Update interval for live OHL games"
+            },
+            "stale_game_timeout": {
+              "type": "integer",
+              "default": 300,
+              "minimum": 60,
+              "maximum": 3600,
+              "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+              "x-advanced": true
+            },
+            "recent": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "Update interval for recent OHL games"
+            },
+            "upcoming": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "Update interval for upcoming OHL games"
+            },
+            "odds": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "Update interval for OHL betting odds data. HIDDEN for this league: it comes from HockeyTech's scorebar, not ESPN, and the scorebar carries no betting lines, so this setting has nothing to act on. Kept declared so saved configs keep validating.",
+              "x-display": "hidden"
+            },
+            "live_odds": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 60,
+              "minimum": 30,
+              "maximum": 3600,
+              "description": "Update interval for OHL betting odds while a game is live. HIDDEN for this league: it comes from HockeyTech's scorebar, not ESPN, and the scorebar carries no betting lines, so this setting has nothing to act on. Kept declared so saved configs keep validating.",
+              "x-display": "hidden"
+            }
+          }
+        },
+        "display_durations": {
+          "type": "object",
+          "description": "How long to display games on screen (in seconds)",
+          "properties": {
+            "base": {
+              "x-advanced": true,
+              "type": "number",
+              "default": 15,
+              "minimum": 5,
+              "maximum": 60,
+              "description": "Base display duration for OHL games HIDDEN: nothing reads it; no mode is named 'base'.",
+              "x-display": "hidden"
+            },
+            "live": {
+              "x-advanced": true,
+              "type": "number",
+              "default": 15,
+              "minimum": 5,
+              "maximum": 120,
+              "description": "Display duration for live OHL games (games with a favorite team when a non-favorite duration is set)"
+            },
+            "non_favorite_live": {
+              "x-advanced": true,
+              "type": "number",
+              "default": 0,
+              "minimum": 0,
+              "maximum": 120,
+              "description": "Display duration for live OHL games with NO favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use the live duration for every game (no change)."
+            },
+            "recent": {
+              "x-advanced": true,
+              "type": "number",
+              "default": 15,
+              "minimum": 5,
+              "maximum": 60,
+              "description": "Display duration for recent OHL games"
+            },
+            "upcoming": {
+              "x-advanced": true,
+              "type": "number",
+              "default": 15,
+              "minimum": 5,
+              "maximum": 60,
+              "description": "Display duration for upcoming OHL games"
+            }
+          }
+        },
+        "display_options": {
+          "type": "object",
+          "description": "What information to display on the scoreboard",
+          "properties": {
+            "show_records": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": true,
+              "description": "Show OHL team records (wins-losses)"
+            },
+            "show_ranking": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": true,
+              "description": "Show OHL team rankings/standings. HIDDEN for this league: it comes from HockeyTech's scorebar, not ESPN, and the scorebar carries no rankings and the league publishes no poll, so this setting has nothing to act on. Kept declared so saved configs keep validating.",
+              "x-display": "hidden"
+            },
+            "show_odds": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": false,
+              "description": "Show betting odds for OHL games. HIDDEN for this league: it comes from HockeyTech's scorebar, not ESPN, and the scorebar carries no betting lines, so this setting has nothing to act on. Kept declared so saved configs keep validating.",
+              "x-display": "hidden"
+            },
+            "show_shots_on_goal": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": false,
+              "description": "Display shots on goal statistics for OHL games. HIDDEN for this league: it comes from HockeyTech's scorebar, not ESPN, and the scorebar carries no shot totals, so this setting has nothing to act on. Kept declared so saved configs keep validating.",
+              "x-display": "hidden"
+            },
+            "show_powerplay": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": false,
+              "description": "Highlight powerplay situations for OHL games. HIDDEN for this league: it comes from HockeyTech's scorebar, not ESPN, and the scorebar carries no power-play situation, so this setting has nothing to act on. Kept declared so saved configs keep validating.",
+              "x-display": "hidden"
+            }
+          }
+        },
+        "mode_durations": {
+          "type": "object",
+          "title": "Mode-Level Durations",
+          "description": "Control total duration for each mode type for OHL. If not set, uses dynamic calculation (total_games × per_game_duration).",
+          "properties": {
+            "recent_mode_duration": {
+              "x-advanced": true,
+              "type": [
+                "number",
+                "null"
+              ],
+              "default": null,
+              "minimum": 10,
+              "maximum": 600,
+              "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation). Set to null to use dynamic calculation. When mode cycles back, continues from last game shown (no repetition)."
+            },
+            "upcoming_mode_duration": {
+              "x-advanced": true,
+              "type": [
+                "number",
+                "null"
+              ],
+              "default": null,
+              "minimum": 10,
+              "maximum": 600,
+              "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation). Set to null to use dynamic calculation. When mode cycles back, continues from last game shown (no repetition)."
+            },
+            "live_mode_duration": {
+              "x-advanced": true,
+              "type": [
+                "number",
+                "null"
+              ],
+              "default": null,
+              "minimum": 10,
+              "maximum": 600,
+              "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (uses dynamic calculation). Set to null to use dynamic calculation. When mode cycles back, continues from last game shown (no repetition)."
+            }
+          }
+        },
+        "hockeytech_key": {
+          "x-advanced": true,
+          "type": "string",
+          "default": "",
+          "title": "HockeyTech feed key",
+          "description": "Leave blank to use the public key the OHL website itself uses. Only set this if that key stops working and the league publishes a new one."
+        },
+        "live_priority": {
+          "type": "boolean",
+          "default": true,
+          "description": "Prioritize live OHL games over scheduled games"
+        },
+        "celebration_enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show a celebratory takeover screen when a favorite team scores a goal or wins a live game"
+        },
+        "celebration_duration": {
+          "x-advanced": true,
+          "type": "integer",
+          "default": 8,
+          "minimum": 3,
+          "maximum": 30,
+          "description": "How long the goal/win celebration stays on screen (seconds)"
+        },
+        "celebrate_opponent_goals": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": false,
+          "description": "Also celebrate when the opponent scores, not just favorites (off by default)"
+        },
+        "celebration_team_colors": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": true,
+          "description": "Draw the celebration in the scoring team's colours, read from its logo. Off uses a fixed navy and amber palette"
+        },
+        "celebration_confetti": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": true,
+          "description": "Fall team-coloured confetti across the celebration screen"
+        },
+        "celebration_goal_light": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": false,
+          "description": "Add a flashing goal light to the goal celebration: a pixel-art rink beacon in the scoring team's colour beside its crest, its reflector sweeping the lens while striped beams fan out either side. Goals only, not wins. Needs a panel at least 256 wide and 48 tall; narrower panels draw the plain celebration. Runs at the board's high frame rate while the celebration is on screen"
+        },
+        "dynamic_duration": {
+          "type": "object",
+          "description": "Dynamic duration settings - automatically adjust display time based on content",
+          "properties": {
+            "enabled": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": false,
+              "description": "Enable dynamic duration for OHL games"
+            },
+            "max_duration_seconds": {
+              "x-advanced": true,
+              "type": "number",
+              "minimum": 60,
+              "maximum": 600,
+              "description": "Maximum duration in seconds when dynamic duration is enabled"
+            },
+            "modes": {
+              "type": "object",
+              "description": "Per-mode dynamic duration settings",
+              "properties": {
+                "live": {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "x-advanced": true,
+                      "type": "boolean",
+                      "default": false,
+                      "description": "Enable dynamic duration for OHL live games"
+                    },
+                    "max_duration_seconds": {
+                      "x-advanced": true,
+                      "type": "number",
+                      "minimum": 60,
+                      "maximum": 600,
+                      "description": "Maximum duration for OHL live games"
+                    }
+                  }
+                },
+                "recent": {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "x-advanced": true,
+                      "type": "boolean",
+                      "default": false,
+                      "description": "Enable dynamic duration for OHL recent games"
+                    },
+                    "max_duration_seconds": {
+                      "x-advanced": true,
+                      "type": "number",
+                      "minimum": 60,
+                      "maximum": 600,
+                      "description": "Maximum duration for OHL recent games"
+                    }
+                  }
+                },
+                "upcoming": {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "x-advanced": true,
+                      "type": "boolean",
+                      "default": false,
+                      "description": "Enable dynamic duration for OHL upcoming games"
+                    },
+                    "max_duration_seconds": {
+                      "x-advanced": true,
+                      "type": "number",
+                      "minimum": 60,
+                      "maximum": 600,
+                      "description": "Maximum duration for OHL upcoming games"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "pwhl": {
+      "type": "object",
+      "description": "Professional Women's Hockey League (PWHL) configuration. ESPN does not carry the PWHL; scores and schedules come from HockeyTech, the feed the league's own website uses. Odds, rankings, shots on goal, power plays and the goal scorer card are not available for this league.",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable PWHL games"
+        },
+        "display_modes": {
+          "type": "object",
+          "title": "Display Modes",
+          "description": "Control which game types to show and how they are displayed",
+          "properties": {
+            "live": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show PWHL live games"
+            },
+            "live_display_mode": {
+              "x-advanced": true,
+              "type": "string",
+              "enum": [
+                "switch",
+                "scroll"
+              ],
+              "default": "switch",
+              "description": "Display mode for live games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+            },
+            "recent": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show PWHL recent games"
+            },
+            "recent_display_mode": {
+              "x-advanced": true,
+              "type": "string",
+              "enum": [
+                "switch",
+                "scroll"
+              ],
+              "default": "switch",
+              "description": "Display mode for recent games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+            },
+            "upcoming": {
+              "type": "boolean",
+              "default": true,
+              "description": "Show PWHL upcoming games"
+            },
+            "upcoming_display_mode": {
+              "x-advanced": true,
+              "type": "string",
+              "enum": [
+                "switch",
+                "scroll"
+              ],
+              "default": "switch",
+              "description": "Display mode for upcoming games: 'switch' shows one game at a time, 'scroll' scrolls all games horizontally"
+            }
+          }
+        },
+        "scroll_settings": {
+          "type": "object",
+          "title": "Scroll Settings",
+          "description": "Settings for scroll display mode (when display mode is set to 'scroll')",
+          "properties": {
+            "scroll_speed": {
+              "x-advanced": true,
+              "type": "number",
+              "default": 50.0,
+              "minimum": 1.0,
+              "maximum": 200.0,
+              "description": "Scroll speed in pixels per second (default: 50). Higher values scroll faster."
+            },
+            "scroll_delay": {
+              "x-advanced": true,
+              "type": "number",
+              "default": 0.01,
+              "minimum": 0.001,
+              "maximum": 0.1,
+              "description": "Kept so saved configs still load; ignored. Scrolling is paced to the panel's refresh rate, and scroll_speed sets how fast it moves. HIDDEN: nothing reads it; scroll_speed is the only pacing control.",
+              "x-display": "hidden"
+            },
+            "gap_between_games": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 48,
+              "minimum": 8,
+              "maximum": 128,
+              "description": "Gap in pixels between game cards when scrolling"
+            },
+            "show_league_separators": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": true,
+              "description": "Show league icons (NHL shield, NCAA logos) between different leagues"
+            },
+            "dynamic_duration": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": true,
+              "description": "Automatically calculate display duration based on content width"
+            },
+            "game_card_width": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 128,
+              "minimum": 32,
+              "maximum": 512,
+              "description": "Width of each game card in scroll mode (pixels). Default 128. Set lower on multi-panel chains to show more games simultaneously."
+            }
+          }
+        },
+        "teams": {
+          "type": "object",
+          "description": "Team filtering and favorites configuration",
+          "properties": {
+            "favorite_teams": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "default": [],
+              "description": "PWHL favorite team abbreviations (e.g., ['BOS', 'MIN', 'TOR']). These are the league's own codes as HockeyTech lists them: BOS, DET, HAM, MIN, MTL, NY, OTT, SEA, SJ, TOR, VAN, VEG."
+            },
+            "exclude_teams": {
+              "x-advanced": true,
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "default": [],
+              "description": "PWHL team abbreviations to always hide from live and recent games (spoiler protection), using the same codes as favorite teams."
+            },
+            "favorite_teams_only": {
+              "type": "boolean",
+              "default": false,
+              "description": "Only show PWHL games with favorite teams"
+            },
+            "show_all_live": {
+              "type": "boolean",
+              "default": false,
+              "description": "Show all live PWHL games, not just favorites"
+            },
+            "favorite_live_boost": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 2,
+              "minimum": 1,
+              "maximum": 5,
+              "description": "How many turns your favorite team's live PWHL game gets in the rotation for every 1 turn other live games get. Your favorite's game is also always queued first whenever the live rotation refreshes. Set to 1 for even rotation."
+            }
+          }
+        },
+        "filtering": {
+          "type": "object",
+          "description": "Game filtering and quantity settings",
+          "properties": {
+            "recent_games_to_show": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 5,
+              "minimum": 1,
+              "maximum": 20,
+              "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
+            },
+            "upcoming_games_to_show": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 10,
+              "minimum": 1,
+              "maximum": 50,
+              "description": "With favorites: N games per favorite team. Without favorites: N total games sorted by time."
+            },
+            "other_upcoming_games_to_show": {
+              "type": "integer",
+              "title": "Other upcoming games to show",
+              "description": "How many NON-favorite upcoming games to include when favorite teams are set but 'Show favorite teams only' is off. Your favorites are shown first, then this many other games. Set to 0 to show only your favorites. Ignored when 'Show favorite teams only' is on, or when no favorite teams are set.",
+              "default": 10,
+              "minimum": 0,
+              "maximum": 20,
+              "x-advanced": true
+            },
+            "other_recent_games_to_show": {
+              "type": "integer",
+              "title": "Other recent games to show",
+              "description": "How many NON-favorite recent games to include when favorite teams are set but 'Show favorite teams only' is off. Set to 0 to show only your favorites.",
+              "default": 5,
+              "minimum": 0,
+              "maximum": 20,
+              "x-advanced": true
+            },
+            "other_rotation_interval_seconds": {
+              "type": "integer",
+              "title": "Rotate other games every (seconds)",
+              "description": "How often (seconds) to advance the window of NON-favorite games, so the board works through the schedule over time instead of showing the same handful. Variety comes from this turnover rather than from a larger selection: a bigger selection makes a full cycle longer, which makes any given game appear less often. Set to 0 to keep a fixed selection. Only applies when favorite teams are set and 'Show favorite teams only' is off.",
+              "default": 1800,
+              "minimum": 0,
+              "maximum": 86400,
+              "x-advanced": true
+            },
+            "favorite_rotation_boost": {
+              "type": "integer",
+              "title": "Favorite game turns",
+              "description": "In switch mode, how many turns each favorite team's recent or upcoming game gets for every 1 turn other games get. The extra turns are spread through the rotation, and kept apart whenever there are enough other games to separate them. Set to 1 to show every game once per rotation.",
+              "default": 1,
+              "minimum": 1,
+              "maximum": 5,
+              "x-advanced": true
+            },
+            "other_games_min_quality": {
+              "type": "string",
+              "title": "Which other games to show",
+              "enum": [
+                "any",
+                "ranked"
+              ],
+              "description": "Which NON-favorite games are worth a slot. 'ranked' shows only games involving a nationally ranked team; 'any' is the old behaviour of whatever comes next chronologically. Your favorite teams are never filtered by this. A league with no national poll has nothing to rank against, so 'ranked' lets everything through there rather than emptying the slots. HIDDEN for this league: it comes from HockeyTech's scorebar, not ESPN, and the scorebar carries no rankings and the league publishes no poll, so 'ranked' has nothing to rank against, fails open and lets every game through. Kept declared so saved configs keep validating.",
+              "default": "ranked",
+              "x-advanced": true,
+              "x-display": "hidden"
+            },
+            "other_games_divisions": {
+              "type": "array",
+              "title": "Divisions to include (other games)",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "fbs",
+                  "fcs",
+                  "other"
+                ]
+              },
+              "uniqueItems": true,
+              "default": [
+                "fbs"
+              ],
+              "description": "Which divisions the NON-favorite games may come from. At least one team has to be in a checked division, so with only FBS checked you still see a ranked FBS team hosting an FCS school, but two FCS teams playing each other are left out. Check FCS or Other to bring those in as well. Your favorite teams are never filtered by this, so a team from any division still always appears. FBS/FCS is a college FOOTBALL taxonomy and ESPN publishes those rosters for that league alone, so this setting does nothing in any other league -- no lookup is even attempted. HIDDEN: inert in this plugin. ESPN publishes FBS/FCS group rosters for college-football alone (sports.py _DIVISION_GROUPS_BY_LEAGUE), so the lookup here returns nothing, the filter fails open, and no choice can change what is shown. Kept declared so saved configs keep validating.",
+              "x-widget": "checkbox-group",
+              "x-advanced": true,
+              "x-display": "hidden"
+            }
+          }
+        },
+        "update_intervals": {
+          "type": "object",
+          "description": "Data update frequency settings (in seconds)",
+          "properties": {
+            "base": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 300,
+              "minimum": 60,
+              "maximum": 900,
+              "description": "Base update interval for PWHL data HIDDEN: nothing reads it. It seeds each league's base update interval, which every manager then replaces with its own (live_update_interval, recent_update_interval, upcoming_update_interval) before anything reads it; the core scheduler reads update_interval, not this key.",
+              "x-display": "hidden"
+            },
+            "live": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 60,
+              "minimum": 10,
+              "maximum": 300,
+              "description": "Update interval for live PWHL games"
+            },
+            "stale_game_timeout": {
+              "type": "integer",
+              "default": 300,
+              "minimum": 60,
+              "maximum": 3600,
+              "description": "How long a live game may go without an update before it is dropped from the rotation (seconds). Guards against a game the API stops reporting sitting on the board forever.",
+              "x-advanced": true
+            },
+            "recent": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "Update interval for recent PWHL games"
+            },
+            "upcoming": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "Update interval for upcoming PWHL games"
+            },
+            "odds": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 3600,
+              "minimum": 60,
+              "maximum": 86400,
+              "description": "Update interval for PWHL betting odds data. HIDDEN for this league: it comes from HockeyTech's scorebar, not ESPN, and the scorebar carries no betting lines, so this setting has nothing to act on. Kept declared so saved configs keep validating.",
+              "x-display": "hidden"
+            },
+            "live_odds": {
+              "x-advanced": true,
+              "type": "integer",
+              "default": 60,
+              "minimum": 30,
+              "maximum": 3600,
+              "description": "Update interval for PWHL betting odds while a game is live. HIDDEN for this league: it comes from HockeyTech's scorebar, not ESPN, and the scorebar carries no betting lines, so this setting has nothing to act on. Kept declared so saved configs keep validating.",
+              "x-display": "hidden"
+            }
+          }
+        },
+        "display_durations": {
+          "type": "object",
+          "description": "How long to display games on screen (in seconds)",
+          "properties": {
+            "base": {
+              "x-advanced": true,
+              "type": "number",
+              "default": 15,
+              "minimum": 5,
+              "maximum": 60,
+              "description": "Base display duration for PWHL games HIDDEN: nothing reads it; no mode is named 'base'.",
+              "x-display": "hidden"
+            },
+            "live": {
+              "x-advanced": true,
+              "type": "number",
+              "default": 15,
+              "minimum": 5,
+              "maximum": 120,
+              "description": "Display duration for live PWHL games (games with a favorite team when a non-favorite duration is set)"
+            },
+            "non_favorite_live": {
+              "x-advanced": true,
+              "type": "number",
+              "default": 0,
+              "minimum": 0,
+              "maximum": 120,
+              "description": "Display duration for live PWHL games with NO favorite team. Only applies when favorite teams are set AND non-favorite live games are shown ('show_favorite_teams_only' off, or 'show_all_live' on). 0 (default) = use the live duration for every game (no change)."
+            },
+            "recent": {
+              "x-advanced": true,
+              "type": "number",
+              "default": 15,
+              "minimum": 5,
+              "maximum": 60,
+              "description": "Display duration for recent PWHL games"
+            },
+            "upcoming": {
+              "x-advanced": true,
+              "type": "number",
+              "default": 15,
+              "minimum": 5,
+              "maximum": 60,
+              "description": "Display duration for upcoming PWHL games"
+            }
+          }
+        },
+        "display_options": {
+          "type": "object",
+          "description": "What information to display on the scoreboard",
+          "properties": {
+            "show_records": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": true,
+              "description": "Show PWHL team records (wins-losses)"
+            },
+            "show_ranking": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": true,
+              "description": "Show PWHL team rankings/standings. HIDDEN for this league: it comes from HockeyTech's scorebar, not ESPN, and the scorebar carries no rankings and the league publishes no poll, so this setting has nothing to act on. Kept declared so saved configs keep validating.",
+              "x-display": "hidden"
+            },
+            "show_odds": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": false,
+              "description": "Show betting odds for PWHL games. HIDDEN for this league: it comes from HockeyTech's scorebar, not ESPN, and the scorebar carries no betting lines, so this setting has nothing to act on. Kept declared so saved configs keep validating.",
+              "x-display": "hidden"
+            },
+            "show_shots_on_goal": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": false,
+              "description": "Display shots on goal statistics for PWHL games. HIDDEN for this league: it comes from HockeyTech's scorebar, not ESPN, and the scorebar carries no shot totals, so this setting has nothing to act on. Kept declared so saved configs keep validating.",
+              "x-display": "hidden"
+            },
+            "show_powerplay": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": false,
+              "description": "Highlight powerplay situations for PWHL games. HIDDEN for this league: it comes from HockeyTech's scorebar, not ESPN, and the scorebar carries no power-play situation, so this setting has nothing to act on. Kept declared so saved configs keep validating.",
+              "x-display": "hidden"
+            }
+          }
+        },
+        "mode_durations": {
+          "type": "object",
+          "title": "Mode-Level Durations",
+          "description": "Control total duration for each mode type for PWHL. If not set, uses dynamic calculation (total_games × per_game_duration).",
+          "properties": {
+            "recent_mode_duration": {
+              "x-advanced": true,
+              "type": [
+                "number",
+                "null"
+              ],
+              "default": null,
+              "minimum": 10,
+              "maximum": 600,
+              "description": "Total duration in seconds for Recent mode before rotating to next mode. Default: null (uses dynamic calculation). Set to null to use dynamic calculation. When mode cycles back, continues from last game shown (no repetition)."
+            },
+            "upcoming_mode_duration": {
+              "x-advanced": true,
+              "type": [
+                "number",
+                "null"
+              ],
+              "default": null,
+              "minimum": 10,
+              "maximum": 600,
+              "description": "Total duration in seconds for Upcoming mode before rotating to next mode. Default: null (uses dynamic calculation). Set to null to use dynamic calculation. When mode cycles back, continues from last game shown (no repetition)."
+            },
+            "live_mode_duration": {
+              "x-advanced": true,
+              "type": [
+                "number",
+                "null"
+              ],
+              "default": null,
+              "minimum": 10,
+              "maximum": 600,
+              "description": "Total duration in seconds for Live mode before rotating to next mode. Default: null (uses dynamic calculation). Set to null to use dynamic calculation. When mode cycles back, continues from last game shown (no repetition)."
+            }
+          }
+        },
+        "hockeytech_key": {
+          "x-advanced": true,
+          "type": "string",
+          "default": "",
+          "title": "HockeyTech feed key",
+          "description": "Leave blank to use the public key the PWHL website itself uses. Only set this if that key stops working and the league publishes a new one."
+        },
+        "live_priority": {
+          "type": "boolean",
+          "default": true,
+          "description": "Prioritize live PWHL games over scheduled games"
+        },
+        "celebration_enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show a celebratory takeover screen when a favorite team scores a goal or wins a live game"
+        },
+        "celebration_duration": {
+          "x-advanced": true,
+          "type": "integer",
+          "default": 8,
+          "minimum": 3,
+          "maximum": 30,
+          "description": "How long the goal/win celebration stays on screen (seconds)"
+        },
+        "celebrate_opponent_goals": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": false,
+          "description": "Also celebrate when the opponent scores, not just favorites (off by default)"
+        },
+        "celebration_team_colors": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": true,
+          "description": "Draw the celebration in the scoring team's colours, read from its logo. Off uses a fixed navy and amber palette"
+        },
+        "celebration_confetti": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": true,
+          "description": "Fall team-coloured confetti across the celebration screen"
+        },
+        "celebration_goal_light": {
+          "x-advanced": true,
+          "type": "boolean",
+          "default": false,
+          "description": "Add a flashing goal light to the goal celebration: a pixel-art rink beacon in the scoring team's colour beside its crest, its reflector sweeping the lens while striped beams fan out either side. Goals only, not wins. Needs a panel at least 256 wide and 48 tall; narrower panels draw the plain celebration. Runs at the board's high frame rate while the celebration is on screen"
+        },
+        "dynamic_duration": {
+          "type": "object",
+          "description": "Dynamic duration settings - automatically adjust display time based on content",
+          "properties": {
+            "enabled": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": false,
+              "description": "Enable dynamic duration for PWHL games"
+            },
+            "max_duration_seconds": {
+              "x-advanced": true,
+              "type": "number",
+              "minimum": 60,
+              "maximum": 600,
+              "description": "Maximum duration in seconds when dynamic duration is enabled"
+            },
+            "modes": {
+              "type": "object",
+              "description": "Per-mode dynamic duration settings",
+              "properties": {
+                "live": {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "x-advanced": true,
+                      "type": "boolean",
+                      "default": false,
+                      "description": "Enable dynamic duration for PWHL live games"
+                    },
+                    "max_duration_seconds": {
+                      "x-advanced": true,
+                      "type": "number",
+                      "minimum": 60,
+                      "maximum": 600,
+                      "description": "Maximum duration for PWHL live games"
+                    }
+                  }
+                },
+                "recent": {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "x-advanced": true,
+                      "type": "boolean",
+                      "default": false,
+                      "description": "Enable dynamic duration for PWHL recent games"
+                    },
+                    "max_duration_seconds": {
+                      "x-advanced": true,
+                      "type": "number",
+                      "minimum": 60,
+                      "maximum": 600,
+                      "description": "Maximum duration for PWHL recent games"
+                    }
+                  }
+                },
+                "upcoming": {
+                  "type": "object",
+                  "properties": {
+                    "enabled": {
+                      "x-advanced": true,
+                      "type": "boolean",
+                      "default": false,
+                      "description": "Enable dynamic duration for PWHL upcoming games"
+                    },
+                    "max_duration_seconds": {
+                      "x-advanced": true,
+                      "type": "number",
+                      "minimum": 60,
+                      "maximum": 600,
+                      "description": "Maximum duration for PWHL upcoming games"
                     }
                   }
                 }

@@ -269,4 +269,245 @@ class ESPNDataSource(DataSource):
             return None
 
 
+#: HockeyTech (LeagueStat) feeds for leagues ESPN does not carry. The keys are
+#: the public ones each league's own website sends from the browser; a
+#: league's config may override ``hockeytech_key`` if one is ever rotated.
+HOCKEYTECH_LEAGUES: Dict[str, Dict[str, str]] = {
+    "ohl": {"client_code": "ohl", "key": "f1aa699db3d81487"},
+    "pwhl": {"client_code": "pwhl", "key": "446521baf8c38984"},
+}
+
+#: HockeyTech GameStatus codes. 1 and 4 are what every scheduled and final
+#: game in the feed carries; 2 (in progress) and 3 (unofficial final, the
+#: minutes between the horn and the league signing the sheet) are the codes
+#: LeagueStat uses for the states in between.
+_HT_SCHEDULED, _HT_IN_PROGRESS, _HT_UNOFFICIAL_FINAL, _HT_FINAL = "1", "2", "3", "4"
+
+#: Words in a status string that mean the game will not be played as listed.
+_HT_NOT_PLAYED = (
+    ("postpon", "STATUS_POSTPONED"),
+    ("cancel", "STATUS_CANCELED"),
+    ("suspend", "STATUS_SUSPENDED"),
+    ("delay", "STATUS_DELAYED"),
+)
+
+
+def _ht_int(value, default: int = 0) -> int:
+    """HockeyTech sends numbers as strings for some leagues, ints for others."""
+    try:
+        return int(str(value).strip())
+    except (TypeError, ValueError):
+        return default
+
+
+def _ht_text(value) -> str:
+    return "" if value is None else str(value).strip()
+
+
+class HockeyTechDataSource(DataSource):
+    """HockeyTech / LeagueStat scorebar feed, reshaped into ESPN events.
+
+    OHL and PWHL are not on ESPN (its scoreboard answers 400 for both), but
+    their own sites run on HockeyTech's ``modulekit`` scorebar, which lists
+    every game in a window of days with score, clock, period and records.
+    Everything downstream of the fetch -- extraction, selection, rendering --
+    reads ESPN's event shape, so this adapts the feed to it once, here, and
+    nothing else in the plugin has to know the league came from elsewhere.
+    """
+
+    BASE_URL = "https://lscluster.hockeytech.com/feed/index.php"
+    #: The scorebar's window is counted in days either side of today.
+    _MAX_DAYS = 60
+
+    def __init__(self, logger: logging.Logger, league: str,
+                 key_override: Optional[str] = None):
+        super().__init__(logger)
+        info = HOCKEYTECH_LEAGUES.get(league)
+        if info is None:
+            raise ValueError(f"No HockeyTech feed known for league {league!r}")
+        self.league = league
+        self.client_code = info["client_code"]
+        self.key = (key_override or "").strip() or info["key"]
+
+    def fetch_scorebar(self, days_back: int, days_ahead: int,
+                       timeout: int = 15) -> List[Dict]:
+        """The raw scorebar games for ``days_back``..``days_ahead``. Raises on
+        a transport or parse failure so callers can tell "no games" apart from
+        "could not ask"."""
+        params = {
+            "feed": "modulekit",
+            "view": "scorebar",
+            "fmt": "json",
+            "lang": "en",
+            "client_code": self.client_code,
+            "key": self.key,
+            "numberofdaysback": max(0, min(self._MAX_DAYS, int(days_back))),
+            "numberofdaysahead": max(0, min(self._MAX_DAYS, int(days_ahead))),
+        }
+        response = self.session.get(
+            self.BASE_URL, params=params, headers=self.get_headers(), timeout=timeout
+        )
+        response.raise_for_status()
+        data = response.json()
+        games = ((data or {}).get("SiteKit") or {}).get("Scorebar") or []
+        return [g for g in games if isinstance(g, dict)]
+
+    @staticmethod
+    def _status(game: Dict) -> Dict:
+        """An ESPN ``status`` block for one scorebar game."""
+        code = _ht_text(game.get("GameStatus"))
+        long_text = _ht_text(game.get("GameStatusStringLong")) or _ht_text(
+            game.get("GameStatusString"))
+        lowered = long_text.lower()
+        period_short = _ht_text(game.get("PeriodNameShort")).upper()
+        period = _ht_int(game.get("Period"))
+        # ESPN's numbering, which the scorebug reads: 4 is the first overtime
+        # and 5 the shootout (or a second overtime, which HockeyTech already
+        # numbers 5).
+        if period_short == "SO":
+            period = max(period, 5)
+        elif period_short.startswith("OT"):
+            period = max(period, 4)
+
+        not_played = next(
+            (name for word, name in _HT_NOT_PLAYED if word in lowered), None)
+        if not_played:
+            state, name, completed = "post", not_played, False
+        elif code in (_HT_FINAL, _HT_UNOFFICIAL_FINAL) or lowered.startswith("final"):
+            state, name, completed = "post", "STATUS_FINAL", True
+        elif code == _HT_IN_PROGRESS:
+            state, completed = "in", False
+            name = ("STATUS_END_PERIOD" if _ht_int(game.get("Intermission"))
+                    else "STATUS_IN_PROGRESS")
+        else:
+            state, name, completed = "pre", "STATUS_SCHEDULED", False
+
+        clock = _ht_text(game.get("GameClock")) or "0:00"
+        if state == "in":
+            label = "INT" if name == "STATUS_END_PERIOD" else (period_short or str(period))
+            short_detail = f"{clock} - {label}"
+        else:
+            short_detail = long_text
+        return {
+            "clock": 0,
+            "displayClock": clock,
+            "period": period,
+            "type": {
+                "name": name,
+                "state": state,
+                "completed": completed,
+                "description": long_text,
+                "detail": long_text,
+                "shortDetail": short_detail,
+            },
+        }
+
+    @staticmethod
+    def _competitor(game: Dict, side: str, home_away: str) -> Dict:
+        """``side`` is HockeyTech's field prefix: "Home" or "Visitor"."""
+        wins = _ht_int(game.get(f"{side}Wins"))
+        losses = _ht_int(game.get(f"{side}RegulationLosses"))
+        ot_losses = (_ht_int(game.get(f"{side}OTLosses"))
+                     + _ht_int(game.get(f"{side}ShootoutLosses")))
+        code = _ht_text(game.get(f"{side}Code"))
+        nickname = _ht_text(game.get(f"{side}Nickname"))
+        return {
+            "id": _ht_text(game.get(f"{side}ID")),
+            "homeAway": home_away,
+            "score": str(_ht_int(game.get(f"{side}Goals"))),
+            "team": {
+                "id": _ht_text(game.get(f"{side}ID")),
+                "abbreviation": code or nickname[:3].upper(),
+                "displayName": _ht_text(game.get(f"{side}LongName")),
+                "shortDisplayName": nickname,
+                "name": nickname,
+                "location": _ht_text(game.get(f"{side}City")),
+                "logo": _ht_text(game.get(f"{side}Logo")) or None,
+            },
+            "records": [{
+                "name": "overall",
+                "type": "total",
+                "summary": f"{wins}-{losses}-{ot_losses}",
+            }],
+            "statistics": [],
+        }
+
+    @classmethod
+    def to_espn_event(cls, game: Dict) -> Optional[Dict]:
+        """One scorebar game as an ESPN scoreboard event, or None if it lacks
+        what every event needs (an id, a start time and both teams)."""
+        game_id = _ht_text(game.get("ID"))
+        date = _ht_text(game.get("GameDateISO8601"))
+        if not game_id or not date:
+            return None
+        home = cls._competitor(game, "Home", "home")
+        away = cls._competitor(game, "Visitor", "away")
+        if not home["team"]["abbreviation"] or not away["team"]["abbreviation"]:
+            return None
+        status = cls._status(game)
+        return {
+            "id": game_id,
+            "date": date,
+            "name": f"{away['team']['displayName']} at {home['team']['displayName']}",
+            "shortName": f"{away['team']['abbreviation']} @ {home['team']['abbreviation']}",
+            "status": status,
+            "competitions": [{
+                "id": game_id,
+                "date": date,
+                "status": status,
+                "competitors": [home, away],
+                "venue": {"fullName": _ht_text(game.get("venue_name"))},
+            }],
+        }
+
+    def events_for(self, days_back: int, days_ahead: int) -> List[Dict]:
+        """ESPN-shaped events for the window, oldest first. Raises like
+        fetch_scorebar."""
+        events = []
+        for game in self.fetch_scorebar(days_back, days_ahead):
+            event = self.to_espn_event(game)
+            if event is not None:
+                events.append(event)
+        return events
+
+    def fetch_live_games(self, sport: str, league: str) -> List[Dict]:
+        try:
+            return [e for e in self.events_for(1, 1)
+                    if e["status"]["type"]["state"] == "in"]
+        except Exception as e:
+            self.logger.error(f"Error fetching live games from HockeyTech ({self.league}): {e}")
+            return []
+
+    def fetch_schedule(self, sport: str, league: str, date_range: tuple) -> List[Dict]:
+        """Events whose start falls in ``date_range`` (two aware datetimes).
+
+        The scorebar is asked for whole days either side of today, and out of
+        season it answers with the league's most recent and next games
+        whatever the window -- so the result is filtered to the range, or a
+        May playoff final would sit on the Recent screen all summer.
+        """
+        try:
+            start, end = date_range
+            now = datetime.now(start.tzinfo)
+            back = max(0, (now - start).days + 1)
+            ahead = max(0, (end - now).days + 1)
+            events = self.events_for(back, ahead)
+        except Exception as e:
+            self.logger.error(f"Error fetching schedule from HockeyTech ({self.league}): {e}")
+            return []
+        kept = []
+        for event in events:
+            try:
+                when = datetime.fromisoformat(event["date"].replace("Z", "+00:00"))
+            except ValueError:
+                continue
+            if when.tzinfo is None or start <= when <= end:
+                kept.append(event)
+        return kept
+
+    def fetch_standings(self, sport: str, league: str) -> Dict:
+        """No poll and no standings feed is used: records ride on the scorebar."""
+        return {}
+
+
 # Factory function removed - sport classes now instantiate data sources directly

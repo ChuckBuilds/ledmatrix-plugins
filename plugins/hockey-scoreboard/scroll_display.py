@@ -51,7 +51,8 @@ class ScrollDisplay(_ScrollDisplayBase):
     """Hockey Scoreboard content on the core scroll engine."""
 
     # The ladder the legacy _get_scroll_settings walked, same order.
-    SCROLL_LEAGUE_KEYS = ("nhl", "ncaa_mens", "ncaam_hockey", "ncaa_womens", "ncaaw_hockey")
+    SCROLL_LEAGUE_KEYS = ("nhl", "ncaa_mens", "ncaam_hockey", "ncaa_womens", "ncaaw_hockey",
+                          "ohl", "pwhl")
 
     # Paths to league separator icons. These must live on THIS class, not
     # only on the legacy one: _load_separator_icons below was lifted verbatim
