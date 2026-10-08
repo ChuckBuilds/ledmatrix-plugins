@@ -23,7 +23,6 @@ Run: <core-venv>/bin/python plugins/hockey-scoreboard/test_hockeytech_leagues.py
 import copy
 import json
 import logging
-import os
 import sys
 import tempfile
 from datetime import datetime, timedelta, timezone
