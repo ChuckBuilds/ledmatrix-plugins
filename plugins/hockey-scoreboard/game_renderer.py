@@ -18,6 +18,7 @@ from src.common import sports_card as _card
 from src.common.sports_game_renderer import SportsGameRendererMixin
 from src.common.sports_card_wrappers import SportsCardWrappersMixin
 from src.common.sports_font_path import resolve_font_path as _resolve_font_path
+from pwhl_managers import PWHL_LOGO_DIR
 
 #: This plugin's own schema, for the shared font-size resolver.
 _SCHEMA_PATH = os.path.join(
@@ -105,7 +106,7 @@ class GameRenderer(SportsCardWrappersMixin, SportsGameRendererMixin):
             'ncaam_hockey': config.get('ncaa_mens', {}).get('logo_dir', 'assets/sports/ncaa_logos'),
             'ncaaw_hockey': config.get('ncaa_womens', {}).get('logo_dir', 'assets/sports/ncaa_logos'),
             'ohl': config.get('ohl', {}).get('logo_dir', 'assets/sports/ohl_logos'),
-            'pwhl': config.get('pwhl', {}).get('logo_dir', 'assets/sports/pwhl_logos'),
+            'pwhl': config.get('pwhl', {}).get('logo_dir', str(PWHL_LOGO_DIR)),
         }
 
         # Display options

@@ -200,5 +200,270 @@
         }
       }
     ]
+  },
+  "pwhl_hockeytech_schedule_window_14_7": {
+    "events": [
+      {
+        "id": "9101",
+        "date": "2026-01-14T19:00:00-05:00",
+        "name": "TOR at MTL",
+        "shortName": "TOR @ MTL",
+        "status": {
+          "clock": 0,
+          "displayClock": "0:00",
+          "period": 3,
+          "type": {
+            "name": "STATUS_FINAL",
+            "state": "post",
+            "completed": true,
+            "description": "Final",
+            "detail": "Final",
+            "shortDetail": "Final"
+          }
+        },
+        "competitions": [
+          {
+            "id": "9101",
+            "date": "2026-01-14T19:00:00-05:00",
+            "status": {
+              "clock": 0,
+              "displayClock": "0:00",
+              "period": 3,
+              "type": {
+                "name": "STATUS_FINAL",
+                "state": "post",
+                "completed": true,
+                "description": "Final",
+                "detail": "Final",
+                "shortDetail": "Final"
+              }
+            },
+            "competitors": [
+              {
+                "id": "3",
+                "homeAway": "home",
+                "score": "3",
+                "team": {
+                  "id": "3",
+                  "abbreviation": "MTL",
+                  "displayName": "MTL",
+                  "shortDisplayName": "MTL",
+                  "name": "MTL",
+                  "location": "",
+                  "logo": "https://assets.leaguestat.com/pwhl/logos/3.png"
+                },
+                "records": [
+                  {
+                    "name": "overall",
+                    "type": "total",
+                    "summary": "8-3-1"
+                  }
+                ],
+                "statistics": []
+              },
+              {
+                "id": "6",
+                "homeAway": "away",
+                "score": "2",
+                "team": {
+                  "id": "6",
+                  "abbreviation": "TOR",
+                  "displayName": "TOR",
+                  "shortDisplayName": "TOR",
+                  "name": "TOR",
+                  "location": "",
+                  "logo": "https://assets.leaguestat.com/pwhl/logos/6.png"
+                },
+                "records": [
+                  {
+                    "name": "overall",
+                    "type": "total",
+                    "summary": "6-5-1"
+                  }
+                ],
+                "statistics": []
+              }
+            ],
+            "venue": {
+              "fullName": ""
+            }
+          }
+        ]
+      },
+      {
+        "id": "9102",
+        "date": "2026-01-13T19:00:00-08:00",
+        "name": "BOS at VAN",
+        "shortName": "BOS @ VAN",
+        "status": {
+          "clock": 0,
+          "displayClock": "0:00",
+          "period": 4,
+          "type": {
+            "name": "STATUS_FINAL",
+            "state": "post",
+            "completed": true,
+            "description": "Final OT",
+            "detail": "Final OT",
+            "shortDetail": "Final OT"
+          }
+        },
+        "competitions": [
+          {
+            "id": "9102",
+            "date": "2026-01-13T19:00:00-08:00",
+            "status": {
+              "clock": 0,
+              "displayClock": "0:00",
+              "period": 4,
+              "type": {
+                "name": "STATUS_FINAL",
+                "state": "post",
+                "completed": true,
+                "description": "Final OT",
+                "detail": "Final OT",
+                "shortDetail": "Final OT"
+              }
+            },
+            "competitors": [
+              {
+                "id": "9",
+                "homeAway": "home",
+                "score": "1",
+                "team": {
+                  "id": "9",
+                  "abbreviation": "VAN",
+                  "displayName": "VAN",
+                  "shortDisplayName": "VAN",
+                  "name": "VAN",
+                  "location": "",
+                  "logo": "https://assets.leaguestat.com/pwhl/logos/9.png"
+                },
+                "records": [
+                  {
+                    "name": "overall",
+                    "type": "total",
+                    "summary": "8-3-1"
+                  }
+                ],
+                "statistics": []
+              },
+              {
+                "id": "1",
+                "homeAway": "away",
+                "score": "2",
+                "team": {
+                  "id": "1",
+                  "abbreviation": "BOS",
+                  "displayName": "BOS",
+                  "shortDisplayName": "BOS",
+                  "name": "BOS",
+                  "location": "",
+                  "logo": "https://assets.leaguestat.com/pwhl/logos/1.png"
+                },
+                "records": [
+                  {
+                    "name": "overall",
+                    "type": "total",
+                    "summary": "6-5-1"
+                  }
+                ],
+                "statistics": []
+              }
+            ],
+            "venue": {
+              "fullName": ""
+            }
+          }
+        ]
+      },
+      {
+        "id": "9103",
+        "date": "2026-01-16T19:00:00-08:00",
+        "name": "VEG at SEA",
+        "shortName": "VGS @ SEA",
+        "status": {
+          "clock": 0,
+          "displayClock": "0:00",
+          "period": 1,
+          "type": {
+            "name": "STATUS_SCHEDULED",
+            "state": "pre",
+            "completed": false,
+            "description": "7:00 PM PST",
+            "detail": "7:00 PM PST",
+            "shortDetail": "7:00 PM PST"
+          }
+        },
+        "competitions": [
+          {
+            "id": "9103",
+            "date": "2026-01-16T19:00:00-08:00",
+            "status": {
+              "clock": 0,
+              "displayClock": "0:00",
+              "period": 1,
+              "type": {
+                "name": "STATUS_SCHEDULED",
+                "state": "pre",
+                "completed": false,
+                "description": "7:00 PM PST",
+                "detail": "7:00 PM PST",
+                "shortDetail": "7:00 PM PST"
+              }
+            },
+            "competitors": [
+              {
+                "id": "8",
+                "homeAway": "home",
+                "score": "0",
+                "team": {
+                  "id": "8",
+                  "abbreviation": "SEA",
+                  "displayName": "SEA",
+                  "shortDisplayName": "SEA",
+                  "name": "SEA",
+                  "location": "",
+                  "logo": "https://assets.leaguestat.com/pwhl/logos/8.png"
+                },
+                "records": [
+                  {
+                    "name": "overall",
+                    "type": "total",
+                    "summary": "8-3-1"
+                  }
+                ],
+                "statistics": []
+              },
+              {
+                "id": "12",
+                "homeAway": "away",
+                "score": "0",
+                "team": {
+                  "id": "12",
+                  "abbreviation": "VGS",
+                  "displayName": "VEG",
+                  "shortDisplayName": "VEG",
+                  "name": "VEG",
+                  "location": "",
+                  "logo": "https://assets.leaguestat.com/pwhl/logos/12.png"
+                },
+                "records": [
+                  {
+                    "name": "overall",
+                    "type": "total",
+                    "summary": "6-5-1"
+                  }
+                ],
+                "statistics": []
+              }
+            ],
+            "venue": {
+              "fullName": ""
+            }
+          }
+        ]
+      }
+    ]
   }
 }

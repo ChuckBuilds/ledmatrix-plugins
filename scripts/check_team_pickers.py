@@ -49,15 +49,21 @@ LEAGUE_PATHS = {
     "ncaa_womens": "hockey/womens-college-hockey",
     "afl": "australian-football/afl",
     "nrl": "rugby-league/3",
+    # Not on ESPN: read from HockeyTech, the stats provider behind the league's
+    # own site (see fetch_hockeytech_teams).
+    "pwhl": "hockeytech/pwhl",
 }
+
+# HockeyTech's modulekit feed, with the public key each league's own site sends
+# (hockey-scoreboard's data_sources.HOCKEYTECH_LEAGUES).
+HOCKEYTECH_KEYS = {"pwhl": "446521baf8c38984", "ohl": "f1aa699db3d81487"}
+HOCKEYTECH_URL = ("https://lscluster.hockeytech.com/feed/index.php?feed=modulekit"
+                  "&key={key}&client_code={client}&fmt=json&lang=en")
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def fetch_teams(path):
-    """ESPN's {abbreviation: display name}. ``limit=1000`` is not optional here:
-    the default page size truncates the NCAA rosters to about half."""
-    url = TEAMS_URL.format(path=path)
+def get_json(url):
     # The league path is interpolated into the URL, so pin the scheme rather
     # than trusting the result: urlopen would honour file:// or a custom scheme
     # if a path ever arrived from somewhere less trustworthy than the table above.
@@ -66,7 +72,31 @@ def fetch_teams(path):
     # nosec B310 - the scheme is pinned to https by the check above; B310 is a
     # syntactic blacklist rule and fires on the call regardless of the guard.
     with urllib.request.urlopen(url, timeout=45) as response:  # nosec B310
-        payload = json.load(response)
+        return json.load(response)
+
+
+def fetch_hockeytech_teams(client):
+    """A HockeyTech league's {code: name} for its newest regular season.
+
+    The newest season is often a preseason, and a club's code can differ
+    between the two (PWHL Las Vegas is VEG in the 2026-27 preseason, VGS in
+    the regular season). The regular season is what the picker has to match.
+    """
+    base = HOCKEYTECH_URL.format(key=HOCKEYTECH_KEYS[client], client=client)
+    seasons = get_json(base + "&view=seasons")["SiteKit"]["Seasons"]
+    season = next(s["season_id"] for s in seasons
+                  if s.get("career") == "1" and s.get("playoff") == "0")
+    teams = get_json(base + "&view=teamsbyseason&season_id={}".format(season))
+    return {t["code"]: t["name"]
+            for t in teams["SiteKit"]["Teamsbyseason"] if t.get("code")}
+
+
+def fetch_teams(path):
+    """ESPN's {abbreviation: display name}. ``limit=1000`` is not optional here:
+    the default page size truncates the NCAA rosters to about half."""
+    if path.startswith("hockeytech/"):
+        return fetch_hockeytech_teams(path.split("/", 1)[1])
+    payload = get_json(TEAMS_URL.format(path=path))
     entries = payload["sports"][0]["leagues"][0]["teams"]
     return {
         t["team"]["abbreviation"]: t["team"]["displayName"]

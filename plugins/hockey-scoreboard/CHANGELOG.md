@@ -1,5 +1,37 @@
 # Changelog
 
+## [1.47.0] - 2026-10-08
+
+### Fixed
+- PWHL Las Vegas is `VEG` in the feed's 2026-27 preseason and `VGS` in the
+  regular season. 1.46.0 documented `VEG`, which would have matched no
+  regular-season game. Games and favourites (and excluded teams) now go through
+  one alias table, so either spelling arrives as `VGS`.
+- OHL and PWHL live clocks read `M:SS`. HockeyTech sends `00:00`, which core's
+  game-over check never read as zero, so a decided game at the horn stayed live
+  until the feed said final. Clocks also lose their leading zero (`7:12`).
+
+### Changed
+- PWHL favourites are a 12-team checklist instead of free text, checked
+  against HockeyTech's regular-season roster by
+  `scripts/check_team_pickers.py`.
+- PWHL crests ship with the plugin in `assets/pwhl_logos/` (trimmed, 128 px).
+  OHL and PWHL logos are downloaded at full size; the PWHL feed names a 50x50
+  thumbnail, and logos are only ever scaled down to fit a panel.
+- The schedule cache is read at core's default age (the same 300 s), so the
+  safety harness's seeded copy is used instead of a live fetch.
+
+### Tests
+- The safety harness seeds a PWHL schedule and renders PWHL Recent and Upcoming
+  at every size.
+- `test_pwhl_feed.py`: the clock, the Las Vegas alias, a shipped crest for every
+  picker team, goal and win celebrations through live polls, and the settings
+  drawn.
+
+### Removed
+- A dead first definition of `_get_manager_for_league_mode` in `manager.py`,
+  shadowed by the later one.
+
 ## [1.46.0] - 2026-10-07
 
 ### Added

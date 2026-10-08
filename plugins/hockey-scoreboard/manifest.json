@@ -1,7 +1,7 @@
 {
   "id": "hockey-scoreboard",
   "name": "Hockey Scoreboard",
-  "version": "1.46.0",
+  "version": "1.47.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, NCAA Women's, OHL and PWHL hockey with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/hockey-scoreboard",
@@ -33,7 +33,7 @@
   },
   "config_schema": "config_schema.json",
   "assets": {
-    "logos": "Uses shared LEDMatrix assets/sports/nhl_logos and assets/sports/ncaa_logos directories; OHL and PWHL logos are downloaded from the HockeyTech feed into assets/sports/ohl_logos and assets/sports/pwhl_logos"
+    "logos": "Uses shared LEDMatrix assets/sports/nhl_logos and assets/sports/ncaa_logos directories; OHL logos are downloaded from the HockeyTech feed into assets/sports/ohl_logos; PWHL logos ship in assets/pwhl_logos"
   },
   "update_interval": 60,
   "default_duration": 15,
@@ -71,6 +71,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.47.0",
+      "released": "2026-10-08",
+      "ledmatrix_min_version": "3.8.2",
+      "notes": "PWHL follow-up to 1.46.0. Las Vegas is VEG in the PWHL preseason feed but VGS in the regular season, so a VEG favourite would have matched no regular-season game: games and favourites are now read through one alias table, and the favourites field is a 12-team checklist. Live clocks read M:SS: HockeyTech sends 00:00, which core's game-over check never read as zero, so a decided game stayed live until the feed said final. PWHL crests ship with the plugin (assets/pwhl_logos, 128 px), and OHL and PWHL logos are fetched at full size instead of the PWHL feed's 50x50 thumbnail. The safety harness now renders PWHL Recent and Upcoming at every size."
+    },
     {
       "version": "1.46.0",
       "released": "2026-10-07",

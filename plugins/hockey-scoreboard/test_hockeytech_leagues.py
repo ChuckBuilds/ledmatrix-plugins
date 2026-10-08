@@ -94,8 +94,9 @@ def check_adapter():
               home["team"]["abbreviation"] == final["HomeCode"], home["team"])
         check(f"{league}: score from HomeGoals",
               home["score"] == str(int(final["HomeGoals"])), home["score"])
-        check(f"{league}: logo URL from HomeLogo",
-              home["team"]["logo"] == final["HomeLogo"]
+        # Full size: the PWHL's feed names a 50x50 thumbnail, the OHL's does not.
+        check(f"{league}: full-size logo URL from HomeLogo",
+              home["team"]["logo"] == final["HomeLogo"].replace("/logos/50x50/", "/logos/")
               and "leaguestat.com" in home["team"]["logo"], home["team"]["logo"])
         otl = int(final["HomeOTLosses"]) + int(final["HomeShootoutLosses"])
         want = f"{int(final['HomeWins'])}-{int(final['HomeRegulationLosses'])}-{otl}"

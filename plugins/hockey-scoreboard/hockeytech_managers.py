@@ -18,7 +18,7 @@ from typing import Any, Dict, Optional
 
 import pytz
 
-from data_sources import HockeyTechDataSource
+from data_sources import HOCKEYTECH_CODE_ALIASES, HockeyTechDataSource
 from hockey import Hockey, HockeyLive
 
 #: Seconds a fetched schedule window is reused. Recent and Upcoming refresh
@@ -51,11 +51,21 @@ class BaseHockeyTechManager(Hockey):
         # No ESPN event ids to price, and no shot totals on the scorebar.
         self.show_odds = False
         self.show_shots_on_goal = False
+        # Games arrive with their codes aliased (data_sources); a favourite
+        # saved under the old spelling has to match them too.
+        self.favorite_teams = [self._alias(t) for t in self.favorite_teams]
+        self.exclude_teams = [self._alias(t) for t in self.exclude_teams]
 
         display_modes = self.mode_config.get("display_modes", {})
         self.recent_enabled = display_modes.get("hockey_recent", False)
         self.upcoming_enabled = display_modes.get("hockey_upcoming", False)
         self.live_enabled = display_modes.get("hockey_live", False)
+
+    @staticmethod
+    def _alias(code):
+        if not isinstance(code, str):
+            return code
+        return HOCKEYTECH_CODE_ALIASES.get(code.strip().upper(), code)
 
     def _schedule_cache_key_hockeytech(self) -> str:
         _, window = self._schedule_window()
@@ -66,7 +76,11 @@ class BaseHockeyTechManager(Hockey):
         managers share one request; a failed fetch falls back to the last
         copy whatever its age, so a feed outage does not blank the board."""
         cache_key = self._schedule_cache_key_hockeytech()
-        cached = self.cache_manager.get(cache_key, max_age=_SCHEDULE_CACHE_SECONDS)
+        # Read at core's default age (300 s, the same as the TTL it is written
+        # with). Not max_age= explicitly: the safety harness's cache ages
+        # entries by the real clock in display()'s refresh thread while its
+        # seed is stamped at the frozen time, and would fetch live.
+        cached = self.cache_manager.get(cache_key)
         if isinstance(cached, dict) and "events" in cached:
             return cached
 

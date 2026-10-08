@@ -140,8 +140,14 @@ the league's own codes:
 
 - **OHL**: `BAR`, `BFD`, `BRAM`, `ER`, `FLNT`, `GUE`, `KGN`, `KIT`, `LDN`, `NB`,
   `NIAG`, `OS`, `OSH`, `OTT`, `PBO`, `SAG`, `SAR`, `SBY`, `SOO`, `WSR`
-- **PWHL** (2026–27): `BOS`, `DET`, `HAM`, `MIN`, `MTL`, `NY`, `OTT`, `SEA`, `SJ`,
-  `TOR`, `VAN`, `VEG`
+- **PWHL** (2026–27), picked from a checklist: `BOS`, `DET`, `HAM`, `MIN`,
+  `MTL`, `NY`, `OTT`, `SEA`, `SJ`, `TOR`, `VAN`, `VGS`. Las Vegas is `VEG` in
+  the feed's preseason and `VGS` in the regular season; games and a favourite
+  saved as `VEG` are both read as `VGS`.
+
+PWHL crests ship with the plugin in `assets/pwhl_logos/`, trimmed to 128 px. A
+club missing there, and every OHL club, is downloaded on first sight at full
+size (the PWHL feed names a 50×50 thumbnail; logos are only ever scaled down).
 
 Out of season the feed answers with the league's last and next games whatever
 window is asked for; only games inside the schedule window are kept, so a May
@@ -797,10 +803,11 @@ the last copy is kept on screen.
 
 Crests are downloaded on first sight and cached under
 `assets/sports/nhl_logos/`, `assets/sports/ncaa_mens_logos/`, and
-`assets/sports/ncaa_womens_logos/`; OHL and PWHL crests come from the
-feed's own logo URLs into `assets/sports/ohl_logos/` and
-`assets/sports/pwhl_logos/`. If a download fails, a placeholder is generated
-from the team abbreviation.
+`assets/sports/ncaa_womens_logos/`; OHL crests come from the feed's own logo
+URLs into `assets/sports/ohl_logos/`. PWHL crests ship with the plugin in
+`assets/pwhl_logos/`, and a club missing there is downloaded into the same
+folder. If a download fails, a placeholder is generated from the team
+abbreviation.
 
 ## Example configurations
 

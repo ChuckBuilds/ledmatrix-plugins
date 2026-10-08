@@ -7,6 +7,11 @@ from hockeytech_managers import BaseHockeyTechManager
 from sports import SportsRecent, SportsUpcoming
 
 
+#: PWHL crests, shipped with the plugin (trimmed, 128 px). A club missing here
+#: is downloaded into the same folder from the full-size logo the feed names.
+PWHL_LOGO_DIR = Path(__file__).resolve().parent / "assets" / "pwhl_logos"
+
+
 class BasePWHLManager(BaseHockeyTechManager):
     """Base class for Professional Women's Hockey League managers (HockeyTech feed)."""
 
@@ -24,6 +29,7 @@ class BasePWHLManager(BaseHockeyTechManager):
             logger=self.logger,
             sport_key="pwhl",
         )
+        self.logo_dir = PWHL_LOGO_DIR
         self.logger.info(
             f"Initialized PWHL manager with display dimensions: {self.display_width}x{self.display_height}"
         )

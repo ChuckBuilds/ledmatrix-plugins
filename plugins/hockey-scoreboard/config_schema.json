@@ -2687,11 +2687,44 @@
           "properties": {
             "favorite_teams": {
               "type": "array",
+              "title": "Favorite Teams",
+              "description": "Select your favorite PWHL teams.",
               "items": {
-                "type": "string"
+                "type": "string",
+                "enum": [
+                  "BOS",
+                  "DET",
+                  "HAM",
+                  "MIN",
+                  "MTL",
+                  "NY",
+                  "OTT",
+                  "SEA",
+                  "SJ",
+                  "TOR",
+                  "VAN",
+                  "VGS"
+                ]
               },
               "default": [],
-              "description": "PWHL favorite team abbreviations (e.g., ['BOS', 'MIN', 'TOR']). These are the league's own codes as HockeyTech lists them: BOS, DET, HAM, MIN, MTL, NY, OTT, SEA, SJ, TOR, VAN, VEG."
+              "uniqueItems": true,
+              "x-widget": "checkbox-group",
+              "x-options": {
+                "labels": {
+                  "BOS": "Boston Fleet",
+                  "DET": "PWHL Detroit",
+                  "HAM": "PWHL Hamilton",
+                  "MIN": "Minnesota Frost",
+                  "MTL": "Montréal Victoire",
+                  "NY": "New York Sirens",
+                  "OTT": "Ottawa Charge",
+                  "SEA": "Seattle Torrent",
+                  "SJ": "PWHL San Jose",
+                  "TOR": "Toronto Sceptres",
+                  "VAN": "Vancouver Goldeneyes",
+                  "VGS": "PWHL Las Vegas"
+                }
+              }
             },
             "exclude_teams": {
               "x-advanced": true,
