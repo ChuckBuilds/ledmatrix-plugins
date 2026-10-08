@@ -84,7 +84,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 | Plugin | Description | Preview |
 |--------|-------------|---------|
 | [Football Scoreboard](./plugins/football-scoreboard/) | NFL & NCAA Football live scores, down/distance, possession | <a href="./plugins/football-scoreboard/"><img src="./docs/assets/football-scoreboard/hero.png" width="240" alt="football-scoreboard on an LED panel"></a> |
-| [Hockey Scoreboard](./plugins/hockey-scoreboard/) | NHL & NCAA Hockey live scores and schedules | <a href="./plugins/hockey-scoreboard/"><img src="./docs/assets/hockey-scoreboard/hero.png" width="240" alt="hockey-scoreboard on an LED panel"></a> |
+| [Hockey Scoreboard](./plugins/hockey-scoreboard/) | NHL, NCAA, OHL & PWHL hockey live scores and schedules | <a href="./plugins/hockey-scoreboard/"><img src="./docs/assets/hockey-scoreboard/hero.png" width="240" alt="hockey-scoreboard on an LED panel"></a> |
 | [Basketball Scoreboard](./plugins/basketball-scoreboard/) | NBA, NCAA & WNBA live scores and schedules | <a href="./plugins/basketball-scoreboard/"><img src="./docs/assets/basketball-scoreboard/hero.png" width="240" alt="basketball-scoreboard on an LED panel"></a> |
 | [Baseball Scoreboard](./plugins/baseball-scoreboard/) | MLB, MiLB & NCAA Baseball live scores | <a href="./plugins/baseball-scoreboard/"><img src="./docs/assets/baseball-scoreboard/hero.png" width="240" alt="baseball-scoreboard on an LED panel"></a> |
 | [Soccer Scoreboard](./plugins/soccer-scoreboard/) | Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS | <a href="./plugins/soccer-scoreboard/"><img src="./docs/assets/soccer-scoreboard/hero.png" width="240" alt="soccer-scoreboard on an LED panel"></a> |

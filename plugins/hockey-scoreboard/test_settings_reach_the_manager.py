@@ -44,7 +44,7 @@ if CORE is None:
     sys.exit(2)
 sys.path.insert(0, str(CORE))
 
-LEAGUES = ("nhl", "ncaa_mens", "ncaa_womens")
+LEAGUES = ("nhl", "ncaa_mens", "ncaa_womens", "ohl", "pwhl")
 
 #: Schema paths (league-relative for league blocks, prefixed "<root>." for
 #: plugin-root settings) that legitimately do not pass through the adapter.

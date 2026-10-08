@@ -104,6 +104,8 @@ class GameRenderer(SportsCardWrappersMixin, SportsGameRendererMixin):
             'ncaa_womens': config.get('ncaa_womens', {}).get('logo_dir', 'assets/sports/ncaa_logos'),
             'ncaam_hockey': config.get('ncaa_mens', {}).get('logo_dir', 'assets/sports/ncaa_logos'),
             'ncaaw_hockey': config.get('ncaa_womens', {}).get('logo_dir', 'assets/sports/ncaa_logos'),
+            'ohl': config.get('ohl', {}).get('logo_dir', 'assets/sports/ohl_logos'),
+            'pwhl': config.get('pwhl', {}).get('logo_dir', 'assets/sports/pwhl_logos'),
         }
 
         # Display options

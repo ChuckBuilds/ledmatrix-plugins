@@ -12,9 +12,10 @@
 
 # Hockey Scoreboard
 
-Live, recent, and upcoming games across **NHL**, **NCAA Men's**, and **NCAA
-Women's** hockey on your LEDMatrix display, from ESPN's public API. No API key
-required.
+Live, recent, and upcoming games across **NHL**, **NCAA Men's**, **NCAA
+Women's**, **OHL** and **PWHL** hockey on your LEDMatrix display — the first
+three from ESPN's public API, the OHL and PWHL from HockeyTech's public feed
+(ESPN does not carry them). No API key required.
 
 ![NHL live scorebug with shots on goal](../../docs/assets/hockey-scoreboard/hero.png)
 
@@ -22,7 +23,8 @@ required.
 
 - [Quick start](#quick-start)
 - [Display modes](#display-modes)
-- [The three leagues](#the-three-leagues)
+- [The leagues](#the-leagues)
+- [OHL and PWHL](#ohl-and-pwhl)
 - [Shots on goal](#shots-on-goal)
 - [How games are chosen](#how-games-are-chosen)
 - [Rotation, resume, and durations](#rotation-resume-and-durations)
@@ -40,8 +42,8 @@ required.
 ## Quick start
 
 1. Install **Hockey Scoreboard** from the LEDMatrix Plugin Store.
-2. Turn on `enabled`, then the leagues you want — `nhl` is on by default, both
-   NCAA leagues are off.
+2. Turn on `enabled`, then the leagues you want — `nhl` is on by default; both
+   NCAA leagues, the OHL and the PWHL are off.
 3. Add your teams under each league's **Favorite Teams**.
 
 ```json
@@ -70,8 +72,8 @@ required.
 
 ## Display modes
 
-Nine modes — three per league — that the LEDMatrix host rotation cycles through
-independently.
+Fifteen modes — three per league — that the LEDMatrix host rotation cycles
+through independently.
 
 ![The three NHL display modes](../../docs/assets/hockey-scoreboard/display-modes.png)
 
@@ -82,6 +84,8 @@ independently.
 | `nhl_upcoming` | Scheduled NHL games | `Next Game`, then the date and puck drop |
 | `ncaa_mens_live` / `_recent` / `_upcoming` | NCAA men's | As above |
 | `ncaa_womens_live` / `_recent` / `_upcoming` | NCAA women's | As above |
+| `ohl_live` / `_recent` / `_upcoming` | Ontario Hockey League | As above |
+| `pwhl_live` / `_recent` / `_upcoming` | Professional Women's Hockey League | As above |
 
 The three period states:
 
@@ -91,12 +95,13 @@ Each mode renders as **switch** (one game at a time, timed) or **scroll** (all
 games scroll horizontally at high FPS), set per league and per mode with
 `<league>.display_modes.<mode>_display_mode`.
 
-## The three leagues
+## The leagues
 
 Each league has its own managers, its own favorites, and its own config block.
-The two NCAA blocks are **identical to each other**; the NHL block differs in
-nine defaults, because an NHL night is a smaller, faster-moving slate than a
-college one:
+The two NCAA blocks are **identical to each other**, and the OHL and PWHL blocks
+share their defaults (see [OHL and PWHL](#ohl-and-pwhl) for what those two
+leagues cannot show); the NHL block differs in nine defaults, because an NHL
+night is a smaller, faster-moving slate than a college one:
 
 | Key | NHL | Both NCAA blocks |
 |---|---|---|
@@ -110,7 +115,40 @@ college one:
 | `<league>.display_options.show_powerplay` | `true` | `false` |
 
 Everything else under [Per-league settings](#per-league-settings) is the same in
-all three, with the prefix `nhl.`, `ncaa_mens.`, or `ncaa_womens.`.
+all five, with the prefix `nhl.`, `ncaa_mens.`, `ncaa_womens.`, `ohl.` or `pwhl.`.
+
+## OHL and PWHL
+
+ESPN does not cover the Ontario Hockey League or the Professional Women's
+Hockey League — its scoreboard answers HTTP 400 for both. Their games come from
+**HockeyTech** (LeagueStat), the scorebar feed the leagues' own websites use,
+reshaped into the same event format the ESPN leagues use. From there they
+behave like any other league: switch and scroll modes, favorites, live
+priority, goal and win celebrations, and the Vegas ticker.
+
+| | NHL / NCAA | OHL / PWHL |
+|---|---|---|
+| Records | As ESPN reports them | `W-L-OTL`, overtime and shootout losses together |
+| Period on Recent | `Final`, `Final/OT` | `Final`, `Final/OT` (a shootout counts as overtime) |
+| Rankings, odds | NCAA ranking; odds where ESPN has them | **Not available** |
+| Shots on goal, power play | From ESPN | **Not available** — the scorebar has neither |
+| Goal scorer card, game activity | NHL only | **Not available** |
+
+The settings that cannot do anything for these two leagues are hidden in the
+web UI (still declared, so a saved config keeps validating). Favorite teams use
+the league's own codes:
+
+- **OHL**: `BAR`, `BFD`, `BRAM`, `ER`, `FLNT`, `GUE`, `KGN`, `KIT`, `LDN`, `NB`,
+  `NIAG`, `OS`, `OSH`, `OTT`, `PBO`, `SAG`, `SAR`, `SBY`, `SOO`, `WSR`
+- **PWHL** (2026–27): `BOS`, `DET`, `HAM`, `MIN`, `MTL`, `NY`, `OTT`, `SEA`, `SJ`,
+  `TOR`, `VAN`, `VEG`
+
+Out of season the feed answers with the league's last and next games whatever
+window is asked for; only games inside the schedule window are kept, so a May
+final does not sit on the Recent screen all summer.
+
+`<league>.hockeytech_key` (**Advanced**, string, default empty) overrides the
+public feed key; leave it blank unless the league rotates its key.
 
 ## Shots on goal
 
@@ -229,11 +267,11 @@ both lists.
 
 ## Rotation, resume, and durations
 
-The plugin registers its nine modes in `manifest.json`, and the display
+The plugin registers its fifteen modes in `manifest.json`, and the display
 controller rotates through them in the order they appear:
 `nhl_recent`, `nhl_upcoming`, `nhl_live`, then the same three for
-`ncaa_mens`, then for `ncaa_womens`. Reorder them in `manifest.json` to change
-the sequence.
+`ncaa_mens`, then `ncaa_womens`, `ohl` and `pwhl`. Reorder them in
+`manifest.json` to change the sequence.
 
 A league or mode disabled in the config makes the plugin return `False` for that
 mode and the controller skips it, so you can disable a whole league or a single
@@ -310,8 +348,9 @@ Fallbacks used when the corresponding per-league setting is absent.
 
 ## Per-league settings
 
-Every table below exists three times — under `nhl`, `ncaa_mens`, and
-`ncaa_womens` — with the same keys. `<league>` stands for any of them; where the
+Every table below exists five times — under `nhl`, `ncaa_mens`,
+`ncaa_womens`, `ohl` and `pwhl` — with the same keys (the OHL and PWHL defaults
+are the NCAA ones). `<league>` stands for any of them; where the
 NHL default differs, both are given as *NHL / NCAA*.
 
 ### Enable and priority
@@ -749,10 +788,19 @@ ESPN's public site API, no key required:
 - NCAA men's: `.../hockey/mens-college-hockey/scoreboard`
 - NCAA women's: `.../hockey/womens-college-hockey/scoreboard`
 
+The OHL and PWHL come from HockeyTech's public scorebar feed instead,
+`https://lscluster.hockeytech.com/feed/index.php?feed=modulekit&view=scorebar`,
+with the public key each league's website uses. A schedule window is fetched at
+most once every five minutes and shared by Recent and Upcoming; the live mode
+asks for today's games at the live update interval. If the feed is unreachable
+the last copy is kept on screen.
+
 Crests are downloaded on first sight and cached under
 `assets/sports/nhl_logos/`, `assets/sports/ncaa_mens_logos/`, and
-`assets/sports/ncaa_womens_logos/`. If a download fails, a placeholder is
-generated from the team abbreviation.
+`assets/sports/ncaa_womens_logos/`; OHL and PWHL crests come from the
+feed's own logo URLs into `assets/sports/ohl_logos/` and
+`assets/sports/pwhl_logos/`. If a download fails, a placeholder is generated
+from the team abbreviation.
 
 ## Example configurations
 
@@ -815,10 +863,31 @@ games come round roughly a third as often. Disabling the modes you do not watch
 — say, every league's Upcoming screen — is usually better than shortening
 durations.
 
+### OHL and PWHL
+
+```json
+{
+  "hockey-scoreboard": {
+    "enabled": true,
+    "nhl": { "enabled": false },
+    "ohl": {
+      "enabled": true,
+      "teams": { "favorite_teams": ["LDN", "OTT"] }
+    },
+    "pwhl": {
+      "enabled": true,
+      "teams": { "favorite_teams": ["TOR"] }
+    }
+  }
+}
+```
+
 ## Troubleshooting
 
 **Nothing appears.** Check that `enabled` is on, and that the league's own
-`enabled` is on — both NCAA leagues are off by default.
+`enabled` is on — both NCAA leagues, the OHL and the PWHL are off by
+default. The PWHL season runs roughly November to May, so out of season its
+Recent screen is empty.
 
 **Shots on goal never show.** Confirm
 `<league>.display_options.show_shots_on_goal` is `true`; the NCAA leagues

@@ -29,7 +29,7 @@ if PLUGIN_DIR not in sys.path:
 
 from manager import HockeyScoreboardPlugin  # noqa: E402
 
-LEAGUES = ("nhl", "ncaa_mens", "ncaa_womens")
+LEAGUES = ("nhl", "ncaa_mens", "ncaa_womens", "ohl", "pwhl")
 
 
 class _QuietLogger:
@@ -59,6 +59,7 @@ class _Stub:
     get_live_modes = HockeyScoreboardPlugin.get_live_modes
     has_live_content = HockeyScoreboardPlugin.has_live_content
     _get_active_celebration_manager = HockeyScoreboardPlugin._get_active_celebration_manager
+    _league_has_live_content = HockeyScoreboardPlugin._league_has_live_content
 
     def __init__(self, enabled=True, live_priority=True):
         self.logger = _QuietLogger()

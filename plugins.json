@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-10-05",
+  "last_updated": "2026-10-07",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -366,7 +366,7 @@
     {
       "id": "hockey-scoreboard",
       "name": "Hockey Scoreboard",
-      "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, and NCAA Women's hockey with real-time scores and schedules",
+      "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, NCAA Women's, OHL and PWHL hockey with real-time scores and schedules",
       "author": "ChuckBuilds",
       "category": "sports",
       "tags": [
@@ -375,20 +375,23 @@
         "ncaa",
         "sports",
         "scoreboard",
-        "live-scores"
+        "live-scores",
+        "ohl",
+        "pwhl",
+        "chl",
+        "womens-hockey"
       ],
       "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
       "branch": "main",
       "plugin_path": "plugins/hockey-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-05",
+      "last_updated": "2026-10-07",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.45.0",
+      "latest_version": "1.46.0",
       "icon": "fas fa-hockey-puck",
-      "ledmatrix_min_version": "3.8.2",
-      "commit": "8d9b4cede50bf459e711eef3fd64c90beee8b72b"
+      "ledmatrix_min_version": "3.8.2"
     },
     {
       "id": "lacrosse-scoreboard",

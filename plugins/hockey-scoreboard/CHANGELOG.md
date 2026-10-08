@@ -1,5 +1,40 @@
 # Changelog
 
+## [1.46.0] - 2026-10-07
+
+### Added
+- **OHL and PWHL.** Two new leagues, off by default, each with Recent,
+  Upcoming and Live modes: `ohl_recent`, `ohl_upcoming`, `ohl_live`,
+  `pwhl_recent`, `pwhl_upcoming`, `pwhl_live`. Config blocks `ohl` and `pwhl`
+  carry the same keys as the NCAA blocks.
+- `HockeyTechDataSource` (`data_sources.py`). ESPN does not carry either league
+  (its scoreboard answers 400), so their games come from HockeyTech's public
+  `modulekit` scorebar -- the feed the leagues' own websites use -- adapted to
+  ESPN's event shape: `GameStatus` 1/2/3/4 map to pre / in / post (3, the
+  unofficial final, counts as final), intermission to `STATUS_END_PERIOD`,
+  postponed and cancelled games to statuses that are never a result, overtime
+  to period 4 and a shootout or second overtime to period 5, and records to
+  `W-L-OTL` with shootout losses folded into OTL. Everything after the fetch
+  (extraction, selection, switch and scroll rendering, celebrations, Vegas) is
+  shared with the ESPN leagues.
+- `hockeytech_managers.py`, `ohl_managers.py`, `pwhl_managers.py`. The
+  Recent/Upcoming window is fetched at most every five minutes and shared by
+  both managers; Live asks for today's games on every live poll. A failed
+  fetch keeps the last copy on screen. Out of season the feed answers with the
+  league's last and next games whatever window is asked for, so games outside
+  the schedule window are dropped.
+- `<league>.hockeytech_key` (advanced) overrides the public feed key.
+- Team logos download from the feed's own URLs into `assets/sports/ohl_logos`
+  and `assets/sports/pwhl_logos`.
+
+### Not available for OHL/PWHL
+- Odds, rankings, shots on goal, power play, the goal scorer card and game
+  activity pop-ups: the scorebar carries none of the data and there is no
+  ESPN summary to read. Their settings are hidden in the OHL and PWHL blocks
+  (still declared, so saved configs validate); odds and shots on goal are also
+  forced off in the managers, and the rest have no data to act on.
+  The favorite-team diagnostic skips both leagues, as it checks against ESPN.
+
 ## [1.45.0] - 2026-10-05
 
 ### Changed
