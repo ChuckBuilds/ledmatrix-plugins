@@ -291,6 +291,26 @@ _HT_NOT_PLAYED = (
     ("delay", "STATUS_DELAYED"),
 )
 
+#: A club's code can differ between seasons of the same year: PWHL Las Vegas
+#: is VEG in the 2026-27 preseason and VGS in the regular season. Games and
+#: favourites are both read through this, so either spelling matches.
+#: ponytail: hand-kept table; key teams by HockeyTech id if more codes drift.
+HOCKEYTECH_CODE_ALIASES: Dict[str, str] = {"VEG": "VGS"}
+
+
+def _ht_clock(value) -> str:
+    """HockeyTech's "MM:SS" as ESPN's "M:SS". Core's game-over check only
+    reads "0:00" as a clock at zero, so "00:00" would never end a game."""
+    minutes, _, seconds = _ht_text(value).partition(":")
+    return f"{_ht_int(minutes)}:{seconds}" if seconds else "0:00"
+
+
+def _ht_logo(value) -> Optional[str]:
+    """The full-size logo for a feed logo URL. The scorebar names a 50x50
+    thumbnail, and logos are only ever scaled down to fit a panel."""
+    url = _ht_text(value)
+    return url.replace("/logos/50x50/", "/logos/") if url else None
+
 
 def _ht_int(value, default: int = 0) -> int:
     """HockeyTech sends numbers as strings for some leagues, ints for others."""
@@ -382,7 +402,7 @@ class HockeyTechDataSource(DataSource):
         else:
             state, name, completed = "pre", "STATUS_SCHEDULED", False
 
-        clock = _ht_text(game.get("GameClock")) or "0:00"
+        clock = _ht_clock(game.get("GameClock"))
         if state == "in":
             label = "INT" if name == "STATUS_END_PERIOD" else (period_short or str(period))
             short_detail = f"{clock} - {label}"
@@ -410,6 +430,7 @@ class HockeyTechDataSource(DataSource):
         ot_losses = (_ht_int(game.get(f"{side}OTLosses"))
                      + _ht_int(game.get(f"{side}ShootoutLosses")))
         code = _ht_text(game.get(f"{side}Code"))
+        code = HOCKEYTECH_CODE_ALIASES.get(code, code)
         nickname = _ht_text(game.get(f"{side}Nickname"))
         return {
             "id": _ht_text(game.get(f"{side}ID")),
@@ -422,7 +443,7 @@ class HockeyTechDataSource(DataSource):
                 "shortDisplayName": nickname,
                 "name": nickname,
                 "location": _ht_text(game.get(f"{side}City")),
-                "logo": _ht_text(game.get(f"{side}Logo")) or None,
+                "logo": _ht_logo(game.get(f"{side}Logo")),
             },
             "records": [{
                 "name": "overall",

@@ -53,6 +53,8 @@ def plugin(request, monkeypatch):
     monkeypatch.chdir(CORE)
     spec = load_harness_spec(PLUGIN_DIR)
     config = build_full_config(PLUGIN_DIR, spec, {})
+    # The harness also simulates a PWHL live game; this slate is NHL's alone.
+    config["pwhl"]["enabled"] = False
     dm = VisualTestDisplayManager(width=width, height=height)
     plugin = _instantiate("hockey-scoreboard", load_manifest(PLUGIN_DIR), PLUGIN_DIR,
                           config, {}, dm)

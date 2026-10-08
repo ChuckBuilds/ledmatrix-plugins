@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-10-07",
+  "last_updated": "2026-10-08",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -386,10 +386,10 @@
       "plugin_path": "plugins/hockey-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-07",
+      "last_updated": "2026-10-08",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.46.0",
+      "latest_version": "1.47.0",
       "icon": "fas fa-hockey-puck",
       "ledmatrix_min_version": "3.8.2"
     },

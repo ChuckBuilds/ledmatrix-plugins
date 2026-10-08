@@ -1586,21 +1586,6 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
         
         return rankings
 
-    def _get_manager_for_league_mode(self, league: str, mode_type: str):
-        """Get manager instance for a league and mode type combination.
-        
-        This is a convenience method that calls _get_league_manager_for_mode()
-        for consistency with football-scoreboard naming.
-        
-        Args:
-            league: 'nhl', 'ncaa_mens', 'ncaa_womens', 'ohl', or 'pwhl'
-            mode_type: 'live', 'recent', or 'upcoming'
-            
-        Returns:
-            Manager instance or None if not available/enabled
-        """
-        return self._get_league_manager_for_mode(league, mode_type)
-
     def _get_games_from_manager(self, manager, mode_type: str) -> List[Dict]:
         """Get games list from a manager based on mode type.
         
