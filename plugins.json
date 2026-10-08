@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-10-07",
+  "last_updated": "2026-10-08",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -391,7 +391,8 @@
       "screenshot": "",
       "latest_version": "1.46.0",
       "icon": "fas fa-hockey-puck",
-      "ledmatrix_min_version": "3.8.2"
+      "ledmatrix_min_version": "3.8.2",
+      "commit": "c3b58375ca76e1bab5237fae6b34c30e13c9247b"
     },
     {
       "id": "lacrosse-scoreboard",
