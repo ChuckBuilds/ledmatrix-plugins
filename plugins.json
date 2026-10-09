@@ -81,7 +81,8 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "1.60.1",
-      "ledmatrix_min_version": "3.8.2"
+      "ledmatrix_min_version": "3.8.2",
+      "commit": "02f354db907fe3ab7c3a372a0f43a88b6a1c54f7"
     },
     {
       "id": "basketball-scoreboard",
@@ -107,7 +108,8 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "1.45.1",
-      "ledmatrix_min_version": "3.8.2"
+      "ledmatrix_min_version": "3.8.2",
+      "commit": "02f354db907fe3ab7c3a372a0f43a88b6a1c54f7"
     },
     {
       "id": "calendar",
@@ -282,7 +284,8 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "3.21.1",
-      "ledmatrix_min_version": "3.8.2"
+      "ledmatrix_min_version": "3.8.2",
+      "commit": "02f354db907fe3ab7c3a372a0f43a88b6a1c54f7"
     },
     {
       "id": "geochron",
@@ -388,7 +391,8 @@
       "screenshot": "",
       "latest_version": "1.47.1",
       "icon": "fas fa-hockey-puck",
-      "ledmatrix_min_version": "3.8.2"
+      "ledmatrix_min_version": "3.8.2",
+      "commit": "02f354db907fe3ab7c3a372a0f43a88b6a1c54f7"
     },
     {
       "id": "lacrosse-scoreboard",
@@ -413,7 +417,8 @@
       "screenshot": "",
       "latest_version": "1.38.1",
       "icon": "fas fa-baseball-ball",
-      "ledmatrix_min_version": "3.8.2"
+      "ledmatrix_min_version": "3.8.2",
+      "commit": "02f354db907fe3ab7c3a372a0f43a88b6a1c54f7"
     },
     {
       "id": "birdnet-go",
@@ -847,7 +852,8 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "2.42.1",
-      "ledmatrix_min_version": "3.8.2"
+      "ledmatrix_min_version": "3.8.2",
+      "commit": "02f354db907fe3ab7c3a372a0f43a88b6a1c54f7"
     },
     {
       "id": "static-image",
@@ -1007,7 +1013,8 @@
       "screenshot": "",
       "latest_version": "1.21.1",
       "icon": "fas fa-fist-raised",
-      "ledmatrix_min_version": "3.8.2"
+      "ledmatrix_min_version": "3.8.2",
+      "commit": "02f354db907fe3ab7c3a372a0f43a88b6a1c54f7"
     },
     {
       "id": "weather",
@@ -1163,7 +1170,8 @@
       "screenshot": "",
       "latest_version": "1.38.1",
       "last_updated": "2026-10-09",
-      "ledmatrix_min_version": "3.8.2"
+      "ledmatrix_min_version": "3.8.2",
+      "commit": "02f354db907fe3ab7c3a372a0f43a88b6a1c54f7"
     },
     {
       "id": "tidbyt-baseball-scoreboard",
@@ -1210,7 +1218,8 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "1.37.1",
-      "ledmatrix_min_version": "3.8.2"
+      "ledmatrix_min_version": "3.8.2",
+      "commit": "02f354db907fe3ab7c3a372a0f43a88b6a1c54f7"
     },
     {
       "id": "jellyfin-now-playing",
