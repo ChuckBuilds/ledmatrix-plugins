@@ -169,6 +169,17 @@ the core actually ships:
   fails if a copy, a guarded import, a missing or misplaced base or a change
   to nrl's override comes back; `scripts/test_favourite_matching.py` pins the
   answers.
+- **Converged at 3.8.4 (sports family 7, other-games rotation):**
+  `src.common.sports_rotation`. `SportsCore` (all nine) inherits
+  `SportsRotationMixin` (`_by_importance`, `_other_games_window`,
+  `_advance_other_games_if_due`, `_rotate_other_games_on_display`,
+  `_attach_odds_to_rotated_games` and the default `_rankings_loaded`), listed
+  after `SportsFavoritesMixin` and before `SportsCoreSharedMixin`. football
+  keeps its `_rankings_loaded` override, which also counts its rankings keyed
+  by ESPN team id. `scripts/test_rotation_mixin_copies.py` fails if a copy, a
+  guarded import, a missing or misplaced base or another `_rankings_loaded`
+  override comes back; `scripts/test_other_games_rotation.py` pins the
+  answers.
 - **Not converging (documented forks):** `dynamic_team_resolver` (plugin copies
   take `cache_manager` in the constructor; the core's does not — different
   API), ufc's `base_odds_manager` (MMA athlete-odds fork), and — until the core

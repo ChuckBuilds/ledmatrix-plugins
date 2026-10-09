@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.61.0] - 2026-10-09
+
+### Changed
+- Requires LEDMatrix core 3.8.4 (`ledmatrix_min_version` and
+  `compatible_versions`), the first release that ships
+  `src/common/sports_rotation.py`. The store refuses to install or update
+  this version onto an older core.
+- Uses core's other-games rotation: `SportsCore` inherits
+  `SportsRotationMixin` (`src.common.sports_rotation`).
+
+### Removed
+- This plugin's copies of core's other-games rotation on `SportsCore`:
+  `_by_importance`, `_other_games_window`, `_advance_other_games_if_due`,
+  `_rotate_other_games_on_display`, `_attach_odds_to_rotated_games` and
+  `_rankings_loaded`.
+
+No change in behaviour.
+
 ## [1.60.1] - 2026-10-09
 
 ### Fixed

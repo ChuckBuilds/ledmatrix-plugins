@@ -1,7 +1,7 @@
 {
   "id": "lacrosse-scoreboard",
   "name": "Lacrosse Scoreboard",
-  "version": "1.38.1",
+  "version": "1.39.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NCAA men's and women's lacrosse games with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/lacrosse-scoreboard",
@@ -17,7 +17,7 @@
   ],
   "icon": "fas fa-baseball-ball",
   "compatible_versions": [
-    ">=3.8.2"
+    ">=3.8.4"
   ],
   "requires": {
     "python": ">=3.9",
@@ -50,6 +50,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.39.0",
+      "released": "2026-10-09",
+      "ledmatrix_min_version": "3.8.4",
+      "notes": "Requires LEDMatrix core 3.8.4, the first release that ships src.common.sports_rotation. Uses core's other-games rotation: SportsCore inherits its SportsRotationMixin, and this plugin's copies of _by_importance, _other_games_window, _advance_other_games_if_due, _rotate_other_games_on_display, _attach_odds_to_rotated_games and _rankings_loaded are removed. No change in behaviour."
+    },
     {
       "version": "1.38.1",
       "released": "2026-10-09",

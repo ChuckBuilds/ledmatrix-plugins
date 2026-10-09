@@ -132,7 +132,6 @@
     "sports.py::SportsCore._load_fonts",
     "sports.py::SportsCore._odds_would_hit_top_row",
     "sports.py::SportsCore._passes_other_filters",
-    "sports.py::SportsCore._rankings_loaded",
     "sports.py::SportsCore._scorebug_centre_gap",
     "sports.py::SportsCore._top_row_span",
     "sports.py::SportsCore._upcoming_top_row_span",

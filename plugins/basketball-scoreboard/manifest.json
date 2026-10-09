@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.45.1",
+  "version": "1.46.0",
   "update_interval": 60,
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
@@ -19,6 +19,12 @@
   "branch": "main",
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
+    {
+      "version": "1.46.0",
+      "released": "2026-10-09",
+      "ledmatrix_min_version": "3.8.4",
+      "notes": "Requires LEDMatrix core 3.8.4, the first release that ships src.common.sports_rotation. Uses core's other-games rotation: SportsCore inherits its SportsRotationMixin, and this plugin's copies of _by_importance, _other_games_window, _advance_other_games_if_due, _rotate_other_games_on_display, _attach_odds_to_rotated_games and _rankings_loaded are removed. No change in behaviour."
+    },
     {
       "version": "1.45.1",
       "released": "2026-10-09",
@@ -686,6 +692,6 @@
   "entry_point": "manager.py",
   "class_name": "BasketballScoreboardPlugin",
   "compatible_versions": [
-    ">=3.8.2"
+    ">=3.8.4"
   ]
 }
