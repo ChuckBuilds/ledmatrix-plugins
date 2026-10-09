@@ -1868,6 +1868,15 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
                               rankings.get(game.get("away_abbr"), 0)) if r]
         return min(ranked) if ranked else 99
 
+    def _rankings_loaded(self) -> bool:
+        """Did a poll load at all? The ranking reads fail open when not.
+
+        The seam _by_importance asks before ordering by rank. This is the
+        abbreviation table; football-scoreboard overrides it to count its
+        table keyed by ESPN team id as well.
+        """
+        return bool(getattr(self, "_team_rankings_cache", None))
+
     def _by_importance(self, games: List[Dict], newest_first: bool = False) -> List[Dict]:
         """Non-favourite games, best matchup first.
 
@@ -1897,8 +1906,7 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
         next", which is both what an upcoming board means and inherently
         near-term, since a team's next game is by definition the closest one.
         """
-        rankings = getattr(self, "_team_rankings_cache", None) or {}
-        if not rankings:
+        if not self._rankings_loaded():
             return games
         if newest_first:
             def key(game):
@@ -1970,21 +1978,29 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
             return others[:limit]
 
         interval = self.other_rotation_interval_seconds
-        if interval > 0:
-            now = time.monotonic()
-            if not self._other_window_rotated_at:
-                self._other_window_rotated_at = now
-            elapsed = now - self._other_window_rotated_at
-            if elapsed >= interval:
-                # Advance by however many intervals actually passed. The board
-                # is not guaranteed to be running -- or this mode displayed --
-                # for every one of them, and stepping once would let a plugin
-                # that sat idle crawl a step at a time.
-                steps = int(elapsed // interval)
-                self._other_window_start += steps * limit
-                self._other_window_rotated_at = now
+        # Under the lock: update() advances this window through
+        # _favorites_first, and display() advances it through
+        # _rotate_other_games_on_display, so the read-modify-write below has two
+        # writers. Interleaved, both can see the interval elapsed and each add a
+        # width, skipping a window of games nobody ever sees. _games_lock is an
+        # RLock and the display path takes it again straight after, which is
+        # why this can be the same lock rather than another one to reason about.
+        with self._games_lock:
+            if interval > 0:
+                now = time.monotonic()
+                if not self._other_window_rotated_at:
+                    self._other_window_rotated_at = now
+                elapsed = now - self._other_window_rotated_at
+                if elapsed >= interval:
+                    # Advance by however many intervals actually passed. The
+                    # board is not guaranteed to be running -- or this mode
+                    # displayed -- for every one of them, and stepping once
+                    # would let a plugin that sat idle crawl a step at a time.
+                    steps = int(elapsed // interval)
+                    self._other_window_start += steps * limit
+                    self._other_window_rotated_at = now
 
-        start = self._other_window_start % len(others)
+            start = self._other_window_start % len(others)
         window = others[start:start + limit]
         if len(window) < limit:
             window += others[:limit - len(window)]
@@ -2042,9 +2058,11 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
         inside its TTL costs a cache lookup rather than a request. The
         thread mutates each game dict in place; the renderer re-reads
         game["odds"] every frame, so a line appears as soon as its fetch
-        lands, mid-dwell included.
+        lands, mid-dwell included. Same as football-scoreboard #343.
         """
-        if not self.show_odds:
+        # getattr: managers are built partially in places (the plugin tests
+        # among them) that never set show_odds or an odds manager.
+        if not getattr(self, "show_odds", False) or not getattr(self, "odds_manager", None):
             return
         pending = [g for g in games if not g.get("odds")]
         if not pending:
@@ -2083,7 +2101,17 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
         if not pools:
             return []
         interval = self.other_rotation_interval_seconds
-        others, limit = pools["others"], max(0, pools["other_limit"])
+        limit = max(0, pools["other_limit"])
+        # Whichever pool _compose_selection will actually slice. It falls back
+        # to the unfiltered list only when NOTHING survived -- favourites
+        # included. With a favourite playing and the filters rejecting every
+        # other game, compose keeps the favourites-only list, so guessing the
+        # unfiltered pool here made the due-check fire on every display() call
+        # forever, recomposing an identical list each frame.
+        others = pools["others"]
+        favorites_fill = pools["favorites"] and pools["favorite_limit"] > 0
+        if not others and limit > 0 and not favorites_fill:
+            others = pools["unfiltered"]
         if interval <= 0 or limit <= 0 or len(others) <= limit:
             return []       # pinned, favourites-only, or nothing to rotate through
         if not self._other_window_rotated_at:

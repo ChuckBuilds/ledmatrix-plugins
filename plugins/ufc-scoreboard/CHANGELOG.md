@@ -1,5 +1,29 @@
 # Changelog
 
+## [1.21.1] - 2026-10-09
+
+### Changed
+- Fights rotated into the other-games slice get betting odds when `show_odds`
+  is on, as the fights update() selects do. The rotation is not active in
+  ufc-scoreboard today (its MMA managers select fights themselves), so a board
+  shows no difference yet.
+
+### Fixed
+- The other-games slice no longer skips a window of games when update() and
+  the display advance it at the same moment: the advance now holds the games
+  lock (ported from football-scoreboard).
+- When no favourite is playing and the quality or division filters reject
+  every other game, the fallback list now rotates every
+  `other_rotation_interval_seconds` like any other slice. It used to move only
+  when update() ran, then by several windows at once (ported from
+  football-scoreboard).
+- `_by_importance`, `_other_games_window`, `_advance_other_games_if_due`,
+  `_rotate_other_games_on_display` and `_attach_odds_to_rotated_games` are now
+  one body in all nine scoreboards. `_by_importance` asks
+  `_rankings_loaded()`, which football-scoreboard overrides to count its
+  rankings keyed by team id; the rotated-in odds fetch is skipped when there
+  is no odds manager.
+
 ## [1.21.0] - 2026-10-05
 
 ### Changed

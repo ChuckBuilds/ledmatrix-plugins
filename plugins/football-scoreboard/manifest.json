@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "3.21.0",
+  "version": "3.21.1",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "3.21.1",
+      "released": "2026-10-09",
+      "ledmatrix_min_version": "3.8.2",
+      "notes": "_by_importance, _other_games_window, _advance_other_games_if_due, _rotate_other_games_on_display and _attach_odds_to_rotated_games are now one body in all nine scoreboards. _by_importance asks _rankings_loaded(), which football-scoreboard overrides to count its rankings keyed by team id; the rotated-in odds fetch is skipped when there is no odds manager. No change in behaviour: this plugin already had the window lock and the due-check fix the other eight now get."
+    },
     {
       "version": "3.21.0",
       "released": "2026-10-05",
