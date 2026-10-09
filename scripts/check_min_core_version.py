@@ -174,6 +174,7 @@ MODULE_FIRST_VERSION = {
     "src.malloc_tuning": "3.8.2",  # core #774 (malloc arena cap + malloc_trim)
     "src.common.sports_favorites": "3.8.2",  # core #775 (sports family 6, favourite matching)
     "src.common.espn_payload": None,  # core #749 (cache ESPN scoreboard windows without unread parts)
+    "src.common.sports_rotation": None,  # core #786 (sports family 7, other-games rotation)
     # on core main, in no tagged release yet: add as None. When the next
     # release is tagged, set each None entry here to that tag -- the test's
     # tag-verification section insists on it once the tag is in its list.
