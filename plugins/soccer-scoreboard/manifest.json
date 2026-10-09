@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.42.1",
+  "version": "2.43.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -53,6 +53,12 @@
     "soccer_usa.1_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.43.0",
+      "released": "2026-10-09",
+      "ledmatrix_min_version": "3.8.4",
+      "notes": "Requires LEDMatrix core 3.8.4, the first release that ships src.common.sports_rotation. Uses core's other-games rotation: SportsCore inherits its SportsRotationMixin, and this plugin's copies of _by_importance, _other_games_window, _advance_other_games_if_due, _rotate_other_games_on_display, _attach_odds_to_rotated_games and _rankings_loaded are removed. No change in behaviour."
+    },
     {
       "version": "2.42.1",
       "released": "2026-10-09",
@@ -768,6 +774,6 @@
     }
   ],
   "compatible_versions": [
-    ">=3.8.2"
+    ">=3.8.4"
   ]
 }

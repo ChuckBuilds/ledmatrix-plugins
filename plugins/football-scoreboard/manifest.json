@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "3.21.1",
+  "version": "3.22.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "3.22.0",
+      "released": "2026-10-09",
+      "ledmatrix_min_version": "3.8.4",
+      "notes": "Requires LEDMatrix core 3.8.4, the first release that ships src.common.sports_rotation. Uses core's other-games rotation: SportsCore inherits its SportsRotationMixin, and this plugin's copies of _by_importance, _other_games_window, _advance_other_games_if_due, _rotate_other_games_on_display and _attach_odds_to_rotated_games are removed. football keeps its _rankings_loaded override, which also counts its rankings keyed by ESPN team id. No change in behaviour."
+    },
     {
       "version": "3.21.1",
       "released": "2026-10-09",
@@ -1003,7 +1009,7 @@
   "config_schema": "config_schema.json",
   "entry_point": "manager.py",
   "compatible_versions": [
-    ">=3.8.2"
+    ">=3.8.4"
   ],
   "display": {
     "design_size": {

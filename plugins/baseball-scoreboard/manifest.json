@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.60.1",
+  "version": "1.61.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.61.0",
+      "released": "2026-10-09",
+      "ledmatrix_min_version": "3.8.4",
+      "notes": "Requires LEDMatrix core 3.8.4, the first release that ships src.common.sports_rotation. Uses core's other-games rotation: SportsCore inherits its SportsRotationMixin, and this plugin's copies of _by_importance, _other_games_window, _advance_other_games_if_due, _rotate_other_games_on_display, _attach_odds_to_rotated_games and _rankings_loaded are removed. No change in behaviour."
+    },
     {
       "version": "1.60.1",
       "released": "2026-10-09",
@@ -910,6 +916,6 @@
   "class_name": "BaseballScoreboardPlugin",
   "entry_point": "manager.py",
   "compatible_versions": [
-    ">=3.8.2"
+    ">=3.8.4"
   ]
 }
