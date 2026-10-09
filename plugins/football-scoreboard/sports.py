@@ -1961,9 +1961,11 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
         inside its TTL costs a cache lookup rather than a request. The
         thread mutates each game dict in place; the renderer re-reads
         game["odds"] every frame, so a line appears as soon as its fetch
-        lands, mid-dwell included.
+        lands, mid-dwell included. Same as football-scoreboard #343.
         """
-        if not self.show_odds:
+        # getattr: managers are built partially in places (the plugin tests
+        # among them) that never set show_odds or an odds manager.
+        if not getattr(self, "show_odds", False) or not getattr(self, "odds_manager", None):
             return
         pending = [g for g in games if not g.get("odds")]
         if not pending:

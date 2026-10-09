@@ -132,6 +132,9 @@ def make(sports, favorites, fav_limit, other_limit):
     obj.other_games_min_quality = "any"          # filters off unless a test asks
     obj.other_games_divisions = []
     obj._team_rankings_cache = {}
+    # The window advance takes this: two threads reach it, update() and the
+    # display path, and each adds a width.
+    obj._games_lock = threading.RLock()
     obj._division_team_ids = {}
     # The value and its freshness stamp have to be set together: a populated
     # cache with a zero stamp reads as stale and sends the lookup back to the
@@ -359,6 +362,7 @@ def main():
         "_extract_game_details": lambda s, ev: None,
     })
     r = recent_cls.__new__(recent_cls)
+    r._games_lock = threading.RLock()
     r.favorite_teams = favs
     r.recent_games_to_show = 3
     r.other_recent_games_to_show = 2

@@ -1,5 +1,18 @@
 # Changelog
 
+## [3.21.1] - 2026-10-09
+
+### Changed
+- `_by_importance`, `_other_games_window`, `_advance_other_games_if_due`,
+  `_rotate_other_games_on_display` and `_attach_odds_to_rotated_games` are now
+  one body in all nine scoreboards. `_by_importance` asks
+  `_rankings_loaded()`, which football-scoreboard overrides to count its
+  rankings keyed by team id; the rotated-in odds fetch is skipped when there
+  is no odds manager.
+
+No change in behaviour: this plugin already had the window lock and the
+due-check fix the other eight now get.
+
 ## [3.21.0] - 2026-10-05
 
 ### Changed
