@@ -58,9 +58,10 @@ worker and hockey and lacrosse asked on the calling thread: up to 12 s of
   poll; Upcoming also with two of the four shown): odds requests, seconds
   waited, games with odds now / later.
 * ``CONCURRENCY``: ``update()`` and ``display()`` on two threads against a
-  20 ms endpoint: exceptions, ERROR logs, the most odds requests and odds
-  workers in flight at once (one each: one batch per manager), and the games
-  with odds once every thread is done.
+  20 ms endpoint, ``RUNS`` times per plugin with the thread switch interval
+  at its shortest: exceptions, ERROR logs (printed on failure), the most odds
+  requests and odds workers in flight at once (one each: one batch per
+  manager), and the rounds in which every game ended with its odds.
 
 To see the current tables after an intended change:
 
@@ -76,6 +77,7 @@ import json
 import logging
 import os
 import sys
+import tempfile
 import threading
 import time
 from datetime import datetime, timedelta
@@ -84,6 +86,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 import requests
+from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from test_favourite_matching import NOW, build, changed_plugins  # noqa: E402
@@ -213,11 +216,11 @@ EXPECTED_UPDATE = {
     'Live, next poll': 'asked 2 wait 0 ; now - ; later u4,u3 | asked 2 wait 0 ; now - ; later u4,u3 | asked 2 wait 0 ; now - ; later u4,u3 | asked 2 wait 0 ; now - ; later u4,u3 | asked 2 wait 0 ; now - ; later u4,u3 | asked 2 wait 0 ; now - ; later u4,u3 | asked 2 wait 0 ; now - ; later u4,u3 | asked 2 wait 0 ; now - ; later u4,u3 | asked 2 wait 0 ; now - ; later u4,u3',
 }
 
-# update() 20 times and display() 200 times on two threads, 20 ms endpoint:
-# exceptions raised, ERROR logs ; most requests and odds workers at once ;
-# games with odds once every thread is done.
+# RUNS rounds of update() 20 times and display() 200 times on two threads, 20 ms
+# endpoint: exceptions raised, ERROR logs ; most requests and odds workers at
+# once ; rounds in which every game had its odds once every thread was done.
 EXPECTED_CONCURRENCY = {
-    'update() and display() on two threads': 'raised 0 errors 0 ; in flight 1 workers 1 ; odds on u1,u2,u3,u4 | raised 0 errors 0 ; in flight 1 workers 1 ; odds on u1,u2,u3,u4 | raised 0 errors 0 ; in flight 1 workers 1 ; odds on u1,u2,u3,u4 | raised 0 errors 0 ; in flight 1 workers 1 ; odds on u1,u2,u3,u4 | raised 0 errors 0 ; in flight 1 workers 1 ; odds on u1,u2,u3,u4 | raised 0 errors 0 ; in flight 1 workers 1 ; odds on u1,u2,u3,u4 | raised 0 errors 0 ; in flight 1 workers 1 ; odds on u1,u2,u3,u4 | raised 0 errors 0 ; in flight 1 workers 1 ; odds on u1,u2,u3,u4 | raised 0 errors 0 ; in flight 1 workers 1 ; odds on u1,u2,u3,u4',
+    'update() and display() on two threads': "raised 0 errors 0 ; in flight 1 workers 1 ; every game's odds landed in 25 of 25 | raised 0 errors 0 ; in flight 1 workers 1 ; every game's odds landed in 25 of 25 | raised 0 errors 0 ; in flight 1 workers 1 ; every game's odds landed in 25 of 25 | raised 0 errors 0 ; in flight 1 workers 1 ; every game's odds landed in 25 of 25 | raised 0 errors 0 ; in flight 1 workers 1 ; every game's odds landed in 25 of 25 | raised 0 errors 0 ; in flight 1 workers 1 ; every game's odds landed in 25 of 25 | raised 0 errors 0 ; in flight 1 workers 1 ; every game's odds landed in 25 of 25 | raised 0 errors 0 ; in flight 1 workers 1 ; every game's odds landed in 25 of 25 | raised 0 errors 0 ; in flight 1 workers 1 ; every game's odds landed in 25 of 25",
 }
 
 
@@ -480,8 +483,9 @@ def odds_row(plugin, kind, endpoint):
     return guarded(run)
 
 
-def update_games(status):
-    """Four games as ESPN events, one bout each so ufc's split keeps them."""
+def update_games(status, logos=None):
+    """Four games as ESPN events, one bout each so ufc's split keeps them;
+    with ``logos`` (a directory holding the images), drawable by display()."""
     out = []
     for n in range(1, 5):
         hours = n if status == "upcoming" else -n
@@ -492,15 +496,13 @@ def update_games(status):
                 "clock": "10:00", "period": 2, "period_text": "Q2",
                 "is_live": status == "live", "is_halftime": False,
                 "is_final": status == "final", "is_upcoming": status == "upcoming",
-                "start_time_utc": NOW + timedelta(hours=hours),
-                # What display() draws a card from (no such files: placeholders).
-                "home_logo_path": Path(f"/nonexistent/H{n}.png"),
-                "away_logo_path": Path(f"/nonexistent/A{n}.png"),
-                "home_logo_url": None, "away_logo_url": None,
-                "fighter1_id": f"9{n}", "fighter2_id": f"8{n}",
-                "fighter1_image_path": Path("/nonexistent/f1.png"),
-                "fighter2_image_path": Path("/nonexistent/f2.png"),
-                "fighter1_image_url": None, "fighter2_image_url": None}
+                "start_time_utc": NOW + timedelta(hours=hours)}
+        if logos:
+            game.update(home_logo_path=logos / f"H{n}.png", away_logo_path=logos / f"A{n}.png",
+                        home_logo_url=None, away_logo_url=None,
+                        fighter1_id=f"9{n}", fighter2_id=f"8{n}",
+                        fighter1_image_path=logos / "f1.png", fighter2_image_path=logos / "f2.png",
+                        fighter1_image_url=None, fighter2_image_url=None)
         out.append({"id": f"u{n}", "competitions": [game]})
     return out
 
@@ -559,58 +561,104 @@ class Busy:
         return {"details": f"{event_id} -3.5"}
 
 
+#: How many times each plugin's CONCURRENCY row runs, so a rare interleaving shows.
+RUNS = 25
+#: plugin -> the ERROR lines its CONCURRENCY runs logged (printed on failure).
+CONCURRENCY_ERRORS = {}
+
+
 class Errors(logging.Handler):
     def __init__(self):
         super().__init__(logging.ERROR)
         self.seen = []
 
     def emit(self, record):
-        if record.name != "src.logo_downloader":    # afl: no logo endpoint offline
-            self.seen.append(record.getMessage())
+        self.seen.append(f"{record.name}: {record.getMessage()}")
+
+
+def concurrency_run(plugin, logos):
+    """After a first update(), update() 20 more times on one thread while
+    display() draws on another until those are done (200 times at least);
+    what happened. The first update() is there so display() has games to draw
+    from its first call, however the two threads are scheduled."""
+    mgr = build(plugin, "Upcoming", {"upcoming_games_to_show": 4,
+                                     "other_upcoming_games_to_show": 4,
+                                     "other_games_min_quality": "any"})
+    mgr._fetch_team_rankings = lambda *a, **k: None
+    events = update_games("upcoming", logos)
+    mgr._fetch_data = lambda *a, **k: {"events": copy.deepcopy(events)}
+    mgr._extract_game_details = lambda ev: dict(ev["competitions"][0])
+    mgr.show_odds, mgr.odds_manager = True, Busy(f"{mgr.sport_key}-odds")
+    raised, errors, updated = [], Errors(), threading.Event()
+
+    def update():
+        mgr.last_update = 0
+        mgr.update()
+
+    def updates():
+        try:
+            for _ in range(20):
+                update()
+        except Exception as exc:                      # noqa: BLE001
+            raised.append(repr(exc))
+        finally:
+            updated.set()
+
+    def displays():
+        try:
+            n = 0
+            while n < 200 or not updated.is_set():
+                mgr.display(force_clear=False)
+                n += 1
+        except Exception as exc:                      # noqa: BLE001
+            raised.append(repr(exc))
+
+    before = threading.enumerate()
+    logging.disable(logging.NOTSET)
+    logging.getLogger().addHandler(errors)
+    try:
+        update()
+        threads = [threading.Thread(target=updates), threading.Thread(target=displays)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(120)
+        for thread in set(threading.enumerate()) - set(before):
+            thread.join(10)
+    finally:
+        logging.getLogger().removeHandler(errors)
+        logging.disable(logging.CRITICAL)
+    complete = len(mgr.games_list) == 4 and all(g.get("odds") for g in mgr.games_list)
+    return raised, errors.seen, mgr.odds_manager, complete
 
 
 def concurrency_row(plugin):
-    """update() and display() on two threads while a slow endpoint answers."""
+    """RUNS rounds of concurrency_run, with the thread switch interval at its
+    shortest so the two threads interleave as finely as Python allows. The
+    games' logos are real files in a temporary directory, so display() fetches
+    and creates nothing: a logo path it cannot write (/nonexistent on Linux)
+    logs ERRORs of its own that have nothing to do with odds."""
     def run():
-        mgr = build(plugin, "Upcoming", {"upcoming_games_to_show": 4,
-                                         "other_upcoming_games_to_show": 4,
-                                         "other_games_min_quality": "any"})
-        mgr._fetch_team_rankings = lambda *a, **k: None
-        events = update_games("upcoming")
-        mgr._fetch_data = lambda *a, **k: {"events": copy.deepcopy(events)}
-        mgr._extract_game_details = lambda ev: dict(ev["competitions"][0])
-        mgr.show_odds, mgr.odds_manager = True, Busy(f"{mgr.sport_key}-odds")
-        raised, errors = [], Errors()
-
-        def loop(step, times):
+        raised, errors, active, workers, complete = [], [], 0, 0, 0
+        interval = sys.getswitchinterval()
+        with tempfile.TemporaryDirectory() as tmp:
+            logos = Path(tmp)
+            for name in ("H1", "H2", "H3", "H4", "A1", "A2", "A3", "A4", "f1", "f2"):
+                Image.new("RGBA", (16, 16), (200, 40, 40, 255)).save(logos / f"{name}.png")
+            sys.setswitchinterval(1e-6)
             try:
-                for _ in range(times):
-                    step()
-            except Exception as exc:                  # noqa: BLE001
-                raised.append(repr(exc))
-
-        def update():
-            mgr.last_update = 0
-            mgr.update()
-        before = threading.enumerate()
-        logging.disable(logging.NOTSET)
-        logging.getLogger().addHandler(errors)
-        try:
-            threads = [threading.Thread(target=loop, args=(update, 20)),
-                       threading.Thread(target=loop, args=(lambda: mgr.display(force_clear=False), 200))]
-            for thread in threads:
-                thread.start()
-            for thread in threads:
-                thread.join(60)
-            for thread in set(threading.enumerate()) - set(before):
-                thread.join(10)
-        finally:
-            logging.getLogger().removeHandler(errors)
-            logging.disable(logging.CRITICAL)
-        odds = mgr.odds_manager
-        with_odds = [g["id"] for g in mgr.games_list if g.get("odds")]
-        return (f"raised {len(raised)} errors {len(errors.seen)} ; in flight {odds.most_active}"
-                f" workers {odds.most_workers} ; odds on {','.join(with_odds) or '-'}")
+                for _ in range(RUNS):
+                    r, e, odds, done = concurrency_run(plugin, logos)
+                    raised += r
+                    errors += e
+                    active, workers = max(active, odds.most_active), max(workers, odds.most_workers)
+                    complete += done
+            finally:
+                sys.setswitchinterval(interval)
+        if raised or errors:
+            CONCURRENCY_ERRORS[plugin] = raised + errors
+        return (f"raised {len(raised)} errors {len(errors)} ; in flight {active}"
+                f" workers {workers} ; every game's odds landed in {complete} of {RUNS}")
     return guarded(run)
 
 
@@ -705,6 +753,8 @@ def main() -> int:
         problems += diff(name, EXPECTED[name], got, changed_plugins)
     for p in problems:
         print(f"  [FAIL] {p}")
+    for plugin, lines in CONCURRENCY_ERRORS.items():
+        print(f"  CONCURRENCY {plugin}: " + " | ".join(sorted(set(lines)))[:2000])
     if problems:
         return 1
     rows = sum(len(t) for t in observed.values())
