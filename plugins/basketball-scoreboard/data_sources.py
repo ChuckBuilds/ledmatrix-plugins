@@ -117,15 +117,14 @@ class ESPNDataSource(DataSource):
     
     def fetch_standings(self, sport: str, league: str) -> Dict:
         """Fetch standings from ESPN API."""
-        # College sports use rankings endpoint, professional leagues use standings
-        college_leagues = [
-            "mens-college-basketball",
-            "womens-college-basketball",
-            "college-football",
-        ]
-        
+        # College sports use rankings endpoint, professional leagues use standings.
+        # Any college or NCAA league, not a fixed list: a custom NCAA soccer
+        # league (usa.ncaa.m.1) used to ask /standings, which ESPN answers with
+        # {}, so its coaches poll never reached the rank badge.
+        league_name = (league or "").lower()
+
         # For college sports, use rankings endpoint directly
-        if league in college_leagues:
+        if "college" in league_name or "ncaa" in league_name:
             try:
                 url = f"{self.base_url}/{sport}/{league}/rankings"
                 response = self.session.get(url, headers=self.get_headers(), timeout=15)

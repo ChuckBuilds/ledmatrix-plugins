@@ -36,7 +36,7 @@ def resolve_font_name(font_name: str) -> str:
     return FONT_ALIASES.get(font_name, font_name)
 
 # Import simplified dependencies for plugin use
-from dynamic_team_resolver import DynamicTeamResolver, choose_top_division_poll
+from dynamic_team_resolver import DynamicTeamResolver
 # The core's downloader, not the copy this plugin used to vendor. The vendored
 # one never marked its placeholders, so _logo_needs_refresh below could not
 # tell a failed download from a real logo and one transient failure left a
@@ -286,6 +286,7 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
 
         # Initialize team rankings cache
         self._team_rankings_cache = {}
+        self._ranked_team_ids = {}
         self._rankings_cache_timestamp = 0
         self._rankings_cache_duration = 3600  # Cache rankings for 1 hour
 
@@ -1107,16 +1108,28 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
     #
     # An EXCLUDE list, not an allow list, so a poll ESPN invents still counts
     # while seedings and the divisions below the top one never do.
-    def _choose_poll(self, rankings_data):
+    _NON_TOP_POLL_TYPES = frozenset({"tournament", "fcs"})
+    _NON_TOP_POLL_NAMES = ("tournament", "seedings", "fcs",
+                           "division ii", "division iii", "div ii", "div iii")
+
+    def _choose_poll(self, rankings_data: List[Dict]) -> Dict:
         """The first block ESPN lists that is an actual top-division poll.
 
         ESPN's own order is otherwise kept, so whichever poll it fronts is the
-        one that drives the badge. The rule itself lives in
-        dynamic_team_resolver.choose_top_division_poll, shared with the
-        resolver that expands AP_TOP_n, so the two cannot drift apart again.
+        one that drives the badge.
         """
-        return choose_top_division_poll(
-            rankings_data, self.logger, getattr(self, "league", "?"))
+        for block in rankings_data or []:
+            name = str(block.get("name") or "").lower()
+            kind = str(block.get("type") or "").lower()
+            if kind in self._NON_TOP_POLL_TYPES or any(
+                marker in name for marker in self._NON_TOP_POLL_NAMES
+            ):
+                self.logger.debug(
+                    "%s: skipping %s -- not a top-division poll",
+                    getattr(self, "league", "?"), block.get("name") or kind)
+                continue
+            return block
+        return {}
 
     #: College leagues that match the shared "college"/"ncaa" heuristic but
     #: publish no poll. ESPN's generic rule is that college leagues have a
@@ -1156,18 +1169,17 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
         current_time = time.time()
 
         # No poll, no fetch. _league_has_rankings already gated the
-        # quality-filter call site; the show_ranking call sites (this
-        # method's other two callers, in SportsRecent.update /
-        # SportsUpcoming.update and SportsLive.update) did not, so ticking
-        # "Show Ranking" on MLB or MiLB sent two requests an hour to
-        # endpoints that cannot carry one. Gating here rather than at each
-        # call site covers all three at once and cannot drift apart again.
+        # quality-filter call site; the show_ranking call sites did not, so
+        # ticking "Show Ranking" on a league that publishes no poll sent two
+        # requests an hour to endpoints that cannot answer. Gating here rather
+        # than at each call site covers every caller at once and cannot drift
+        # apart again.
         #
-        # This is also the setting's only honest answer on those leagues:
-        # the rank badge replaces the record outright, so an empty table
-        # meant "Show Ranking" quietly erased the records that "Show
-        # Records" was drawing. The schema now hides the toggle for MLB and
-        # MiLB, but a config saved before that still carries it.
+        # It is also the setting's only honest answer on those leagues: the
+        # rank badge replaces the record, so an empty table meant "Show
+        # Ranking" quietly erased the records "Show Records" was drawing. The
+        # schema now hides the toggle wherever the league has no poll, but a
+        # config saved before that still carries it.
         if not self._league_has_rankings():
             return self._team_rankings_cache
 
@@ -1189,31 +1201,74 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
         try:
             data = self.data_source.fetch_standings(self.sport, self.league)
 
-            rankings = {}
-            rankings_data = data.get("rankings", [])
+            rankings: Dict[str, int] = {}
+            ranked_ids: Dict[int, int] = {}
+            poll = self._choose_poll(data.get("rankings", []))
+            if self._poll_season_ended(poll, current_time):
+                self.logger.info(
+                    "%s: %s is from a season that has ended; no rank badges "
+                    "until the new season's first poll", self.league,
+                    poll.get("name") or "the poll",
+                )
+                poll = {}
 
-            first_ranking = self._choose_poll(rankings_data)
-            if first_ranking:
-                teams = first_ranking.get("ranks", [])
-
-                for team_data in teams:
-                    team_info = team_data.get("team", {})
-                    team_abbr = team_info.get("abbreviation", "")
-                    current_rank = team_data.get("current", 0)
-
-                    if team_abbr and current_rank > 0:
-                        rankings[team_abbr] = current_rank
+            for team_data in poll.get("ranks", []):
+                team_info = team_data.get("team", {})
+                team_abbr = team_info.get("abbreviation", "")
+                current_rank = team_data.get("current", 0)
+                if current_rank <= 0:
+                    continue
+                if team_abbr:
+                    rankings[team_abbr] = current_rank
+                # Kept by id as well as by abbreviation. The badge draws the
+                # abbreviation, but abbreviations are not unique across
+                # divisions and the FBS and FCS schedules arrive in the SAME
+                # scoreboard payload -- ESPN has SDSU for San Diego State and
+                # SDST for South Dakota State today, and nothing promises it
+                # stays that way. An id cannot rank the wrong school.
+                try:
+                    ranked_ids[int(team_info.get("id"))] = current_rank
+                except (TypeError, ValueError):
+                    pass
 
             # Cache the results
             self._team_rankings_cache = rankings
+            self._ranked_team_ids = ranked_ids
             self._rankings_cache_timestamp = current_time
 
-            self.logger.debug(f"Fetched rankings for {len(rankings)} teams")
+            if rankings:
+                self.logger.info(
+                    "%s: %d ranked teams loaded from %s", self.league,
+                    len(rankings), poll.get("name") or "an unnamed poll",
+                )
+            else:
+                self.logger.debug("Fetched rankings for 0 teams")
             return rankings
 
         except Exception as e:
             self.logger.error(f"Error fetching team rankings: {e}")
             return {}
+
+    @staticmethod
+    def _poll_season_ended(poll: Dict, now: float) -> bool:
+        """Is this poll from a season that is already over?
+
+        ESPN keeps serving the last poll it published until the next one
+        appears: in October, college basketball's /rankings is still April's
+        final poll and college lacrosse's is May's. Every block names its
+        season with an ``endDate``; once that has passed, the badge would rank
+        teams on a finished season, so the table stays empty until the new
+        season's first poll arrives. Asked of the data rather than a calendar,
+        so no league needs its own season dates. A block without a readable
+        ``endDate`` counts as current, as before.
+        """
+        season = poll.get("season")
+        end = str(season.get("endDate") or "") if isinstance(season, dict) else ""
+        try:
+            ended = datetime.strptime(end[:16], "%Y-%m-%dT%H:%M")
+        except ValueError:
+            return False
+        return now > ended.replace(tzinfo=timezone.utc).timestamp()
 
     @staticmethod
     def _extract_team_record(team_data: Dict) -> str:
@@ -1496,6 +1551,7 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
     _division_team_ids: ClassVar[Optional[Dict[str, set]]] = None
     _division_loaded_at: ClassVar[float] = 0.0
     _team_rankings_cache: ClassVar[Dict[str, int]] = {}
+    _ranked_team_ids: ClassVar[Dict[int, int]] = {}
 
     # ESPN group ids for the college divisions. Derived from its own group
     # rosters, which are disjoint (148 FBS team ids, 130 FCS, no overlap).
@@ -1554,10 +1610,18 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
                 if cached:
                     ids = {int(i) for i in cached}
                 else:
+                    # The SEASON year, not the calendar year. College
+                    # football's 2026 season runs into January 2027, and asking
+                    # for season 2027 in January returns groups that do not
+                    # exist yet: the roster comes back empty, division
+                    # filtering fails open, and it does so through the bowls
+                    # and the playoff -- the weeks anyone is watching.
+                    today = datetime.now()
+                    season = today.year if today.month >= 7 else today.year - 1
                     url = (
                         "https://sports.core.api.espn.com/v2/sports/"
                         f"{self.sport}/leagues/{self.league}/seasons/"
-                        f"{datetime.now().year}/types/2/groups/{group}/teams"
+                        f"{season}/types/2/groups/{group}/teams"
                     )
                     resp = self.session.get(url, params={"limit": 300}, timeout=15)
                     resp.raise_for_status()
@@ -1577,23 +1641,37 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
             self._division_team_ids[name] = ids
         return self._division_team_ids
 
+    def _ranked_positions(self, game: Dict) -> List[int]:
+        """Poll positions held by either side: ids first, abbreviations second.
+
+        The id table is authoritative whenever the game carries ids and a poll
+        has been parsed, because it is built from a top-division poll alone --
+        so an FCS side cannot appear in it however it is abbreviated, and an
+        abbreviation shared across divisions cannot promote the wrong school.
+        The abbreviation table stays as the fallback for a game dict with no
+        ids on it.
+        """
+        by_id = getattr(self, "_ranked_team_ids", None) or {}
+        ids = []
+        for side in ("home_id", "away_id"):
+            try:
+                ids.append(int(game.get(side)))
+            except (TypeError, ValueError):
+                ids = []
+                break
+        if by_id and ids:
+            return [rank for rank in (by_id.get(i, 0) for i in ids) if rank]
+        by_abbr = getattr(self, "_team_rankings_cache", None) or {}
+        return [rank for rank in (by_abbr.get(game.get("home_abbr"), 0),
+                                  by_abbr.get(game.get("away_abbr"), 0)) if rank]
+
     def _is_ranked_game(self, game: Dict) -> bool:
-        rankings = getattr(self, "_team_rankings_cache", None) or {}
-        if not rankings:
-            return False
-        return bool(
-            rankings.get(game.get("home_abbr"), 0)
-            or rankings.get(game.get("away_abbr"), 0)
-        )
+        return bool(self._ranked_positions(game))
 
     def _best_rank(self, game: Dict) -> int:
         """The better of the two sides' poll positions, or 99 if neither ranks."""
-        rankings = getattr(self, "_team_rankings_cache", None) or {}
-        if not rankings:
-            return 99
-        ranked = [r for r in (rankings.get(game.get("home_abbr"), 0),
-                              rankings.get(game.get("away_abbr"), 0)) if r]
-        return min(ranked) if ranked else 99
+        found = self._ranked_positions(game)
+        return min(found) if found else 99
 
     #: What other_games_min_quality may be. "broadcast" is retired and
     #: migrates to "ranked" -- see _normalise_quality.
@@ -1602,13 +1680,17 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
     def _passes_other_filters(self, game: Dict) -> bool:
         """Is this non-favourite game worth one of the remaining slots?
 
+        "ranked" means ranked in the TOP division's poll -- see _choose_poll.
+        An FCS side ranked in its own poll does not qualify the game it is
+        playing in, which for college football is most often an FCS school
+        visiting an unranked FBS one.
+
         Every check fails OPEN. If rankings could not be fetched or the
         division rosters did not resolve, the game is allowed: a board showing
         filler is a poor board, but a board showing nothing is a broken one.
         """
         if self.other_games_min_quality == "ranked":
-            if getattr(self, "_team_rankings_cache", None) and \
-                    not self._is_ranked_game(game):
+            if self._rankings_loaded() and not self._is_ranked_game(game):
                 return False
 
         wanted = self.other_games_divisions

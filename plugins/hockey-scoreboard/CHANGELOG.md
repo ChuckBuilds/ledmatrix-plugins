@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.49.0] - 2026-10-12
+
+### Changed
+- The rank badge no longer shows a poll from a season that has ended. ESPN
+  keeps serving its last poll between seasons (in October, college
+  basketball's is still April's final poll); once the poll's own season is
+  over the badge is left off, and the "ranked" other-games filter allows every
+  game, as it does when no poll has loaded, until the new season's first poll
+  appears.
+- Ranked games are matched by ESPN team id as well as abbreviation (ported
+  from football-scoreboard), so a team that only shares a ranked team's
+  abbreviation no longer counts as ranked for the "ranked" other-games filter
+  or the other-games order. The rank badge still reads the abbreviation.
+- `_fetch_team_rankings`, `_choose_poll`, `_load_division_team_ids`,
+  `_passes_other_filters`, `_best_rank` and `_is_ranked_game` are now one body
+  in all nine scoreboards, with `_ranked_positions` (ranks by team id, then
+  abbreviation) and `_poll_season_ended` beside them; the college football
+  division rosters are asked for the season year (July onward), and
+  `_choose_poll` is written out in `sports.py`.
+
 ## [1.48.0] - 2026-10-09
 
 ### Changed
