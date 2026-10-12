@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-10-10",
+  "last_updated": "2026-10-12",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -1434,6 +1434,55 @@
       "latest_version": "1.1.1",
       "ledmatrix_min_version": "3.0.0",
       "commit": "e5d94629835c6990cb22f8698e871dc3c3a5cf97"
+    },
+    {
+      "id": "home-assistant",
+      "name": "Home Assistant",
+      "description": "Native Home Assistant display for LEDMatrix with validated setup flow, searchable entity discovery, smart presets, visual color controls, calendars, and real-time priority notifications.",
+      "author": "airbornetrooper82573",
+      "category": "home-automation",
+      "tags": [
+        "home-assistant",
+        "smart-home",
+        "calendar",
+        "notifications",
+        "sensors",
+        "marquee"
+      ],
+      "repo": "https://github.com/airbornetrooper82573/LEDMatrix-Home-Assistant",
+      "branch": "main",
+      "plugin_path": "",
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2026-09-30",
+      "verified": false,
+      "screenshot": "",
+      "latest_version": "1.6.0",
+      "ledmatrix_min_version": "2.0.0"
+    },
+    {
+      "id": "plex-showtime",
+      "name": "Plex Showtime",
+      "description": "Native Plex media display for LEDMatrix with reliable TV episode metadata, persistent scrolling, per-user Now Playing filtering, balanced rotation, richer TV artwork, and optional Now Playing user labels.",
+      "author": "airbornetrooper82573",
+      "category": "media",
+      "tags": [
+        "plex",
+        "media",
+        "movies",
+        "tv",
+        "music",
+        "marquee"
+      ],
+      "repo": "https://github.com/airbornetrooper82573/LEDMatrix-Plex-Showtime",
+      "branch": "main",
+      "plugin_path": "",
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2026-09-09",
+      "verified": false,
+      "screenshot": "",
+      "latest_version": "1.9.0"
     }
   ]
 }
