@@ -39,6 +39,10 @@ are frozen. Then:
 * ``CACHE``: requests made by each call in a sequence (rankings TTL, an empty
   result, a failed request, a second manager of the same league; the division
   rosters' day and 10-minute retry, and the cache manager's copy).
+* ``SEASON_OVER``: the AP poll carrying its season's ``endDate`` (ESPN's
+  shape: college basketball's /rankings still served April's final poll,
+  season ending 2026-04-08, on 2026-10-12), fetched at a given moment: the
+  tables.
 * ``MALFORMED``: payloads ESPN could send back for the poll, and transport
   failures: the tables, and whether the result was cached.
 * ``RANKED``: ``_is_ranked_game`` and ``_best_rank`` over games, with the AP
@@ -68,7 +72,7 @@ import logging
 import os
 import re
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -114,6 +118,7 @@ POLL_SETS = {
     "CFP fronted": [CFP, AP, COACHES],
     "FCS and D2 fronted": [FCS, D2, AP, COACHES],
     "only lower divisions": [FCS, D2],
+    "FCS by type alone": [poll("Coaches Poll", "fcs", NDSU, SDST), AP],
     "seedings, USCHO (hockey)": [SEEDS, USCHO],
     "unnamed, untyped block": [{"ranks": AP["ranks"]}],
     "empty list": [],
@@ -161,6 +166,20 @@ MALFORMED = {
     "HTTP 500": 500,
     "connection error": requests.ConnectionError,
     "not JSON": b"<html>",
+}
+
+#: label -> (the poll's season endDate, or None for no season block; when it
+#: is fetched, UTC).
+SEASON_OVER = {
+    "Oct 12, season ended Apr 8": ("2026-04-08T06:59Z", "2026-10-12T12:00"),
+    "a minute before endDate": ("2026-04-08T06:59Z", "2026-04-08T06:58"),
+    "at endDate": ("2026-04-08T06:59Z", "2026-04-08T06:59"),
+    "a minute after endDate": ("2026-04-08T06:59Z", "2026-04-08T07:00"),
+    "bowl week, season ends Jan 28": ("2027-01-28T07:59Z", "2027-01-10T12:00"),
+    "new season's first poll": ("2027-04-08T06:59Z", "2026-11-03T12:00"),
+    "endDate with seconds": ("2026-04-08T06:59:00Z", "2026-10-12T12:00"),
+    "endDate unreadable": ("April", "2026-10-12T12:00"),
+    "no season block": (None, "2026-10-12T12:00"),
 }
 
 #: Frozen "now" for the season year. ESPN here lists rosters up to 2026.
@@ -230,6 +249,7 @@ EXPECTED_POLL = {
     'CFP fronted': 'College Football Playoff Rankings | College Football Playoff Rankings | College Football Playoff Rankings | College Football Playoff Rankings | College Football Playoff Rankings | College Football Playoff Rankings | College Football Playoff Rankings | College Football Playoff Rankings | College Football Playoff Rankings',
     'FCS and D2 fronted': 'AP Top 25 | AP Top 25 | AP Top 25 | AP Top 25 | AP Top 25 | AP Top 25 | AP Top 25 | AP Top 25 | AP Top 25',
     'only lower divisions': 'none | none | none | none | none | none | none | none | none',
+    'FCS by type alone': 'AP Top 25 | AP Top 25 | AP Top 25 | AP Top 25 | AP Top 25 | AP Top 25 | AP Top 25 | AP Top 25 | AP Top 25',
     'seedings, USCHO (hockey)': "USCHO Men's Poll | USCHO Men's Poll | USCHO Men's Poll | USCHO Men's Poll | USCHO Men's Poll | USCHO Men's Poll | USCHO Men's Poll | USCHO Men's Poll | USCHO Men's Poll",
     'unnamed, untyped block': 'none | none | none | none | none | none | none | none | none',
     'empty list': 'none | none | none | none | none | none | none | none | none',
@@ -259,6 +279,19 @@ EXPECTED_CACHE = {
     'divisions ok': '2,0,0,2 -> fbs:6,fcs:2 | 2,0,0,2 -> fbs:6,fcs:2 | 2,0,0,2 -> fbs:6,fcs:2 | 2,0,0,2 -> fbs:6,fcs:2 | 2,0,0,2 -> fbs:6,fcs:2 | 2,0,0,2 -> fbs:6,fcs:2 | 2,0,0,2 -> fbs:6,fcs:2 | 2,0,0,2 -> fbs:6,fcs:2 | 2,0,0,2 -> fbs:6,fcs:2',
     'divisions empty': '2,0,2,2 -> fbs:0,fcs:0 | 2,0,2,2 -> fbs:0,fcs:0 | 2,0,2,2 -> fbs:0,fcs:0 | 2,0,2,2 -> fbs:0,fcs:0 | 2,0,2,2 -> fbs:0,fcs:0 | 2,0,2,2 -> fbs:0,fcs:0 | 2,0,2,2 -> fbs:0,fcs:0 | 2,0,2,2 -> fbs:0,fcs:0 | 2,0,2,2 -> fbs:0,fcs:0',
     'divisions cached': '0,0,0,0 -> fbs:2,fcs:1 | 0,0,0,0 -> fbs:2,fcs:1 | 0,0,0,0 -> fbs:2,fcs:1 | 0,0,0,0 -> fbs:2,fcs:1 | 0,0,0,0 -> fbs:2,fcs:1 | 0,0,0,0 -> fbs:2,fcs:1 | 0,0,0,0 -> fbs:2,fcs:1 | 0,0,0,0 -> fbs:2,fcs:1 | 0,0,0,0 -> fbs:2,fcs:1',
+}
+
+# when the AP poll's season ends, and when it is fetched: the tables.
+EXPECTED_SEASON_OVER = {
+    'Oct 12, season ended Apr 8': 'ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | {} ; ids -',
+    'a minute before endDate': 'ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | {} ; ids -',
+    'at endDate': 'ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | {} ; ids -',
+    'a minute after endDate': 'ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | {} ; ids -',
+    'bowl week, season ends Jan 28': 'ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | {} ; ids -',
+    "new season's first poll": 'ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | {} ; ids -',
+    'endDate with seconds': 'ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | {} ; ids -',
+    'endDate unreadable': 'ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | {} ; ids -',
+    'no season block': 'ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | {} ; ids -',
 }
 
 # payload or failure on /rankings (college-football): requests -> tables ; cached?
@@ -474,6 +507,19 @@ CACHE_CASES = ("rankings live", "rankings empty", "rankings refused", "rankings,
                "divisions ok", "divisions empty", "divisions cached")
 
 
+def season_over_row(plugin, label):
+    end, at = SEASON_OVER[label]
+
+    def run():
+        mgr = manager(plugin)
+        block = dict(AP, season={"year": 2026, "endDate": end}) if end else AP
+        SERVER.reset({"rankings": {"rankings": [block, COACHES]}, "standings": {}})
+        CLOCK.now = datetime.fromisoformat(at).replace(tzinfo=timezone.utc).timestamp()
+        mgr._fetch_team_rankings()
+        return tables(mgr)
+    return guarded(run)
+
+
 def malformed_row(plugin, label):
     def run():
         mgr = manager(plugin)
@@ -565,6 +611,8 @@ def observe():
         season_row, DATES[0], "mens-college-basketball")
     for case in CACHE_CASES:
         tables_["CACHE"][case] = row(cache_row, case)
+    for label in SEASON_OVER:
+        tables_["SEASON_OVER"][label] = row(season_over_row, label)
     for label in MALFORMED:
         tables_["MALFORMED"][label] = row(malformed_row, label)
     for label in GAMES:
@@ -581,6 +629,7 @@ EXPECTED = {
     "POLL": EXPECTED_POLL,
     "SEASON": EXPECTED_SEASON,
     "CACHE": EXPECTED_CACHE,
+    "SEASON_OVER": EXPECTED_SEASON_OVER,
     "MALFORMED": EXPECTED_MALFORMED,
     "RANKED": EXPECTED_RANKED,
     "FILTER": EXPECTED_FILTER,
