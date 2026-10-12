@@ -1224,12 +1224,15 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
             log=self.logger,
         )
 
-    def _choose_poll(self, rankings_data: List[Dict]) -> Dict:
-        """The first poll ESPN lists that is not a lower-division one.
+    _NON_TOP_POLL_TYPES = frozenset({"tournament", "fcs"})
+    _NON_TOP_POLL_NAMES = ("tournament", "seedings", "fcs",
+                           "division ii", "division iii", "div ii", "div iii")
 
-        ESPN's order is kept, so whichever poll it fronts -- AP now, the CFP
-        rankings once those start -- is still the one that drives the badge.
-        Only the divisions below FBS are stepped over.
+    def _choose_poll(self, rankings_data: List[Dict]) -> Dict:
+        """The first block ESPN lists that is an actual top-division poll.
+
+        ESPN's own order is otherwise kept, so whichever poll it fronts is the
+        one that drives the badge.
         """
         for block in rankings_data or []:
             name = str(block.get("name") or "").lower()
@@ -1239,8 +1242,7 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
             ):
                 self.logger.debug(
                     "%s: skipping %s -- not a top-division poll",
-                    self.league, block.get("name") or kind,
-                )
+                    getattr(self, "league", "?"), block.get("name") or kind)
                 continue
             return block
         return {}
@@ -1285,6 +1287,13 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
             rankings: Dict[str, int] = {}
             ranked_ids: Dict[int, int] = {}
             poll = self._choose_poll(data.get("rankings", []))
+            if self._poll_season_ended(poll, current_time):
+                self.logger.info(
+                    "%s: %s is from a season that has ended; no rank badges "
+                    "until the new season's first poll", self.league,
+                    poll.get("name") or "the poll",
+                )
+                poll = {}
 
             for team_data in poll.get("ranks", []):
                 team_info = team_data.get("team", {})
@@ -1322,6 +1331,27 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
         except Exception as e:
             self.logger.error(f"Error fetching team rankings: {e}")
             return {}
+
+    @staticmethod
+    def _poll_season_ended(poll: Dict, now: float) -> bool:
+        """Is this poll from a season that is already over?
+
+        ESPN keeps serving the last poll it published until the next one
+        appears: in October, college basketball's /rankings is still April's
+        final poll and college lacrosse's is May's. Every block names its
+        season with an ``endDate``; once that has passed, the badge would rank
+        teams on a finished season, so the table stays empty until the new
+        season's first poll arrives. Asked of the data rather than a calendar,
+        so no league needs its own season dates. A block without a readable
+        ``endDate`` counts as current, as before.
+        """
+        season = poll.get("season")
+        end = str(season.get("endDate") or "") if isinstance(season, dict) else ""
+        try:
+            ended = datetime.strptime(end[:16], "%Y-%m-%dT%H:%M")
+        except ValueError:
+            return False
+        return now > ended.replace(tzinfo=timezone.utc).timestamp()
 
     @staticmethod
     def _extract_team_record(team_data: Dict) -> str:
@@ -1721,8 +1751,8 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
                     # exist yet: the roster comes back empty, division
                     # filtering fails open, and it does so through the bowls
                     # and the playoff -- the weeks anyone is watching.
-                    now = datetime.now()
-                    season = now.year if now.month >= 7 else now.year - 1
+                    today = datetime.now()
+                    season = today.year if today.month >= 7 else today.year - 1
                     url = (
                         "https://sports.core.api.espn.com/v2/sports/"
                         f"{self.sport}/leagues/{self.league}/seasons/"

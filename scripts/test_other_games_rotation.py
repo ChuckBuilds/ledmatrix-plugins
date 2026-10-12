@@ -105,7 +105,8 @@ def ranks(**by_abbr):
 
 
 #: label -> (``_team_rankings_cache``, ``_ranked_team_ids``). Every plugin gets
-#: both attributes; only football reads the id table.
+#: both attributes. All nine rank by the id table when a game carries ids
+#: (family 8); only football's ``_rankings_loaded`` counts it on its own.
 RANKINGS = {
     "none": ({}, {}),
     "abbr": ranks(HHH=1, FFF=2, DDD=3, BBB=4),
@@ -175,8 +176,8 @@ EXPECTED_IMPORTANCE = {
     ('abbr tie', 'newest'): 'i4,i7,i3,i10,n9,i1,i8 | i4,i7,i3,i10,n9,i1,i8 | i4,i7,i3,i10,n9,i1,i8 | i4,i7,i3,i10,n9,i1,i8 | i4,i7,i3,i10,n9,i1,i8 | i4,i7,i3,i10,n9,i1,i8 | i4,i7,i3,i10,n9,i1,i8 | i4,i7,i3,i10,n9,i1,i8 | i4,i7,i3,i10,n9,i1,i8',
     ('ids only', 'soonest'): 'i3,i1,i2,i4,i5,i6,i7,i8,n9,i10 | i3,i1,i2,i4,i5,i6,i7,i8,n9,i10 | i3,i1,i2,i4,i5,i6,i7,i8,n9,i10 | i4,i3,i2,i5,i1,i6,n9,i8 | i3,i1,i2,i4,i5,i6,i7,i8,n9,i10 | i3,i1,i2,i4,i5,i6,i7,i8,n9,i10 | i3,i1,i2,i4,i5,i6,i7,i8,n9,i10 | i3,i1,i2,i4,i5,i6,i7,i8,n9,i10 | i3,i1,i2,i4,i5,i6,i7,i8,n9,i10',
     ('ids only', 'newest'): 'i3,i1,i2,i4,i5,i6,i7,i8,n9,i10 | i3,i1,i2,i4,i5,i6,i7,i8,n9,i10 | i3,i1,i2,i4,i5,i6,i7,i8,n9,i10 | i4,i3,i7,i10,n9,i1,i8 | i3,i1,i2,i4,i5,i6,i7,i8,n9,i10 | i3,i1,i2,i4,i5,i6,i7,i8,n9,i10 | i3,i1,i2,i4,i5,i6,i7,i8,n9,i10 | i3,i1,i2,i4,i5,i6,i7,i8,n9,i10 | i3,i1,i2,i4,i5,i6,i7,i8,n9,i10',
-    ('ids disagree', 'soonest'): 'i4,i3,i1,i2,i5,i6,n9,i8 | i4,i3,i1,i2,i5,i6,n9,i8 | i4,i3,i1,i2,i5,i6,n9,i8 | i1,i2,i3,i4,i5,i6,n9,i8 | i4,i3,i1,i2,i5,i6,n9,i8 | i4,i3,i1,i2,i5,i6,n9,i8 | i4,i3,i1,i2,i5,i6,n9,i8 | i4,i3,i1,i2,i5,i6,n9,i8 | i4,i3,i1,i2,i5,i6,n9,i8',
-    ('ids disagree', 'newest'): 'i4,i3,i10,n9,i7,i1,i8 | i4,i3,i10,n9,i7,i1,i8 | i4,i3,i10,n9,i7,i1,i8 | i1,i10,n9,i7,i4,i3,i8 | i4,i3,i10,n9,i7,i1,i8 | i4,i3,i10,n9,i7,i1,i8 | i4,i3,i10,n9,i7,i1,i8 | i4,i3,i10,n9,i7,i1,i8 | i4,i3,i10,n9,i7,i1,i8',
+    ('ids disagree', 'soonest'): 'i1,i2,i3,i4,i5,i6,n9,i8 | i1,i2,i3,i4,i5,i6,n9,i8 | i1,i2,i3,i4,i5,i6,n9,i8 | i1,i2,i3,i4,i5,i6,n9,i8 | i1,i2,i3,i4,i5,i6,n9,i8 | i1,i2,i3,i4,i5,i6,n9,i8 | i1,i2,i3,i4,i5,i6,n9,i8 | i1,i2,i3,i4,i5,i6,n9,i8 | i1,i2,i3,i4,i5,i6,n9,i8',
+    ('ids disagree', 'newest'): 'i1,i10,n9,i7,i4,i3,i8 | i1,i10,n9,i7,i4,i3,i8 | i1,i10,n9,i7,i4,i3,i8 | i1,i10,n9,i7,i4,i3,i8 | i1,i10,n9,i7,i4,i3,i8 | i1,i10,n9,i7,i4,i3,i8 | i1,i10,n9,i7,i4,i3,i8 | i1,i10,n9,i7,i4,i3,i8 | i1,i10,n9,i7,i4,i3,i8',
 }
 
 # (favourites, min quality, divisions, rankings): _favorites_first(UPDATE_SLATE, 2, 3)

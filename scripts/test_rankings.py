@@ -4,17 +4,19 @@
 WHY THIS EXISTS
 ---------------
 Rankings are family 8 of the sports consolidation (LEDMatrix
-docs/SPORTS_UNIFICATION.md): ``SportsCore._fetch_team_rankings`` (three bodies:
-afl/basketball/nrl/soccer also turn a *standings* payload into ranks, football
-also keys ranks by ESPN team id), ``_choose_poll`` (three: baseball delegates to
-``dynamic_team_resolver.choose_top_division_poll``, football differs in wording),
-``_load_division_team_ids``, ``_passes_other_filters``, ``_best_rank`` and
-``_is_ranked_game`` (two each: football's season year, its ``_rankings_loaded``
-seam and its by-id ``_ranked_positions``). The data source's
-``fetch_standings`` decides the endpoints (four bodies; held with
-``data_sources.py``, but pinned here because it is what the fetch asks). The
-tables record what every plugin answers today, so the reconcile shows up in its
-PR as a diff of them, cell by cell.
+docs/SPORTS_UNIFICATION.md): ``SportsCore._fetch_team_rankings``,
+``_choose_poll``, ``_load_division_team_ids``, ``_passes_other_filters``,
+``_best_rank`` and ``_is_ranked_game``. They were three, three and two bodies
+each; they are now one each in all nine, with ``_ranked_positions`` (ranks by
+ESPN team id, then abbreviation) and ``_poll_season_ended`` (a poll whose
+season's ``endDate`` has passed loads nothing) beside them. The standings-as-
+ranks branch is gone, college football's division rosters are asked for the
+season year, and baseball's leagues no longer keep their own class-level copy
+of the table. The data source's ``fetch_standings`` decides the endpoints
+(held with ``data_sources.py``, but pinned here because it is what the fetch
+asks; every college or NCAA league now asks /rankings first). The tables
+record what every plugin answers, so any later change to the family shows up
+in a PR as a diff of them, cell by cell.
 
 For each plugin it builds the primary league's real Upcoming manager (fake
 display and cache; ``test_favourite_matching.build``), then points it at the
@@ -39,6 +41,10 @@ are frozen. Then:
 * ``CACHE``: requests made by each call in a sequence (rankings TTL, an empty
   result, a failed request, a second manager of the same league; the division
   rosters' day and 10-minute retry, and the cache manager's copy).
+* ``SEASON_OVER``: the AP poll carrying its season's ``endDate`` (ESPN's
+  shape: college basketball's /rankings still served April's final poll,
+  season ending 2026-04-08, on 2026-10-12), fetched at a given moment: the
+  tables.
 * ``MALFORMED``: payloads ESPN could send back for the poll, and transport
   failures: the tables, and whether the result was cached.
 * ``RANKED``: ``_is_ranked_game`` and ``_best_rank`` over games, with the AP
@@ -48,10 +54,9 @@ are frozen. Then:
   x ``other_games_divisions``: ``Y`` kept, ``.`` dropped.
 
 * ``OVERRIDES``: family methods a league manager takes from its own module
-  rather than sports.py (baseball's three leagues wrap the fetch in a
-  class-level cache shared by that league's managers). Every other manager
-  resolves to the methods the primary league's does, so one per plugin covers
-  them.
+  rather than sports.py (baseball's three leagues wrapped the fetch in a
+  class-level cache until the reconcile). With none, every manager resolves
+  to the methods the primary league's does, so one per plugin covers them.
 
 ``!Name`` in a cell means it raised. To see the current tables after an
 intended change:
@@ -68,7 +73,7 @@ import logging
 import os
 import re
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from unittest.mock import patch
 
@@ -114,6 +119,7 @@ POLL_SETS = {
     "CFP fronted": [CFP, AP, COACHES],
     "FCS and D2 fronted": [FCS, D2, AP, COACHES],
     "only lower divisions": [FCS, D2],
+    "FCS by type alone": [poll("Coaches Poll", "fcs", NDSU, SDST), AP],
     "seedings, USCHO (hockey)": [SEEDS, USCHO],
     "unnamed, untyped block": [{"ranks": AP["ranks"]}],
     "empty list": [],
@@ -163,6 +169,20 @@ MALFORMED = {
     "not JSON": b"<html>",
 }
 
+#: label -> (the poll's season endDate, or None for no season block; when it
+#: is fetched, UTC).
+SEASON_OVER = {
+    "Oct 12, season ended Apr 8": ("2026-04-08T06:59Z", "2026-10-12T12:00"),
+    "a minute before endDate": ("2026-04-08T06:59Z", "2026-04-08T06:58"),
+    "at endDate": ("2026-04-08T06:59Z", "2026-04-08T06:59"),
+    "a minute after endDate": ("2026-04-08T06:59Z", "2026-04-08T07:00"),
+    "bowl week, season ends Jan 28": ("2027-01-28T07:59Z", "2027-01-10T12:00"),
+    "new season's first poll": ("2027-04-08T06:59Z", "2026-11-03T12:00"),
+    "endDate with seconds": ("2026-04-08T06:59:00Z", "2026-10-12T12:00"),
+    "endDate unreadable": ("April", "2026-10-12T12:00"),
+    "no season block": (None, "2026-10-12T12:00"),
+}
+
 #: Frozen "now" for the season year. ESPN here lists rosters up to 2026.
 DATES = ("2026-01-15", "2026-06-30", "2026-07-01", "2026-10-12", "2026-12-31",
          "2027-01-15")
@@ -195,32 +215,32 @@ FILTERS = {
 # --------------------------------------------------------------------------
 # Family methods league managers define outside sports.py.
 EXPECTED_OVERRIDES = {
-    'league managers': 'none | milb_managers.py:BaseMiLBManager._fetch_team_rankings,mlb_managers.py:BaseMLBManager._fetch_team_rankings,ncaa_baseball_managers.py:BaseNCAABaseballManager._fetch_team_rankings | none | none | none | none | none | none | none',
+    'league managers': 'none | none | none | none | none | none | none | none | none',
 }
 
 # (league, what ESPN answers): requests -> abbreviation table ; id table.
 EXPECTED_FETCH = {
-    ('nfl', 'live'): 'none -> {} ; ids - | none -> {} ; ids - | none -> {} ; ids - | none -> {} ; ids {} | none -> {} ; ids - | none -> {} ; ids - | none -> {} ; ids - | none -> {} ; ids - | none -> {} ; ids -',
-    ('nfl', 'standings carry a table'): 'none -> {} ; ids - | none -> {} ; ids - | none -> {} ; ids - | none -> {} ; ids {} | none -> {} ; ids - | none -> {} ; ids - | none -> {} ; ids - | none -> {} ; ids - | none -> {} ; ids -',
-    ('nfl', 'no poll (404), standings {}'): 'none -> {} ; ids - | none -> {} ; ids - | none -> {} ; ids - | none -> {} ; ids {} | none -> {} ; ids - | none -> {} ; ids - | none -> {} ; ids - | none -> {} ; ids - | none -> {} ; ids -',
-    ('college-football', 'live'): 'rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | none -> {} ; ids -',
-    ('college-football', 'standings carry a table'): 'rankings -> {} ; ids - | rankings>standings -> {} ; ids - | rankings -> {} ; ids - | rankings>standings -> {} ; ids {} | rankings>standings -> {} ; ids - | rankings>standings -> {} ; ids - | rankings -> {} ; ids - | rankings -> {} ; ids - | none -> {} ; ids -',
-    ('college-football', 'no poll (404), standings {}'): 'rankings -> {} ; ids - | rankings>standings -> {} ; ids - | rankings -> {} ; ids - | rankings>standings -> {} ; ids {} | rankings>standings -> {} ; ids - | rankings>standings -> {} ; ids - | rankings -> {} ; ids - | rankings -> {} ; ids - | none -> {} ; ids -',
-    ('nba', 'live'): 'none -> {} ; ids - | none -> {} ; ids - | none -> {} ; ids - | none -> {} ; ids {} | none -> {} ; ids - | none -> {} ; ids - | none -> {} ; ids - | none -> {} ; ids - | none -> {} ; ids -',
-    ('nba', 'standings carry a table'): 'none -> {} ; ids - | none -> {} ; ids - | none -> {} ; ids - | none -> {} ; ids {} | none -> {} ; ids - | none -> {} ; ids - | none -> {} ; ids - | none -> {} ; ids - | none -> {} ; ids -',
-    ('nba', 'no poll (404), standings {}'): 'none -> {} ; ids - | none -> {} ; ids - | none -> {} ; ids - | none -> {} ; ids {} | none -> {} ; ids - | none -> {} ; ids - | none -> {} ; ids - | none -> {} ; ids - | none -> {} ; ids -',
-    ('mens-college-basketball', 'live'): 'rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | none -> {} ; ids -',
-    ('mens-college-basketball', 'standings carry a table'): 'rankings -> {} ; ids - | rankings>standings -> {} ; ids - | rankings -> {} ; ids - | rankings>standings -> {} ; ids {} | rankings>standings -> {} ; ids - | rankings>standings -> {} ; ids - | rankings -> {} ; ids - | rankings -> {} ; ids - | none -> {} ; ids -',
-    ('mens-college-basketball', 'no poll (404), standings {}'): 'rankings -> {} ; ids - | rankings>standings -> {} ; ids - | rankings -> {} ; ids - | rankings>standings -> {} ; ids {} | rankings>standings -> {} ; ids - | rankings>standings -> {} ; ids - | rankings -> {} ; ids - | rankings -> {} ; ids - | none -> {} ; ids -',
-    ('mens-college-hockey', 'live'): 'standings -> {} ; ids - | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | standings -> {} ; ids - | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | standings -> {} ; ids - | standings -> {} ; ids - | none -> {} ; ids -',
-    ('mens-college-hockey', 'standings carry a table'): 'standings -> BOS=1,NYK=2,OKC=3 ; ids - | rankings>standings -> {} ; ids - | standings -> BOS=1,NYK=2,OKC=3 ; ids - | rankings>standings -> {} ; ids {} | rankings>standings -> {} ; ids - | rankings>standings -> {} ; ids - | standings -> BOS=1,NYK=2,OKC=3 ; ids - | standings -> BOS=1,NYK=2,OKC=3 ; ids - | none -> {} ; ids -',
-    ('mens-college-hockey', 'no poll (404), standings {}'): 'standings -> {} ; ids - | rankings>standings -> {} ; ids - | standings -> {} ; ids - | rankings>standings -> {} ; ids {} | rankings>standings -> {} ; ids - | rankings>standings -> {} ; ids - | standings -> {} ; ids - | standings -> {} ; ids - | none -> {} ; ids -',
-    ('college-baseball', 'live'): 'standings -> {} ; ids - | none -> {} ; ids - | standings -> {} ; ids - | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | standings -> {} ; ids - | standings -> {} ; ids - | none -> {} ; ids -',
-    ('college-baseball', 'standings carry a table'): 'standings -> BOS=1,NYK=2,OKC=3 ; ids - | none -> {} ; ids - | standings -> BOS=1,NYK=2,OKC=3 ; ids - | rankings>standings -> {} ; ids {} | rankings>standings -> {} ; ids - | rankings>standings -> {} ; ids - | standings -> BOS=1,NYK=2,OKC=3 ; ids - | standings -> BOS=1,NYK=2,OKC=3 ; ids - | none -> {} ; ids -',
-    ('college-baseball', 'no poll (404), standings {}'): 'standings -> {} ; ids - | none -> {} ; ids - | standings -> {} ; ids - | rankings>standings -> {} ; ids {} | rankings>standings -> {} ; ids - | rankings>standings -> {} ; ids - | standings -> {} ; ids - | standings -> {} ; ids - | none -> {} ; ids -',
-    ('usa.ncaa.m.1', 'live'): 'standings -> {} ; ids - | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | standings -> {} ; ids - | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids - | standings -> {} ; ids - | standings -> {} ; ids - | none -> {} ; ids -',
-    ('usa.ncaa.m.1', 'standings carry a table'): 'standings -> BOS=1,NYK=2,OKC=3 ; ids - | rankings>standings -> {} ; ids - | standings -> BOS=1,NYK=2,OKC=3 ; ids - | rankings>standings -> {} ; ids {} | rankings>standings -> {} ; ids - | rankings>standings -> {} ; ids - | standings -> BOS=1,NYK=2,OKC=3 ; ids - | standings -> BOS=1,NYK=2,OKC=3 ; ids - | none -> {} ; ids -',
-    ('usa.ncaa.m.1', 'no poll (404), standings {}'): 'standings -> {} ; ids - | rankings>standings -> {} ; ids - | standings -> {} ; ids - | rankings>standings -> {} ; ids {} | rankings>standings -> {} ; ids - | rankings>standings -> {} ; ids - | standings -> {} ; ids - | standings -> {} ; ids - | none -> {} ; ids -',
+    ('nfl', 'live'): 'none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {}',
+    ('nfl', 'standings carry a table'): 'none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {}',
+    ('nfl', 'no poll (404), standings {}'): 'none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {}',
+    ('college-football', 'live'): 'rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | none -> {} ; ids {}',
+    ('college-football', 'standings carry a table'): 'rankings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings -> {} ; ids {} | rankings -> {} ; ids {} | none -> {} ; ids {}',
+    ('college-football', 'no poll (404), standings {}'): 'rankings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings -> {} ; ids {} | rankings -> {} ; ids {} | none -> {} ; ids {}',
+    ('nba', 'live'): 'none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {}',
+    ('nba', 'standings carry a table'): 'none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {}',
+    ('nba', 'no poll (404), standings {}'): 'none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {} | none -> {} ; ids {}',
+    ('mens-college-basketball', 'live'): 'rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | none -> {} ; ids {}',
+    ('mens-college-basketball', 'standings carry a table'): 'rankings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings -> {} ; ids {} | rankings -> {} ; ids {} | none -> {} ; ids {}',
+    ('mens-college-basketball', 'no poll (404), standings {}'): 'rankings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings -> {} ; ids {} | rankings -> {} ; ids {} | none -> {} ; ids {}',
+    ('mens-college-hockey', 'live'): 'rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | none -> {} ; ids {}',
+    ('mens-college-hockey', 'standings carry a table'): 'rankings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings -> {} ; ids {} | rankings -> {} ; ids {} | none -> {} ; ids {}',
+    ('mens-college-hockey', 'no poll (404), standings {}'): 'rankings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings -> {} ; ids {} | rankings -> {} ; ids {} | none -> {} ; ids {}',
+    ('college-baseball', 'live'): 'rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | none -> {} ; ids {} | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | none -> {} ; ids {}',
+    ('college-baseball', 'standings carry a table'): 'rankings -> {} ; ids {} | none -> {} ; ids {} | rankings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings -> {} ; ids {} | rankings -> {} ; ids {} | none -> {} ; ids {}',
+    ('college-baseball', 'no poll (404), standings {}'): 'rankings -> {} ; ids {} | none -> {} ; ids {} | rankings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings -> {} ; ids {} | rankings -> {} ; ids {} | none -> {} ; ids {}',
+    ('usa.ncaa.m.1', 'live'): 'rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | rankings -> ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | none -> {} ; ids {}',
+    ('usa.ncaa.m.1', 'standings carry a table'): 'rankings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings -> {} ; ids {} | rankings -> {} ; ids {} | none -> {} ; ids {}',
+    ('usa.ncaa.m.1', 'no poll (404), standings {}'): 'rankings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings>standings -> {} ; ids {} | rankings -> {} ; ids {} | rankings -> {} ; ids {} | none -> {} ; ids {}',
 }
 
 # poll set: the block _choose_poll picks (its name).
@@ -230,6 +250,7 @@ EXPECTED_POLL = {
     'CFP fronted': 'College Football Playoff Rankings | College Football Playoff Rankings | College Football Playoff Rankings | College Football Playoff Rankings | College Football Playoff Rankings | College Football Playoff Rankings | College Football Playoff Rankings | College Football Playoff Rankings | College Football Playoff Rankings',
     'FCS and D2 fronted': 'AP Top 25 | AP Top 25 | AP Top 25 | AP Top 25 | AP Top 25 | AP Top 25 | AP Top 25 | AP Top 25 | AP Top 25',
     'only lower divisions': 'none | none | none | none | none | none | none | none | none',
+    'FCS by type alone': 'AP Top 25 | AP Top 25 | AP Top 25 | AP Top 25 | AP Top 25 | AP Top 25 | AP Top 25 | AP Top 25 | AP Top 25',
     'seedings, USCHO (hockey)': "USCHO Men's Poll | USCHO Men's Poll | USCHO Men's Poll | USCHO Men's Poll | USCHO Men's Poll | USCHO Men's Poll | USCHO Men's Poll | USCHO Men's Poll | USCHO Men's Poll",
     'unnamed, untyped block': 'none | none | none | none | none | none | none | none | none',
     'empty list': 'none | none | none | none | none | none | none | none | none',
@@ -238,12 +259,12 @@ EXPECTED_POLL = {
 
 # (date, league): division roster requests -> roster sizes.
 EXPECTED_SEASON = {
-    ('2026-01-15', 'college-football'): 'seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2025/groups/80>seasons/2025/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2',
-    ('2026-06-30', 'college-football'): 'seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2025/groups/80>seasons/2025/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2',
+    ('2026-01-15', 'college-football'): 'seasons/2025/groups/80>seasons/2025/groups/81 -> fbs:6,fcs:2 | seasons/2025/groups/80>seasons/2025/groups/81 -> fbs:6,fcs:2 | seasons/2025/groups/80>seasons/2025/groups/81 -> fbs:6,fcs:2 | seasons/2025/groups/80>seasons/2025/groups/81 -> fbs:6,fcs:2 | seasons/2025/groups/80>seasons/2025/groups/81 -> fbs:6,fcs:2 | seasons/2025/groups/80>seasons/2025/groups/81 -> fbs:6,fcs:2 | seasons/2025/groups/80>seasons/2025/groups/81 -> fbs:6,fcs:2 | seasons/2025/groups/80>seasons/2025/groups/81 -> fbs:6,fcs:2 | seasons/2025/groups/80>seasons/2025/groups/81 -> fbs:6,fcs:2',
+    ('2026-06-30', 'college-football'): 'seasons/2025/groups/80>seasons/2025/groups/81 -> fbs:6,fcs:2 | seasons/2025/groups/80>seasons/2025/groups/81 -> fbs:6,fcs:2 | seasons/2025/groups/80>seasons/2025/groups/81 -> fbs:6,fcs:2 | seasons/2025/groups/80>seasons/2025/groups/81 -> fbs:6,fcs:2 | seasons/2025/groups/80>seasons/2025/groups/81 -> fbs:6,fcs:2 | seasons/2025/groups/80>seasons/2025/groups/81 -> fbs:6,fcs:2 | seasons/2025/groups/80>seasons/2025/groups/81 -> fbs:6,fcs:2 | seasons/2025/groups/80>seasons/2025/groups/81 -> fbs:6,fcs:2 | seasons/2025/groups/80>seasons/2025/groups/81 -> fbs:6,fcs:2',
     ('2026-07-01', 'college-football'): 'seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2',
     ('2026-10-12', 'college-football'): 'seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2',
     ('2026-12-31', 'college-football'): 'seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2',
-    ('2027-01-15', 'college-football'): 'seasons/2027/groups/80>seasons/2027/groups/81 -> fbs:0,fcs:0 | seasons/2027/groups/80>seasons/2027/groups/81 -> fbs:0,fcs:0 | seasons/2027/groups/80>seasons/2027/groups/81 -> fbs:0,fcs:0 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2027/groups/80>seasons/2027/groups/81 -> fbs:0,fcs:0 | seasons/2027/groups/80>seasons/2027/groups/81 -> fbs:0,fcs:0 | seasons/2027/groups/80>seasons/2027/groups/81 -> fbs:0,fcs:0 | seasons/2027/groups/80>seasons/2027/groups/81 -> fbs:0,fcs:0 | seasons/2027/groups/80>seasons/2027/groups/81 -> fbs:0,fcs:0',
+    ('2027-01-15', 'college-football'): 'seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2 | seasons/2026/groups/80>seasons/2026/groups/81 -> fbs:6,fcs:2',
     ('2026-01-15', 'mens-college-basketball'): 'none -> none | none -> none | none -> none | none -> none | none -> none | none -> none | none -> none | none -> none | none -> none',
 }
 
@@ -255,24 +276,37 @@ EXPECTED_CACHE = {
     'rankings live': '1,0,0,1 -> ND=2,OSU=3,SDSU=4,UGA=1 | 1,0,0,1 -> ND=2,OSU=3,SDSU=4,UGA=1 | 1,0,0,1 -> ND=2,OSU=3,SDSU=4,UGA=1 | 1,0,0,1 -> ND=2,OSU=3,SDSU=4,UGA=1 | 1,0,0,1 -> ND=2,OSU=3,SDSU=4,UGA=1 | 1,0,0,1 -> ND=2,OSU=3,SDSU=4,UGA=1 | 1,0,0,1 -> ND=2,OSU=3,SDSU=4,UGA=1 | 1,0,0,1 -> ND=2,OSU=3,SDSU=4,UGA=1 | 0,0,0,0 -> {}',
     'rankings empty': '1,0,0,1 -> {} | 2,0,0,2 -> {} | 1,0,0,1 -> {} | 2,0,0,2 -> {} | 2,0,0,2 -> {} | 2,0,0,2 -> {} | 1,0,0,1 -> {} | 1,0,0,1 -> {} | 0,0,0,0 -> {}',
     'rankings refused': '1,0,0,1 -> {} | 2,0,0,2 -> {} | 1,0,0,1 -> {} | 2,0,0,2 -> {} | 2,0,0,2 -> {} | 2,0,0,2 -> {} | 1,0,0,1 -> {} | 1,0,0,1 -> {} | 0,0,0,0 -> {}',
-    'rankings, a second manager': '1 -> ND=2,OSU=3,SDSU=4,UGA=1 | 0 -> ND=2,OSU=3,SDSU=4,UGA=1 | 1 -> ND=2,OSU=3,SDSU=4,UGA=1 | 1 -> ND=2,OSU=3,SDSU=4,UGA=1 | 1 -> ND=2,OSU=3,SDSU=4,UGA=1 | 1 -> ND=2,OSU=3,SDSU=4,UGA=1 | 1 -> ND=2,OSU=3,SDSU=4,UGA=1 | 1 -> ND=2,OSU=3,SDSU=4,UGA=1 | 0 -> {}',
+    'rankings, a second manager': '1 -> ND=2,OSU=3,SDSU=4,UGA=1 | 1 -> ND=2,OSU=3,SDSU=4,UGA=1 | 1 -> ND=2,OSU=3,SDSU=4,UGA=1 | 1 -> ND=2,OSU=3,SDSU=4,UGA=1 | 1 -> ND=2,OSU=3,SDSU=4,UGA=1 | 1 -> ND=2,OSU=3,SDSU=4,UGA=1 | 1 -> ND=2,OSU=3,SDSU=4,UGA=1 | 1 -> ND=2,OSU=3,SDSU=4,UGA=1 | 0 -> {}',
     'divisions ok': '2,0,0,2 -> fbs:6,fcs:2 | 2,0,0,2 -> fbs:6,fcs:2 | 2,0,0,2 -> fbs:6,fcs:2 | 2,0,0,2 -> fbs:6,fcs:2 | 2,0,0,2 -> fbs:6,fcs:2 | 2,0,0,2 -> fbs:6,fcs:2 | 2,0,0,2 -> fbs:6,fcs:2 | 2,0,0,2 -> fbs:6,fcs:2 | 2,0,0,2 -> fbs:6,fcs:2',
     'divisions empty': '2,0,2,2 -> fbs:0,fcs:0 | 2,0,2,2 -> fbs:0,fcs:0 | 2,0,2,2 -> fbs:0,fcs:0 | 2,0,2,2 -> fbs:0,fcs:0 | 2,0,2,2 -> fbs:0,fcs:0 | 2,0,2,2 -> fbs:0,fcs:0 | 2,0,2,2 -> fbs:0,fcs:0 | 2,0,2,2 -> fbs:0,fcs:0 | 2,0,2,2 -> fbs:0,fcs:0',
     'divisions cached': '0,0,0,0 -> fbs:2,fcs:1 | 0,0,0,0 -> fbs:2,fcs:1 | 0,0,0,0 -> fbs:2,fcs:1 | 0,0,0,0 -> fbs:2,fcs:1 | 0,0,0,0 -> fbs:2,fcs:1 | 0,0,0,0 -> fbs:2,fcs:1 | 0,0,0,0 -> fbs:2,fcs:1 | 0,0,0,0 -> fbs:2,fcs:1 | 0,0,0,0 -> fbs:2,fcs:1',
 }
 
+# when the AP poll's season ends, and when it is fetched: the tables.
+EXPECTED_SEASON_OVER = {
+    'Oct 12, season ended Apr 8': '{} ; ids {} | {} ; ids {} | {} ; ids {} | {} ; ids {} | {} ; ids {} | {} ; ids {} | {} ; ids {} | {} ; ids {} | {} ; ids {}',
+    'a minute before endDate': 'ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | {} ; ids {}',
+    'at endDate': 'ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | {} ; ids {}',
+    'a minute after endDate': '{} ; ids {} | {} ; ids {} | {} ; ids {} | {} ; ids {} | {} ; ids {} | {} ; ids {} | {} ; ids {} | {} ; ids {} | {} ; ids {}',
+    'bowl week, season ends Jan 28': 'ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | {} ; ids {}',
+    "new season's first poll": 'ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | {} ; ids {}',
+    'endDate with seconds': '{} ; ids {} | {} ; ids {} | {} ; ids {} | {} ; ids {} | {} ; ids {} | {} ; ids {} | {} ; ids {} | {} ; ids {} | {} ; ids {}',
+    'endDate unreadable': 'ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | {} ; ids {}',
+    'no season block': 'ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | ND=2,OSU=3,SDSU=4,UGA=1 ; ids 194=3,21=4,61=1,87=2 | {} ; ids {}',
+}
+
 # payload or failure on /rankings (college-football): requests -> tables ; cached?
 EXPECTED_MALFORMED = {
-    '{}': 'rankings -> {} ; ids - ; cached | rankings>standings -> {} ; ids - ; cached | rankings -> {} ; ids - ; cached | rankings>standings -> {} ; ids {} ; cached | rankings>standings -> {} ; ids - ; cached | rankings>standings -> {} ; ids - ; cached | rankings -> {} ; ids - ; cached | rankings -> {} ; ids - ; cached | none -> {} ; ids - ; cached',
-    'rankings []': 'rankings -> {} ; ids - ; cached | rankings>standings -> {} ; ids - ; cached | rankings -> {} ; ids - ; cached | rankings>standings -> {} ; ids {} ; cached | rankings>standings -> {} ; ids - ; cached | rankings>standings -> {} ; ids - ; cached | rankings -> {} ; ids - ; cached | rankings -> {} ; ids - ; cached | none -> {} ; ids - ; cached',
-    'rankings null': 'rankings -> {} ; ids - ; cached | rankings>standings -> {} ; ids - ; cached | rankings -> {} ; ids - ; cached | rankings>standings -> {} ; ids {} ; cached | rankings>standings -> {} ; ids - ; cached | rankings>standings -> {} ; ids - ; cached | rankings -> {} ; ids - ; cached | rankings -> {} ; ids - ; cached | none -> {} ; ids - ; cached',
-    'rankings is a dict': 'rankings -> {} ; ids - ; not cached | rankings -> {} ; ids - ; not cached | rankings -> {} ; ids - ; not cached | rankings -> {} ; ids {} ; not cached | rankings -> {} ; ids - ; not cached | rankings -> {} ; ids - ; not cached | rankings -> {} ; ids - ; not cached | rankings -> {} ; ids - ; not cached | none -> {} ; ids - ; cached',
-    'block without ranks': 'rankings -> {} ; ids - ; cached | rankings -> {} ; ids - ; cached | rankings -> {} ; ids - ; cached | rankings -> {} ; ids {} ; cached | rankings -> {} ; ids - ; cached | rankings -> {} ; ids - ; cached | rankings -> {} ; ids - ; cached | rankings -> {} ; ids - ; cached | none -> {} ; ids - ; cached',
-    'current 0 / -1 / missing': 'rankings -> TEX=4 ; ids - ; cached | rankings -> TEX=4 ; ids - ; cached | rankings -> TEX=4 ; ids - ; cached | rankings -> TEX=4 ; ids 251=4 ; cached | rankings -> TEX=4 ; ids - ; cached | rankings -> TEX=4 ; ids - ; cached | rankings -> TEX=4 ; ids - ; cached | rankings -> TEX=4 ; ids - ; cached | none -> {} ; ids - ; cached',
-    'no team / no abbr / bad id': 'rankings -> OSU=3,TEX=4 ; ids - ; cached | rankings -> OSU=3,TEX=4 ; ids - ; cached | rankings -> OSU=3,TEX=4 ; ids - ; cached | rankings -> OSU=3,TEX=4 ; ids 87=2 ; cached | rankings -> OSU=3,TEX=4 ; ids - ; cached | rankings -> OSU=3,TEX=4 ; ids - ; cached | rankings -> OSU=3,TEX=4 ; ids - ; cached | rankings -> OSU=3,TEX=4 ; ids - ; cached | none -> {} ; ids - ; cached',
-    'HTTP 500': 'rankings -> {} ; ids - ; cached | rankings>standings -> {} ; ids - ; cached | rankings -> {} ; ids - ; cached | rankings>standings -> {} ; ids {} ; cached | rankings>standings -> {} ; ids - ; cached | rankings>standings -> {} ; ids - ; cached | rankings -> {} ; ids - ; cached | rankings -> {} ; ids - ; cached | none -> {} ; ids - ; cached',
-    'connection error': 'rankings -> {} ; ids - ; cached | rankings>standings -> {} ; ids - ; cached | rankings -> {} ; ids - ; cached | rankings>standings -> {} ; ids {} ; cached | rankings>standings -> {} ; ids - ; cached | rankings>standings -> {} ; ids - ; cached | rankings -> {} ; ids - ; cached | rankings -> {} ; ids - ; cached | none -> {} ; ids - ; cached',
-    'not JSON': 'rankings -> {} ; ids - ; cached | rankings>standings -> {} ; ids - ; cached | rankings -> {} ; ids - ; cached | rankings>standings -> {} ; ids {} ; cached | rankings>standings -> {} ; ids - ; cached | rankings>standings -> {} ; ids - ; cached | rankings -> {} ; ids - ; cached | rankings -> {} ; ids - ; cached | none -> {} ; ids - ; cached',
+    '{}': 'rankings -> {} ; ids {} ; cached | rankings>standings -> {} ; ids {} ; cached | rankings -> {} ; ids {} ; cached | rankings>standings -> {} ; ids {} ; cached | rankings>standings -> {} ; ids {} ; cached | rankings>standings -> {} ; ids {} ; cached | rankings -> {} ; ids {} ; cached | rankings -> {} ; ids {} ; cached | none -> {} ; ids {} ; cached',
+    'rankings []': 'rankings -> {} ; ids {} ; cached | rankings>standings -> {} ; ids {} ; cached | rankings -> {} ; ids {} ; cached | rankings>standings -> {} ; ids {} ; cached | rankings>standings -> {} ; ids {} ; cached | rankings>standings -> {} ; ids {} ; cached | rankings -> {} ; ids {} ; cached | rankings -> {} ; ids {} ; cached | none -> {} ; ids {} ; cached',
+    'rankings null': 'rankings -> {} ; ids {} ; cached | rankings>standings -> {} ; ids {} ; cached | rankings -> {} ; ids {} ; cached | rankings>standings -> {} ; ids {} ; cached | rankings>standings -> {} ; ids {} ; cached | rankings>standings -> {} ; ids {} ; cached | rankings -> {} ; ids {} ; cached | rankings -> {} ; ids {} ; cached | none -> {} ; ids {} ; cached',
+    'rankings is a dict': 'rankings -> {} ; ids {} ; not cached | rankings -> {} ; ids {} ; not cached | rankings -> {} ; ids {} ; not cached | rankings -> {} ; ids {} ; not cached | rankings -> {} ; ids {} ; not cached | rankings -> {} ; ids {} ; not cached | rankings -> {} ; ids {} ; not cached | rankings -> {} ; ids {} ; not cached | none -> {} ; ids {} ; cached',
+    'block without ranks': 'rankings -> {} ; ids {} ; cached | rankings -> {} ; ids {} ; cached | rankings -> {} ; ids {} ; cached | rankings -> {} ; ids {} ; cached | rankings -> {} ; ids {} ; cached | rankings -> {} ; ids {} ; cached | rankings -> {} ; ids {} ; cached | rankings -> {} ; ids {} ; cached | none -> {} ; ids {} ; cached',
+    'current 0 / -1 / missing': 'rankings -> TEX=4 ; ids 251=4 ; cached | rankings -> TEX=4 ; ids 251=4 ; cached | rankings -> TEX=4 ; ids 251=4 ; cached | rankings -> TEX=4 ; ids 251=4 ; cached | rankings -> TEX=4 ; ids 251=4 ; cached | rankings -> TEX=4 ; ids 251=4 ; cached | rankings -> TEX=4 ; ids 251=4 ; cached | rankings -> TEX=4 ; ids 251=4 ; cached | none -> {} ; ids {} ; cached',
+    'no team / no abbr / bad id': 'rankings -> OSU=3,TEX=4 ; ids 87=2 ; cached | rankings -> OSU=3,TEX=4 ; ids 87=2 ; cached | rankings -> OSU=3,TEX=4 ; ids 87=2 ; cached | rankings -> OSU=3,TEX=4 ; ids 87=2 ; cached | rankings -> OSU=3,TEX=4 ; ids 87=2 ; cached | rankings -> OSU=3,TEX=4 ; ids 87=2 ; cached | rankings -> OSU=3,TEX=4 ; ids 87=2 ; cached | rankings -> OSU=3,TEX=4 ; ids 87=2 ; cached | none -> {} ; ids {} ; cached',
+    'HTTP 500': 'rankings -> {} ; ids {} ; cached | rankings>standings -> {} ; ids {} ; cached | rankings -> {} ; ids {} ; cached | rankings>standings -> {} ; ids {} ; cached | rankings>standings -> {} ; ids {} ; cached | rankings>standings -> {} ; ids {} ; cached | rankings -> {} ; ids {} ; cached | rankings -> {} ; ids {} ; cached | none -> {} ; ids {} ; cached',
+    'connection error': 'rankings -> {} ; ids {} ; cached | rankings>standings -> {} ; ids {} ; cached | rankings -> {} ; ids {} ; cached | rankings>standings -> {} ; ids {} ; cached | rankings>standings -> {} ; ids {} ; cached | rankings>standings -> {} ; ids {} ; cached | rankings -> {} ; ids {} ; cached | rankings -> {} ; ids {} ; cached | none -> {} ; ids {} ; cached',
+    'not JSON': 'rankings -> {} ; ids {} ; cached | rankings>standings -> {} ; ids {} ; cached | rankings -> {} ; ids {} ; cached | rankings>standings -> {} ; ids {} ; cached | rankings>standings -> {} ; ids {} ; cached | rankings>standings -> {} ; ids {} ; cached | rankings -> {} ; ids {} ; cached | rankings -> {} ; ids {} ; cached | none -> {} ; ids {} ; cached',
 }
 
 # game, AP poll loaded: _is_ranked_game and _best_rank.
@@ -280,20 +314,20 @@ EXPECTED_RANKED = {
     'UGA v TEX (#1)': 'ranked 1 | ranked 1 | ranked 1 | ranked 1 | ranked 1 | ranked 1 | ranked 1 | ranked 1 | unranked 99',
     'TEX v VAN (unranked)': 'unranked 99 | unranked 99 | unranked 99 | unranked 99 | unranked 99 | unranked 99 | unranked 99 | unranked 99 | unranked 99',
     'OSU v VAN (#3)': 'ranked 3 | ranked 3 | ranked 3 | ranked 3 | ranked 3 | ranked 3 | ranked 3 | ranked 3 | unranked 99',
-    "Newark 'OSU' v VAN": 'ranked 3 | ranked 3 | ranked 3 | unranked 99 | ranked 3 | ranked 3 | ranked 3 | ranked 3 | unranked 99',
+    "Newark 'OSU' v VAN": 'unranked 99 | unranked 99 | unranked 99 | unranked 99 | unranked 99 | unranked 99 | unranked 99 | unranked 99 | unranked 99',
     'SDSU v SDST (#4, FBS v FCS)': 'ranked 4 | ranked 4 | ranked 4 | ranked 4 | ranked 4 | ranked 4 | ranked 4 | ranked 4 | unranked 99',
     'SDST v NDSU (FCS, FCS-ranked)': 'unranked 99 | unranked 99 | unranked 99 | unranked 99 | unranked 99 | unranked 99 | unranked 99 | unranked 99 | unranked 99',
     "'OSU' v VAN, no ids": 'ranked 3 | ranked 3 | ranked 3 | ranked 3 | ranked 3 | ranked 3 | ranked 3 | ranked 3 | unranked 99',
-    'id 61 v 238, no abbrs': 'unranked 99 | unranked 99 | unranked 99 | ranked 1 | unranked 99 | unranked 99 | unranked 99 | unranked 99 | unranked 99',
+    'id 61 v 238, no abbrs': 'ranked 1 | ranked 1 | ranked 1 | ranked 1 | ranked 1 | ranked 1 | ranked 1 | ranked 1 | unranked 99',
 }
 
 # filter: _passes_other_filters over GAMES in order (Y kept, . dropped).
 EXPECTED_FILTER = {
     'any': 'YYYYYYYY | YYYYYYYY | YYYYYYYY | YYYYYYYY | YYYYYYYY | YYYYYYYY | YYYYYYYY | YYYYYYYY | YYYYYYYY',
-    'ranked': 'Y.YYY.Y. | Y.YYY.Y. | Y.YYY.Y. | Y.Y.Y.YY | Y.YYY.Y. | Y.YYY.Y. | Y.YYY.Y. | Y.YYY.Y. | YYYYYYYY',
+    'ranked': 'Y.Y.Y.YY | Y.Y.Y.YY | Y.Y.Y.YY | Y.Y.Y.YY | Y.Y.Y.YY | Y.Y.Y.YY | Y.Y.Y.YY | Y.Y.Y.YY | YYYYYYYY',
     'ranked, no poll loaded': 'YYYYYYYY | YYYYYYYY | YYYYYYYY | YYYYYYYY | YYYYYYYY | YYYYYYYY | YYYYYYYY | YYYYYYYY | YYYYYYYY',
     'any, fbs': 'YYYYY.YY | YYYYY.YY | YYYYY.YY | YYYYY.YY | YYYYY.YY | YYYYY.YY | YYYYY.YY | YYYYY.YY | YYYYY.YY',
-    'ranked, fbs': 'Y.YYY.Y. | Y.YYY.Y. | Y.YYY.Y. | Y.Y.Y.YY | Y.YYY.Y. | Y.YYY.Y. | Y.YYY.Y. | Y.YYY.Y. | YYYYY.YY',
+    'ranked, fbs': 'Y.Y.Y.YY | Y.Y.Y.YY | Y.Y.Y.YY | Y.Y.Y.YY | Y.Y.Y.YY | Y.Y.Y.YY | Y.Y.Y.YY | Y.Y.Y.YY | YYYYY.YY',
     'any, fcs': '....YYY. | ....YYY. | ....YYY. | ....YYY. | ....YYY. | ....YYY. | ....YYY. | ....YYY. | ....YYY.',
 }
 
@@ -474,6 +508,19 @@ CACHE_CASES = ("rankings live", "rankings empty", "rankings refused", "rankings,
                "divisions ok", "divisions empty", "divisions cached")
 
 
+def season_over_row(plugin, label):
+    end, at = SEASON_OVER[label]
+
+    def run():
+        mgr = manager(plugin)
+        block = dict(AP, season={"year": 2026, "endDate": end}) if end else AP
+        SERVER.reset({"rankings": {"rankings": [block, COACHES]}, "standings": {}})
+        CLOCK.now = datetime.fromisoformat(at).replace(tzinfo=timezone.utc).timestamp()
+        mgr._fetch_team_rankings()
+        return tables(mgr)
+    return guarded(run)
+
+
 def malformed_row(plugin, label):
     def run():
         mgr = manager(plugin)
@@ -565,6 +612,8 @@ def observe():
         season_row, DATES[0], "mens-college-basketball")
     for case in CACHE_CASES:
         tables_["CACHE"][case] = row(cache_row, case)
+    for label in SEASON_OVER:
+        tables_["SEASON_OVER"][label] = row(season_over_row, label)
     for label in MALFORMED:
         tables_["MALFORMED"][label] = row(malformed_row, label)
     for label in GAMES:
@@ -581,6 +630,7 @@ EXPECTED = {
     "POLL": EXPECTED_POLL,
     "SEASON": EXPECTED_SEASON,
     "CACHE": EXPECTED_CACHE,
+    "SEASON_OVER": EXPECTED_SEASON_OVER,
     "MALFORMED": EXPECTED_MALFORMED,
     "RANKED": EXPECTED_RANKED,
     "FILTER": EXPECTED_FILTER,

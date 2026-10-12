@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.22.1] - 2026-10-12
+
+### Changed
+- `_fetch_team_rankings`, `_choose_poll`, `_load_division_team_ids`,
+  `_passes_other_filters`, `_best_rank` and `_is_ranked_game` are now one body
+  in all nine scoreboards, with `_ranked_positions` (ranks by team id, then
+  abbreviation) and `_poll_season_ended` beside them; the college football
+  division rosters are asked for the season year (July onward), and
+  `_choose_poll` is written out in `sports.py`.
+
+No change on a board: this scoreboard's leagues publish no poll.
+
 ## [1.22.0] - 2026-10-09
 
 ### Changed

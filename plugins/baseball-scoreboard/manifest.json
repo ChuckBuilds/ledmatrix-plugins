@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.61.0",
+  "version": "1.61.1",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.61.1",
+      "released": "2026-10-12",
+      "ledmatrix_min_version": "3.8.4",
+      "notes": "_fetch_team_rankings, _choose_poll, _load_division_team_ids, _passes_other_filters, _best_rank and _is_ranked_game are now one body in all nine scoreboards, with _ranked_positions (ranks by team id, then abbreviation) and _poll_season_ended beside them; the college football division rosters are asked for the season year (July onward), and _choose_poll is written out in sports.py. Removed: The MLB, MiLB and NCAA Baseball managers' own class-level copy of the rankings (_shared_rankings_cache and its lock). They use the fetch every scoreboard uses; none of these leagues publishes a poll, so nothing is fetched either way. No change on a board: this scoreboard's leagues publish no poll."
+    },
     {
       "version": "1.61.0",
       "released": "2026-10-09",

@@ -810,7 +810,7 @@ def main():
     import inspect
     source = inspect.getsource(sports.SportsCore._load_division_team_ids)
     check("the URL is not built from datetime.now().year",
-          "now.year if now.month >= 7 else now.year - 1" in source
+          "today.year if today.month >= 7 else today.year - 1" in source
           and "{datetime.now().year}" not in source)
 
     failed = [c for c, ok in results if not ok]
