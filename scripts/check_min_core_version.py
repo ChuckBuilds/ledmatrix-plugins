@@ -177,6 +177,7 @@ MODULE_FIRST_VERSION = {
     "src.common.espn_payload": "3.8.3",  # core #749 (cache ESPN scoreboard windows without unread parts)
     # 3.8.4 (core #786)
     "src.common.sports_rotation": "3.8.4",  # core #786 (sports family 7, other-games rotation)
+    "src.common.sports_rankings": None,  # core #789 (sports family 8, rankings)
     # on core main, in no tagged release yet: add as None. When the next
     # release is tagged, set each None entry here to that tag -- the test's
     # tag-verification section insists on it once the tag is in its list.
