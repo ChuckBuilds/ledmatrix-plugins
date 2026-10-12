@@ -180,6 +180,19 @@ the core actually ships:
   guarded import, a missing or misplaced base or another `_rankings_loaded`
   override comes back; `scripts/test_other_games_rotation.py` pins the
   answers.
+- **Converged at 3.8.5 (sports family 8, rankings):**
+  `src.common.sports_rankings`. `SportsCore` (all nine) inherits
+  `SportsRankingsMixin` (`_fetch_team_rankings`, `_choose_poll`,
+  `_poll_season_ended`, `_load_division_team_ids`, `_ranked_positions`,
+  `_is_ranked_game`, `_best_rank`, `_passes_other_filters` and their five
+  class constants), listed after `SportsRotationMixin` and before
+  `SportsCoreSharedMixin`. The dynamic team resolvers that expand `AP_TOP_n`
+  and the like (baseball, basketball, football, hockey, lacrosse) call its
+  `choose_top_division_poll()`, so the badge and the resolved favourites read
+  the same poll. `scripts/test_rankings_mixin_copies.py` fails if a copy, a
+  guarded or aliased import, or a missing or misplaced base comes back;
+  `scripts/test_rankings.py` and `scripts/test_poll_choice.py` pin the
+  answers.
 - **Not converging (documented forks):** `dynamic_team_resolver` (plugin copies
   take `cache_manager` in the constructor; the core's does not — different
   API), ufc's `base_odds_manager` (MMA athlete-odds fork), and — until the core

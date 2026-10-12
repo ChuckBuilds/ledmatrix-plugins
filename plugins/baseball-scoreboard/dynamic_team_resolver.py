@@ -5,6 +5,7 @@ Simplified DynamicTeamResolver for plugin use
 import logging
 import requests
 from typing import List
+from src.common.sports_rankings import choose_top_division_poll
 
 logger = logging.getLogger(__name__)
 
@@ -120,35 +121,6 @@ class DynamicTeamResolver:
             self.logger.error(f"Error resolving dynamic team {dynamic_team}: {e}")
             return []
 
-    # Polls AP_TOP_n may resolve from. ESPN answers the college football
-    # rankings endpoint with four blocks -- AP Top 25, the AFCA Coaches Poll,
-    # the FCS Coaches Poll and the AFCA Division II Poll -- and taking the
-    # first is FBS by luck rather than by choice: nothing in the payload
-    # promises that order, and ESPN changes it, adding the CFP rankings in
-    # November. With a lower-division poll leading, AP_TOP_25 resolves to 25
-    # FCS schools and makes them the user's FAVOURITE teams -- and favourites
-    # are never filtered by quality or division, so every one of those games
-    # reaches the panel.
-    #
-    # An EXCLUDE list, not an allow list, so a poll ESPN invents at the top
-    # division still counts. SportsCore._choose_poll in sports.py uses the
-    # same rule through choose_top_division_poll at the bottom of this file.
-    # The shared copy lives here, not in sports.py: sports.py imports this
-    # module, and the core loads both as bare top-level names with no package
-    # context, so the dependency has to point one way.
-    _NON_TOP_POLL_TYPES = frozenset({'tournament', 'fcs'})
-    _NON_TOP_POLL_NAMES = ('tournament', 'seedings', 'fcs',
-                           'division ii', 'division iii',
-                           'div ii', 'div iii')
-
-    def _choose_poll(self, rankings_data):
-        """The first poll ESPN lists that is not a lower-division one.
-
-        ESPN's own order is otherwise kept, so whichever poll it fronts is
-        still the one AP_TOP_n slices.
-        """
-        return choose_top_division_poll(rankings_data, self.logger)
-
     def _fetch_rankings(self, sport: str) -> List[str]:
         """
         Fetch current rankings from ESPN API.
@@ -185,7 +157,7 @@ class DynamicTeamResolver:
 
             # Extract team abbreviations from rankings
             teams = []
-            ranking = self._choose_poll(data.get('rankings'))
+            ranking = choose_top_division_poll(data.get('rankings'), self.logger, sport)
             if ranking:
                 if 'ranks' in ranking:
                     for rank_item in ranking['ranks']:
@@ -207,25 +179,3 @@ class DynamicTeamResolver:
     def _is_potential_dynamic_team(self, team: str) -> bool:
         """Check if a team name looks like a dynamic team pattern."""
         return team.startswith('AP_') or team.startswith('TOP_')
-
-
-def choose_top_division_poll(rankings_data, logger=None, label=None):
-    """The first block in ESPN's rankings list that is a top-division poll.
-
-    The one definition, shared by DynamicTeamResolver._choose_poll and
-    SportsCore._choose_poll in sports.py. It lives here because the import can
-    only point one way: sports.py already imports this module at load time.
-    """
-    for block in rankings_data or []:
-        name = str(block.get('name') or '').lower()
-        kind = str(block.get('type') or '').lower()
-        if kind in DynamicTeamResolver._NON_TOP_POLL_TYPES or any(
-            marker in name for marker in DynamicTeamResolver._NON_TOP_POLL_NAMES
-        ):
-            if logger is not None:
-                logger.debug(
-                    "%sskipping %s -- not a top-division poll",
-                    "%s: " % label if label else "", block.get('name') or kind)
-            continue
-        return block
-    return {}

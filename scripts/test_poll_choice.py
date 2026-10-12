@@ -24,10 +24,11 @@ poll position, and college football was FBS only by luck -- with the FCS poll
 fronted, `AP_TOP_25` resolves to 25 FCS schools and installs them as FAVOURITE
 teams, which are never filtered by quality or division.
 
-`SportsCore._choose_poll` and `DynamicTeamResolver._choose_poll` keep ESPN's
-own order among genuine top-division polls and step over the rest, so the block
-ESPN fronts still wins whenever it is a real poll -- that is how the CFP
-rankings take over from AP in November without a code change.
+`SportsCore._choose_poll` and the resolvers' `choose_top_division_poll` (both
+core's `src.common.sports_rankings` since 3.8.5) keep ESPN's own order among
+genuine top-division polls and step over the rest, so the block ESPN fronts
+still wins whenever it is a real poll -- that is how the CFP rankings take over
+from AP in November without a code change.
 
 Checked behaviourally, so a copy that rewrites the loop still has to answer
 correctly, plus a source check so no copy quietly reintroduces the index.
@@ -180,8 +181,11 @@ def _check_chooser(label, chooser):
           and not chooser(SEEDINGS_FIRST[:1]))
 
 
-def _check_resolvers():
+def _check_resolvers(core):
     print("dynamic_team_resolver.py: AP_TOP_n slices a top-division poll")
+    if not core:
+        print("  SKIP: no LEDMatrix core checkout found (set LEDMATRIX_CORE)")
+        return []
     covered = []
     for path in sorted(PLUGINS.glob("*/dynamic_team_resolver.py")):
         text = path.read_text(encoding="utf-8")
@@ -194,9 +198,10 @@ def _check_resolvers():
               "data['rankings'][0]" not in text
               and 'data["rankings"][0]' not in text)
 
-        module = _load(path, "dtr_%s" % pid.replace("-", "_"))
+        module = _load(path, "dtr_%s" % pid.replace("-", "_"), core)
         resolver = _resolver(module)
-        _check_chooser(pid, resolver._choose_poll)
+        # Core's choose_top_division_poll (3.8.5), as the resolver imports it.
+        _check_chooser(pid, module.choose_top_division_poll)
 
         # End to end, which is what the user actually gets: the abbreviations
         # AP_TOP_n slices must come from the AP block, not the FCS one.
@@ -222,7 +227,7 @@ def _check_sports(core):
     covered = []
     for path in sorted(PLUGINS.glob("*/sports.py")):
         text = path.read_text(encoding="utf-8")
-        if "def _fetch_team_rankings" not in text:
+        if "_fetch_team_rankings" not in text:
             continue
         pid = path.parent.name
         covered.append(pid)
@@ -275,8 +280,9 @@ def _check_sports(core):
 
 
 def main():
-    resolvers = _check_resolvers()
-    sports = _check_sports(_core_dir())
+    core = _core_dir()
+    resolvers = _check_resolvers(core)
+    sports = _check_sports(core)
     if not resolvers and not sports:
         print("SKIP: nothing to check; the layout changed")
         return 2

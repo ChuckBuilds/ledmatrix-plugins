@@ -9,7 +9,6 @@
     "data_sources.py::ESPNDataSource.fetch_player_details",
     "data_sources.py::ESPNDataSource.fetch_standings",
     "dynamic_team_resolver.py::DynamicSResolver.__init__",
-    "dynamic_team_resolver.py::DynamicSResolver._choose_poll",
     "dynamic_team_resolver.py::DynamicSResolver._fetch_rankings",
     "dynamic_team_resolver.py::DynamicSResolver._is_potential_dynamic_S",
     "dynamic_team_resolver.py::DynamicSResolver._resolve_dynamic_S",

@@ -1,5 +1,25 @@
 # Changelog
 
+## [2.45.0] - 2026-10-12
+
+### Changed
+- Requires LEDMatrix core 3.8.5 (`ledmatrix_min_version` and
+  `compatible_versions`), the first release that ships
+  `src/common/sports_rankings.py`. The store refuses to install or update
+  this version onto an older core.
+- Uses core's rankings code: `SportsCore` inherits `SportsRankingsMixin`
+  (`src.common.sports_rankings`).
+
+### Removed
+- This plugin's copies of core's rankings code on `SportsCore`:
+  `_fetch_team_rankings`, `_choose_poll`, `_poll_season_ended`,
+  `_load_division_team_ids`, `_ranked_positions`, `_is_ranked_game`,
+  `_best_rank`, `_passes_other_filters`, and the constants
+  `_NON_TOP_POLL_TYPES`, `_NON_TOP_POLL_NAMES`, `_DIVISION_GROUPS_BY_LEAGUE`,
+  `_DIVISION_CACHE_TTL` and `_DIVISION_RETRY_SECONDS`.
+
+No change in behaviour.
+
 ## [2.44.0] - 2026-10-12
 
 ### Changed

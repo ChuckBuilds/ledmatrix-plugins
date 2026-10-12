@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.47.0",
+  "version": "1.48.0",
   "update_interval": 60,
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
@@ -19,6 +19,12 @@
   "branch": "main",
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
+    {
+      "version": "1.48.0",
+      "released": "2026-10-12",
+      "ledmatrix_min_version": "3.8.5",
+      "notes": "Requires LEDMatrix core 3.8.5, the first release that ships src.common.sports_rankings. Uses core's rankings code: SportsCore inherits its SportsRankingsMixin, and this plugin's copies of _fetch_team_rankings, _choose_poll, _poll_season_ended, _load_division_team_ids, _ranked_positions, _is_ranked_game, _best_rank and _passes_other_filters and of the constants _NON_TOP_POLL_TYPES, _NON_TOP_POLL_NAMES, _DIVISION_GROUPS_BY_LEAGUE, _DIVISION_CACHE_TTL and _DIVISION_RETRY_SECONDS are removed. The dynamic team resolver calls core's choose_top_division_poll instead of its own _choose_poll and poll constants. No change in behaviour."
+    },
     {
       "version": "1.47.0",
       "released": "2026-10-12",
@@ -698,6 +704,6 @@
   "entry_point": "manager.py",
   "class_name": "BasketballScoreboardPlugin",
   "compatible_versions": [
-    ">=3.8.4"
+    ">=3.8.5"
   ]
 }
