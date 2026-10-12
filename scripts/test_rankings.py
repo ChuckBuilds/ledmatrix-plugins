@@ -28,8 +28,8 @@ Poll; college hockey's fronted the USCHO poll, with tournament seedings in
 season; site-API /standings answered ``{}`` for usa.ncaa.m.1 and eng.1 and a
 ``fullViewLink`` stub for nba, never ``children``; core-API
 ``seasons/2026/.../groups/80/teams`` listed 148 FBS teams and ``seasons/2027``
-none). ``time.time``/``time.monotonic`` and the sports module's ``datetime``
-are frozen. Then:
+none). ``time.time``/``time.monotonic`` and the ``datetime`` of the module
+``_load_division_team_ids`` lives in are frozen. Then:
 
 * ``FETCH``: ``_fetch_team_rankings`` per league x what ESPN answers: the
   requests in order (``>``), then the abbreviation table and the id table
@@ -388,7 +388,7 @@ CLOCK, SERVER = Clock(), ESPN()
 
 
 class Frozen(datetime):
-    """The sports module's ``datetime``, with ``now()`` pinned to ``at``."""
+    """``datetime``, with ``now()`` pinned to ``at``."""
 
     at = datetime(2026, 10, 12, 12, 0)
 
@@ -413,10 +413,12 @@ def manager(plugin, sport="football", league="college-football", keep_shared=Fal
 
 
 def frozen_at(mgr, when):
-    """Freeze ``datetime.now()`` in the module the plugin's SportsCore lives in."""
-    core = next(c for c in type(mgr).__mro__ if c.__name__ == "SportsCore")
+    """Freeze ``datetime.now()`` where ``_load_division_team_ids`` reads it.
+
+    The plugin's sports module, or core's ``src.common.sports_rankings`` once
+    the plugin inherits it (core 3.8.5)."""
     Frozen.at = when
-    return patch.dict(core.__init__.__globals__, {"datetime": Frozen})
+    return patch.dict(type(mgr)._load_division_team_ids.__globals__, {"datetime": Frozen})
 
 
 def table(mapping):

@@ -210,7 +210,12 @@ def main():
             source = handle.read()
         marker = "def _fetch_team_rankings"
         start = source.find(marker)
-        body = source[start:start + 2000] if start >= 0 else ""
+        if start < 0:
+            # Adopted: the gated body is core's (src.common.sports_rankings).
+            check("%s: inherits core's gated _fetch_team_rankings" % plugin,
+                  "from src.common.sports_rankings import SportsRankingsMixin" in source)
+            continue
+        body = source[start:start + 2000]
         check("%s: _fetch_team_rankings consults _league_has_rankings" % plugin,
               "_league_has_rankings()" in body)
 
