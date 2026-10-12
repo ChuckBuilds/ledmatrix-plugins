@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.63.0] - 2026-10-12
+
+### Changed
+- Odds never hold up an update. They are asked for by one background worker
+  per screen, and each line is drawn as soon as ESPN answers; before, an
+  update waited up to 1.5 s for each game's odds (2 s for a live game), and a
+  line that took longer appeared only at the next update: an hour later for an
+  upcoming or recent game. A card can now draw once without its odds and gain
+  them a moment later.
+- `_fetch_todays_games` and `_fetch_odds` are now one body in all nine
+  scoreboards, with the odds worker `_drain_odds_queue` beside them.
+
+### Fixed
+- A scoreboard answer with `"events": null` no longer raises out of the live
+  fetch; it counts as no games.
+
+Otherwise unchanged: this plugin already asked ESPN on every live poll.
+
 ## [1.62.0] - 2026-10-12
 
 ### Changed

@@ -92,10 +92,11 @@ class TestLeagueSlug(unittest.TestCase):
 
 # Cache keys the fixture must use. SCHEDULE_KEY is what NrlBaseManager
 # builds from the frozen time in harness.json (2026-07-10) and the schedule
-# window defaults (lookback 14, lookahead 7); LIVE_KEY is the separate
-# short-TTL key _fetch_todays_games reads.
+# window defaults (lookback 14, lookahead 7); LIVE_KEY is core's shared
+# scoreboard key _fetch_todays_games reads for the frozen time (05:30 Eastern,
+# so yesterday is still asked too).
 SCHEDULE_KEY = "nrl_schedule_20260626-20260717"
-LIVE_KEY = "nrl_scoreboard_current"
+LIVE_KEY = "espn_scoreboard_rugby-league_3_20260709-20260710"
 
 
 class TestHarness(unittest.TestCase):
@@ -115,7 +116,7 @@ class TestHarness(unittest.TestCase):
         self.assertIn(SCHEDULE_KEY, mock,
                       "schedule mock must be keyed as the manager looks it up")
         self.assertIn(LIVE_KEY, mock,
-                      "live view reads a separate short-TTL key")
+                      "live view reads core's shared scoreboard key")
 
         schedule = mock[SCHEDULE_KEY]
         events = schedule["events"]

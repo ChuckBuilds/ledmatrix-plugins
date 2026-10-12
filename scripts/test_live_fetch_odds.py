@@ -4,15 +4,17 @@
 WHY THIS EXISTS
 ---------------
 Live fetch and odds are family 9 of the sports consolidation (LEDMatrix
-docs/SPORTS_UNIFICATION.md): ``SportsCore._fetch_todays_games`` (seven bodies
-across the nine plugins) and ``_fetch_odds`` (three). They decide which
-scoreboard requests a live poll makes, which cache keys it reads and writes
-and for how long, what a failed or malformed answer turns into, how long
-``update()`` waits for odds and when an odds line appears. The tables record
-what every plugin does today, so the reconcile shows up in a PR as a diff of
-them, cell by cell. ``_attach_odds_to_rotated_games`` and ``_wants_live_odds``
-are already one body in core (``sports_rotation``, ``sports_fetch``); they are
-pinned through ``update()`` here and by ``test_other_games_rotation.py``.
+docs/SPORTS_UNIFICATION.md): ``SportsCore._fetch_todays_games`` and
+``_fetch_odds``, with ``_drain_odds_queue`` (the odds worker) beside them.
+They were seven and three bodies across the nine plugins; they are now one
+each. They decide which scoreboard requests a live poll makes, which cache
+keys it reads and writes and for how long, what a failed or malformed answer
+turns into, how long ``update()`` waits for odds (never, now) and when an odds
+line appears. The tables record what every plugin does, so any later change to
+the family shows up in a PR as a diff of them, cell by cell.
+``_attach_odds_to_rotated_games`` and ``_wants_live_odds`` are already one
+body in core (``sports_rotation``, ``sports_fetch``); they are pinned through
+``update()`` here and by ``test_other_games_rotation.py``.
 
 For each plugin it builds the primary league's real managers (fake display;
 ``test_favourite_matching.build``) and swaps in a recording cache (each entry
@@ -27,13 +29,11 @@ the plugins' ``datetime.now`` is pinned to an Eastern wall time.
 Odds run on a virtual clock, so the test never sleeps. The fake odds endpoint
 takes ``LATENCY`` (3 s) when "slow": a request made on the calling thread adds
 it to the time ``update()`` waited; a worker thread's request is held until
-the call under test has returned. ``queue.Queue.get`` called by
-``_fetch_odds`` on the calling thread with a timeout adds that timeout (or
-the latency, whichever is shorter) and gives up as the real one would; on a
-fast endpoint it waits for the worker. Afterwards every held request is let
-go and its threads joined, so a line that lands in the background shows up as
-``later``. A background thread's own timeout (basketball's 5 s attach wait)
-runs on the real clock, so it is not pinned here.
+the call under test has returned. Afterwards every held request is let go and
+its threads joined, so a line that lands in the background shows up as
+``later``. (Before the reconcile six plugins waited 1.5-2 s per game on a
+worker and hockey and lacrosse asked on the calling thread: up to 12 s of
+``update()`` for four games; ledmatrix-plugins #649 pinned that.)
 
 * ``OVERRIDES``: family methods a league manager takes from outside sports.py
   and core (``file:qualname``), or ``none``.
@@ -44,8 +44,10 @@ runs on the real clock, so it is not pinned here.
   ``espn:`` is core's canonical ``espn_scoreboard_<sport>_<league>_``.
 * ``CACHE``: requests made by each call in a sequence, and the ids the last
   call returned (``seed`` came from the cache entry the row seeded).
-* ``FAILURE``: what one answer from ESPN turns into: the ids (or ``None``,
-  ``!Name`` if it raised), then the keys written.
+* ``FAILURE``: what one answer from ESPN turns into: the ids, ``None``, or
+  ``!Name`` if it raised. Whether a malformed answer is cached is core's
+  ``get_espn_scoreboard`` (its tests pin it; the core release after 3.8.5
+  stops caching one without an ``events`` list), so it is not a column here.
 * ``ODDS``: ``_fetch_odds`` for one game per kind x endpoint: where the odds
   request ran (``main`` / ``bg``) and its ``update_interval_seconds``, the
   seconds the call waited, and whether the line was on the game when the call
@@ -55,6 +57,10 @@ runs on the real clock, so it is not pinned here.
   (Live twice: the first pass, when nothing is on screen yet, then the next
   poll; Upcoming also with two of the four shown): odds requests, seconds
   waited, games with odds now / later.
+* ``CONCURRENCY``: ``update()`` and ``display()`` on two threads against a
+  20 ms endpoint: exceptions, ERROR logs, the most odds requests and odds
+  workers in flight at once (one each: one batch per manager), and the games
+  with odds once every thread is done.
 
 To see the current tables after an intended change:
 
@@ -69,9 +75,9 @@ import inspect
 import json
 import logging
 import os
-import queue
 import sys
 import threading
+import time
 from datetime import datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
@@ -146,65 +152,72 @@ EXPECTED_OVERRIDES = {
 
 # (league, Eastern time): requests ; cache read ; cache written -> event ids.
 EXPECTED_FETCH = {
-    ('own league', '10:00 ET'): '20261012/500 ; read sk:scoreboard_current@30 ; wrote sk:scoreboard_current -> 1012a,1012b | 20261012/500 ; read - ; wrote espn:20261012 -> 1012a,1012b | 20261012/500 ; read espn:20261012@30,sk:scoreboard_current@30 ; wrote espn:20261012 -> 1012a,1012b | 20261012/500 ; read - ; wrote espn:20261012 -> 1012a,1012b | 20261012/500 ; read - ; wrote espn:20261012 -> 1012a,1012b | 20261012/500 ; read - ; wrote - -> 1012a,1012b | 20261012/500 ; read sk:scoreboard_current@30 ; wrote sk:scoreboard_current -> 1012a,1012b | 20261012/500 ; read espn:20261012@30,sk:scoreboard_current@30 ; wrote espn:20261012 -> 1012a,1012b | 20261012/500 ; read - ; wrote - -> 1012a,1012b',
-    ('own league', '02:00 ET'): '20261011-20261012/500>20261011/500>20261012/500 ; read sk:scoreboard_current@30 ; wrote sk:scoreboard_current -> 1011a,1011b,1012a,1012b | 20261011-20261012/500>20261011/500>20261012/500 ; read - ; wrote espn:20261011-20261012 -> 1011a,1011b,1012a,1012b | 20261011-20261012/500>20261011/500>20261012/500 ; read espn:20261011-20261012@30,sk:scoreboard_current@30 ; wrote espn:20261011-20261012 -> 1011a,1011b,1012a,1012b | 20261011-20261012/500>20261011/500>20261012/500 ; read - ; wrote espn:20261011-20261012 -> 1011a,1011b,1012a,1012b | 20261011-20261012/500>20261011/500>20261012/500 ; read - ; wrote espn:20261011-20261012 -> 1011a,1011b,1012a,1012b | 20261011-20261012/500>20261011/500>20261012/500 ; read - ; wrote - -> 1011a,1011b,1012a,1012b | 20261011-20261012/500>20261011/500>20261012/500 ; read sk:scoreboard_current@30 ; wrote sk:scoreboard_current -> 1011a,1011b,1012a,1012b | 20261011-20261012/500>20261011/500>20261012/500 ; read espn:20261011-20261012@30,sk:scoreboard_current@30 ; wrote espn:20261011-20261012 -> 1011a,1011b,1012a,1012b | 20261011-20261012/500>20261011/500>20261012/500 ; read - ; wrote - -> 1011a,1011b,1012a,1012b',
-    ('mens-college-basketball', '10:00 ET'): '20261012/500 ; read sk:scoreboard_current@30 ; wrote sk:scoreboard_current -> 1012a,1012b | 20261012/500 ; read - ; wrote espn:20261012 -> 1012a,1012b | nodates/500 ; read espn:current@30,sk:scoreboard_current@30 ; wrote espn:current -> 1012a,1012b | 20261012/500 ; read - ; wrote espn:20261012 -> 1012a,1012b | 20261012/500 ; read - ; wrote espn:20261012 -> 1012a,1012b | 20261012/500 ; read - ; wrote - -> 1012a,1012b | 20261012/500 ; read sk:scoreboard_current@30 ; wrote sk:scoreboard_current -> 1012a,1012b | 20261012/500 ; read espn:20261012@30,sk:scoreboard_current@30 ; wrote espn:20261012 -> 1012a,1012b | 20261012/500 ; read - ; wrote - -> 1012a,1012b',
-    ('mens-college-basketball', '02:00 ET'): '20261011-20261012/500>20261011/500>20261012/500 ; read sk:scoreboard_current@30 ; wrote sk:scoreboard_current -> 1011a,1011b,1012a,1012b | 20261011-20261012/500>20261011/500>20261012/500 ; read - ; wrote espn:20261011-20261012 -> 1011a,1011b,1012a,1012b | nodates/500 ; read espn:current@30,sk:scoreboard_current@30 ; wrote espn:current -> 1012a,1012b | 20261011-20261012/500>20261011/500>20261012/500 ; read - ; wrote espn:20261011-20261012 -> 1011a,1011b,1012a,1012b | 20261011-20261012/500>20261011/500>20261012/500 ; read - ; wrote espn:20261011-20261012 -> 1011a,1011b,1012a,1012b | 20261011-20261012/500>20261011/500>20261012/500 ; read - ; wrote - -> 1011a,1011b,1012a,1012b | 20261011-20261012/500>20261011/500>20261012/500 ; read sk:scoreboard_current@30 ; wrote sk:scoreboard_current -> 1011a,1011b,1012a,1012b | 20261011-20261012/500>20261011/500>20261012/500 ; read espn:20261011-20261012@30,sk:scoreboard_current@30 ; wrote espn:20261011-20261012 -> 1011a,1011b,1012a,1012b | 20261011-20261012/500>20261011/500>20261012/500 ; read - ; wrote - -> 1011a,1011b,1012a,1012b',
+    ('own league', '10:00 ET'): '20261012/500 ; read espn:20261012@1 ; wrote espn:20261012 -> 1012a,1012b | 20261012/500 ; read espn:20261012@1 ; wrote espn:20261012 -> 1012a,1012b | 20261012/500 ; read espn:20261012@1 ; wrote espn:20261012 -> 1012a,1012b | 20261012/500 ; read espn:20261012@1 ; wrote espn:20261012 -> 1012a,1012b | 20261012/500 ; read espn:20261012@1 ; wrote espn:20261012 -> 1012a,1012b | 20261012/500 ; read espn:20261012@1 ; wrote espn:20261012 -> 1012a,1012b | 20261012/500 ; read espn:20261012@1 ; wrote espn:20261012 -> 1012a,1012b | 20261012/500 ; read espn:20261012@1 ; wrote espn:20261012 -> 1012a,1012b | 20261012/500 ; read espn:20261012@1 ; wrote espn:20261012 -> 1012a,1012b',
+    ('own league', '02:00 ET'): '20261011-20261012/500>20261011/500>20261012/500 ; read espn:20261011-20261012@1 ; wrote espn:20261011-20261012 -> 1011a,1011b,1012a,1012b | 20261011-20261012/500>20261011/500>20261012/500 ; read espn:20261011-20261012@1 ; wrote espn:20261011-20261012 -> 1011a,1011b,1012a,1012b | 20261011-20261012/500>20261011/500>20261012/500 ; read espn:20261011-20261012@1 ; wrote espn:20261011-20261012 -> 1011a,1011b,1012a,1012b | 20261011-20261012/500>20261011/500>20261012/500 ; read espn:20261011-20261012@1 ; wrote espn:20261011-20261012 -> 1011a,1011b,1012a,1012b | 20261011-20261012/500>20261011/500>20261012/500 ; read espn:20261011-20261012@1 ; wrote espn:20261011-20261012 -> 1011a,1011b,1012a,1012b | 20261011-20261012/500>20261011/500>20261012/500 ; read espn:20261011-20261012@1 ; wrote espn:20261011-20261012 -> 1011a,1011b,1012a,1012b | 20261011-20261012/500>20261011/500>20261012/500 ; read espn:20261011-20261012@1 ; wrote espn:20261011-20261012 -> 1011a,1011b,1012a,1012b | 20261011-20261012/500>20261011/500>20261012/500 ; read espn:20261011-20261012@1 ; wrote espn:20261011-20261012 -> 1011a,1011b,1012a,1012b | 20261011-20261012/500>20261011/500>20261012/500 ; read espn:20261011-20261012@1 ; wrote espn:20261011-20261012 -> 1011a,1011b,1012a,1012b',
+    ('mens-college-basketball', '10:00 ET'): '20261012/500 ; read espn:20261012@1 ; wrote espn:20261012 -> 1012a,1012b | 20261012/500 ; read espn:20261012@1 ; wrote espn:20261012 -> 1012a,1012b | 20261012/500 ; read espn:20261012@1 ; wrote espn:20261012 -> 1012a,1012b | 20261012/500 ; read espn:20261012@1 ; wrote espn:20261012 -> 1012a,1012b | 20261012/500 ; read espn:20261012@1 ; wrote espn:20261012 -> 1012a,1012b | 20261012/500 ; read espn:20261012@1 ; wrote espn:20261012 -> 1012a,1012b | 20261012/500 ; read espn:20261012@1 ; wrote espn:20261012 -> 1012a,1012b | 20261012/500 ; read espn:20261012@1 ; wrote espn:20261012 -> 1012a,1012b | 20261012/500 ; read espn:20261012@1 ; wrote espn:20261012 -> 1012a,1012b',
+    ('mens-college-basketball', '02:00 ET'): '20261011-20261012/500>20261011/500>20261012/500 ; read espn:20261011-20261012@1 ; wrote espn:20261011-20261012 -> 1011a,1011b,1012a,1012b | 20261011-20261012/500>20261011/500>20261012/500 ; read espn:20261011-20261012@1 ; wrote espn:20261011-20261012 -> 1011a,1011b,1012a,1012b | 20261011-20261012/500>20261011/500>20261012/500 ; read espn:20261011-20261012@1 ; wrote espn:20261011-20261012 -> 1011a,1011b,1012a,1012b | 20261011-20261012/500>20261011/500>20261012/500 ; read espn:20261011-20261012@1 ; wrote espn:20261011-20261012 -> 1011a,1011b,1012a,1012b | 20261011-20261012/500>20261011/500>20261012/500 ; read espn:20261011-20261012@1 ; wrote espn:20261011-20261012 -> 1011a,1011b,1012a,1012b | 20261011-20261012/500>20261011/500>20261012/500 ; read espn:20261011-20261012@1 ; wrote espn:20261011-20261012 -> 1011a,1011b,1012a,1012b | 20261011-20261012/500>20261011/500>20261012/500 ; read espn:20261011-20261012@1 ; wrote espn:20261011-20261012 -> 1011a,1011b,1012a,1012b | 20261011-20261012/500>20261011/500>20261012/500 ; read espn:20261011-20261012@1 ; wrote espn:20261011-20261012 -> 1011a,1011b,1012a,1012b | 20261011-20261012/500>20261011/500>20261012/500 ; read espn:20261011-20261012@1 ; wrote espn:20261011-20261012 -> 1011a,1011b,1012a,1012b',
 }
 
 # Requests per call in the sequence -> ids the last call returned.
 EXPECTED_CACHE = {
-    'again after 20 s': '1,0 -> 1012a,1012b | 1,1 -> 1012a,1012b | 1,0 -> 1012a,1012b | 1,1 -> 1012a,1012b | 1,1 -> 1012a,1012b | 1,1 -> 1012a,1012b | 1,0 -> 1012a,1012b | 1,0 -> 1012a,1012b | 1,1 -> 1012a,1012b',
+    'again after 20 s': '1,1 -> 1012a,1012b | 1,1 -> 1012a,1012b | 1,1 -> 1012a,1012b | 1,1 -> 1012a,1012b | 1,1 -> 1012a,1012b | 1,1 -> 1012a,1012b | 1,1 -> 1012a,1012b | 1,1 -> 1012a,1012b | 1,1 -> 1012a,1012b',
     'again after 31 s': '1,1 -> 1012a,1012b | 1,1 -> 1012a,1012b | 1,1 -> 1012a,1012b | 1,1 -> 1012a,1012b | 1,1 -> 1012a,1012b | 1,1 -> 1012a,1012b | 1,1 -> 1012a,1012b | 1,1 -> 1012a,1012b | 1,1 -> 1012a,1012b',
     'again after 299 s': '1,1 -> 1012a,1012b | 1,1 -> 1012a,1012b | 1,1 -> 1012a,1012b | 1,1 -> 1012a,1012b | 1,1 -> 1012a,1012b | 1,1 -> 1012a,1012b | 1,1 -> 1012a,1012b | 1,1 -> 1012a,1012b | 1,1 -> 1012a,1012b',
-    'legacy key 10 s old': '0 -> seed | 1 -> 1012a,1012b | 0 -> seed | 1 -> 1012a,1012b | 1 -> 1012a,1012b | 1 -> 1012a,1012b | 0 -> seed | 0 -> seed | 1 -> 1012a,1012b',
+    'legacy key 10 s old': '1 -> 1012a,1012b | 1 -> 1012a,1012b | 1 -> 1012a,1012b | 1 -> 1012a,1012b | 1 -> 1012a,1012b | 1 -> 1012a,1012b | 1 -> 1012a,1012b | 1 -> 1012a,1012b | 1 -> 1012a,1012b',
     'legacy key 10 s old, no events': '1 -> 1012a,1012b | 1 -> 1012a,1012b | 1 -> 1012a,1012b | 1 -> 1012a,1012b | 1 -> 1012a,1012b | 1 -> 1012a,1012b | 1 -> 1012a,1012b | 1 -> 1012a,1012b | 1 -> 1012a,1012b',
-    'canonical key 10 s old': '1 -> 1012a,1012b | 1 -> 1012a,1012b | 0 -> seed | 1 -> 1012a,1012b | 1 -> 1012a,1012b | 1 -> 1012a,1012b | 1 -> 1012a,1012b | 0 -> seed | 1 -> 1012a,1012b',
+    'canonical key 10 s old': '1 -> 1012a,1012b | 1 -> 1012a,1012b | 1 -> 1012a,1012b | 1 -> 1012a,1012b | 1 -> 1012a,1012b | 1 -> 1012a,1012b | 1 -> 1012a,1012b | 1 -> 1012a,1012b | 1 -> 1012a,1012b',
     'canonical key 40 s old': '1 -> 1012a,1012b | 1 -> 1012a,1012b | 1 -> 1012a,1012b | 1 -> 1012a,1012b | 1 -> 1012a,1012b | 1 -> 1012a,1012b | 1 -> 1012a,1012b | 1 -> 1012a,1012b | 1 -> 1012a,1012b',
 }
 
-# What ESPN answers -> ids (or None / !raised) ; cache written.
+# What ESPN answers -> ids (or None / !raised).
 EXPECTED_FAILURE = {
-    'games': '1012a,1012b ; wrote sk:scoreboard_current | 1012a,1012b ; wrote espn:20261012 | 1012a,1012b ; wrote espn:20261012 | 1012a,1012b ; wrote espn:20261012 | 1012a,1012b ; wrote espn:20261012 | 1012a,1012b ; wrote - | 1012a,1012b ; wrote sk:scoreboard_current | 1012a,1012b ; wrote espn:20261012 | 1012a,1012b ; wrote -',
-    '{}': 'none ; wrote sk:scoreboard_current | none ; wrote espn:20261012 | none ; wrote espn:20261012 | none ; wrote espn:20261012 | none ; wrote espn:20261012 | none ; wrote - | none ; wrote sk:scoreboard_current | none ; wrote espn:20261012 | none ; wrote -',
-    'events null': '!TypeError ; wrote - | !TypeError ; wrote espn:20261012 | !TypeError ; wrote - | !TypeError ; wrote espn:20261012 | !TypeError ; wrote espn:20261012 | !TypeError ; wrote - | !TypeError ; wrote - | !TypeError ; wrote - | !TypeError ; wrote -',
-    'events []': 'none ; wrote sk:scoreboard_current | none ; wrote espn:20261012 | none ; wrote espn:20261012 | none ; wrote espn:20261012 | none ; wrote espn:20261012 | none ; wrote - | none ; wrote sk:scoreboard_current | none ; wrote espn:20261012 | none ; wrote -',
-    'HTTP 404': 'None ; wrote - | None ; wrote - | None ; wrote - | None ; wrote - | None ; wrote - | None ; wrote - | None ; wrote - | None ; wrote - | None ; wrote -',
-    'HTTP 500': 'None ; wrote - | None ; wrote - | None ; wrote - | None ; wrote - | None ; wrote - | None ; wrote - | None ; wrote - | None ; wrote - | None ; wrote -',
-    'connection error': 'None ; wrote - | None ; wrote - | None ; wrote - | None ; wrote - | None ; wrote - | None ; wrote - | None ; wrote - | None ; wrote - | None ; wrote -',
-    'timeout': 'None ; wrote - | None ; wrote - | None ; wrote - | None ; wrote - | None ; wrote - | None ; wrote - | None ; wrote - | None ; wrote - | None ; wrote -',
-    'not JSON': 'None ; wrote - | None ; wrote - | None ; wrote - | None ; wrote - | None ; wrote - | None ; wrote - | None ; wrote - | None ; wrote - | None ; wrote -',
+    'games': '1012a,1012b | 1012a,1012b | 1012a,1012b | 1012a,1012b | 1012a,1012b | 1012a,1012b | 1012a,1012b | 1012a,1012b | 1012a,1012b',
+    '{}': 'none | none | none | none | none | none | none | none | none',
+    'events null': 'none | none | none | none | none | none | none | none | none',
+    'events []': 'none | none | none | none | none | none | none | none | none',
+    'HTTP 404': 'None | None | None | None | None | None | None | None | None',
+    'HTTP 500': 'None | None | None | None | None | None | None | None | None',
+    'connection error': 'None | None | None | None | None | None | None | None | None',
+    'timeout': 'None | None | None | None | None | None | None | None | None',
+    'not JSON': 'None | None | None | None | None | None | None | None | None',
 }
 
 # (game kind, odds endpoint): request thread@interval, seconds waited, when the line lands.
 EXPECTED_ODDS = {
-    ('live', 'fast, odds'): 'bg@60 wait 0 now | bg@60 wait 0 now | bg@60 wait 0 now | bg@60 wait 0 now | main@60 wait 0 now | main@60 wait 0 now | bg@60 wait 0 now | bg@60 wait 0 now | bg@60 wait 0 now',
-    ('live', 'fast, no odds'): 'bg@60 wait 0 no | bg@60 wait 0 no | bg@60 wait 0 no | bg@60 wait 0 no | main@60 wait 0 no | main@60 wait 0 no | bg@60 wait 0 no | bg@60 wait 0 no | bg@60 wait 0 no',
-    ('live', 'fast, raises'): 'bg@60 wait 0 no | bg@60 wait 0 no | bg@60 wait 0 no | bg@60 wait 0 no | main@60 wait 0 no | main@60 wait 0 no | bg@60 wait 0 no | bg@60 wait 0 no | bg@60 wait 0 no',
-    ('live', 'slow 3 s, odds'): 'bg@60 wait 2 no | bg@60 wait 2 no | bg@60 wait 2 no | bg@60 wait 2 no | main@60 wait 3 now | main@60 wait 3 now | bg@60 wait 2 no | bg@60 wait 2 no | bg@60 wait 2 no',
+    ('live', 'fast, odds'): 'bg@60 wait 0 later | bg@60 wait 0 later | bg@60 wait 0 later | bg@60 wait 0 later | bg@60 wait 0 later | bg@60 wait 0 later | bg@60 wait 0 later | bg@60 wait 0 later | bg@60 wait 0 later',
+    ('live', 'fast, no odds'): 'bg@60 wait 0 no | bg@60 wait 0 no | bg@60 wait 0 no | bg@60 wait 0 no | bg@60 wait 0 no | bg@60 wait 0 no | bg@60 wait 0 no | bg@60 wait 0 no | bg@60 wait 0 no',
+    ('live', 'fast, raises'): 'bg@60 wait 0 no | bg@60 wait 0 no | bg@60 wait 0 no | bg@60 wait 0 no | bg@60 wait 0 no | bg@60 wait 0 no | bg@60 wait 0 no | bg@60 wait 0 no | bg@60 wait 0 no',
+    ('live', 'slow 3 s, odds'): 'bg@60 wait 0 later | bg@60 wait 0 later | bg@60 wait 0 later | bg@60 wait 0 later | bg@60 wait 0 later | bg@60 wait 0 later | bg@60 wait 0 later | bg@60 wait 0 later | bg@60 wait 0 later',
     ('live', 'no odds manager'): 'not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no',
     ('live', 'show_odds off'): 'not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no',
-    ('upcoming', 'fast, odds'): 'bg@3600 wait 0 now | bg@3600 wait 0 now | bg@3600 wait 0 later | bg@3600 wait 0 now | main@3600 wait 0 now | main@3600 wait 0 now | bg@3600 wait 0 now | bg@3600 wait 0 now | bg@3600 wait 0 now',
-    ('upcoming', 'fast, no odds'): 'bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | main@3600 wait 0 no | main@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no',
-    ('upcoming', 'fast, raises'): 'bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | main@3600 wait 0 no | main@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no',
-    ('upcoming', 'slow 3 s, odds'): 'bg@3600 wait 1.5 no | bg@3600 wait 1.5 no | bg@3600 wait 0 later | bg@3600 wait 1.5 no | main@3600 wait 3 now | main@3600 wait 3 now | bg@3600 wait 1.5 no | bg@3600 wait 1.5 no | bg@3600 wait 1.5 no',
+    ('upcoming', 'fast, odds'): 'bg@3600 wait 0 later | bg@3600 wait 0 later | bg@3600 wait 0 later | bg@3600 wait 0 later | bg@3600 wait 0 later | bg@3600 wait 0 later | bg@3600 wait 0 later | bg@3600 wait 0 later | bg@3600 wait 0 later',
+    ('upcoming', 'fast, no odds'): 'bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no',
+    ('upcoming', 'fast, raises'): 'bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no',
+    ('upcoming', 'slow 3 s, odds'): 'bg@3600 wait 0 later | bg@3600 wait 0 later | bg@3600 wait 0 later | bg@3600 wait 0 later | bg@3600 wait 0 later | bg@3600 wait 0 later | bg@3600 wait 0 later | bg@3600 wait 0 later | bg@3600 wait 0 later',
     ('upcoming', 'no odds manager'): 'not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no',
     ('upcoming', 'show_odds off'): 'not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no',
-    ('final', 'fast, odds'): 'bg@3600 wait 0 now | bg@3600 wait 0 now | bg@3600 wait 0 now | bg@3600 wait 0 now | main@3600 wait 0 now | main@3600 wait 0 now | bg@3600 wait 0 now | bg@3600 wait 0 now | bg@3600 wait 0 now',
-    ('final', 'fast, no odds'): 'bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | main@3600 wait 0 no | main@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no',
-    ('final', 'fast, raises'): 'bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | main@3600 wait 0 no | main@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no',
-    ('final', 'slow 3 s, odds'): 'bg@3600 wait 1.5 no | bg@3600 wait 1.5 no | bg@3600 wait 1.5 no | bg@3600 wait 1.5 no | main@3600 wait 3 now | main@3600 wait 3 now | bg@3600 wait 1.5 no | bg@3600 wait 1.5 no | bg@3600 wait 1.5 no',
+    ('final', 'fast, odds'): 'bg@3600 wait 0 later | bg@3600 wait 0 later | bg@3600 wait 0 later | bg@3600 wait 0 later | bg@3600 wait 0 later | bg@3600 wait 0 later | bg@3600 wait 0 later | bg@3600 wait 0 later | bg@3600 wait 0 later',
+    ('final', 'fast, no odds'): 'bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no',
+    ('final', 'fast, raises'): 'bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no | bg@3600 wait 0 no',
+    ('final', 'slow 3 s, odds'): 'bg@3600 wait 0 later | bg@3600 wait 0 later | bg@3600 wait 0 later | bg@3600 wait 0 later | bg@3600 wait 0 later | bg@3600 wait 0 later | bg@3600 wait 0 later | bg@3600 wait 0 later | bg@3600 wait 0 later',
     ('final', 'no odds manager'): 'not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no',
     ('final', 'show_odds off'): 'not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no | not asked wait 0 no',
 }
 
 # update() with the 3 s endpoint: odds requests, seconds waited ; odds now ; later.
 EXPECTED_UPDATE = {
-    'Upcoming': 'asked 4 wait 6 ; now - ; later - | asked 4 wait 6 ; now - ; later - | asked 4 wait 0 ; now - ; later u1,u2,u3,u4 | asked 4 wait 6 ; now - ; later - | asked 4 wait 12 ; now u1,u2,u3,u4 ; later - | asked 4 wait 12 ; now u1,u2,u3,u4 ; later - | asked 4 wait 6 ; now - ; later - | asked 4 wait 6 ; now - ; later - | asked 4 wait 6 ; now - ; later -',
-    'Upcoming, 2 of 4 shown': 'asked 2 wait 3 ; now - ; later - | asked 2 wait 3 ; now - ; later - | asked 2 wait 0 ; now - ; later u1,u2 | asked 2 wait 3 ; now - ; later - | asked 2 wait 6 ; now u1,u2 ; later - | asked 2 wait 6 ; now u1,u2 ; later - | asked 2 wait 3 ; now - ; later - | asked 2 wait 3 ; now - ; later - | asked 4 wait 6 ; now - ; later -',
-    'Recent': 'asked 4 wait 6 ; now - ; later - | asked 4 wait 6 ; now - ; later - | asked 4 wait 6 ; now - ; later - | asked 4 wait 6 ; now - ; later - | asked 4 wait 12 ; now u1,u2,u3,u4 ; later - | asked 4 wait 12 ; now u1,u2,u3,u4 ; later - | asked 4 wait 6 ; now - ; later - | asked 4 wait 6 ; now - ; later - | asked 0 wait 0 ; now - ; later -',
-    'Live, first pass': 'asked 4 wait 8 ; now - ; later - | asked 4 wait 8 ; now - ; later - | asked 4 wait 8 ; now - ; later - | asked 4 wait 8 ; now - ; later - | asked 4 wait 12 ; now u4,u3,u2,u1 ; later - | asked 4 wait 12 ; now u4,u3,u2,u1 ; later - | asked 4 wait 8 ; now - ; later - | asked 4 wait 8 ; now - ; later - | asked 4 wait 8 ; now - ; later -',
-    'Live, next poll': 'asked 2 wait 4 ; now - ; later - | asked 2 wait 4 ; now - ; later - | asked 2 wait 4 ; now - ; later - | asked 2 wait 4 ; now - ; later - | asked 2 wait 6 ; now u4,u3 ; later - | asked 2 wait 6 ; now u4,u3 ; later - | asked 2 wait 4 ; now - ; later - | asked 2 wait 4 ; now - ; later - | asked 2 wait 4 ; now - ; later -',
+    'Upcoming': 'asked 4 wait 0 ; now - ; later u1,u2,u3,u4 | asked 4 wait 0 ; now - ; later u1,u2,u3,u4 | asked 4 wait 0 ; now - ; later u1,u2,u3,u4 | asked 4 wait 0 ; now - ; later u1,u2,u3,u4 | asked 4 wait 0 ; now - ; later u1,u2,u3,u4 | asked 4 wait 0 ; now - ; later u1,u2,u3,u4 | asked 4 wait 0 ; now - ; later u1,u2,u3,u4 | asked 4 wait 0 ; now - ; later u1,u2,u3,u4 | asked 4 wait 0 ; now - ; later u1,u2,u3,u4',
+    'Upcoming, 2 of 4 shown': 'asked 2 wait 0 ; now - ; later u1,u2 | asked 2 wait 0 ; now - ; later u1,u2 | asked 2 wait 0 ; now - ; later u1,u2 | asked 2 wait 0 ; now - ; later u1,u2 | asked 2 wait 0 ; now - ; later u1,u2 | asked 2 wait 0 ; now - ; later u1,u2 | asked 2 wait 0 ; now - ; later u1,u2 | asked 2 wait 0 ; now - ; later u1,u2 | asked 4 wait 0 ; now - ; later u3,u4',
+    'Recent': 'asked 4 wait 0 ; now - ; later u1,u2,u3,u4 | asked 4 wait 0 ; now - ; later u1,u2,u3,u4 | asked 4 wait 0 ; now - ; later u1,u2,u3,u4 | asked 4 wait 0 ; now - ; later u1,u2,u3,u4 | asked 4 wait 0 ; now - ; later u1,u2,u3,u4 | asked 4 wait 0 ; now - ; later u1,u2,u3,u4 | asked 4 wait 0 ; now - ; later u1,u2,u3,u4 | asked 4 wait 0 ; now - ; later u1,u2,u3,u4 | asked 0 wait 0 ; now - ; later -',
+    'Live, first pass': 'asked 4 wait 0 ; now - ; later u4,u3,u2,u1 | asked 4 wait 0 ; now - ; later u4,u3,u2,u1 | asked 4 wait 0 ; now - ; later u4,u3,u2,u1 | asked 4 wait 0 ; now - ; later u4,u3,u2,u1 | asked 4 wait 0 ; now - ; later u4,u3,u2,u1 | asked 4 wait 0 ; now - ; later u4,u3,u2,u1 | asked 4 wait 0 ; now - ; later u4,u3,u2,u1 | asked 4 wait 0 ; now - ; later u4,u3,u2,u1 | asked 4 wait 0 ; now - ; later u4,u3,u2,u1',
+    'Live, next poll': 'asked 2 wait 0 ; now - ; later u4,u3 | asked 2 wait 0 ; now - ; later u4,u3 | asked 2 wait 0 ; now - ; later u4,u3 | asked 2 wait 0 ; now - ; later u4,u3 | asked 2 wait 0 ; now - ; later u4,u3 | asked 2 wait 0 ; now - ; later u4,u3 | asked 2 wait 0 ; now - ; later u4,u3 | asked 2 wait 0 ; now - ; later u4,u3 | asked 2 wait 0 ; now - ; later u4,u3',
+}
+
+# update() 20 times and display() 200 times on two threads, 20 ms endpoint:
+# exceptions raised, ERROR logs ; most requests and odds workers at once ;
+# games with odds once every thread is done.
+EXPECTED_CONCURRENCY = {
+    'update() and display() on two threads': 'raised 0 errors 0 ; in flight 1 workers 1 ; odds on u1,u2,u3,u4 | raised 0 errors 0 ; in flight 1 workers 1 ; odds on u1,u2,u3,u4 | raised 0 errors 0 ; in flight 1 workers 1 ; odds on u1,u2,u3,u4 | raised 0 errors 0 ; in flight 1 workers 1 ; odds on u1,u2,u3,u4 | raised 0 errors 0 ; in flight 1 workers 1 ; odds on u1,u2,u3,u4 | raised 0 errors 0 ; in flight 1 workers 1 ; odds on u1,u2,u3,u4 | raised 0 errors 0 ; in flight 1 workers 1 ; odds on u1,u2,u3,u4 | raised 0 errors 0 ; in flight 1 workers 1 ; odds on u1,u2,u3,u4 | raised 0 errors 0 ; in flight 1 workers 1 ; odds on u1,u2,u3,u4',
 }
 
 
@@ -343,32 +356,13 @@ class Odds:
             raise self.answer("odds endpoint failed")
         return {"details": f"{event_id} -3.5", "over_under": 220.5} if self.answer else None
 
-    def release(self, keep_open=True):
+    def release(self):
         with self.lock:
-            self.open = keep_open
+            self.open = True
             gates, self.gates = self.gates, []
         for gate in gates:
             gate.set()
 
-
-_REAL_GET = queue.Queue.get
-
-
-def waiting_get(q, block=True, timeout=None):
-    """``Queue.get`` on a virtual clock for the calling thread (see top)."""
-    odds = VIRTUAL.odds
-    if threading.current_thread() is not threading.main_thread() or timeout is None \
-            or odds is None or sys._getframe(1).f_code.co_name != "_fetch_odds":
-        return _REAL_GET(q, block, timeout)
-    if odds.slow:
-        VIRTUAL.waited += min(timeout, LATENCY)
-        if timeout < LATENCY:
-            raise queue.Empty
-    odds.release()
-    try:
-        return _REAL_GET(q, True, 10)
-    finally:
-        odds.release(keep_open=False)
 
 
 def guarded(fn):
@@ -448,8 +442,7 @@ def failure_row(plugin, answer):
     def run():
         mgr = live_manager(plugin, "own league")
         SERVER.reset(ANSWERS[answer], f"{mgr.sport}/{mgr.league}/scoreboard")
-        got = guarded(lambda: ids(fetch(mgr)))
-        return f"{got} ; wrote {','.join(mgr.cache_manager.writes) or '-'}"
+        return ids(fetch(mgr))
     return guarded(run)
 
 
@@ -479,10 +472,9 @@ def odds_row(plugin, kind, endpoint):
         game = {"id": "g1", "is_live": False, "is_upcoming": False, "is_final": False,
                 **KINDS[kind]}
         before = with_odds(mgr, endpoint)
-        with patch.object(queue.Queue, "get", waiting_get):
-            mgr._fetch_odds(game)
-            now = bool(game.get("odds"))
-            settle(before)
+        mgr._fetch_odds(game)
+        now = bool(game.get("odds"))
+        settle(before)
         asked = ",".join(VIRTUAL.odds.calls) or "not asked"
         return f"{asked} wait {VIRTUAL.waited:g} {when(now, game.get('odds'))}"
     return guarded(run)
@@ -500,7 +492,15 @@ def update_games(status):
                 "clock": "10:00", "period": 2, "period_text": "Q2",
                 "is_live": status == "live", "is_halftime": False,
                 "is_final": status == "final", "is_upcoming": status == "upcoming",
-                "start_time_utc": NOW + timedelta(hours=hours)}
+                "start_time_utc": NOW + timedelta(hours=hours),
+                # What display() draws a card from (no such files: placeholders).
+                "home_logo_path": Path(f"/nonexistent/H{n}.png"),
+                "away_logo_path": Path(f"/nonexistent/A{n}.png"),
+                "home_logo_url": None, "away_logo_url": None,
+                "fighter1_id": f"9{n}", "fighter2_id": f"8{n}",
+                "fighter1_image_path": Path("/nonexistent/f1.png"),
+                "fighter2_image_path": Path("/nonexistent/f2.png"),
+                "fighter1_image_url": None, "fighter2_image_url": None}
         out.append({"id": f"u{n}", "competitions": [game]})
     return out
 
@@ -529,14 +529,88 @@ def update_row(plugin, label):
             before = with_odds(mgr, "slow 3 s, odds")
             CLOCK.now = T0 + n * 3600
             mgr.last_update = 0
-            with patch.object(queue.Queue, "get", waiting_get):
-                mgr.update()
-                shown = list(mgr.live_games if role == "Live" else mgr.games_list)
-                now = [g["id"] for g in shown if g.get("odds")]
-                settle(before)
+            mgr.update()
+            shown = list(mgr.live_games if role == "Live" else mgr.games_list)
+            now = [g["id"] for g in shown if g.get("odds")]
+            settle(before)
         later = [g["id"] for g in shown if g.get("odds") and g["id"] not in now]
         return (f"asked {len(VIRTUAL.odds.calls)} wait {VIRTUAL.waited:g} ; "
                 f"now {','.join(now) or '-'} ; later {','.join(later) or '-'}")
+    return guarded(run)
+
+
+class Busy:
+    """An odds endpoint taking ``delay`` real seconds, counting the requests
+    and odds workers in flight at once."""
+
+    def __init__(self, worker_name, delay=0.02):
+        self.worker_name, self.delay, self.lock = worker_name, delay, threading.Lock()
+        self.active = self.most_active = self.most_workers = 0
+
+    def get_odds(self, sport, league, event_id, update_interval_seconds=None):
+        workers = sum(t.name == self.worker_name and t.is_alive() for t in threading.enumerate())
+        with self.lock:
+            self.active += 1
+            self.most_active = max(self.most_active, self.active)
+            self.most_workers = max(self.most_workers, workers)
+        time.sleep(self.delay)
+        with self.lock:
+            self.active -= 1
+        return {"details": f"{event_id} -3.5"}
+
+
+class Errors(logging.Handler):
+    def __init__(self):
+        super().__init__(logging.ERROR)
+        self.seen = []
+
+    def emit(self, record):
+        if record.name != "src.logo_downloader":    # afl: no logo endpoint offline
+            self.seen.append(record.getMessage())
+
+
+def concurrency_row(plugin):
+    """update() and display() on two threads while a slow endpoint answers."""
+    def run():
+        mgr = build(plugin, "Upcoming", {"upcoming_games_to_show": 4,
+                                         "other_upcoming_games_to_show": 4,
+                                         "other_games_min_quality": "any"})
+        mgr._fetch_team_rankings = lambda *a, **k: None
+        events = update_games("upcoming")
+        mgr._fetch_data = lambda *a, **k: {"events": copy.deepcopy(events)}
+        mgr._extract_game_details = lambda ev: dict(ev["competitions"][0])
+        mgr.show_odds, mgr.odds_manager = True, Busy(f"{mgr.sport_key}-odds")
+        raised, errors = [], Errors()
+
+        def loop(step, times):
+            try:
+                for _ in range(times):
+                    step()
+            except Exception as exc:                  # noqa: BLE001
+                raised.append(repr(exc))
+
+        def update():
+            mgr.last_update = 0
+            mgr.update()
+        before = threading.enumerate()
+        logging.disable(logging.NOTSET)
+        logging.getLogger().addHandler(errors)
+        try:
+            threads = [threading.Thread(target=loop, args=(update, 20)),
+                       threading.Thread(target=loop, args=(lambda: mgr.display(force_clear=False), 200))]
+            for thread in threads:
+                thread.start()
+            for thread in threads:
+                thread.join(60)
+            for thread in set(threading.enumerate()) - set(before):
+                thread.join(10)
+        finally:
+            logging.getLogger().removeHandler(errors)
+            logging.disable(logging.CRITICAL)
+        odds = mgr.odds_manager
+        with_odds = [g["id"] for g in mgr.games_list if g.get("odds")]
+        return (f"raised {len(raised)} errors {len(errors.seen)} ; in flight {odds.most_active}"
+                f" workers {odds.most_workers} ; odds on {','.join(with_odds) or '-'}")
     return guarded(run)
 
 
@@ -580,6 +654,7 @@ def observe():
             tables["ODDS"][(kind, endpoint)] = row(odds_row, kind, endpoint)
     for label in UPDATE_ROLES:
         tables["UPDATE"][label] = row(update_row, label)
+    tables["CONCURRENCY"]["update() and display() on two threads"] = row(concurrency_row)
     return tables
 
 
@@ -591,6 +666,7 @@ EXPECTED = {
     "FAILURE": EXPECTED_FAILURE,
     "ODDS": EXPECTED_ODDS,
     "UPDATE": EXPECTED_UPDATE,
+    "CONCURRENCY": EXPECTED_CONCURRENCY,
 }
 
 

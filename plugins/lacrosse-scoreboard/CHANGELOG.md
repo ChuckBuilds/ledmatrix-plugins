@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.42.0] - 2026-10-12
+
+### Changed
+- Odds never hold up an update. They are asked for by one background worker
+  per screen, and each line is drawn as soon as ESPN answers; before, an
+  update waited for each game's odds in turn, up to 5 s a game when ESPN was
+  slow. A card can now draw once without its odds and gain them a moment
+  later.
+- The live scoreboard is kept under core's shared scoreboard key for the day,
+  so odds-ticker and anything else showing the same day reuse it instead of
+  fetching it again.
+- `_fetch_todays_games` and `_fetch_odds` are now one body in all nine
+  scoreboards, with the odds worker `_drain_odds_queue` beside them.
+
+### Fixed
+- A scoreboard answer with `"events": null` no longer raises out of the live
+  fetch; it counts as no games.
+- Without an odds manager the odds request is skipped with a DEBUG line
+  instead of an ERROR on every update.
+
 ## [1.41.0] - 2026-10-12
 
 ### Changed

@@ -20,10 +20,13 @@ import copy
 import logging
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
 PLUGIN_DIR = Path(__file__).resolve().parent
+#: The harness fixture's live scoreboard: core's shared key for its frozen date.
+LIVE_KEY = "espn_scoreboard_basketball_nba_20260115"
 sys.path.insert(0, str(PLUGIN_DIR))
 
 logging.disable(logging.CRITICAL)
@@ -64,11 +67,14 @@ def _other_game(event):
 
 
 def _poll(plugin):
-    """One live poll, of the scoreboard plugin.events describe."""
-    plugin.cache_manager.set(
-        "nba_scoreboard_current", {"events": copy.deepcopy(list(plugin.events.values()))})
-    plugin.nba_live.last_update = 0          # due now, whatever the interval
-    plugin.nba_live.update()
+    """One live poll, with ESPN answering the scoreboard plugin.events describe."""
+    live = plugin.nba_live
+    board = {"events": copy.deepcopy(list(plugin.events.values()))}
+    # The plugin's sports module, as the loader bound it (it is not in sys.modules).
+    sports = type(live)._fetch_todays_games.__globals__
+    with patch.dict(sports, {"get_espn_scoreboard": lambda *a, **k: board}):
+        live.last_update = 0                 # due now, whatever the interval
+        live.update()
 
 
 def _make_plugin(width=W, height=H):
@@ -77,7 +83,7 @@ def _make_plugin(width=W, height=H):
     dm = VisualTestDisplayManager(width=width, height=height)
     plugin = _instantiate("basketball-scoreboard", load_manifest(PLUGIN_DIR), PLUGIN_DIR,
                           config, spec["mock_data_contents"], dm)
-    live = copy.deepcopy(spec["mock_data_contents"]["nba_scoreboard_current"]["events"][0])
+    live = copy.deepcopy(spec["mock_data_contents"][LIVE_KEY]["events"][0])
     plugin.events = {"6002": live, "6004": _other_game(live)}
     for event in plugin.events.values():
         event["status"] = event["competitions"][0]["status"]    # one status to edit

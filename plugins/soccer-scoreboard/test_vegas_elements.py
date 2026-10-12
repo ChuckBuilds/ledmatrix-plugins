@@ -25,6 +25,7 @@ import logging
 import socket
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 import pytest
 
@@ -45,7 +46,7 @@ except ImportError as exc:  # a core without live Vegas cards
     pytest.skip(f"core has no live Vegas cards ({exc})", allow_module_level=True)
 
 W, H = 128, 32
-SCOREBOARD_KEY = "soccer_eng.1_scoreboard_current"
+SCOREBOARD_KEY = "espn_scoreboard_soccer_eng.1_20260115"  # core's shared key, frozen date
 SPEC = load_harness_spec(PLUGIN_DIR)
 LIVE_EVENT = SPEC["mock_data_contents"][SCOREBOARD_KEY]["events"][0]   # LIV v MNC, 67'
 # ESPN's full-time status as the fixture's finished match carries it.
@@ -97,10 +98,12 @@ def _live_manager(plugin, league="eng.1"):
 
 def _poll(plugin, *events, league="eng.1"):
     """One live poll of these events, through the league's live manager's own update()."""
-    plugin.cache_manager.set(f"soccer_{league}_scoreboard_current", {"events": list(events)})
     manager = _live_manager(plugin, league)
-    manager.last_update = 0
-    manager.update()
+    # The plugin's sports module, as the loader bound it (it is not in sys.modules).
+    sports = type(manager)._fetch_todays_games.__globals__
+    with patch.dict(sports, {"get_espn_scoreboard": lambda *a, **k: {"events": list(events)}}):
+        manager.last_update = 0
+        manager.update()
 
 
 @pytest.fixture(autouse=True)
