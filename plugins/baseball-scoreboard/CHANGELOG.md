@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.64.0] - 2026-10-13
+
+### Changed
+- Requires LEDMatrix core 3.8.6 (`ledmatrix_min_version` and
+  `compatible_versions`), the first release that ships
+  `src/common/sports_live_fetch.py`. The store refuses to install or update
+  this version onto an older core.
+- Uses core's live fetch and odds code: `SportsCore` inherits
+  `SportsLiveFetchMixin` (`src.common.sports_live_fetch`).
+
+### Removed
+- This plugin's copies of core's live fetch and odds code on `SportsCore`:
+  `_fetch_todays_games`, `_fetch_odds` and `_drain_odds_queue`.
+
+No change in behaviour.
+
 ## [1.63.0] - 2026-10-12
 
 ### Changed

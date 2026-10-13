@@ -179,10 +179,11 @@ MODULE_FIRST_VERSION = {
     "src.common.sports_rotation": "3.8.4",  # core #786 (sports family 7, other-games rotation)
     # 3.8.5 (core #789)
     "src.common.sports_rankings": "3.8.5",  # core #789 (sports family 8, rankings)
+    # 3.8.6 (core #793)
+    "src.common.sports_live_fetch": "3.8.6",  # core #793 (sports family 9, live fetch and odds)
     # on core main, in no tagged release yet: add as None. When the next
     # release is tagged, set each None entry here to that tag -- the test's
     # tag-verification section insists on it once the tag is in its list.
-    "src.common.sports_live_fetch": None,  # core #793 (sports family 9, live fetch and odds)
 }
 
 #: Releases whose ``src/__init__.py`` ``__version__`` lags their tag. The

@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.63.0",
+  "version": "1.64.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.64.0",
+      "released": "2026-10-13",
+      "ledmatrix_min_version": "3.8.6",
+      "notes": "Requires LEDMatrix core 3.8.6, the first release that ships src.common.sports_live_fetch. Uses core's live fetch and odds code: SportsCore inherits its SportsLiveFetchMixin, and this plugin's copies of _fetch_todays_games, _fetch_odds and _drain_odds_queue are removed. No change in behaviour."
+    },
     {
       "version": "1.63.0",
       "released": "2026-10-12",
@@ -934,6 +940,6 @@
   "class_name": "BaseballScoreboardPlugin",
   "entry_point": "manager.py",
   "compatible_versions": [
-    ">=3.8.5"
+    ">=3.8.6"
   ]
 }

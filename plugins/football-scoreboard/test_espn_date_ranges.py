@@ -115,9 +115,7 @@ class FixedCoreService(OldCoreService):
 def forget_rejected_ranges(monkeypatch):
     # The rejected-range memo is process-wide; each test starts clean. It lives
     # in the helper the plugin runs on: core's src.common.espn_dates.
-    import sports
-    helper = sys.modules[sports.get_espn_scoreboard.__module__]
-    monkeypatch.setattr(helper, "_ranges_rejected_until", 0.0)
+    monkeypatch.setattr(espn_dates, "_ranges_rejected_until", 0.0)
 
 
 def make_manager(service):

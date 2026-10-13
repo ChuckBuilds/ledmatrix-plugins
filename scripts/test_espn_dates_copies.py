@@ -17,7 +17,8 @@ Three things decay without a check, so this guard checks all three:
    module may import a ``*_espn_dates`` bare name, every
    ``src.common.espn_dates`` import must be unguarded (a ``try`` around it can
    only hide which module was missing -- there is nothing left to fall back
-   to), and at least one module must import it (else the finder is blind).
+   to), and at least one module must import it, or core's
+   ``src.common.sports_live_fetch`` (which calls it), else the finder is blind.
    The same shape as ``check_scroll_adoption.py``'s sunset check.
 2. **A remaining copy drifts.** A fix made in one copy and not the others is
    exactly what CLAUDE.md non-negotiable #7 forbids. Every bundled copy must
@@ -64,6 +65,9 @@ PLUGINS = REPO / "plugins"
 SPORTS = ("afl", "baseball", "basketball", "football", "hockey",
           "lacrosse", "nrl", "soccer", "ufc")
 CORE_MODULE = "src.common.espn_dates"
+#: Core's live fetch (3.8.6), which calls the helper: a plugin that imports it
+#: and nothing else of the helper's (baseball) still runs on core's.
+LIVE_FETCH_MODULE = "src.common.sports_live_fetch"
 
 #: Scoreboards that completed the espn_dates sunset: bundled copy deleted,
 #: core import unguarded, manifest floored at 3.5.0 (the first core release
@@ -378,7 +382,10 @@ def sunset_violations(plugin: Path, sport: str) -> list[str]:
                         "manifest floor guarantees core ships src/common/espn_dates.py")
     adopted = False
     for path in runtime_files(plugin):
-        for line, module, guarded in espn_imports(path.read_text(encoding="utf-8"), str(path)):
+        source = path.read_text(encoding="utf-8")
+        adopted |= any(isinstance(n, ast.ImportFrom) and n.module == LIVE_FETCH_MODULE
+                       for n in ast.walk(ast.parse(source)))
+        for line, module, guarded in espn_imports(source, str(path)):
             where = f"{path.relative_to(REPO)}:{line}"
             if module != CORE_MODULE:
                 problems.append(f"{where} imports the bundled {module}; import {CORE_MODULE}")
