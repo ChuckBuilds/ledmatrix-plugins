@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.49.0",
+  "version": "1.50.0",
   "update_interval": 60,
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
@@ -19,6 +19,12 @@
   "branch": "main",
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
+    {
+      "version": "1.50.0",
+      "released": "2026-10-13",
+      "ledmatrix_min_version": "3.8.6",
+      "notes": "Requires LEDMatrix core 3.8.6, the first release that ships src.common.sports_live_fetch. Uses core's live fetch and odds code: SportsCore inherits its SportsLiveFetchMixin, and this plugin's copies of _fetch_todays_games, _fetch_odds and _drain_odds_queue are removed. No change in behaviour."
+    },
     {
       "version": "1.49.0",
       "released": "2026-10-12",
@@ -710,6 +716,6 @@
   "entry_point": "manager.py",
   "class_name": "BasketballScoreboardPlugin",
   "compatible_versions": [
-    ">=3.8.5"
+    ">=3.8.6"
   ]
 }

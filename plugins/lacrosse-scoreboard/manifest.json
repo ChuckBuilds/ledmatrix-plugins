@@ -1,7 +1,7 @@
 {
   "id": "lacrosse-scoreboard",
   "name": "Lacrosse Scoreboard",
-  "version": "1.42.0",
+  "version": "1.43.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NCAA men's and women's lacrosse games with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/lacrosse-scoreboard",
@@ -17,7 +17,7 @@
   ],
   "icon": "fas fa-baseball-ball",
   "compatible_versions": [
-    ">=3.8.5"
+    ">=3.8.6"
   ],
   "requires": {
     "python": ">=3.9",
@@ -50,6 +50,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.43.0",
+      "released": "2026-10-13",
+      "ledmatrix_min_version": "3.8.6",
+      "notes": "Requires LEDMatrix core 3.8.6, the first release that ships src.common.sports_live_fetch. Uses core's live fetch and odds code: SportsCore inherits its SportsLiveFetchMixin, and this plugin's copies of _fetch_todays_games, _fetch_odds and _drain_odds_queue are removed. No change in behaviour."
+    },
     {
       "version": "1.42.0",
       "released": "2026-10-12",

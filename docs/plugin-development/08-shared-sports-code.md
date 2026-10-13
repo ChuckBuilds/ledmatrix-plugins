@@ -193,6 +193,15 @@ the core actually ships:
   guarded or aliased import, or a missing or misplaced base comes back;
   `scripts/test_rankings.py` and `scripts/test_poll_choice.py` pin the
   answers.
+- **Converged at 3.8.6 (sports family 9, live fetch and odds):**
+  `src.common.sports_live_fetch`. `SportsCore` (all nine) inherits
+  `SportsLiveFetchMixin` (`_fetch_todays_games`, `_fetch_odds` and the odds
+  worker `_drain_odds_queue`), listed after `SportsRankingsMixin`. Three
+  league managers keep their own `_fetch_todays_games`: MiLB and HockeyTech
+  (other feeds) and ufc's `MMALive` (splits core's answer into bouts).
+  `scripts/test_live_fetch_mixin_copies.py`
+  fails if a copy, a guarded or aliased import, or a missing base comes back;
+  `scripts/test_live_fetch_odds.py` pins the answers.
 - **Not converging (documented forks):** `dynamic_team_resolver` (plugin copies
   take `cache_manager` in the constructor; the core's does not — different
   API), ufc's `base_odds_manager` (MMA athlete-odds fork), and — until the core
