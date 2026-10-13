@@ -99,7 +99,8 @@ def _live_manager(plugin, league="eng.1"):
 def _poll(plugin, *events, league="eng.1"):
     """One live poll of these events, through the league's live manager's own update()."""
     manager = _live_manager(plugin, league)
-    # The plugin's sports module, as the loader bound it (it is not in sys.modules).
+    # The module whose get_espn_scoreboard the live fetch calls (core's
+    # src.common.sports_live_fetch, as the loader bound it).
     sports = type(manager)._fetch_todays_games.__globals__
     with patch.dict(sports, {"get_espn_scoreboard": lambda *a, **k: {"events": list(events)}}):
         manager.last_update = 0

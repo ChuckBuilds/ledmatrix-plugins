@@ -46,7 +46,7 @@ else:
     sys.exit(2)
 
 import mma  # noqa: E402
-import sports  # noqa: E402
+from src.common import sports_live_fetch  # noqa: E402
 from manager import UFCScoreboardPlugin  # noqa: E402
 from ufc_managers import (  # noqa: E402
     UFCLiveManager,
@@ -100,17 +100,17 @@ def make(cls, **settings):
     return mgr
 
 
-_real_fetch = sports.get_espn_scoreboard
+_real_fetch = sports_live_fetch.get_espn_scoreboard
 
 
 def poll_live(mgr, name):
     """One real live update, with ESPN answering from the recorded scoreboard."""
-    sports.get_espn_scoreboard = lambda *a, **k: board(name)
+    sports_live_fetch.get_espn_scoreboard = lambda *a, **k: board(name)
     try:
         mgr.last_update = 0
         mgr.update()
     finally:
-        sports.get_espn_scoreboard = _real_fetch
+        sports_live_fetch.get_espn_scoreboard = _real_fetch
     return [g["id"] for g in mgr.live_games]
 
 

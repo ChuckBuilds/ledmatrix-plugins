@@ -21,9 +21,6 @@ from urllib3.util.retry import Retry
 # takes no cache_manager, made every UFC manager fail with TypeError).
 from base_odds_manager import BaseOddsManager
 from data_sources import ESPNDataSource
-# The shared ESPN scoreboard fetch: core ships it from 3.8.1, below the
-# manifest's floor.
-from src.common.espn_dates import get_espn_scoreboard
 from ufc_timezone import resolve_timezone
 from src.common.sports_shared import (
     SportsCoreSharedMixin, SportsLiveSharedMixin, SportsRecentSharedMixin)
@@ -38,6 +35,7 @@ from src.common.sports_favorites import (
 )
 from src.common.sports_rotation import SportsRotationMixin
 from src.common.sports_rankings import SportsRankingsMixin
+from src.common.sports_live_fetch import SportsLiveFetchMixin
 # Helpers every scoreboard carried a private copy of; core ships them from
 # 3.5.0 (the manifest's floor). The private aliases keep this module's names.
 from src.common.sports_helpers import (
@@ -113,7 +111,8 @@ def _status_is_final(status_type: Dict[str, Any]) -> bool:
 
 class SportsCore(SportsGameRulesMixin, SportsFetchMixin, SportsFavoritesMixin,
                  SportsRotationMixin,
-                 SportsRankingsMixin, SportsCoreSharedMixin, SportsHelpersMixin, ABC):
+                 SportsRankingsMixin, SportsLiveFetchMixin,
+                 SportsCoreSharedMixin, SportsHelpersMixin, ABC):
     def __init__(
         self,
         config: Dict[str, Any],
@@ -802,72 +801,6 @@ class SportsCore(SportsGameRulesMixin, SportsFetchMixin, SportsFavoritesMixin,
             )
             return None
 
-    def _fetch_odds(self, game: Dict) -> None:
-        """Queue ``game`` for an odds request; never waits for the answer.
-
-        One daemon worker per manager asks the odds manager for each queued
-        game in turn and attaches the line to the game dict in place, under
-        ``_games_lock`` (display() reads the games under it), so a card can
-        draw once without odds and gain them when ESPN answers. A game queued
-        while the worker is busy joins its batch, and every dict queued for one
-        id (update() rebuilds them; the list on screen may keep older ones)
-        gets the one answer, so a slow endpoint never stacks threads or
-        requests. The odds manager bounds each request (5 s, then a 60 s
-        hold-off).
-        """
-        if not self.show_odds or game.get("id") is None:
-            return
-        if not getattr(self, "odds_manager", None):
-            self.logger.debug(f"No odds manager; no odds for game {game['id']}")
-            return
-        interval = (
-            self.mode_config.get("live_odds_update_interval", 60)
-            if game.get("is_live", False)
-            else self.mode_config.get("odds_update_interval", 3600)
-        )
-        with self._games_lock:
-            pending = getattr(self, "_odds_pending", None)
-            if pending is None:
-                pending = self._odds_pending = {}
-            games, _ = pending.get(game["id"], ([], None))
-            if not any(queued is game for queued in games):
-                games.append(game)
-            pending[game["id"]] = (games, interval)
-            if getattr(self, "_odds_worker_busy", False):
-                return
-            self._odds_worker_busy = True
-        try:
-            threading.Thread(target=self._drain_odds_queue, daemon=True,
-                             name=f"{self.sport_key}-odds").start()
-        except RuntimeError as e:  # no thread to be had; try again next update
-            with self._games_lock:
-                self._odds_worker_busy = False
-            self.logger.debug(f"Could not start the odds worker: {e}")
-
-    def _drain_odds_queue(self) -> None:
-        """The odds worker: ask for each queued game until none is left."""
-        while True:
-            with self._games_lock:
-                if not self._odds_pending:
-                    self._odds_worker_busy = False
-                    return
-                game_id = next(iter(self._odds_pending))
-                games, interval = self._odds_pending.pop(game_id)
-            try:
-                odds = self.odds_manager.get_odds(
-                    sport=self.sport,
-                    league=self.league,
-                    event_id=game_id,
-                    update_interval_seconds=interval,
-                )
-            except Exception as e:
-                self.logger.debug(f"Odds fetch failed for game {game_id}: {e}")
-                continue
-            if odds:
-                with self._games_lock:
-                    for game in games:
-                        game["odds"] = odds
-
     def _get_timezone(self):
         """Timezone event start times are rendered in.
 
@@ -1053,40 +986,6 @@ class SportsCore(SportsGameRulesMixin, SportsFetchMixin, SportsFavoritesMixin,
     @abstractmethod
     def _fetch_data(self) -> Optional[Dict]:
         pass
-
-    def _fetch_todays_games(self) -> Optional[Dict]:
-        """Today's scoreboard for the live poll, with yesterday's while it can
-        still hold a live game (``_needs_previous_day``)."""
-        # ESPN anchors its calendar to Eastern US time.
-        now = datetime.now(pytz.timezone("America/New_York"))
-        today = now.strftime("%Y%m%d")
-        dates = (
-            f"{(now - timedelta(days=1)).strftime('%Y%m%d')}-{today}"
-            if self._needs_previous_day(now) else today
-        )
-        try:
-            # Asked on every poll and left under core's shared key for this
-            # scoreboard and date, so odds-ticker and every other reader of
-            # the same day reuse it. max_age=1: a copy another reader fetched
-            # within the last second (the managers of one display tick) is the
-            # same answer; anything older is asked again.
-            data = get_espn_scoreboard(
-                self.session, self.sport, self.league, dates,
-                cache_manager=self.cache_manager, max_age=1,
-                headers=self.headers, timeout=10, logger=self.logger,
-            )
-        except requests.exceptions.RequestException as e:
-            self.logger.error(
-                f"API error fetching today's games for {self.sport} - {self.league}: {e}"
-            )
-            return None
-        events = data.get("events") if isinstance(data, dict) else None
-        if not isinstance(events, list):
-            events = []  # ESPN can answer "events": null
-        self.logger.info(
-            f"Fetched {len(events)} games for {dates} for {self.sport} - {self.league}"
-        )
-        return {"events": events}
 
     # Class-level defaults for everything the selection path reads. __init__
     # sets all of these from config; these exist so a missing one can never

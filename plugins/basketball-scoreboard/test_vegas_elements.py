@@ -70,7 +70,8 @@ def _poll(plugin):
     """One live poll, with ESPN answering the scoreboard plugin.events describe."""
     live = plugin.nba_live
     board = {"events": copy.deepcopy(list(plugin.events.values()))}
-    # The plugin's sports module, as the loader bound it (it is not in sys.modules).
+    # The module whose get_espn_scoreboard the live fetch calls (core's
+    # src.common.sports_live_fetch, as the loader bound it).
     sports = type(live)._fetch_todays_games.__globals__
     with patch.dict(sports, {"get_espn_scoreboard": lambda *a, **k: board}):
         live.last_update = 0                 # due now, whatever the interval
