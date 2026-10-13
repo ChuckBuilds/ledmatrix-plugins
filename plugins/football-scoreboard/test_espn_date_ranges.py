@@ -116,7 +116,7 @@ def forget_rejected_ranges(monkeypatch):
     # The rejected-range memo is process-wide; each test starts clean. It lives
     # in the helper the plugin runs on: core's src.common.espn_dates.
     import sports
-    helper = sys.modules[sports.fetch_espn_scoreboard.__module__]
+    helper = sys.modules[sports.get_espn_scoreboard.__module__]
     monkeypatch.setattr(helper, "_ranges_rejected_until", 0.0)
 
 

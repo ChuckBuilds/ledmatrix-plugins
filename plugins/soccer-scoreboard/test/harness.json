@@ -1,5 +1,5 @@
 {
-  "_comment": "Deterministic fixture for the plugin safety harness. Enables only the Premier League and seeds its date-range schedule cache (key soccer_eng.1_schedule_20260101-20260129, derived from freeze_time +/- 14 days, consumed by the recent/upcoming managers) and the live scoreboard cache (key soccer_eng.1_scoreboard_current, consumed by SoccerLiveManager._fetch_todays_games) with one final, one in-progress, and one scheduled match so all three modes render real game cards without network access.",
+  "_comment": "Deterministic fixture for the plugin safety harness. Enables only the Premier League and seeds its date-range schedule cache (key soccer_eng.1_schedule_20260101-20260129, derived from freeze_time +/- 14 days, consumed by the recent/upcoming managers) and the live scoreboard under core's shared key for the frozen Eastern date (espn_scoreboard_soccer_eng.1_20260115, consumed by SoccerLiveManager._fetch_todays_games) with one final, one in-progress, and one scheduled match so all three modes render real game cards without network access.",
   "config": {
     "enabled": true,
     "timezone": "UTC",

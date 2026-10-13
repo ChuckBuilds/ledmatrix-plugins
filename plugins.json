@@ -80,9 +80,8 @@
       "last_updated": "2026-10-12",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.62.0",
-      "ledmatrix_min_version": "3.8.5",
-      "commit": "a4ca142b6e93769e8167082d4b741203417eebaa"
+      "latest_version": "1.63.0",
+      "ledmatrix_min_version": "3.8.5"
     },
     {
       "id": "basketball-scoreboard",
@@ -107,9 +106,8 @@
       "last_updated": "2026-10-12",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.48.0",
-      "ledmatrix_min_version": "3.8.5",
-      "commit": "a4ca142b6e93769e8167082d4b741203417eebaa"
+      "latest_version": "1.49.0",
+      "ledmatrix_min_version": "3.8.5"
     },
     {
       "id": "calendar",
@@ -283,9 +281,8 @@
       "last_updated": "2026-10-12",
       "verified": true,
       "screenshot": "",
-      "latest_version": "3.24.0",
-      "ledmatrix_min_version": "3.8.5",
-      "commit": "a4ca142b6e93769e8167082d4b741203417eebaa"
+      "latest_version": "3.25.0",
+      "ledmatrix_min_version": "3.8.5"
     },
     {
       "id": "geochron",
@@ -389,10 +386,9 @@
       "last_updated": "2026-10-12",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.50.0",
+      "latest_version": "1.51.0",
       "icon": "fas fa-hockey-puck",
-      "ledmatrix_min_version": "3.8.5",
-      "commit": "a4ca142b6e93769e8167082d4b741203417eebaa"
+      "ledmatrix_min_version": "3.8.5"
     },
     {
       "id": "lacrosse-scoreboard",
@@ -415,10 +411,9 @@
       "last_updated": "2026-10-12",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.41.0",
+      "latest_version": "1.42.0",
       "icon": "fas fa-baseball-ball",
-      "ledmatrix_min_version": "3.8.5",
-      "commit": "a4ca142b6e93769e8167082d4b741203417eebaa"
+      "ledmatrix_min_version": "3.8.5"
     },
     {
       "id": "birdnet-go",
@@ -851,9 +846,8 @@
       "last_updated": "2026-10-12",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.45.0",
-      "ledmatrix_min_version": "3.8.5",
-      "commit": "a4ca142b6e93769e8167082d4b741203417eebaa"
+      "latest_version": "2.46.0",
+      "ledmatrix_min_version": "3.8.5"
     },
     {
       "id": "static-image",
@@ -1011,10 +1005,9 @@
       "last_updated": "2026-10-12",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.23.0",
+      "latest_version": "1.24.0",
       "icon": "fas fa-fist-raised",
-      "ledmatrix_min_version": "3.8.5",
-      "commit": "a4ca142b6e93769e8167082d4b741203417eebaa"
+      "ledmatrix_min_version": "3.8.5"
     },
     {
       "id": "weather",
@@ -1168,10 +1161,9 @@
       "downloads": 0,
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.40.0",
+      "latest_version": "1.41.0",
       "last_updated": "2026-10-12",
-      "ledmatrix_min_version": "3.8.5",
-      "commit": "a4ca142b6e93769e8167082d4b741203417eebaa"
+      "ledmatrix_min_version": "3.8.5"
     },
     {
       "id": "tidbyt-baseball-scoreboard",
@@ -1217,9 +1209,8 @@
       "last_updated": "2026-10-12",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.39.0",
-      "ledmatrix_min_version": "3.8.5",
-      "commit": "a4ca142b6e93769e8167082d4b741203417eebaa"
+      "latest_version": "1.40.0",
+      "ledmatrix_min_version": "3.8.5"
     },
     {
       "id": "jellyfin-now-playing",

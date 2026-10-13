@@ -100,17 +100,17 @@ def make(cls, **settings):
     return mgr
 
 
-_real_fetch = sports.fetch_espn_scoreboard
+_real_fetch = sports.get_espn_scoreboard
 
 
 def poll_live(mgr, name):
     """One real live update, with ESPN answering from the recorded scoreboard."""
-    sports.fetch_espn_scoreboard = lambda *a, **k: board(name)
+    sports.get_espn_scoreboard = lambda *a, **k: board(name)
     try:
         mgr.last_update = 0
         mgr.update()
     finally:
-        sports.fetch_espn_scoreboard = _real_fetch
+        sports.get_espn_scoreboard = _real_fetch
     return [g["id"] for g in mgr.live_games]
 
 
