@@ -1,7 +1,7 @@
 {
   "id": "fantasy-blitz",
   "name": "Fantasy Blitz",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "author": "ChuckBuilds",
   "description": "An arcade-style NFL fantasy football show with no league login needed: the week's top scorers as collectible player cards with photos, a live leaderboard, big-play celebrations as they happen, dud alerts for the biggest busts, the free agents everyone is adding, injury news, the top scorer at each position, Tuesday awards and the season race. Optionally follows a watchlist and your own Sleeper or ESPN league. Points in PPR, Half-PPR or Standard from Sleeper's public feed, with ESPN for game states and headshots. No API key.",
   "entry_point": "manager.py",
@@ -39,6 +39,12 @@
     ">=3.0.0"
   ],
   "versions": [
+    {
+      "version": "1.1.2",
+      "released": "2026-10-15",
+      "ledmatrix_min_version": "3.0.0",
+      "notes": "Vegas scroll: the ticker shows top_n scorers. It showed at least five whatever top_n said."
+    },
     {
       "version": "1.1.1",
       "released": "2026-10-02",
