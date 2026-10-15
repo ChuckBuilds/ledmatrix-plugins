@@ -1432,7 +1432,8 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "1.1.2",
-      "ledmatrix_min_version": "3.0.0"
+      "ledmatrix_min_version": "3.0.0",
+      "commit": "d7548de3ff41f296863335621423547f74be5586"
     },
     {
       "id": "home-assistant",
