@@ -184,6 +184,7 @@ MODULE_FIRST_VERSION = {
     # on core main, in no tagged release yet: add as None. When the next
     # release is tagged, set each None entry here to that tag -- the test's
     # tag-verification section insists on it once the tag is in its list.
+    "src.common.sports_view_model": None,  # core #796 (sports family 10, view model)
 }
 
 #: Releases whose ``src/__init__.py`` ``__version__`` lags their tag. The
