@@ -257,6 +257,14 @@ def test_vegas_content(frozen):
     assert {p["id"] for p in plugin._vegas_players()} <= wanted
 
 
+def test_vegas_ticker_follows_top_n(frozen):
+    """The ticker showed at least five scorers whatever top_n said."""
+    for top_n in (2, 8):
+        plugin, _, _ = make_plugin({"top_n": top_n})
+        plugin.update()
+        assert len(plugin.get_vegas_content()) == top_n + 1  # title + scorers
+
+
 def test_vegas_static_pause_walks_every_screen(frozen):
     """Vegas calls display() once per pause and never again, with no mode. It
     drew the top scorers' first card every time and skipped the other screens."""

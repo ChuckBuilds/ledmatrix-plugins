@@ -113,7 +113,7 @@ are on, and are cut at a whole letter when they are off.
 |---------|------|---------|--------------|
 | `enabled` | boolean | `false` | Enable Fantasy Blitz. |
 | `scoring_format` | `ppr` / `half_ppr` / `standard` | `"ppr"` | How fantasy points are counted. PPR gives 1 point per catch, Half-PPR 0.5, Standard 0. Pick the one your league uses. |
-| `top_n` | integer (1-10) | `5` | How many of the week's top scorers get a player card. |
+| `top_n` | integer (1-10) | `5` | How many of the week's top scorers get a player card, and how many scroll through the Vegas ticker. |
 | `positions.qb` | boolean | `true` | Show quarterbacks. |
 | `positions.rb` | boolean | `true` | Show running backs. |
 | `positions.wr` | boolean | `true` | Show wide receivers. |

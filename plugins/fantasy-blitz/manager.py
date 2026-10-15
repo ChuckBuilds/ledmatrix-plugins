@@ -587,7 +587,7 @@ class FantasyBlitzPlugin(BasePlugin):
 
     def _vegas_players(self) -> List[Dict[str, Any]]:
         """The ticker's scorers, best first: the photos its cards draw."""
-        return model.ranked(self._display_players(), self.scoring, self.positions, max(self.top_n, 5))
+        return model.ranked(self._display_players(), self.scoring, self.positions, self.top_n)
 
     def _players_in_rows(self) -> List[Dict[str, Any]]:
         """Everyone on a list screen, for jersey-number lookups (no photos)."""
