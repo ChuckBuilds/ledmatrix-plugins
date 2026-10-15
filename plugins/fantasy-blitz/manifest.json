@@ -1,7 +1,7 @@
 {
   "id": "fantasy-blitz",
   "name": "Fantasy Blitz",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "author": "ChuckBuilds",
   "description": "An arcade-style NFL fantasy football show with no league login needed: the week's top scorers as collectible player cards with photos, a live leaderboard, big-play celebrations as they happen, dud alerts for the biggest busts, the free agents everyone is adding, injury news, the top scorer at each position, Tuesday awards and the season race. Optionally follows a watchlist and your own Sleeper or ESPN league. Points in PPR, Half-PPR or Standard from Sleeper's public feed, with ESPN for game states and headshots. No API key.",
   "entry_point": "manager.py",
@@ -36,9 +36,15 @@
   "config_schema": "config_schema.json",
   "requirements_file": "requirements.txt",
   "compatible_versions": [
-    ">=3.0.0"
+    ">=3.8.8"
   ],
   "versions": [
+    {
+      "version": "1.2.0",
+      "released": "2026-10-15",
+      "ledmatrix_min_version": "3.8.8",
+      "notes": "Vegas static: one pause now walks the whole show, one screen at a time on its timer, and lasts as long as that takes; the next pause carries on where it stopped. Core 3.8.8 redraws a paused plugin for the whole pause; before it each pause showed one screen, minutes apart in a long rotation."
+    },
     {
       "version": "1.1.2",
       "released": "2026-10-15",

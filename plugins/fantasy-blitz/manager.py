@@ -16,6 +16,7 @@ memory, and returns False for a screen with nothing to show (wrong part of
 the week, screen off, no data) so the core rotates straight past it.
 """
 
+import re
 import time
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
@@ -26,6 +27,14 @@ try:
     from src.plugin_system.base_plugin import VegasDisplayMode
 except ImportError:  # cores before the Vegas hooks never ask for them
     VegasDisplayMode = None
+
+try:
+    from src import __version__ as _CORE_VERSION
+except ImportError:
+    _CORE_VERSION = "0"
+#: Core 3.8.8 redraws a Vegas pause's plugin for the whole pause; older cores
+#: call display() once per pause, so a pause there shows one screen.
+PAUSE_REDRAWS = tuple(int(n) for n in re.findall(r"\d+", _CORE_VERSION)[:3]) >= (3, 8, 8)
 
 try:
     import pytz
@@ -141,9 +150,12 @@ class FantasyBlitzPlugin(BasePlugin):
         self._frame_cache: Dict[Tuple[Any, ...], Any] = {}
         self._shown_key: Optional[Tuple[Any, ...]] = None
         self._last_warning = 0.0
-        # Vegas "static" hands display() one call per pass, with no mode.
+        # Vegas "static": display() with no mode, for each pause.
         self._pause_turn = -1
-        self._pause_at = 0.0
+        self._pause_first = 0
+        self._pause_start = 0.0
+        self._pause_steps: List[float] = []
+        self._pause_drawn: Optional[int] = None
         self._pause_seconds = float(self.item_seconds)
         self._in_pause = False
 
@@ -623,7 +635,7 @@ class FantasyBlitzPlugin(BasePlugin):
 
     def display(self, force_clear: bool = False, display_mode: Optional[str] = None) -> bool:
         if display_mode is None and self.enabled and self._vegas_pauses():
-            return self._display_pause(time.time())
+            return self._display_pause(time.time(), force_clear)
         self._in_pause = False
         mode = display_mode or self.modes[self.current_mode_index % len(self.modes)]
         screen = MODE_SCREENS.get(mode)
@@ -849,14 +861,14 @@ class FantasyBlitzPlugin(BasePlugin):
                 self.logger.debug("get_vegas_participation() failed: %s", exc)
         return self.vegas_mode == "static"
 
-    def _display_pause(self, now: float) -> bool:
-        """One Vegas pause: a single display() call, then the scroll waits.
+    def _display_pause(self, now: float, force_clear: bool) -> bool:
+        """A Vegas pause: walk the playlist on a timer, one screen per step.
 
-        Vegas never calls display() again during the pause, so it can show one
-        finished frame only. Each pass shows the next screen in the playlist
-        (and, once the playlist has been round, the next item of each), so
-        the whole show comes round over successive passes instead of the top
-        scorers' first card every time.
+        The pause's first display() passes force_clear; the core (3.8.8 on)
+        then calls display() again about once a second until the pause ends,
+        so the step on screen follows the clock. Each pause starts where the
+        last one stopped. An older core calls display() once per pause, so
+        there a pause is one step long and each pass shows the next screen.
         """
         self._in_pause = True
         self._current_mode = None
@@ -866,14 +878,26 @@ class FantasyBlitzPlugin(BasePlugin):
         if not playlist:
             self._pause_seconds = 1.0
             return False
-        if now - self._pause_at >= 2.0 or self._pause_turn < 0:
-            # A second call inside the same pause redraws the same frame.
-            self._pause_turn += 1
-        self._pause_at = now
-        screen, items = playlist[self._pause_turn % len(playlist)]
-        item = items[(self._pause_turn // len(playlist)) % len(items)]
+        n = len(playlist)
+        if force_clear or self._pause_turn < 0 or now - self._pause_start >= self._pause_seconds:
+            self._pause_first = self._pause_turn + 1
+            self._pause_start = now
+            self._pause_drawn = None
+            self._pause_steps = [
+                float(PAGE_SECONDS if playlist[(self._pause_first + i) % n][0] in LIST_SCREENS
+                      else self.item_seconds)
+                for i in range(n if PAUSE_REDRAWS else 1)]
+            self._pause_seconds = sum(self._pause_steps)
+        step, ends = 0, self._pause_steps[0]
+        while step + 1 < len(self._pause_steps) and now - self._pause_start >= ends:
+            step += 1
+            ends += self._pause_steps[step]
+        self._pause_turn = self._pause_first + step
+        if self._pause_turn == self._pause_drawn:
+            return True  # nothing else draws during a pause
+        screen, items = playlist[self._pause_turn % n]
+        item = items[(self._pause_turn // n) % len(items)]
         w, h = self.display_manager.width, self.display_manager.height
-        self._pause_seconds = float(PAGE_SECONDS if screen in LIST_SCREENS else self.item_seconds)
         try:
             frame = self._still_frame(screen, item, w, h)
         except Exception as exc:  # noqa: BLE001 - never lose the loop to a draw
@@ -881,6 +905,7 @@ class FantasyBlitzPlugin(BasePlugin):
             return False
         self.display_manager.image.paste(frame, (0, 0))
         self.display_manager.update_display()
+        self._pause_drawn = self._pause_turn
         return True
 
     def get_vegas_content_type(self) -> str:

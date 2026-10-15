@@ -265,9 +265,11 @@ def test_vegas_ticker_follows_top_n(frozen):
         assert len(plugin.get_vegas_content()) == top_n + 1  # title + scorers
 
 
-def test_vegas_static_pause_walks_every_screen(frozen):
-    """Vegas calls display() once per pause and never again, with no mode. It
-    drew the top scorers' first card every time and skipped the other screens."""
+def test_vegas_static_pause_walks_every_screen_on_an_old_core(frozen, monkeypatch):
+    """Cores before 3.8.8 call display() once per pause and never again, with
+    no mode. It drew the top scorers' first card every time and skipped the
+    other screens; now each pass shows the next screen."""
+    monkeypatch.setattr(manager_mod, "PAUSE_REDRAWS", False)
     plugin, display, _ = make_plugin({"vegas_mode": "static"})
     plugin.update()
     assert plugin.get_vegas_participation() == "pause"
@@ -284,13 +286,44 @@ def test_vegas_static_pause_walks_every_screen(frozen):
     assert len(set(frames)) == len(frames)
 
 
-def test_vegas_static_pause_is_stable_within_one_pause(frozen):
-    plugin, _, _ = make_plugin({"vegas_mode": "static"})
+def test_vegas_static_pause_walks_the_playlist_within_one_pause(frozen, monkeypatch):
+    """Core 3.8.8 redraws a pause's plugin about once a second: one pause
+    walks the whole playlist on its timer, and lasts as long as that takes."""
+    monkeypatch.setattr(manager_mod, "PAUSE_REDRAWS", True)
+    plugin, display, _ = make_plugin({"vegas_mode": "static"})
+    plugin.update()
+    playlist = plugin._playlist()
+    steps = [manager_mod.PAGE_SECONDS if screen in manager_mod.LIST_SCREENS
+             else plugin.item_seconds for screen, _items in playlist]
+    assert plugin.display(force_clear=True) is True
+    assert plugin.get_display_duration() == sum(steps)
+    shown = []
+    for second in range(int(sum(steps))):
+        if second:
+            frozen.tick(1)
+            assert plugin.display() is True
+        screen = playlist[plugin._pause_turn % len(playlist)][0]
+        if not shown or shown[-1] != screen:
+            shown.append(screen)
+    assert shown == [screen for screen, _items in playlist]
+    # The next pause carries on from where this one stopped.
+    last = plugin._pause_turn
+    frozen.tick(60)
+    plugin.display(force_clear=True)
+    assert plugin._pause_turn == last + 1
+
+
+def test_a_redraw_inside_one_step_draws_nothing_new(frozen, monkeypatch):
+    monkeypatch.setattr(manager_mod, "PAUSE_REDRAWS", True)
+    plugin, display, _ = make_plugin({"vegas_mode": "static"})
     plugin.update()
     plugin.display(force_clear=True)
     turn = plugin._pause_turn
-    plugin.display(force_clear=True)
+    display.image.paste((0, 0, 0), (0, 0, display.width, display.height))
+    frozen.tick(1)
+    plugin.display()
     assert plugin._pause_turn == turn
+    assert display.image.getbbox() is None
 
 
 def test_normal_rotation_is_unaffected_by_a_static_setting(frozen):
