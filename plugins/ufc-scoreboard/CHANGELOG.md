@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.27.0] - 2026-10-15
+
+### Changed
+- Requires LEDMatrix core 3.8.7 (`ledmatrix_min_version` and
+  `compatible_versions`), the first release that ships
+  `src/common/sports_view_model.py`. The store refuses to install or update
+  this version onto an older core.
+- Uses core's game view model: `SportsCore` inherits
+  `SportsViewModelMixin` (`src.common.sports_view_model`).
+
+### Removed
+- This plugin's copies of core's game view model on `SportsCore`:
+  `_extract_game_details_common`, `_status_is_final`, `_score_text`,
+  `_team_logo_url`, `_extract_team_record`, the default `_logo_filename`
+  and the `_CALLED_OFF_STATUS_NAMES` / `_NOT_PLAYED_STATUS_NAMES` sets.
+
+No change in behaviour.
+
 ## [1.26.0] - 2026-10-13
 
 ### Changed

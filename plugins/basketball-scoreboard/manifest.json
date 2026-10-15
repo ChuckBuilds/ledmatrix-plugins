@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.51.0",
+  "version": "1.52.0",
   "update_interval": 60,
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
@@ -19,6 +19,12 @@
   "branch": "main",
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
+    {
+      "version": "1.52.0",
+      "released": "2026-10-15",
+      "ledmatrix_min_version": "3.8.7",
+      "notes": "Requires LEDMatrix core 3.8.7, the first release that ships src.common.sports_view_model. Uses core's game view model: SportsCore inherits its SportsViewModelMixin, and this plugin's copies of _extract_game_details_common, _status_is_final, _score_text, _team_logo_url, _extract_team_record, _logo_filename and the two status-name sets are removed. No change in behaviour."
+    },
     {
       "version": "1.51.0",
       "released": "2026-10-13",
@@ -722,6 +728,6 @@
   "entry_point": "manager.py",
   "class_name": "BasketballScoreboardPlugin",
   "compatible_versions": [
-    ">=3.8.6"
+    ">=3.8.7"
   ]
 }

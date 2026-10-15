@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.48.0",
+  "version": "2.49.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -53,6 +53,12 @@
     "soccer_usa.1_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.49.0",
+      "released": "2026-10-15",
+      "ledmatrix_min_version": "3.8.7",
+      "notes": "Requires LEDMatrix core 3.8.7, the first release that ships src.common.sports_view_model. Uses core's game view model: SportsCore inherits its SportsViewModelMixin, and this plugin's copies of _extract_game_details_common, _status_is_final, _score_text, _team_logo_url, _extract_team_record, _logo_filename and the two status-name sets are removed. No change in behaviour."
+    },
     {
       "version": "2.48.0",
       "released": "2026-10-13",
@@ -804,6 +810,6 @@
     }
   ],
   "compatible_versions": [
-    ">=3.8.6"
+    ">=3.8.7"
   ]
 }
