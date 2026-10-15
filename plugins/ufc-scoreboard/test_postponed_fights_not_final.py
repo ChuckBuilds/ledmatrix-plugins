@@ -31,7 +31,9 @@ else:
     sys.exit(2)
 
 from ufc_managers import UFCRecentManager as MMARecent  # noqa: E402  (concrete)
-from sports import _status_is_final  # noqa: E402
+from sports import SportsCore  # noqa: E402
+
+_status_is_final = SportsCore._status_is_final
 
 FAILURES = []
 

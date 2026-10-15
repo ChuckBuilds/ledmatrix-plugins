@@ -85,8 +85,10 @@ def main():
               not is_final(_type(name, completed=False, short=short)))
         check("%s is not final even if marked completed" % name,
               not is_final(_type(name, completed=True, short=short)))
-    check("state post without the completed flag is not final",
-          not is_final({"name": "STATUS_FINAL", "state": "post"}))
+    # Family 10: a feed without the flag is judged on state and name alone.
+    check("state post without the completed flag is final by its name",
+          is_final({"name": "STATUS_FINAL", "state": "post"})
+          and not is_final({"name": "STATUS_POSTPONED", "state": "post"}))
     check("live and scheduled games are not final",
           not is_final(_type("STATUS_IN_PROGRESS", state="in"))
           and not is_final(_type("STATUS_SCHEDULED", state="pre", completed=False)))

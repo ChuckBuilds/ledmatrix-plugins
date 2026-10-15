@@ -168,7 +168,11 @@ class Lacrosse(SportsCore):
             # Format period/quarter. NCAA men's & women's lacrosse use 4 quarters.
             period = status.get("period", 0)
             period_text = ""
-            if status["type"]["state"] == "in":
+            # Halftime first: ESPN sends state "in" with STATUS_HALFTIME, and the
+            # break reads "HALF" in every sport, never a period or a clock.
+            if details.get("is_halftime"):
+                period_text = "HALF"
+            elif status["type"]["state"] == "in":
                 if period == 0:
                     period_text = "Start"
                 elif 1 <= period <= 4:

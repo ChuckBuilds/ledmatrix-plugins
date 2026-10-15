@@ -115,7 +115,6 @@
     "sports.py::SportsCore.__init__",
     "sports.py::SportsCore._classify_live_S",
     "sports.py::SportsCore._draw_dynamic_odds",
-    "sports.py::SportsCore._extract_S_details_common",
     "sports.py::SportsCore._fit_score_font",
     "sports.py::SportsCore._get_layout_offset",
     "sports.py::SportsCore._get_logo_directory_fallbacks",
@@ -144,8 +143,7 @@
     "sports.py::SportsRecent.update",
     "sports.py::SportsUpcoming._draw_scorebug_layout",
     "sports.py::SportsUpcoming.display",
-    "sports.py::SportsUpcoming.update",
-    "sports.py::_status_is_final"
+    "sports.py::SportsUpcoming.update"
   ],
   "known_unthrottled": [
     "afl-scoreboard/manager.py::display::info",

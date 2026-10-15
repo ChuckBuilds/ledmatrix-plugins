@@ -1,5 +1,34 @@
 # Changelog
 
+## [3.27.0] - 2026-10-13
+
+### Changed
+- One rule decides whether a game is final in every scoreboard: state "post",
+  not marked uncompleted, and not postponed, canceled, suspended, abandoned,
+  delayed or a pending forfeit or no-contest. A forfeit is a result.
+- Halftime reads "HALF", with no period or clock beside it; it read "Q2" while
+  ESPN still reported the game in progress.
+- Scores are always whole-number text: a feed that sends 21, "21.0" or
+  {"value": 21} shows 21, and a missing or empty score shows 0 (it used to
+  show nothing, or the raw value).
+- The game's unread `broadcast` metadata is always text.
+- Football still asks for a missing badge, now from its own
+  `_extract_game_details`; unchanged.
+- `_extract_game_details_common`, which builds the game every screen draws, is
+  now one body in all nine scoreboards, with its helpers `_status_is_final`,
+  `_score_text`, `_team_logo_url`, `_extract_team_record` and the
+  `_logo_filename` seam beside it.
+
+### Fixed
+- A postponed or canceled game says so (ESPN's own label, e.g. "Postponed")
+  instead of "Final".
+- A game ESPN reports as suspended, canceled or abandoned while still "in
+  progress" leaves the live screen.
+- A team's logo URL is its `logo`, else the first of its `logos` (so a team
+  without `logo` can still have its badge downloaded).
+- A competitor without its own `id` takes its team's, so the game is still
+  shown (it was dropped).
+
 ## [3.26.0] - 2026-10-13
 
 ### Changed

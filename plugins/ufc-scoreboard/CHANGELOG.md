@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.26.0] - 2026-10-13
+
+### Changed
+- A bout time without a UTC offset is read as UTC instead of the Pi's own time
+  zone.
+- Every fight also carries `favorite_teams` (empty: favourites here are
+  fighters).
+- ufc's fights come from its own MMA extractor, which uses the shared
+  `_status_is_final`, `_score_text` and `_extract_team_record`.
+- `_extract_game_details_common`, which builds the game every screen draws, is
+  now one body in all nine scoreboards, with its helpers `_status_is_final`,
+  `_score_text`, `_team_logo_url`, `_extract_team_record` and the
+  `_logo_filename` seam beside it.
+
+### Fixed
+- Fight scores are always whole-number text; a missing score shows 0, never
+  "None".
+- Fighter records also come from the team-schedule shape
+  (`record[0].displayValue`).
+
 ## [1.25.0] - 2026-10-13
 
 ### Changed

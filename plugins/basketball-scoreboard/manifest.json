@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.50.0",
+  "version": "1.51.0",
   "update_interval": 60,
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
@@ -19,6 +19,12 @@
   "branch": "main",
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
+    {
+      "version": "1.51.0",
+      "released": "2026-10-13",
+      "ledmatrix_min_version": "3.8.6",
+      "notes": "A game ESPN reports as suspended, canceled or abandoned while still \"in progress\" leaves the live screen. A competitor without its own id takes its team's, so the game is still shown (it was dropped). One rule decides whether a game is final in every scoreboard: state \"post\", not marked uncompleted, and not postponed, canceled, suspended, abandoned, delayed or a pending forfeit or no-contest. A forfeit is a result. A forfeit is a result: it shows on Recent as \"Final\" instead of being treated as never played. Halftime reads \"HALF\", with no period or clock beside it; it read \"Q2\" while ESPN still reported the game in progress. A team's logo URL is its logo first, then the first of its logos (the other way round before). The game's unread broadcast metadata is always text. The March Madness keys (is_tournament, tournament_round, tournament_region, the seeds) are built by basketball's own extractor; unchanged. _extract_game_details_common, which builds the game every screen draws, is now one body in all nine scoreboards, with its helpers _status_is_final, _score_text, _team_logo_url, _extract_team_record and the _logo_filename seam beside it."
+    },
     {
       "version": "1.50.0",
       "released": "2026-10-13",

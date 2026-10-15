@@ -21,6 +21,7 @@ class Football(SportsCore):
         if details is None or home_team is None or away_team is None or status is None:
             return
         try:
+            self._ensure_team_logos(details)
             competition = game_event["competitions"][0]
             status = competition["status"]
 
@@ -75,15 +76,22 @@ class Football(SportsCore):
             # Format period/quarter
             period = status.get("period", 0)
             period_text = ""
-            if status["type"]["state"] == "in":
+            # Halftime first: ESPN sends state "in" with STATUS_HALFTIME, and the
+            # break reads "HALF" in every sport, never a period or a clock.
+            if details.get("is_halftime"):
+                period_text = "HALF"
+            elif status["type"]["state"] == "in":
                 if period == 0:
                     period_text = "Start" # Before kickoff
                 elif period >= 1 and period <= 4:
                     period_text = f"Q{period}" # OT starts after Q4
                 elif period > 4:
                     period_text = f"OT{period - 4}" # OT starts after Q4
-            elif status["type"]["state"] == "halftime" or status["type"]["name"] == "STATUS_HALFTIME": # Check explicit halftime state
-                period_text = "HALF"
+            elif status["type"]["state"] == "post" and not details.get("is_final"):
+                # Postponed / cancelled / suspended: ESPN files these under
+                # "post" too, but they were never played to a final.
+                period_text = (status["type"].get("shortDetail")
+                               or status["type"].get("description") or "")
             elif status["type"]["state"] == "post":
                  if period > 4 : period_text = "Final/OT"
                  else: period_text = "Final"

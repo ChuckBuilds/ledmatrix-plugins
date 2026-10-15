@@ -1,5 +1,27 @@
 # Changelog
 
+## [1.43.0] - 2026-10-13
+
+### Changed
+- One rule decides whether a game is final in every scoreboard: state "post",
+  not marked uncompleted, and not postponed, canceled, suspended, abandoned,
+  delayed or a pending forfeit or no-contest. A forfeit is a result.
+- A game ESPN files as delayed after it ended is no longer shown as a result;
+  it reads "Delayed" until ESPN calls it final.
+- A team's logo URL is its `logo` first, then the first of its `logos` (the
+  other way round before).
+- The game's unread `broadcast` metadata is always text.
+- `_extract_game_details_common`, which builds the game every screen draws, is
+  now one body in all nine scoreboards, with its helpers `_status_is_final`,
+  `_score_text`, `_team_logo_url`, `_extract_team_record` and the
+  `_logo_filename` seam beside it.
+
+### Fixed
+- A game ESPN reports as suspended, canceled or abandoned while still "in
+  progress" leaves the live screen.
+- Team records also come from the team-schedule shape
+  (`record[0].displayValue`), so a record that feed carries is shown.
+
 ## [1.42.0] - 2026-10-13
 
 ### Changed

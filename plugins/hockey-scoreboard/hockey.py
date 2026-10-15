@@ -370,7 +370,11 @@ class Hockey(SportsCore):
             # Format period/quarter
             period = status.get("period", 0)
             period_text = ""
-            if status["type"]["state"] == "in":
+            # Halftime first: ESPN sends state "in" with STATUS_HALFTIME, and the
+            # break reads "HALF" in every sport, never a period or a clock.
+            if details.get("is_halftime"):
+                period_text = "HALF"
+            elif status["type"]["state"] == "in":
                 if period == 0:
                     period_text = "Start"  # Before start
                 elif period >= 1 and period <= 3:
