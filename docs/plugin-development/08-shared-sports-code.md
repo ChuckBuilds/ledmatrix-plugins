@@ -202,6 +202,16 @@ the core actually ships:
   `scripts/test_live_fetch_mixin_copies.py`
   fails if a copy, a guarded or aliased import, or a missing base comes back;
   `scripts/test_live_fetch_odds.py` pins the answers.
+- **Converged at 3.8.7 (sports family 10, game view model):**
+  `src.common.sports_view_model`. `SportsCore` (all nine) inherits
+  `SportsViewModelMixin` (`_extract_game_details_common`, `_status_is_final`,
+  `_score_text`, `_team_logo_url`, `_extract_team_record`, the
+  `_logo_filename` seam and the two status-name sets), listed after
+  `SportsLiveFetchMixin`. nrl's `BaseNrlManager` keeps its `_logo_filename`
+  override (`<ABBR>_<id>.png`); each sport's `_extract_game_details` still
+  adds its own keys. `scripts/test_view_model_mixin_copies.py` fails if a
+  copy, a guarded or aliased import, or a missing base comes back;
+  `scripts/test_view_model.py` pins the answers.
 - **Not converging (documented forks):** `dynamic_team_resolver` (plugin copies
   take `cache_manager` in the constructor; the core's does not — different
   API), ufc's `base_odds_manager` (MMA athlete-odds fork), and — until the core
