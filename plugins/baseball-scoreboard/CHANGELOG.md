@@ -1,5 +1,33 @@
 # Changelog
 
+## [1.65.0] - 2026-10-13
+
+### Changed
+- One rule decides whether a game is final in every scoreboard: state "post",
+  not marked uncompleted, and not postponed, canceled, suspended, abandoned,
+  delayed or a pending forfeit or no-contest. A forfeit is a result.
+- A finished game whose feed omits ESPN's `completed` flag is final (judged on
+  its state and status); it used to stay off Recent.
+- A game ESPN files as delayed after it ended is no longer shown as a result;
+  it reads "Delayed" until ESPN calls it final.
+- Scores are always whole-number text: a feed that sends 21, "21.0" or
+  {"value": 21} shows 21, and a missing or empty score shows 0 (it used to
+  show nothing, or the raw value).
+- Every game also carries `period` and `clock` (0 and "": innings are their
+  own keys). It still has no `period_text`, so a final still reads ESPN's
+  status ("Final", "Final/10").
+- The game's unread `broadcast` metadata is always text.
+- `_extract_game_details_common`, which builds the game every screen draws, is
+  now one body in all nine scoreboards, with its helpers `_status_is_final`,
+  `_score_text`, `_team_logo_url`, `_extract_team_record` and the
+  `_logo_filename` seam beside it.
+
+### Fixed
+- A team's logo URL is its `logo`, else the first of its `logos` (so a team
+  without `logo` can still have its badge downloaded).
+- A competitor without its own `id` takes its team's, so the game is still
+  shown (it was dropped).
+
 ## [1.64.0] - 2026-10-13
 
 ### Changed

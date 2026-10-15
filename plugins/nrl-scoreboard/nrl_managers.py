@@ -13,7 +13,8 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, Optional
 import pytz
 
-from sports import SportsCore, SportsLive, SportsRecent, SportsUpcoming
+from sports import (SportsCore, SportsLive, SportsRecent, SportsUpcoming,
+                    _team_logo_filename)
 
 # ESPN API base URL for rugby league.
 # NOTE: the ESPN "sport" slug for rugby league is "rugby-league".
@@ -47,6 +48,11 @@ class BaseNrlManager(SportsCore):
     _warning_cooldown = 60  # Only log warnings once per minute
     _shared_data = None
     _last_shared_update = 0
+
+    def _logo_filename(self, abbr: str, team_id: Any) -> str:
+        """``<ABBR>_<id>.png``: NRL abbreviations are not unique (see
+        sports._team_logo_filename)."""
+        return _team_logo_filename(abbr, team_id)
 
     def __init__(self, config: Dict[str, Any], display_manager, cache_manager):
         """Initialize base NRL manager."""
@@ -203,7 +209,8 @@ class BaseNrlManager(SportsCore):
             status_state = status["type"]["state"]
             status_name = status["type"]["name"]
 
-            if status_state == "halftime" or status_name == "STATUS_HALFTIME":
+            is_halftime = status_state == "halftime" or status_name == "STATUS_HALFTIME"
+            if is_halftime:
                 # ESPN can set state="in" AND name="STATUS_HALFTIME" at the same
                 # time, so this guard must precede the generic "in" branch.
                 period_text = "HALF"
@@ -233,7 +240,7 @@ class BaseNrlManager(SportsCore):
 
             # Get clock/time for live games (counts up, e.g. "40'" / "80'")
             clock = status.get("displayClock", "")
-            if clock and status_state == "in":
+            if clock and status_state == "in" and not is_halftime:
                 period_text = f"{period_text} {clock}" if period_text else clock
 
             details.update({

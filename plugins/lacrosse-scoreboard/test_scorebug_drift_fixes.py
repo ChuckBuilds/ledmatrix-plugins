@@ -71,7 +71,8 @@ def _status(state, name, completed):
 
 
 def test_postponed_is_not_final():
-    f = sports._is_completed_final
+    def f(status):
+        return sports.SportsCore._status_is_final(status["type"])
     check("STATUS_FINAL completed is final", f(_status("post", "STATUS_FINAL", True)))
     check("a payload without 'completed' is judged on state/name",
           f(_status("post", "STATUS_FINAL", None)))

@@ -57,7 +57,7 @@ def _period_text(status_type, period=4):
     def common(event):
         details = {"id": "x", "home_abbr": "COLL", "away_abbr": "GEEL",
                    "game_time": "", "is_live": False, "is_upcoming": False,
-                   "is_final": sports._status_is_final(event["status"]["type"])}
+                   "is_final": sports.SportsCore._status_is_final(event["status"]["type"])}
         return details, {}, {}, event["status"], None
 
     mgr._extract_game_details_common = common
@@ -67,7 +67,7 @@ def _period_text(status_type, period=4):
 
 
 def main():
-    final = sports._status_is_final
+    final = sports.SportsCore._status_is_final
     print("status classification")
     check("a completed STATUS_FINAL is final",
           final({"state": "post", "name": "STATUS_FINAL", "completed": True}))

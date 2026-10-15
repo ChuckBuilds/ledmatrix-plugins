@@ -43,20 +43,20 @@ CASES = [
 
 
 def main():
-    fn = getattr(sports, "_status_is_final", None)
+    fn = getattr(sports.SportsCore, "_status_is_final", None)
     if fn is None:
-        print("  [FAIL] sports._status_is_final does not exist")
+        print("  [FAIL] SportsCore._status_is_final does not exist")
         return 1
     failures = 0
     for name, status, want in CASES:
-        got = fn(status)
+        got = fn((status or {}).get("type"))
         ok = got is want
         failures += not ok
         print("  [%s] %s -> %r" % ("pass" if ok else "FAIL", name, got))
 
     # The extractor has to use it, or the helper protects nothing.
     src = inspect.getsource(sports)
-    wired = '"is_final": _status_is_final(status)' in src
+    wired = '"is_final": self._status_is_final(status_type)' in src
     failures += not wired
     print("  [%s] the extractor sets is_final through the helper"
           % ("pass" if wired else "FAIL"))

@@ -61,6 +61,45 @@ class Basketball(SportsCore):
                             if opp_record:
                                 comp["record"] = [{"displayValue": opp_record, "type": "total"}]
 
+    def _tournament_details(self, competition: Dict, home_team: Dict, away_team: Dict) -> Dict:
+        """March Madness metadata: whether this is a tournament game, its
+        round and region (from the notes headline) and the two seeds (1-16,
+        else 0)."""
+        is_tournament = competition.get("type", {}).get("abbreviation") == "TRNMNT"
+
+        # Also detect via notes headline as fallback
+        notes = competition.get("notes", [])
+        tournament_round = ""
+        tournament_region = ""
+        if notes:
+            headline = notes[0].get("headline", "")
+            if "Championship" in headline:
+                is_tournament = True
+            # Parse round/region from notes for all tournament games
+            if is_tournament and headline:
+                tournament_round = self._parse_tournament_round(headline)
+                tournament_region = self._parse_tournament_region(headline)
+
+        # Extract seed from curatedRank during tournament
+        home_seed = 0
+        away_seed = 0
+        if is_tournament:
+            home_seed = home_team.get("curatedRank", {}).get("current", 0)
+            away_seed = away_team.get("curatedRank", {}).get("current", 0)
+            # Only valid tournament seeds are 1-16
+            if not 1 <= home_seed <= 16:
+                home_seed = 0
+            if not 1 <= away_seed <= 16:
+                away_seed = 0
+
+        return {
+            "is_tournament": is_tournament,
+            "tournament_round": tournament_round,
+            "tournament_region": tournament_region,
+            "home_seed": home_seed,
+            "away_seed": away_seed,
+        }
+
     def _extract_game_details(self, game_event: Dict) -> Optional[Dict]:
         """Extract relevant game details from ESPN Basketball API response."""
         details, home_team, away_team, status, situation = self._extract_game_details_common(game_event)
@@ -71,16 +110,17 @@ class Basketball(SportsCore):
             period = status.get("period", 0)
             period_text = ""
             status_state = status["type"]["state"]
-            
-            if status_state == "in":
+            # Halftime first: ESPN sends state "in" with STATUS_HALFTIME, and the
+            # break reads "HALF" in every sport, never a period or a clock.
+            if details.get("is_halftime"):
+                period_text = "HALF"
+            elif status_state == "in":
                 if period == 0:
                     period_text = "Start"
                 elif 1 <= period <= 4:
                     period_text = f"Q{period}"
                 else:
                     period_text = f"OT{period - 4}"
-            elif status_state == "halftime" or status["type"]["name"] == "STATUS_HALFTIME":
-                period_text = "HALF"
             elif status_state == "post" and not details.get("is_final", True):
                 # Postponed / cancelled / suspended: ESPN files these under
                 # "post" too, but they were never played to a final.
@@ -98,6 +138,8 @@ class Basketball(SportsCore):
                 "period": period,
                 "period_text": period_text,
                 "clock": status.get("displayClock", "0:00"),
+                **self._tournament_details((game_event.get("competitions") or [{}])[0],
+                                           home_team, away_team),
             })
 
             # Basic validation

@@ -21,7 +21,6 @@ from sports import (
     SportsUpcoming,
     _DEFAULT_LOOKAHEAD_DAYS,
     _DEFAULT_LOOKBACK_DAYS,
-    _status_is_final,
 )
 
 #: ESPN status names for the minute between rounds. The MMA feed sends
@@ -307,6 +306,9 @@ class MMA(SportsCore):
                 start_time_utc = datetime.fromisoformat(
                     game_date_str.replace("Z", "+00:00")
                 )
+                if start_time_utc.tzinfo is None:
+                    # A time without an offset is read as UTC, as ESPN sends it.
+                    start_time_utc = start_time_utc.replace(tzinfo=timezone.utc)
             except ValueError:
                 self.logger.warning(f"Could not parse game date: {game_date_str}")
 
@@ -368,16 +370,8 @@ class MMA(SportsCore):
                         local_time
                     )
 
-            fighter1_record = (
-                fighter1.get("records", [{}])[0].get("summary", "")
-                if fighter1.get("records")
-                else ""
-            )
-            fighter2_record = (
-                fighter2.get("records", [{}])[0].get("summary", "")
-                if fighter2.get("records")
-                else ""
-            )
+            fighter1_record = self._extract_team_record(fighter1)
+            fighter2_record = self._extract_team_record(fighter2)
 
             # Don't show "0-0" records - set to blank instead
             if fighter1_record in {"0-0", "0-0-0"}:
@@ -385,13 +379,9 @@ class MMA(SportsCore):
             if fighter2_record in {"0-0", "0-0-0"}:
                 fighter2_record = ""
 
-            # Extract scores for live fights (ESPN uses competitor "score" field)
-            fighter1_score = fighter1.get("score", "0")
-            fighter2_score = fighter2.get("score", "0")
-
             # Not state alone: a cancelled or postponed bout is "post" too,
             # and showed on Recent as a finished fight.
-            is_final = _status_is_final(status["type"])
+            is_final = self._status_is_final(status["type"])
 
             # Extract round/clock for live fights. Only a bout in progress, or
             # finished, has a clock. ESPN sends a scheduled bout's as "-", and
@@ -430,8 +420,9 @@ class MMA(SportsCore):
                 # ESPN's MMA feed names the break STATUS_END_OF_ROUND ("End R2");
                 # STATUS_END_PERIOD is the team-sport name, kept in case.
                 "is_period_break": status["type"]["name"] in _ROUND_BREAK_STATUS_NAMES,
-                "home_score": str(fighter1_score),
-                "away_score": str(fighter2_score),
+                # ESPN's competitor "score", as integer text ("0" when missing).
+                "home_score": self._score_text(fighter1.get("score")),
+                "away_score": self._score_text(fighter2.get("score")),
                 "period": period,
                 "period_text": period_text,
                 "clock": clock,
@@ -457,6 +448,9 @@ class MMA(SportsCore):
                 .get("href", ""),
                 "fighter2_record": fighter2_record,
                 "is_within_window": True,
+                # Read by the shared result colouring; favourites here are
+                # fighters, which the MMA managers match themselves.
+                "favorite_teams": [],
             }
             return details
         except Exception as e:

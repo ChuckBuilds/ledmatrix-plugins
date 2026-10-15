@@ -217,6 +217,7 @@ def test_live_modes_and_content() -> None:
 def test_period_text_mapping() -> None:
     """AFL quarters map to Q1..Q4 + HALF/Final/pre-game time."""
     import afl_managers
+    import sports
 
     mgr = afl_managers.BaseAflManager.__new__(afl_managers.BaseAflManager)
     mgr.logger = logging.getLogger("test")
@@ -229,7 +230,8 @@ def test_period_text_mapping() -> None:
             "away_abbr": "GEEL",
             "game_time": event.get("_game_time", ""),
             "is_live": False,
-            "is_final": False,
+            # As the shared extractor sets it (afl reads it for "Final").
+            "is_final": sports.SportsCore._status_is_final(event["status"]["type"]),
             "is_upcoming": False,
         }
         status = event["status"]

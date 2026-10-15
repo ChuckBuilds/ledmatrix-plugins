@@ -1,5 +1,36 @@
 # Changelog
 
+## [1.53.0] - 2026-10-13
+
+### Changed
+- One rule decides whether a game is final in every scoreboard: state "post",
+  not marked uncompleted, and not postponed, canceled, suspended, abandoned,
+  delayed or a pending forfeit or no-contest. A forfeit is a result.
+- A finished game whose feed omits ESPN's `completed` flag is final (judged on
+  its state and status); it used to stay off Recent.
+- A start time without a UTC offset is read as UTC, like every other
+  scoreboard (it was read as US Eastern, four or five hours off).
+- Scores are always whole-number text: a feed that sends 21, "21.0" or
+  {"value": 21} shows 21, and a missing or empty score shows 0 (it used to
+  show nothing, or the raw value).
+- A game at halftime reads "HALF" (it read the period, e.g. "P2"), as in every
+  scoreboard.
+- The game's unread `broadcast` metadata is always text.
+- `_extract_game_details_common`, which builds the game every screen draws, is
+  now one body in all nine scoreboards, with its helpers `_status_is_final`,
+  `_score_text`, `_team_logo_url`, `_extract_team_record` and the
+  `_logo_filename` seam beside it.
+
+### Fixed
+- A game ESPN reports as suspended, canceled or abandoned while still "in
+  progress" leaves the live screen.
+- Team records also come from the team-schedule shape
+  (`record[0].displayValue`), so a record that feed carries is shown.
+- A team's logo URL is its `logo`, else the first of its `logos` (so a team
+  without `logo` can still have its badge downloaded).
+- A competitor without its own `id` takes its team's, so the game is still
+  shown (it was dropped).
+
 ## [1.52.0] - 2026-10-13
 
 ### Changed

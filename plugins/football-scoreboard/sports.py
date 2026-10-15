@@ -10,6 +10,8 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, ClassVar, Dict, List, Optional, Tuple
 
+import re
+
 import pytz
 import requests
 from PIL import Image, ImageDraw, ImageFont
@@ -81,34 +83,6 @@ _IDLE_SHORT_FACTOR = 2
 _IDLE_LONG_STREAK = 24
 _IDLE_LONG_FACTOR = 6
 _DEFAULT_LIVE_IDLE_MAX_SECONDS = 900
-
-
-#: ESPN statuses that arrive with state "post" for a game that was never
-#: played to a result. Treating them as final put a rainout on Recent as
-#: "Final 0-0".
-_NOT_PLAYED_STATUS_NAMES = frozenset({
-    "STATUS_POSTPONED",
-    "STATUS_CANCELED",
-    "STATUS_CANCELLED",
-    "STATUS_SUSPENDED",
-    "STATUS_ABANDONED",
-    "STATUS_DELAYED",
-})
-
-
-def _status_is_final(status: Any) -> bool:
-    """True only for a game that finished: state "post", completed, and not a
-    postponement, cancellation or suspension.
-
-    A payload with no ``completed`` flag at all is judged on state and name
-    alone, so a trimmed or older feed keeps working.
-    """
-    stype = (status or {}).get("type") or {} if isinstance(status, dict) else {}
-    if stype.get("state") != "post":
-        return False
-    if stype.get("completed") is False:
-        return False
-    return str(stype.get("name", "")).upper() not in _NOT_PLAYED_STATUS_NAMES
 
 
 class _LogoFetcher:
@@ -1157,6 +1131,67 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
             log=self.logger,
         )
 
+    #: ESPN status names for a game called off: never live, never a result.
+    #: ESPN files a postponed or washed-out game under state "post" with both
+    #: scores "0" (so "post" alone drew it on Recent as "Final 0-0"), and a
+    #: suspended one can still read "in".
+    _CALLED_OFF_STATUS_NAMES: ClassVar[frozenset] = frozenset({
+        "STATUS_POSTPONED", "STATUS_CANCELED", "STATUS_CANCELLED",
+        "STATUS_SUSPENDED", "STATUS_ABANDONED",
+    })
+    #: Status names under state "post" that are not a result. A forfeit
+    #: (STATUS_FORFEIT) is one; a pending forfeit or no-contest is not.
+    _NOT_PLAYED_STATUS_NAMES: ClassVar[frozenset] = _CALLED_OFF_STATUS_NAMES | frozenset({
+        "STATUS_DELAYED", "STATUS_FORFEIT_PENDING", "STATUS_NO_CONTEST_PENDING",
+    })
+
+    @classmethod
+    def _status_is_final(cls, status_type: Any) -> bool:
+        """Whether an ESPN ``status.type`` is a game played to a result.
+
+        State "post", a ``completed`` flag that is not False, and a name
+        outside ``_NOT_PLAYED_STATUS_NAMES``. A payload without the flag is
+        judged on state and name alone; ESPN sends False for a postponement.
+        """
+        if not isinstance(status_type, dict) or status_type.get("state") != "post":
+            return False
+        if status_type.get("completed") is False:
+            return False
+        return str(status_type.get("name") or "").upper() not in cls._NOT_PLAYED_STATUS_NAMES
+
+    def _score_text(self, score: Any) -> str:
+        """A competitor's score as integer text: "21" for 21, "21.0" or
+        {"value": 21.0}; "0" when it is missing or holds no number."""
+        if isinstance(score, dict):
+            value = score.get("value", 0)
+            score = value if value != 0 else score.get("displayValue", score.get("score", 0))
+        if isinstance(score, str):
+            text = score.strip()
+            try:
+                score = float(text)
+            except ValueError:
+                digits = re.findall(r"\d+", text)
+                if not digits:
+                    if text:
+                        self.logger.warning(f"Could not extract score from string: {text!r}")
+                    return "0"
+                score = float(digits[0])
+        if score is None:
+            return "0"
+        try:
+            return str(int(float(score)))
+        except (TypeError, ValueError, OverflowError) as e:
+            self.logger.warning(f"Error extracting score: {e}, score value: {score!r}")
+            return "0"
+
+    @staticmethod
+    def _team_logo_url(competitor: Dict) -> Optional[str]:
+        """The team's ``logo``, else the first of its ``logos``, else None."""
+        team = competitor.get("team") or {}
+        logos = team.get("logos") or []
+        first = logos[0] if logos and isinstance(logos[0], dict) else {}
+        return team.get("logo") or first.get("href")
+
     @staticmethod
     def _extract_team_record(team_data: Dict) -> str:
         """Extract the overall record string from a competitor/team object.
@@ -1178,13 +1213,23 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
 
         return ""
 
+    def _logo_filename(self, abbr: str, team_id: Any) -> str:
+        """Seam: the file a team's logo is kept in under ``logo_dir``."""
+        return f"{LogoDownloader.normalize_abbreviation(abbr)}.png"
+
     def _extract_game_details_common(
         self, game_event: Dict
     ) -> tuple[Dict | None, Dict | None, Dict | None, Dict | None, Dict | None]:
+        """The game dict every renderer reads, built from one ESPN event.
+
+        Returns (details, home competitor, away competitor, status,
+        situation), or five Nones when the event has no competition, status,
+        date or home/away pair. Keys are additive only: never rename or drop
+        one. Sport extras belong in the sport's ``_extract_game_details``.
+        """
         if not game_event:
             return None, None, None, None, None
         try:
-            # Safe access to competitions array
             competitions = game_event.get("competitions", [])
             if not competitions:
                 self.logger.warning(f"No competitions data for game {game_event.get('id', 'unknown')}")
@@ -1199,17 +1244,10 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
             situation = competition.get("situation")
             start_time_utc = None
             try:
-                # Parse the datetime string
-                if game_date_str.endswith('Z'):
-                    game_date_str = game_date_str.replace('Z', '+00:00')
-                dt = datetime.fromisoformat(game_date_str)
-                # Ensure the datetime is UTC-aware (fromisoformat may create timezone-aware but not pytz.UTC)
-                if dt.tzinfo is None:
-                    # If naive, assume it's UTC
-                    start_time_utc = dt.replace(tzinfo=pytz.UTC)
-                else:
-                    # Convert to pytz.UTC for consistency
-                    start_time_utc = dt.astimezone(pytz.UTC)
+                dt = datetime.fromisoformat(game_date_str.replace("Z", "+00:00"))
+                # A time without an offset is read as UTC, as ESPN sends it.
+                start_time_utc = (dt.replace(tzinfo=pytz.UTC) if dt.tzinfo is None
+                                  else dt.astimezone(pytz.UTC))
             except ValueError:
                 self.logger.warning(f"Could not parse game date: {game_date_str}")
 
@@ -1219,7 +1257,6 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
             away_team = next(
                 (c for c in competitors if c.get("homeAway") == "away"), None
             )
-
             if not home_team or not away_team:
                 self.logger.warning(
                     f"Could not find home or away team in event: {game_event.get('id')}"
@@ -1234,98 +1271,76 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
                 away_abbr = away_team["team"]["abbreviation"]
             except KeyError:
                 away_abbr = away_team["team"]["name"][:3]
-
-            # Check if this is a favorite team game BEFORE doing expensive logging
-            is_favorite_game = self.favorite_teams and (
-                home_abbr in self.favorite_teams or away_abbr in self.favorite_teams
-            )
-
-            # Only log debug info for favorite team games
-            if is_favorite_game:
-                self.logger.debug(
-                    f"Processing favorite team game: {game_event.get('id')}"
-                )
-                self.logger.debug(
-                    f"Found teams: {away_abbr}@{home_abbr}, Status: {status['type']['name']}, State: {status['type']['state']}"
-                )
+            home_id = home_team.get("id") or home_team["team"].get("id")
+            away_id = away_team.get("id") or away_team["team"].get("id")
 
             game_time, game_date = "", ""
             if start_time_utc:
                 local_time = start_time_utc.astimezone(self._get_timezone())
                 game_time = local_time.strftime("%I:%M%p").lstrip("0")
-
-                # Check date format from config
-                use_short_date_format = self.config.get("display", {}).get(
-                    "use_short_date_format", False
-                )
-                if use_short_date_format:
+                if self.config.get("display", {}).get("use_short_date_format", False):
                     # %-m/%-d are glibc extensions: strftime raises ValueError on
                     # Windows and musl. Build the same text portably instead.
                     game_date = f"{local_time.month}/{local_time.day}"
                 else:
-                    # Note: display_manager.format_date_with_ordinal will be handled by plugin wrapper
-                    game_date = local_time.strftime("%m/%d")  # Simplified for plugin
+                    game_date = local_time.strftime("%m/%d")
 
             home_record = self._extract_team_record(home_team)
             away_record = self._extract_team_record(away_team)
-
             # Don't show "0-0" records - set to blank instead
             if home_record in {"0-0", "0-0-0"}:
                 home_record = ""
             if away_record in {"0-0", "0-0-0"}:
                 away_record = ""
 
+            status_type = status["type"]
+            status_name = str(status_type.get("name") or "").upper()
             details = {
                 "id": game_event.get("id"),
                 "game_time": game_time,
                 "game_date": game_date,
                 "start_time_utc": start_time_utc,
-                "status_text": status["type"][
-                    "shortDetail"
-                ],  # e.g., "Final", "7:30 PM", "Q1 12:34"
-                "is_live": status["type"]["state"] == "in",
-                "is_final": _status_is_final(status),
+                "status_text": status_type["shortDetail"],  # e.g. "Final", "7:30 PM", "Q1 12:34"
+                "is_live": (status_type["state"] == "in"
+                            and status_name not in self._CALLED_OFF_STATUS_NAMES),
+                "is_final": self._status_is_final(status_type),
                 "is_upcoming": (
-                    status["type"]["state"] == "pre"
-                    or status["type"]["name"].lower()
+                    status_type["state"] == "pre"
+                    or status_type["name"].lower()
                     in ["scheduled", "pre-game", "status_scheduled"]
                 ),
-                "is_halftime": status["type"]["state"] == "halftime"
-                or status["type"]["name"] == "STATUS_HALFTIME",  # Added halftime check
-                "is_period_break": status["type"]["name"]
-                == "STATUS_END_PERIOD",  # Added Period Break check
-                # str(): ESPN's undocumented payloads have served this
-                # field as an object in some sports, and a non-string reaching
-                # a .strip() inside update()'s own try/except is a mode that
-                # silently renders nothing. Kept as plain game metadata now
-                # that the "broadcast" quality tier is retired; nothing
-                # selects on it.
+                "is_halftime": status_type["state"] == "halftime"
+                or status_type["name"] == "STATUS_HALFTIME",
+                "is_period_break": status_type["name"] == "STATUS_END_PERIOD",
+                # str(): ESPN's undocumented payloads have served this field as
+                # an object in some sports. Plain game metadata: nothing reads it.
                 "broadcast": str(competition.get("broadcast") or ""),
                 "home_abbr": home_abbr,
-                "home_id": home_team["id"],
-                "home_score": home_team.get("score", "0"),
-                "home_logo_path": self.logo_dir
-                / Path(f"{LogoDownloader.normalize_abbreviation(home_abbr)}.png"),
-                "home_logo_url": home_team["team"].get("logo"),
+                "home_id": home_id,
+                "home_score": self._score_text(home_team.get("score")),
+                "home_logo_path": self.logo_dir / Path(self._logo_filename(home_abbr, home_id)),
+                "home_logo_url": self._team_logo_url(home_team),
                 "home_record": home_record,
                 "away_record": away_record,
                 "away_abbr": away_abbr,
-                "away_id": away_team["id"],
-                "away_score": away_team.get("score", "0"),
-                "away_logo_path": self.logo_dir
-                / Path(f"{LogoDownloader.normalize_abbreviation(away_abbr)}.png"),
-                "away_logo_url": away_team["team"].get("logo"),
+                "away_id": away_id,
+                "away_score": self._score_text(away_team.get("score")),
+                "away_logo_path": self.logo_dir / Path(self._logo_filename(away_abbr, away_id)),
+                "away_logo_url": self._team_logo_url(away_team),
                 "is_within_window": True,  # Whether game is within display window
                 # The resolved favorites for this league (dynamic groups such
                 # as AP_TOP_25 already expanded). Carried on the game so the
                 # scroll/Vegas renderer, which only ever sees the game dict and
                 # the raw config, can color a final score by the result.
                 "favorite_teams": list(self.favorite_teams or []),
+                # Defaults; a sport's _extract_game_details sets its own. No
+                # period_text: the renderers read its absence (baseball) as
+                # "draw ESPN's status text", e.g. "Final/10".
+                "period": 0,
+                "clock": "",
             }
-            self._ensure_team_logos(details)
             return details, home_team, away_team, status, situation
         except Exception as e:
-            # Log the problematic event structure if possible
             self.logger.error(
                 f"Error extracting game details: {e} from event: {game_event.get('id')}",
                 exc_info=True,

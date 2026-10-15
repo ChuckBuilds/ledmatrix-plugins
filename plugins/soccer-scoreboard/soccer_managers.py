@@ -247,7 +247,8 @@ class BaseSoccerManager(SportsCore):
             status_state = status["type"]["state"]
             
             status_name = status["type"]["name"]
-            if status_state == "halftime" or status_name == "STATUS_HALFTIME":
+            is_halftime = status_state == "halftime" or status_name == "STATUS_HALFTIME"
+            if is_halftime:
                 # Check halftime first: ESPN can set state="in" AND name="STATUS_HALFTIME"
                 # simultaneously, so this guard must precede the generic "in" branch.
                 period_text = "ETH" if period >= 3 else "HALF"
@@ -284,7 +285,7 @@ class BaseSoccerManager(SportsCore):
 
             # Get clock/time for live games
             clock = status.get("displayClock", "")
-            if clock and status_state == "in":
+            if clock and status_state == "in" and not is_halftime:
                 # Format clock for soccer (e.g., "45'" or "90+3'")
                 period_text = f"{period_text} {clock}" if period_text else clock
 

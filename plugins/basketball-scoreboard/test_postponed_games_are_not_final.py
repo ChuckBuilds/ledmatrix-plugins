@@ -58,7 +58,8 @@ def main():
     import sports
     import basketball
 
-    final = sports._status_is_final
+    def final(st):
+        return sports.SportsCore._status_is_final((st or {}).get("type"))
     check("a completed final is final",
           final(status("post", "STATUS_FINAL", completed=True)))
     check("a final without the completed flag is still final",
@@ -75,7 +76,7 @@ def main():
 
     source = inspect.getsource(sports.SportsCore._extract_game_details_common)
     check("the shared extractor derives is_final from _status_is_final",
-          '"is_final": _status_is_final(status)' in source)
+          '"is_final": self._status_is_final(status_type)' in source)
 
     class Stub(basketball.Basketball):
         def __init__(self, st):
@@ -85,7 +86,7 @@ def main():
         def _extract_game_details_common(self, game_event):
             details = {"id": "1", "home_abbr": "BOS", "away_abbr": "NY",
                        "is_live": False, "is_upcoming": False,
-                       "is_final": sports._status_is_final(self._st)}
+                       "is_final": sports.SportsCore._status_is_final(self._st["type"])}
             return details, {}, {}, self._st, None
 
         # Abstract on the base classes; nothing under test reaches them.

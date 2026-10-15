@@ -89,7 +89,7 @@ def main():
 
     # -- C5 ---------------------------------------------------------------
     print("C5: only a completed game is final")
-    done = sports.SportsCore._is_completed_status
+    done = sports.SportsCore._status_is_final
     check("STATUS_FINAL, completed -> final",
           done({"state": "post", "completed": True, "name": "STATUS_FINAL"}))
     check("STATUS_POSTPONED (post, not completed) -> not final",
@@ -112,7 +112,7 @@ def main():
                        "shortDetail": "Postponed", "completed": False}, "period": 0}
     common = {"id": "9", "home_abbr": "MEL", "away_abbr": "PAR", "game_time": "",
               "is_live": False, "is_upcoming": False,
-              "is_final": sports.SportsCore._is_completed_status(status["type"])}
+              "is_final": sports.SportsCore._status_is_final(status["type"])}
     mgr._extract_game_details_common = lambda ev: (
         dict(common), {"id": "1"}, {"id": "2"}, status, None)
     try:
