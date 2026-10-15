@@ -23,8 +23,12 @@ Nothing reaches the network: ``requests.Session.get`` is answered by ``ESPN``
 below, shaped as ESPN answered on 2026-10-12: a single ``dates=YYYYMMDD`` is
 200 for every league tried, college basketball included (14 men's games on
 2026-03-13, none on 2026-10-12); a ``YYYYMMDD-YYYYMMDD`` range is 400 for every
-league; no ``dates`` is ESPN's own "current" day. ``time.time`` is frozen and
-the plugins' ``datetime.now`` is pinned to an Eastern wall time.
+league; no ``dates`` is ESPN's own "current" day. ``time.time`` is frozen,
+the plugins' ``datetime.now`` is pinned to an Eastern wall time, and core's
+"today" for settled days (``espn_dates._utc_today``) follows that wall time,
+with its settled-chunk memory cleared before each plugin's cell: on the real
+date, 2026-10-12 became "settled" on 10-15 and the second plugin onward read
+the first one's chunk from memory.
 
 Odds run on a virtual clock, so the test never sleeps. The fake odds endpoint
 takes ``LATENCY`` (3 s) when "slow": a request made on the calling thread adds
@@ -80,7 +84,7 @@ import sys
 import tempfile
 import threading
 import time
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -683,7 +687,20 @@ def overrides(plugin):
 
 
 def row(fn, *args):
-    return " | ".join(fn(p, *args) for p in SPORTS)
+    from src.common import espn_dates
+    clear = getattr(espn_dates, "clear_settled_chunk_cache", lambda: None)
+    cells = []
+    for p in SPORTS:
+        clear()  # one plugin's settled chunk must not answer the next one's fetch
+        cells.append(fn(p, *args))
+    return " | ".join(cells)
+
+
+def virtual_utc_today():
+    """Core's "today" for settled chunks, read from the virtual clock, not the
+    real one: the rows' days stay recent whatever date the test runs on."""
+    from src.common import espn_dates
+    return Frozen.now(espn_dates._EASTERN).astimezone(timezone.utc).date()
 
 
 def observe():
@@ -735,8 +752,10 @@ def main() -> int:
     sys.path.insert(0, str(core))
     logging.disable(logging.CRITICAL)
     os.chdir(core)  # the managers resolve fonts against the core
+    from src.common import espn_dates
 
-    with patch("requests.get", side_effect=OSError("no network in this test")), \
+    with patch.object(espn_dates, "_utc_today", virtual_utc_today, create=True), \
+            patch("requests.get", side_effect=OSError("no network in this test")), \
             patch("requests.Session.get", side_effect=SERVER.get), \
             patch("time.time", CLOCK.time):
         try:
