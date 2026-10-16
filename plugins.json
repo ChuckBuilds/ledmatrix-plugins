@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-10-15",
+  "last_updated": "2026-10-16",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -1433,7 +1433,7 @@
       "screenshot": "",
       "latest_version": "1.2.0",
       "ledmatrix_min_version": "3.8.8",
-      "commit": "8de7bd850616be2eb7e93a42ee97229eaa6eaa77"
+      "commit": "d126cf5ffe45ab16be250b6082022c749e56be21"
     },
     {
       "id": "home-assistant",
