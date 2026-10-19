@@ -18,6 +18,7 @@ from urllib3.util.retry import Retry
 from dynamic_team_resolver import DynamicTeamResolver
 from data_sources import ESPNDataSource
 from soccer_timezone import resolve_timezone
+from soccer_logo_files import FALLBACK, club_logo_arrived, resolve_soccer_logo
 
 # Import main logo downloader (same as football plugin)
 import sys
@@ -27,7 +28,7 @@ plugin_dir = Path(__file__).resolve().parent
 project_root = plugin_dir.parent.parent
 if str(project_root) not in sys.path:
     sys.path.insert(0, str(project_root))
-from src.logo_downloader import LogoDownloader, download_missing_logo
+from src.logo_downloader import LogoDownloader
 # Core has shipped src.base_odds_manager since v3.0.0, below this plugin's
 # ledmatrix_min_version, so the bundled fallback copy was unreachable and is gone.
 from src.base_odds_manager import BaseOddsManager
@@ -55,7 +56,6 @@ from src.common.sports_helpers import (
     SportsHelpersMixin,
     clamp_seconds as _clamp_seconds,
     clamp_window as _clamp_window,
-    logo_needs_refresh as _logo_needs_refresh,
 )
 
 
@@ -1018,57 +1018,31 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
     ) -> Optional[Image.Image]:
         """Load and resize a team logo, with caching and automatic download if missing."""
         self.logger.debug(f"Logo path: {logo_path}")
-        if team_abbrev in self._logo_cache:
+        # Keyed by file, not abbreviation: Dundee and Dundee United are both
+        # DUN, and keyed by DUN the first one loaded was drawn for both.
+        cache_key = Path(logo_path).name
+        # LogoDownloader uses format "soccer_{league_code}" for soccer leagues
+        league = f"soccer_{getattr(self, 'league', None) or getattr(self, 'sport_key', None) or 'eng.1'}"
+        if cache_key in self._logo_cache:
             self.logger.debug(f"Using cached logo for {team_abbrev}")
             # Mark most recently used. pop/re-insert rather than move_to_end
             # so a stand-in built with a plain dict behaves the same.
-            logo = self._logo_cache.pop(team_abbrev)
-            self._logo_cache[team_abbrev] = logo
-            return logo
+            logo = self._logo_cache.pop(cache_key)
+            # A stand-in (core's abbreviation logo) gives way once the
+            # club's own file has been downloaded in the background.
+            if not (logo.info.get(FALLBACK) and club_logo_arrived(
+                    logo_path, team_abbrev, team_id, logo_url, league)):
+                self._logo_cache[cache_key] = logo
+                return logo
 
         try:
-            # Try different filename variations first (for cases like TA&M vs TAANDM)
-            actual_logo_path = None
-            filename_variations = LogoDownloader.get_logo_filename_variations(team_abbrev)
-            
-            for filename in filename_variations:
-                test_path = logo_path.parent / filename
-                if test_path.exists() and not _logo_needs_refresh(test_path):
-                    actual_logo_path = test_path
-                    self.logger.debug(f"Found logo at alternative path: {actual_logo_path}")
-                    break
-            
-            # If no variation found, try to download missing logo
-            if not actual_logo_path:
-                self.logger.info(f"Logo not found for {team_abbrev} at {logo_path}. Attempting to download.")
-                
-                # Map sport_key/league to logo downloader format
-                # LogoDownloader uses format "soccer_{league_code}" for soccer leagues
-                # sport_key might be like "eng.1", "esp.1", etc. or a full league identifier
-                if hasattr(self, 'league') and self.league:
-                    # Use the league attribute if available (e.g., "eng.1")
-                    league = f"soccer_{self.league}"
-                elif self.sport_key and '.' in self.sport_key:
-                    # If sport_key is already a league code (e.g., "eng.1")
-                    league = f"soccer_{self.sport_key}"
-                else:
-                    # Fallback: try to use sport_key directly or default to eng.1
-                    league = f"soccer_{self.sport_key}" if self.sport_key else "soccer_eng.1"
-                
-                # Use main logo downloader (same as football plugin) - handles path resolution and permissions
-                download_missing_logo(league, team_id, team_abbrev, logo_path, logo_url)
-                actual_logo_path = logo_path
 
-            # Use the original path if no alternative was found
-            if not actual_logo_path:
-                actual_logo_path = logo_path
-
-            # Only try to open the logo if the file exists
-            if os.path.exists(actual_logo_path):
-                logo = Image.open(actual_logo_path)
-            else:
-                self.logger.error(f"Logo file still doesn't exist at {actual_logo_path} after download attempt")
+            actual_logo_path = resolve_soccer_logo(
+                logo_path, team_abbrev, team_id, logo_url, league)
+            if actual_logo_path is None:
+                self.logger.error(f"Logo file still doesn't exist at {logo_path} after download attempt")
                 return None
+            logo = Image.open(actual_logo_path)
             if logo.mode != 'RGBA':
                 logo = logo.convert('RGBA')
 
@@ -1093,7 +1067,9 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
                          + self._LOGO_EDGE_BLEED_PX)
                 max_width = max(8, min(max_width, reach))
             logo.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
-            self._logo_cache[team_abbrev] = logo
+            if actual_logo_path != Path(logo_path):
+                logo.info[FALLBACK] = True
+            self._logo_cache[cache_key] = logo
             while len(self._logo_cache) > self._LOGO_CACHE_MAX:
                 # Oldest first: hits re-insert, so the head is the LRU entry.
                 self._logo_cache.pop(next(iter(self._logo_cache)))

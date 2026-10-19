@@ -14,8 +14,8 @@ every scoreboard:
 
 1. No runtime file (tests excluded) defines one of those names, on any class
    or at module level -- except the ``_logo_filename`` overrides in
-   ``OVERRIDES`` (nrl's ``<ABBR>_<id>.png``: its abbreviations are not
-   unique). Each sport's ``_extract_game_details`` is its own and not checked.
+   ``OVERRIDES`` (nrl's and soccer's ``<ABBR>_<id>.png``: their abbreviations
+   are not unique). Each sport's ``_extract_game_details`` is its own and not checked.
 2. Every import from ``src.common.sports_view_model`` is plain -- not
    aliased, and not inside a ``try`` that catches ImportError, which can only
    hide which module was missing.
@@ -54,7 +54,8 @@ NAMES = {"_extract_game_details_common", "_status_is_final", "_score_text", "_te
 SEAM = "_logo_filename"
 
 #: Managers that keep their own _logo_filename: (plugin, file, class).
-OVERRIDES = {("nrl", "nrl_managers.py", "BaseNrlManager")}
+OVERRIDES = {("nrl", "nrl_managers.py", "BaseNrlManager"),
+             ("soccer", "soccer_managers.py", "BaseSoccerManager")}
 
 _CATCHES_IMPORT_ERROR = {"ImportError", "ModuleNotFoundError", "Exception", "BaseException"}
 

@@ -21,6 +21,7 @@ from src.common import sports_card as _card
 from src.common.sports_game_renderer import SportsGameRendererMixin
 from src.common.sports_card_wrappers import SportsCardWrappersMixin
 from src.common.sports_font_path import resolve_font_path as _resolve_font_path
+from soccer_logo_files import FALLBACK, club_logo_arrived, resolve_soccer_logo
 
 #: This plugin's own schema, for the shared font-size resolver.
 _SCHEMA_PATH = os.path.join(
@@ -201,14 +202,15 @@ class GameRenderer(SportsCardWrappersMixin, SportsGameRendererMixin):
             for team_key in ['home_abbr', 'away_abbr']:
                 abbr = game.get(team_key, '')
                 logo_path = game.get(f'{team_key.replace("abbr", "logo_path")}')
-                scoped = f"{self._logo_scope(logo_path)}:{abbr}"
+                scoped = f"{self._logo_scope(logo_path)}:{self._logo_stem(logo_path, abbr)}"
                 if abbr and self._logo_cache_key(scoped) not in self._logo_cache:
                     if logo_path:
                         logo = self._load_and_resize_logo(
                             game.get(team_key.replace('abbr', 'id'), ''),
                             abbr,
                             logo_path,
-                            game.get(f'{team_key.replace("abbr", "logo_url")}')
+                            game.get(f'{team_key.replace("abbr", "logo_url")}'),
+                            game.get('league'),
                         )
                         if logo:
                             self._remember_logo(self._logo_cache_key(scoped), logo)
@@ -259,12 +261,26 @@ class GameRenderer(SportsCardWrappersMixin, SportsGameRendererMixin):
         except (TypeError, ValueError):
             return ""
 
+    @staticmethod
+    def _logo_stem(logo_path, abbr: str) -> str:
+        """The logo's file name without .png: the club, not just its code.
+
+        Club logos are kept per team (DUN_261.png, DUN_264.png -- see
+        soccer_logo_files), so keying on the abbreviation drew Dundee's crest
+        for Dundee United as well.
+        """
+        try:
+            return Path(logo_path).stem or abbr
+        except (TypeError, ValueError):
+            return abbr
+
     def _load_and_resize_logo(
         self, 
         team_id: str, 
         team_abbrev: str, 
         logo_path: Path, 
-        logo_url: Optional[str] = None
+        logo_url: Optional[str] = None,
+        league: Optional[str] = None,
     ) -> Optional[Image.Image]:
         """Load and resize a team logo with caching."""
         # Look up under the same size-scoped key the writes use. This tested
@@ -273,18 +289,29 @@ class GameRenderer(SportsCardWrappersMixin, SportsGameRendererMixin):
         # the source PNG. Some shipped logos are 4096x4096, which is most of a
         # second per logo on a Pi.
         cache_key = self._logo_cache_key(
-            f"{self._logo_scope(logo_path)}:{team_abbrev}")
+            f"{self._logo_scope(logo_path)}:{self._logo_stem(logo_path, team_abbrev)}")
         if cache_key in self._logo_cache:
             # Re-insert to mark it most recently used. Works on the plain
             # dict the scroll display shares as well as on an OrderedDict.
             logo = self._logo_cache.pop(cache_key)
-            self._logo_cache[cache_key] = logo
-            return logo
+            # A stand-in (core's abbreviation logo) gives way once the
+            # club's own file has been downloaded in the background.
+            if not (logo.info.get(FALLBACK) and logo_path and club_logo_arrived(
+                    logo_path, team_abbrev, team_id, logo_url,
+                    f"soccer_{league or 'eng.1'}")):
+                self._logo_cache[cache_key] = logo
+                return logo
         
         try:
-            # Try to load from path
-            if os.path.exists(logo_path):
-                logo = Image.open(logo_path)
+            # A side missing from the shipped logos (a newly promoted club,
+            # say) is downloaded, as sports.py does for the switch view. This
+            # renderer only ever read the disk, so scroll and Vegas drew such
+            # a game as bare "COV@TOT" text with no score or status.
+            actual = (resolve_soccer_logo(logo_path, team_abbrev, team_id, logo_url,
+                                          f"soccer_{league or 'eng.1'}")
+                      if logo_path else None)
+            if actual:
+                logo = Image.open(actual)
                 if logo.mode != "RGBA":
                     logo = logo.convert("RGBA")
                 
@@ -296,6 +323,8 @@ class GameRenderer(SportsCardWrappersMixin, SportsGameRendererMixin):
                     logo = logo.crop(bbox)
                 logo.thumbnail((self._logo_slot_width(), self.display_height), Image.Resampling.LANCZOS)
 
+                if Path(actual) != Path(logo_path):
+                    logo.info[FALLBACK] = True
                 self._remember_logo(cache_key, logo)
                 return logo
             else:
@@ -395,13 +424,15 @@ class GameRenderer(SportsCardWrappersMixin, SportsGameRendererMixin):
             game.get("home_id", ""),
             game.get("home_abbr", ""),
             game.get("home_logo_path"),
-            game.get("home_logo_url")
+            game.get("home_logo_url"),
+            game.get("league"),
         )
         away_logo = self._load_and_resize_logo(
             game.get("away_id", ""),
             game.get("away_abbr", ""),
             game.get("away_logo_path"),
-            game.get("away_logo_url")
+            game.get("away_logo_url"),
+            game.get("league"),
         )
         
         if not home_logo or not away_logo:

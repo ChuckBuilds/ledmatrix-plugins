@@ -22,6 +22,7 @@ import sys
 import types
 import logging
 import tempfile
+from pathlib import Path
 
 from PIL import Image, ImageFont, ImageChops
 
@@ -70,6 +71,14 @@ if "src.logo_downloader" not in sys.modules:
 
         def ensure_logo_directory(self, *a, **k):
             return True
+
+        @staticmethod
+        def normalize_abbreviation(abbr):
+            return abbr.upper()
+
+        @staticmethod
+        def get_logo_filename_variations(abbr):
+            return [f"{abbr.upper()}.png"]
 
     def _stub_download_missing_logo(*a, **k):
         return None
@@ -169,9 +178,10 @@ def test_scroll_passes_real_logo_cache_to_renderer():
     # scopes entries by logo directory and slot size ("soccer_logos:MCI@32x32")
     # so a national flag and a club crest sharing an abbreviation, or one team
     # cached at two panel sizes, cannot collide. What this test guards is that
-    # the shared dict is populated at all, which neither scope changes.
+    # the shared dict is populated at all, which neither scope changes. The
+    # team part is the logo's file name (MCI_1, DUN_261), not the bare code.
     cached_teams = {key.split("@", 1)[0].rsplit(":", 1)[-1] for key in sd._logo_cache}
-    assert {"MCI", "LIV"} <= cached_teams, (
+    assert {Path(home_logo).stem, Path(away_logo).stem} <= cached_teams, (
         f"logos not loaded into shared cache: {list(sd._logo_cache)}"
     )
     print("PASS: scroll passes a real dict logo cache (logos load, no placeholder)")

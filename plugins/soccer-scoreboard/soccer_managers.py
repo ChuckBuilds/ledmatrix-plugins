@@ -15,6 +15,7 @@ from typing import Any, ClassVar, Dict, Optional
 import pytz
 
 from sports import SportsCore, SportsLive, SportsRecent, SportsUpcoming
+from soccer_logo_files import soccer_logo_filename
 
 try:
     # Core's shared connection pool (core #702); older cores have none.
@@ -56,6 +57,11 @@ class BaseSoccerManager(SportsCore):
     # fetched the window.
     _window_locks: ClassVar[Dict[str, threading.Lock]] = {}
     _window_locks_guard: ClassVar[threading.Lock] = threading.Lock()
+
+    def _logo_filename(self, abbr: str, team_id: Any) -> str:
+        """``<ABBR>_<id>.png`` for a club: soccer abbreviations are not unique
+        (see soccer_logo_files). World Cup flags keep ``<ABBR>.png``."""
+        return soccer_logo_filename(self.logo_dir, abbr, team_id)
 
     @classmethod
     def _window_lock(cls, cache_key: str) -> threading.Lock:
