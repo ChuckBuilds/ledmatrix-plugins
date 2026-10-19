@@ -232,7 +232,7 @@ def cache_checks():
             mgr._load_and_resize_logo("1", "T0", tmp / "T0.png", None)  # hit T0
     check("the manager cache never exceeds its cap",
           len(mgr._logo_cache) == cap, len(mgr._logo_cache))
-    check("a recently hit logo survives eviction", "T0" in mgr._logo_cache)
+    check("a recently hit logo survives eviction", "T0.png" in mgr._logo_cache)
     check("the least recently used logo is evicted", "T1" not in mgr._logo_cache)
 
     gr = object.__new__(game_renderer.GameRenderer)

@@ -24,6 +24,7 @@ for _candidate in (_core, str(PLUGIN_DIR.parents[2] / "LEDMatrix")):
 try:
     from PIL import Image                   # noqa: E402
     import game_renderer                    # noqa: E402
+    import soccer_logo_files                # noqa: E402
 except ImportError as exc:
     print(f"SKIP: cannot import game_renderer without a LEDMatrix core ({exc})")
     sys.exit(2)
@@ -33,13 +34,13 @@ Image.new("RGBA", (60, 60), (255, 255, 255, 255)).save(logos / "TOT.png")
 calls = []
 
 
-def fake_download(league, team_id, abbr, path, url=None):
+def fake_download(league, team_id, abbr, path, url=None, create_placeholder=True):
     calls.append((league, team_id, abbr, url))
     Image.new("RGBA", (60, 60), (0, 120, 255, 255)).save(path)
     return True
 
 
-game_renderer.download_missing_logo = fake_download
+soccer_logo_files.download_missing_logo = fake_download
 r = game_renderer.GameRenderer(128, 32, {}, logo_cache={})
 game = {
     "league": "eng.1", "away_abbr": "COV", "home_abbr": "TOT",

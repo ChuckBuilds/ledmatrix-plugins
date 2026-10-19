@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.49.1",
+  "version": "2.50.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -53,6 +53,12 @@
     "soccer_usa.1_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.50.0",
+      "released": "2026-10-19",
+      "ledmatrix_min_version": "3.8.7",
+      "notes": "Two clubs that share an ESPN abbreviation each show their own logo. Every soccer league keeps its logos in one directory, and they were named by abbreviation, so Dundee and Dundee United (both DUN) showed one crest twice, as did Celta Vigo and Celtic (CEL), Brentford and Brest (BRE) and others: whichever downloaded first was drawn for both. A club logo is now kept as <ABBR>_<ESPN id>.png and downloaded once. The abbreviation-named logos core ships are used when the club's own cannot be downloaded, so an offline board keeps its crests. World Cup flags keep their names."
+    },
     {
       "version": "2.49.1",
       "released": "2026-10-19",
