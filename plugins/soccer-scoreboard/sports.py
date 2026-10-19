@@ -18,7 +18,7 @@ from urllib3.util.retry import Retry
 from dynamic_team_resolver import DynamicTeamResolver
 from data_sources import ESPNDataSource
 from soccer_timezone import resolve_timezone
-from soccer_logo_files import resolve_soccer_logo
+from soccer_logo_files import FALLBACK, club_logo_arrived, resolve_soccer_logo
 
 # Import main logo downloader (same as football plugin)
 import sys
@@ -1021,17 +1021,21 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
         # Keyed by file, not abbreviation: Dundee and Dundee United are both
         # DUN, and keyed by DUN the first one loaded was drawn for both.
         cache_key = Path(logo_path).name
+        # LogoDownloader uses format "soccer_{league_code}" for soccer leagues
+        league = f"soccer_{getattr(self, 'league', None) or getattr(self, 'sport_key', None) or 'eng.1'}"
         if cache_key in self._logo_cache:
             self.logger.debug(f"Using cached logo for {team_abbrev}")
             # Mark most recently used. pop/re-insert rather than move_to_end
             # so a stand-in built with a plain dict behaves the same.
             logo = self._logo_cache.pop(cache_key)
-            self._logo_cache[cache_key] = logo
-            return logo
+            # A stand-in (core's abbreviation logo) gives way once the
+            # club's own file has been downloaded in the background.
+            if not (logo.info.get(FALLBACK) and club_logo_arrived(
+                    logo_path, team_abbrev, team_id, logo_url, league)):
+                self._logo_cache[cache_key] = logo
+                return logo
 
         try:
-            # LogoDownloader uses format "soccer_{league_code}" for soccer leagues
-            league = f"soccer_{getattr(self, 'league', None) or getattr(self, 'sport_key', None) or 'eng.1'}"
 
             actual_logo_path = resolve_soccer_logo(
                 logo_path, team_abbrev, team_id, logo_url, league)
@@ -1063,6 +1067,8 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
                          + self._LOGO_EDGE_BLEED_PX)
                 max_width = max(8, min(max_width, reach))
             logo.thumbnail((max_width, max_height), Image.Resampling.LANCZOS)
+            if actual_logo_path != Path(logo_path):
+                logo.info[FALLBACK] = True
             self._logo_cache[cache_key] = logo
             while len(self._logo_cache) > self._LOGO_CACHE_MAX:
                 # Oldest first: hits re-insert, so the head is the LRU entry.

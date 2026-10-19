@@ -21,7 +21,7 @@ from src.common import sports_card as _card
 from src.common.sports_game_renderer import SportsGameRendererMixin
 from src.common.sports_card_wrappers import SportsCardWrappersMixin
 from src.common.sports_font_path import resolve_font_path as _resolve_font_path
-from soccer_logo_files import resolve_soccer_logo
+from soccer_logo_files import FALLBACK, club_logo_arrived, resolve_soccer_logo
 
 #: This plugin's own schema, for the shared font-size resolver.
 _SCHEMA_PATH = os.path.join(
@@ -294,8 +294,13 @@ class GameRenderer(SportsCardWrappersMixin, SportsGameRendererMixin):
             # Re-insert to mark it most recently used. Works on the plain
             # dict the scroll display shares as well as on an OrderedDict.
             logo = self._logo_cache.pop(cache_key)
-            self._logo_cache[cache_key] = logo
-            return logo
+            # A stand-in (core's abbreviation logo) gives way once the
+            # club's own file has been downloaded in the background.
+            if not (logo.info.get(FALLBACK) and logo_path and club_logo_arrived(
+                    logo_path, team_abbrev, team_id, logo_url,
+                    f"soccer_{league or 'eng.1'}")):
+                self._logo_cache[cache_key] = logo
+                return logo
         
         try:
             # A side missing from the shipped logos (a newly promoted club,
@@ -318,6 +323,8 @@ class GameRenderer(SportsCardWrappersMixin, SportsGameRendererMixin):
                     logo = logo.crop(bbox)
                 logo.thumbnail((self._logo_slot_width(), self.display_height), Image.Resampling.LANCZOS)
 
+                if Path(actual) != Path(logo_path):
+                    logo.info[FALLBACK] = True
                 self._remember_logo(cache_key, logo)
                 return logo
             else:

@@ -5,7 +5,7 @@ Dundee (ESPN id 261) and Dundee United (264) are both DUN in the Scottish
 Premiership. Every soccer league shares one logo directory, and logos were
 named by abbreviation, so both clubs used DUN.png: the derby showed one crest
 twice. Clubs are now kept per team id (DUN_261.png); core's abbreviation-named
-logo is the fallback when the club's own cannot be downloaded.
+logo is drawn while the club's own is fetched in the background.
 
 Run: <core-venv>/bin/python plugins/soccer-scoreboard/test_clubs_sharing_a_code_get_own_logos.py
 """
@@ -67,10 +67,19 @@ def offline(league, team_id, abbr, path, url=None, create_placeholder=True):
 
 
 slf.download_missing_logo = offline
+slf._start = lambda job: job()            # run the background fetch inline
 Image.new("RGBA", (40, 40), DUNDEE).save(clubs / "DUN.png")     # what core ships
 got = slf.resolve_soccer_logo(clubs / a, "DUN", "261", None, "soccer_sco.1")
 check("offline, the shipped abbreviation logo is used", got == clubs / "DUN.png", got)
-check("the club's own file was tried first", downloads[:1] == [("DUN", "261", False)], downloads)
+check("the club's own file is fetched, without a placeholder",
+      downloads == [("DUN", "261", False)], downloads)
+slf.resolve_soccer_logo(clubs / a, "DUN", "261", None, "soccer_sco.1")
+check("not fetched again within the hour", len(downloads) == 1, downloads)
+
+downloads.clear()
+slf.resolve_soccer_logo(clubs / "XYZ_9.png", "XYZ", "9", None, "soccer_sco.1")
+check("with nothing shipped, one download leaves the placeholder",
+      downloads == [("XYZ", "9", True)], downloads)
 
 Image.new("RGBA", (40, 40), DUNDEE).save(clubs / a)
 Image.new("RGBA", (40, 40), UNITED).save(clubs / b)
@@ -93,6 +102,16 @@ card = r.render_game_card(game, "recent")
 left, right = colour_near(card, 8), colour_near(card, 119)
 check("away side draws Dundee's navy", left[2] > 120 and left[0] < 80, left)
 check("home side draws Dundee United's tangerine", right[0] > 200 and right[2] < 80, right)
+
+print("\na cached stand-in gives way to the club's own logo")
+(clubs / b).unlink()
+slf._last_try.clear()
+r2 = game_renderer.GameRenderer(128, 32, {}, logo_cache={})
+before = colour_near(r2.render_game_card(game, "recent"), 119)
+check("United's card first draws the shipped DUN.png (navy)", before[2] > 120, before)
+Image.new("RGBA", (40, 40), UNITED).save(clubs / b)     # the background fetch landed
+after = colour_near(r2.render_game_card(game, "recent"), 119)
+check("then United's own crest once it is on disk", after[0] > 200 and after[2] < 80, after)
 
 print("\nswitch view (SportsCore cache)")
 core = types.SimpleNamespace(
