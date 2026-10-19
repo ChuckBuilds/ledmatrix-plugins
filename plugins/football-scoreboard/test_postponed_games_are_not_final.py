@@ -54,8 +54,9 @@ def main():
         failures += not ok
         print("  [%s] %s -> %r" % ("pass" if ok else "FAIL", name, got))
 
-    # The extractor has to use it, or the helper protects nothing.
-    src = inspect.getsource(sports)
+    # The extractor has to use it, or the helper protects nothing. It is core's
+    # (SportsViewModelMixin) from 3.8.7: read the one SportsCore resolves.
+    src = inspect.getsource(sports.SportsCore._extract_game_details_common)
     wired = '"is_final": self._status_is_final(status_type)' in src
     failures += not wired
     print("  [%s] the extractor sets is_final through the helper"

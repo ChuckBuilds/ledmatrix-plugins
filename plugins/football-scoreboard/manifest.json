@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "3.27.0",
+  "version": "3.28.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "3.28.0",
+      "released": "2026-10-19",
+      "ledmatrix_min_version": "3.8.7",
+      "notes": "Requires LEDMatrix core 3.8.7, the first release that ships src.common.sports_view_model. Uses core's game view model: SportsCore inherits its SportsViewModelMixin, and this plugin's copies of _extract_game_details_common, _status_is_final, _score_text, _team_logo_url, _extract_team_record, _logo_filename and the two status-name sets are removed. No change in behaviour."
+    },
     {
       "version": "3.27.0",
       "released": "2026-10-13",
@@ -1039,7 +1045,7 @@
   "config_schema": "config_schema.json",
   "entry_point": "manager.py",
   "compatible_versions": [
-    ">=3.8.6"
+    ">=3.8.7"
   ],
   "display": {
     "design_size": {
