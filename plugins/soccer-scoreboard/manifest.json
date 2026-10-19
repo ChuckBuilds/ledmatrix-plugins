@@ -1,7 +1,7 @@
 {
   "id": "soccer-scoreboard",
   "name": "Soccer Scoreboard",
-  "version": "2.48.0",
+  "version": "2.48.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming soccer games across multiple leagues including Premier League, La Liga, Bundesliga, Serie A, Ligue 1, MLS, Liga Portugal, Champions League, Europa League, and FIFA World Cup",
   "category": "sports",
@@ -53,6 +53,12 @@
     "soccer_usa.1_upcoming"
   ],
   "versions": [
+    {
+      "version": "2.48.1",
+      "released": "2026-10-19",
+      "ledmatrix_min_version": "3.8.6",
+      "notes": "Scroll and Vegas download a team logo that is not on disk, as the switch view always has. They only read the disk, so a side missing from the shipped logos (Coventry, newly promoted to the Premier League) turned the whole card into bare \"COV@TOT\" text with no logos, score or status."
+    },
     {
       "version": "2.48.0",
       "released": "2026-10-13",

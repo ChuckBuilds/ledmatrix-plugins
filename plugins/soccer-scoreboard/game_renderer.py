@@ -21,6 +21,7 @@ from src.common import sports_card as _card
 from src.common.sports_game_renderer import SportsGameRendererMixin
 from src.common.sports_card_wrappers import SportsCardWrappersMixin
 from src.common.sports_font_path import resolve_font_path as _resolve_font_path
+from src.logo_downloader import download_missing_logo
 
 #: This plugin's own schema, for the shared font-size resolver.
 _SCHEMA_PATH = os.path.join(
@@ -208,7 +209,8 @@ class GameRenderer(SportsCardWrappersMixin, SportsGameRendererMixin):
                             game.get(team_key.replace('abbr', 'id'), ''),
                             abbr,
                             logo_path,
-                            game.get(f'{team_key.replace("abbr", "logo_url")}')
+                            game.get(f'{team_key.replace("abbr", "logo_url")}'),
+                            game.get('league'),
                         )
                         if logo:
                             self._remember_logo(self._logo_cache_key(scoped), logo)
@@ -264,7 +266,8 @@ class GameRenderer(SportsCardWrappersMixin, SportsGameRendererMixin):
         team_id: str, 
         team_abbrev: str, 
         logo_path: Path, 
-        logo_url: Optional[str] = None
+        logo_url: Optional[str] = None,
+        league: Optional[str] = None,
     ) -> Optional[Image.Image]:
         """Load and resize a team logo with caching."""
         # Look up under the same size-scoped key the writes use. This tested
@@ -282,7 +285,15 @@ class GameRenderer(SportsCardWrappersMixin, SportsGameRendererMixin):
             return logo
         
         try:
-            # Try to load from path
+            # A side missing from the shipped logos (a newly promoted club,
+            # say) is downloaded, as sports.py does for the switch view. This
+            # renderer only ever read the disk, so scroll and Vegas drew such
+            # a game as bare "COV@TOT" text with no score or status.
+            if not os.path.exists(logo_path):
+                self.logger.info(f"Logo not found for {team_abbrev} at {logo_path}. Attempting to download.")
+                download_missing_logo(f"soccer_{league or 'eng.1'}", team_id,
+                                      team_abbrev, Path(logo_path), logo_url)
+
             if os.path.exists(logo_path):
                 logo = Image.open(logo_path)
                 if logo.mode != "RGBA":
@@ -395,13 +406,15 @@ class GameRenderer(SportsCardWrappersMixin, SportsGameRendererMixin):
             game.get("home_id", ""),
             game.get("home_abbr", ""),
             game.get("home_logo_path"),
-            game.get("home_logo_url")
+            game.get("home_logo_url"),
+            game.get("league"),
         )
         away_logo = self._load_and_resize_logo(
             game.get("away_id", ""),
             game.get("away_abbr", ""),
             game.get("away_logo_path"),
-            game.get("away_logo_url")
+            game.get("away_logo_url"),
+            game.get("league"),
         )
         
         if not home_logo or not away_logo:
