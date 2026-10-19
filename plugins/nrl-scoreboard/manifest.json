@@ -1,7 +1,7 @@
 {
   "id": "nrl-scoreboard",
   "name": "NRL Scoreboard",
-  "version": "1.42.0",
+  "version": "1.43.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming NRL (National Rugby League) games with real-time scores and game status.",
   "category": "sports",
@@ -18,6 +18,12 @@
     "nrl_upcoming"
   ],
   "versions": [
+    {
+      "version": "1.43.0",
+      "released": "2026-10-19",
+      "ledmatrix_min_version": "3.8.7",
+      "notes": "Requires LEDMatrix core 3.8.7, the first release that ships src.common.sports_view_model. Uses core's game view model: SportsCore inherits its SportsViewModelMixin, and this plugin's copies of _extract_game_details_common, _status_is_final, _score_text, _team_logo_url, _extract_team_record, _logo_filename and the two status-name sets are removed. No change in behaviour."
+    },
     {
       "version": "1.42.0",
       "released": "2026-10-13",
@@ -634,6 +640,6 @@
   "class_name": "NrlScoreboardPlugin",
   "config_schema": "config_schema.json",
   "compatible_versions": [
-    ">=3.8.6"
+    ">=3.8.7"
   ]
 }

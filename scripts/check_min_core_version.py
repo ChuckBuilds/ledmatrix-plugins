@@ -181,10 +181,12 @@ MODULE_FIRST_VERSION = {
     "src.common.sports_rankings": "3.8.5",  # core #789 (sports family 8, rankings)
     # 3.8.6 (core #793)
     "src.common.sports_live_fetch": "3.8.6",  # core #793 (sports family 9, live fetch and odds)
+    # 3.8.7 (core #796)
+    "src.common.sports_view_model": "3.8.7",  # core #796 (sports family 10, view model)
     # on core main, in no tagged release yet: add as None. When the next
     # release is tagged, set each None entry here to that tag -- the test's
     # tag-verification section insists on it once the tag is in its list.
-    "src.common.sports_view_model": None,  # core #796 (sports family 10, view model)
+    "src.plugin_schedule": None,  # core #799 (per-plugin schedules)
 }
 
 #: Releases whose ``src/__init__.py`` ``__version__`` lags their tag. The
