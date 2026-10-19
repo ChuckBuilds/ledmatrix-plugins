@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-10-16",
+  "last_updated": "2026-10-19",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -848,12 +848,12 @@
       "plugin_path": "plugins/soccer-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-13",
+      "last_updated": "2026-10-19",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.48.0",
+      "latest_version": "2.48.1",
       "ledmatrix_min_version": "3.8.6",
-      "commit": "42e438cc15bfc48b8a1cc91d48b7fbfb18d1a764"
+      "commit": "ad5c1b8409738d39c9bf676227ee2ab023f21efe"
     },
     {
       "id": "static-image",
