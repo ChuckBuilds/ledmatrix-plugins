@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-10-19",
+  "last_updated": "2026-10-21",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -1454,10 +1454,10 @@
       "plugin_path": "",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-30",
+      "last_updated": "2026-10-20",
       "verified": false,
       "screenshot": "",
-      "latest_version": "1.6.0",
+      "latest_version": "1.6.1",
       "ledmatrix_min_version": "2.0.0"
     },
     {
