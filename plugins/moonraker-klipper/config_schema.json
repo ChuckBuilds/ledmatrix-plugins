@@ -1,0 +1,265 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Moonraker-Klipper Settings",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": true
+    },
+    "printers": {
+      "type": "array",
+      "title": "Printers",
+      "description": "Add one Moonraker connection for each printer.",
+      "default": [],
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "url"
+        ],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Printer Name"
+          },
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Moonraker URL",
+            "description": "Example: http://192.168.1.25:7125"
+          },
+          "api_key": {
+            "type": "string",
+            "default": "",
+            "title": "API key (if required)"
+          },
+          "enabled": {
+            "type": "boolean",
+            "default": true
+          }
+        }
+      }
+    },
+    "seconds_per_printer": {
+      "type": "integer",
+      "default": 10,
+      "minimum": 3,
+      "maximum": 120
+    },
+    "refresh_seconds": {
+      "type": "integer",
+      "default": 10,
+      "minimum": 5,
+      "maximum": 300
+    },
+    "show_thumbnail": {
+      "type": "boolean",
+      "default": true
+    },
+    "show_idle": {
+      "type": "boolean",
+      "default": false
+    },
+    "show_offline": {
+      "type": "boolean",
+      "default": false
+    },
+    "show_complete": {
+      "type": "boolean",
+      "default": true
+    },
+    "temperature_unit": {
+      "type": "string",
+      "enum": [
+        "C",
+        "F"
+      ],
+      "default": "C"
+    },
+    "display_duration": {
+      "type": "number",
+      "default": 30,
+      "minimum": 1,
+      "maximum": 3600
+    },
+    "dynamic_duration": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true
+        },
+        "max_duration_seconds": {
+          "type": "number",
+          "default": 3600
+        }
+      },
+      "additionalProperties": true
+    },
+    "font_sizes": {
+      "type": "object",
+      "title": "Font sizes (pixels)",
+      "description": "Independent fonts; 6–20 px. Large values may be clipped on 32px-tall panels.",
+      "default": {
+        "printer": 10,
+        "filename": 9,
+        "status": 9,
+        "temperature": 8,
+        "progress": 9,
+        "eta": 8
+      },
+      "properties": {
+        "printer": {
+          "type": "integer",
+          "minimum": 6,
+          "maximum": 20,
+          "default": 10
+        },
+        "filename": {
+          "type": "integer",
+          "minimum": 6,
+          "maximum": 20,
+          "default": 9
+        },
+        "status": {
+          "type": "integer",
+          "minimum": 6,
+          "maximum": 20,
+          "default": 9
+        },
+        "temperature": {
+          "type": "integer",
+          "minimum": 6,
+          "maximum": 20,
+          "default": 8
+        },
+        "progress": {
+          "type": "integer",
+          "minimum": 6,
+          "maximum": 20,
+          "default": 9
+        },
+        "eta": {
+          "type": "integer",
+          "minimum": 6,
+          "maximum": 20,
+          "default": 8
+        }
+      },
+      "additionalProperties": false
+    },
+    "colors": {
+      "type": "object",
+      "title": "Text and progress colors",
+      "description": "Click the color swatches to choose each element's color.",
+      "default": {
+        "printer": "#EBF1FA",
+        "filename": "#8A9AAF",
+        "status": "#39E389",
+        "nozzle": "#FFAE37",
+        "bed": "#5ABEFF",
+        "progress": "#39E389",
+        "progress_background": "#1E2C3F",
+        "eta": "#EBF1FA",
+        "preprint": "#FFDA4E"
+      },
+      "properties": {
+        "printer": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "default": "#EBF1FA",
+          "title": "Printer",
+          "x-widget": "moonraker-color-picker",
+          "description": "Choose a color; the preview should update immediately before Save."
+        },
+        "filename": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "default": "#8A9AAF",
+          "title": "Filename",
+          "x-widget": "moonraker-color-picker",
+          "description": "Choose a color; the preview should update immediately before Save."
+        },
+        "status": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "default": "#39E389",
+          "title": "Status",
+          "x-widget": "moonraker-color-picker",
+          "description": "Choose a color; the preview should update immediately before Save."
+        },
+        "nozzle": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "default": "#FFAE37",
+          "title": "Nozzle",
+          "x-widget": "moonraker-color-picker",
+          "description": "Choose a color; the preview should update immediately before Save."
+        },
+        "bed": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "default": "#5ABEFF",
+          "title": "Bed",
+          "x-widget": "moonraker-color-picker",
+          "description": "Choose a color; the preview should update immediately before Save."
+        },
+        "progress": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "default": "#39E389",
+          "title": "Progress",
+          "x-widget": "moonraker-color-picker",
+          "description": "Choose a color; the preview should update immediately before Save."
+        },
+        "progress_background": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "default": "#1E2C3F",
+          "title": "Progress Background",
+          "x-widget": "moonraker-color-picker",
+          "description": "Choose a color; the preview should update immediately before Save."
+        },
+        "eta": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "default": "#EBF1FA",
+          "title": "Eta",
+          "x-widget": "moonraker-color-picker",
+          "description": "Choose a color; the preview should update immediately before Save."
+        },
+        "preprint": {
+          "type": "string",
+          "pattern": "^#[0-9A-Fa-f]{6}$",
+          "default": "#FFDA4E",
+          "title": "Preprint",
+          "x-widget": "moonraker-color-picker",
+          "description": "Choose a color; the preview should update immediately before Save."
+        }
+      },
+      "additionalProperties": false
+    },
+    "preprint_threshold": {
+      "type": "number",
+      "title": "Startup progress threshold",
+      "description": "Show startup activity while progress is at or below this fraction (0.01 = 1%).",
+      "minimum": 0,
+      "maximum": 0.1,
+      "default": 0.01
+    },
+    "live_preview": {
+      "type": "string",
+      "default": "live",
+      "title": "Live LEDMatrix Preview",
+      "description": "Visual 320x32 representation of your unsaved settings including colors, font sizes, printer names and rotation, thumbnails, status options and temperature units.",
+      "x-widget": "moonraker-live-preview"
+    }
+  },
+  "required": [
+    "enabled"
+  ],
+  "additionalProperties": true
+}
