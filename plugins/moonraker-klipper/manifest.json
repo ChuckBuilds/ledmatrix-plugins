@@ -1,0 +1,88 @@
+{
+  "id": "moonraker-klipper",
+  "name": "Moonraker-Klipper",
+  "version": "1.6.0",
+  "author": "airbornetrooper82573",
+  "description": "Cycle through Klipper printers with live Moonraker thumbnails on wide RGB LED matrices.",
+  "entry_point": "manager.py",
+  "class_name": "MoonrakerKlipperPlugin",
+  "category": "utility",
+  "display_modes": [
+    "moonraker-klipper"
+  ],
+  "compatible_versions": [
+    ">=2.0.0"
+  ],
+  "update_interval": 10,
+  "vegas_participation": "pause",
+  "config_schema": "config_schema.json",
+  "last_updated": "2026-10-20",
+  "versions": [
+    {
+      "version": "1.6.0",
+      "released": "2026-10-20",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Preview now reads unsaved settings from LEDMatrix data-setting-key fields and detects physical dimensions from /api/v3/config/main."
+    },
+    {
+      "version": "1.5.2",
+      "released": "2026-10-20",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Fix custom color widget to follow LEDMatrix field-ID getValue/setValue contract, emit widget-change and update live preview."
+    },
+    {
+      "version": "1.5.1",
+      "released": "2026-10-20",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Fix color picker key detection and immediate preview synchronization for unsaved settings."
+    },
+    {
+      "version": "1.5.0",
+      "released": "2026-10-20",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Rename plugin to Moonraker-Klipper and expand preview to reflect settings, enabled printers, status filters, thumbnail toggle and display timing."
+    },
+    {
+      "version": "1.4.0",
+      "released": "2026-10-20",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Add native color picker widgets and live 320x32 printer preview within the LEDMatrix settings."
+    },
+    {
+      "version": "1.3.0",
+      "released": "2026-10-20",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Configurable font sizes and colors, plus Moonraker pre-print activity messages replacing progress bar."
+    },
+    {
+      "version": "1.2.0",
+      "released": "2026-10-20",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Smaller pixel-art nozzle and heated-bed icons and temperature typography."
+    },
+    {
+      "version": "1.1.0",
+      "released": "2026-10-20",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Replace E/B temperature labels with pixel-art icons."
+    },
+    {
+      "version": "1.0.0",
+      "released": "2026-10-20",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Initial multi-printer rotation and thumbnail support."
+    }
+  ],
+  "widgets": [
+    {
+      "name": "moonraker-color-picker",
+      "script": "moonraker-controls.js",
+      "description": "Native browser color picker for display elements"
+    },
+    {
+      "name": "moonraker-live-preview",
+      "script": "moonraker-controls.js",
+      "description": "Live 320x32 multi-printer preview"
+    }
+  ]
+}
