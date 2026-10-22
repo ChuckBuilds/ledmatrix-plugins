@@ -1,0 +1,29 @@
+{
+  "id": "chromaclock-wide",
+  "name": "ChromaClock Wide",
+  "version": "1.4.0",
+  "author": "Community adaptation",
+  "description": "Native-width animated clock for five-panel LEDMatrix displays",
+  "entry_point": "manager.py",
+  "class_name": "ChromaClockWidePlugin",
+  "category": "clocks",
+  "tags": [
+    "clock",
+    "wide",
+    "P5"
+  ],
+  "display_modes": [
+    "chromaclock-wide"
+  ],
+  "config_schema": "config_schema.json",
+  "compatible_versions": [
+    ">=2.0.0"
+  ],
+  "widgets": [
+    {
+      "name": "chromaclock-live-preview",
+      "script": "chromaclock-live-preview.js",
+      "description": "Live five-panel browser preview in plugin settings"
+    }
+  ]
+}

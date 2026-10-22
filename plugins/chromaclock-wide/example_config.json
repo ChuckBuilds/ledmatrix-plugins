@@ -1,0 +1,17 @@
+{
+  "chromaclock-wide": {
+    "enabled": true,
+    "style": "cycle",
+    "cycle_seconds": 20,
+    "preview_mode": false,
+    "preview_style": "pacman",
+    "palette": "rainbow",
+    "use_24h": false,
+    "show_date": true,
+    "show_seconds": true,
+    "glow": true,
+    "timezone": "America/New_York",
+    "brightness": 0.85,
+    "display_duration": 30
+  }
+}
