@@ -1484,6 +1484,28 @@
       "screenshot": "",
       "latest_version": "1.9.0",
       "ledmatrix_min_version": "2.0.0"
+    },
+    {
+      "id": "chromaclock-wide",
+      "name": "ChromaClock Wide",
+      "description": "Native-width animated clock for five-panel LEDMatrix displays",
+      "author": "Community adaptation",
+      "category": "clocks",
+      "tags": [
+        "clock",
+        "wide",
+        "P5"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "branch": "main",
+      "plugin_path": "plugins/chromaclock-wide",
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2026-10-22",
+      "verified": false,
+      "screenshot": "",
+      "latest_version": "1.4.0",
+      "ledmatrix_min_version": "2.0.0"
     }
   ]
 }
