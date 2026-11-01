@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-10-21",
+  "last_updated": "2026-11-01",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -1454,10 +1454,10 @@
       "plugin_path": "",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-20",
+      "last_updated": "2026-10-31",
       "verified": false,
       "screenshot": "",
-      "latest_version": "1.6.1",
+      "latest_version": "1.6.5",
       "ledmatrix_min_version": "2.0.0"
     },
     {
@@ -1479,10 +1479,10 @@
       "plugin_path": "",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-09",
+      "last_updated": "2026-10-31",
       "verified": false,
       "screenshot": "",
-      "latest_version": "1.9.0",
+      "latest_version": "1.9.1",
       "ledmatrix_min_version": "2.0.0"
     }
   ]
