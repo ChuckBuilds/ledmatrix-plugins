@@ -421,8 +421,6 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
             if getattr(self, '_team_rankings_cache', None):
                 renderer.set_rankings_cache(self._team_rankings_cache)
 
-            if force_clear:
-                self.display_manager.clear()
             self.display_manager.image = renderer.render_game_card(game, game_type)
             self.display_manager.update_display()
             return True
@@ -437,10 +435,6 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
             return False
 
         if not self.current_game:
-            # Clear the display so old content doesn't persist
-            if force_clear:
-                self.display_manager.clear()
-                self.display_manager.update_display()
             current_time = time.time()
             if not hasattr(self, "_last_warning_time"):
                 self._last_warning_time = 0
@@ -1466,10 +1460,6 @@ class SportsUpcoming(SportsUpcomingFavoritesMixin, SportsCore):
             if self._adaptive_scorebug(game, "upcoming", force_clear):
                 return
 
-            # Clear the display first to ensure full coverage (like weather plugin does)
-            if force_clear:
-                self.display_manager.clear()
-            
             # Use display_manager.matrix dimensions directly to ensure full display coverage
             display_width = self.display_manager.matrix.width if hasattr(self.display_manager, 'matrix') and self.display_manager.matrix else self.display_width
             display_height = self.display_manager.matrix.height if hasattr(self.display_manager, 'matrix') and self.display_manager.matrix else self.display_height
@@ -1674,10 +1664,6 @@ class SportsUpcoming(SportsUpcomingFavoritesMixin, SportsCore):
             return False
 
         if not self.games_list:
-            # Clear the display so old content doesn't persist
-            if force_clear:
-                self.display_manager.clear()
-                self.display_manager.update_display()
             if self.current_game:
                 self.current_game = None  # Clear state if list empty
             current_time = time.time()
@@ -1993,10 +1979,6 @@ class SportsRecent(SportsRecentFavoritesMixin, SportsRecentSharedMixin, SportsCo
             if self._adaptive_scorebug(game, "recent", force_clear):
                 return
 
-            # Clear the display first to ensure full coverage (like weather plugin does)
-            if force_clear:
-                self.display_manager.clear()
-            
             # Use display_manager.matrix dimensions directly to ensure full display coverage
             display_width = self.display_manager.matrix.width if hasattr(self.display_manager, 'matrix') and self.display_manager.matrix else self.display_width
             display_height = self.display_manager.matrix.height if hasattr(self.display_manager, 'matrix') and self.display_manager.matrix else self.display_height
@@ -2201,10 +2183,6 @@ class SportsRecent(SportsRecentFavoritesMixin, SportsRecentSharedMixin, SportsCo
     def display(self, force_clear=False) -> bool:
         """Display recent games, handling switching."""
         if not self.is_enabled or not self.games_list:
-            # If disabled or no games, clear the display so old content doesn't persist
-            if force_clear or not self.games_list:
-                self.display_manager.clear()
-                self.display_manager.update_display()
             if not self.games_list and self.current_game:
                 self.current_game = None  # Clear internal state if list becomes empty
             return False
