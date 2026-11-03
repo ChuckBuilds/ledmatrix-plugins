@@ -1,5 +1,20 @@
 # Changelog
 
+## [3.28.1] - 2026-11-03
+
+### Fixed
+- A two-point conversion is no longer celebrated as a safety. The try after a
+  touchdown usually lands after the touchdown's takeover has closed, so it
+  arrived as a lone +2 and was named from its size alone. An ambiguous +2 is
+  now named from ESPN's scoring plays (the game's summary, fetched only for a
+  +2, with a 3 s timeout) when they are up to date, and otherwise from the
+  score sequence: the touchdown side's next +2 is its conversion
+  ("2PT GOOD!"), the other side's is a defensive return ("DEF 2PT!"), and any
+  other +2 is a safety.
+- An extra point that lands after the touchdown's takeover gets its own
+  ("EXTRA PT!", goalposts) instead of "SCORES!". One that lands while the
+  touchdown is still on screen stays part of it, as before.
+
 ## [3.28.0] - 2026-10-19
 
 ### Changed

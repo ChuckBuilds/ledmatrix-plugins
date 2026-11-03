@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "3.28.0",
+  "version": "3.28.1",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "3.28.1",
+      "released": "2026-11-03",
+      "ledmatrix_min_version": "3.8.7",
+      "notes": "A two-point conversion is no longer celebrated as a safety. The try after a touchdown usually lands after the touchdown's takeover has closed, so it arrived as a lone +2 and was named from its size alone. Now an ambiguous +2 is named from ESPN's scoring plays when they are up to date, and otherwise from the score sequence: the touchdown side's next +2 is its conversion (2PT GOOD!), the other side's is a defensive return (DEF 2PT!), and any other +2 is a safety. An extra point that lands after the touchdown's takeover gets its own (EXTRA PT!) instead of SCORES!."
+    },
     {
       "version": "3.28.0",
       "released": "2026-10-19",
