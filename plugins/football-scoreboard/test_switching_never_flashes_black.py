@@ -19,6 +19,7 @@ Run: <core-venv>/bin/python plugins/football-scoreboard/test_switching_never_fla
 import sys
 import threading
 import time
+import types
 from pathlib import Path
 
 from PIL import Image
@@ -90,7 +91,7 @@ def _manager(cls, games):
     m._last_display_call_monotonic = 0.0
     m.sport_key = "nfl"
     m._rotate_other_games_on_display = lambda: False
-    m._draw_scorebug_layout = _draw.__get__(m)
+    m._draw_scorebug_layout = types.MethodType(_draw, m)
     return m
 
 
@@ -114,6 +115,8 @@ def main():
         m.display(force_clear=True)
         check(f"{label}: no black frame on a forced redraw",
               "black" not in m.display_manager.shown, m.display_manager.shown)
+        check(f"{label}: a forced redraw shows the card",
+              "frame" in m.display_manager.shown, m.display_manager.shown)
 
         print(f"{label}: one game, display() resumes after a slow update()")
         m = _manager(cls, [GAME])

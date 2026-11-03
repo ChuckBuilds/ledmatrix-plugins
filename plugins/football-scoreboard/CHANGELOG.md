@@ -2,6 +2,13 @@
 
 ## [3.28.2] - 2026-11-03
 
+### Changed
+- Requires LEDMatrix core 3.9.0 (`ledmatrix_min_version` and
+  `compatible_versions`), the first release whose display controller blanks
+  the panel once when every mode is empty. This version no longer blanks the
+  panel itself, so on an older core the last card would stay up. The store
+  refuses to install or update this version onto an older core.
+
 ### Fixed
 - Switching screens no longer flashes the panel black. `display_manager.clear()`
   writes black straight to the matrix, and every card was drawn after a clear
