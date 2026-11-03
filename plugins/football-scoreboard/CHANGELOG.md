@@ -10,7 +10,9 @@
   +2, with a 3 s timeout) when they are up to date, and otherwise from the
   score sequence: the touchdown side's next +2 is its conversion
   ("2PT GOOD!"), the other side's is a defensive return ("DEF 2PT!"), and any
-  other +2 is a safety.
+  other +2 is a safety. The owed try ends at the next score, a score
+  correction, a new period, or once the game clock has run (the try is
+  untimed), so a failed try followed by a safety is still a safety.
 - An extra point that lands after the touchdown's takeover gets its own
   ("EXTRA PT!", goalposts) instead of "SCORES!". One that lands while the
   touchdown is still on screen stays part of it, as before.

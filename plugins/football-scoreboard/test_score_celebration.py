@@ -144,8 +144,9 @@ def _make_live(favorite_teams=None, opponent_scores=False, duration=8, enabled=T
 
 
 def _game(gid="g1", away="DAL", home="KC", away_score="0", home_score="0",
-          is_final=False):
+          is_final=False, period=2, clock="7:30"):
     return {
+        "period": period, "clock": clock,
         "id": gid, "away_abbr": away, "home_abbr": home,
         "away_id": "2", "home_id": "1",
         "away_score": away_score, "home_score": home_score,
@@ -329,7 +330,7 @@ def test_pending_try_cleared_when_game_goes_final():
     live = _no_scoring_plays(_make_live(favorite_teams=["KC"]))
     live._check_for_score(_game(away_score="0", home_score="0"))
     live._check_for_score(_game(away_score="0", home_score="6"))
-    assert live._pending_try == {"g1": "home"}
+    assert live._pending_try["g1"]["side"] == "home"
     live._check_for_win(_game(away_score="0", home_score="6", is_final=True))
     assert "g1" not in live._pending_try
     print("PASS: a final whistle clears the pending try")
@@ -337,10 +338,90 @@ def test_pending_try_cleared_when_game_goes_final():
 
 def test_pending_try_cleared_on_first_sighting():
     live = _no_scoring_plays(_make_live(favorite_teams=["KC"]))
-    live._pending_try_map()["g1"] = "home"  # left over from an earlier run
+    live._pending_try_map()["g1"] = {"side": "home", "period": 2,
+                                     "clock": "7:30"}  # left over from an earlier run
     live._check_for_score(_game(away_score="0", home_score="6"))  # first sighting
     assert "g1" not in live._pending_try
     print("PASS: a first sighting starts with no pending try")
+
+
+def test_failed_try_then_same_side_safety_is_a_safety():
+    """TD, try fails (no score change), a drive later the same side scores a
+    safety: the clock has run, so the owed try is over."""
+    live = _no_scoring_plays(_make_live(favorite_teams=["KC"]))
+    live._check_for_score(_game(away_score="0", home_score="0", clock="9:00"))
+    live._check_for_score(_game(away_score="0", home_score="6", clock="7:30"))  # TD
+    _expire(live)
+    live._check_for_score(_game(away_score="0", home_score="8", clock="5:12"))
+    assert live.active_celebration["phrase"] == "KC SAFETY!"
+    print("PASS: once the clock has run, a same-side +2 is a safety")
+
+
+def test_try_over_once_the_period_changes():
+    live = _no_scoring_plays(_make_live(favorite_teams=["KC"]))
+    live._check_for_score(_game(away_score="0", home_score="0"))
+    live._check_for_score(_game(away_score="0", home_score="6", period=2, clock="0:00"))
+    _expire(live)
+    live._check_for_score(_game(away_score="0", home_score="8", period=3, clock="0:00"))
+    assert live.active_celebration["phrase"] == "KC SAFETY!"
+    print("PASS: a new period ends the owed try")
+
+
+def test_try_still_owed_when_the_clock_barely_moves():
+    """The scoreboard can publish the score a tick before the clock settles."""
+    live = _no_scoring_plays(_make_live(favorite_teams=["KC"]))
+    live._check_for_score(_game(away_score="0", home_score="0"))
+    live._check_for_score(_game(away_score="0", home_score="6", clock="7:30"))
+    _expire(live)
+    live._check_for_score(_game(away_score="0", home_score="8", clock="7:28"))
+    assert live.active_celebration["phrase"] == "KC 2PT GOOD!"
+    print("PASS: a clock within the slack keeps the try owed")
+
+
+def test_unreadable_clock_keeps_the_try_owed():
+    live = _no_scoring_plays(_make_live(favorite_teams=["KC"]))
+    live._check_for_score(_game(away_score="0", home_score="0", clock=""))
+    live._check_for_score(_game(away_score="0", home_score="6", clock=""))
+    _expire(live)
+    live._check_for_score(_game(away_score="0", home_score="8", clock=""))
+    assert live.active_celebration["phrase"] == "KC 2PT GOOD!"
+    print("PASS: with no clock to read, the score sequence still decides")
+
+
+def test_score_correction_clears_the_owed_try():
+    live = _no_scoring_plays(_make_live(favorite_teams=["KC"]))
+    live._check_for_score(_game(away_score="0", home_score="0"))
+    live._check_for_score(_game(away_score="0", home_score="6"))  # TD...
+    _expire(live)
+    live._check_for_score(_game(away_score="0", home_score="0"))  # ...overturned
+    assert "g1" not in live._pending_try
+    live._check_for_score(_game(away_score="0", home_score="2"))
+    assert live.active_celebration["phrase"] == "KC SAFETY!"
+    print("PASS: a score correction clears the owed try")
+
+
+def test_touchdown_and_defensive_return_in_one_poll():
+    live = _no_scoring_plays(_make_live(favorite_teams=["DAL"]))  # KC not shown
+    live._check_for_score(_game(away_score="0", home_score="0"))
+    live._check_for_score(_game(away_score="2", home_score="6"))
+    assert live.active_celebration["phrase"] == "DAL DEF 2PT!"
+    assert "g1" not in live._pending_try, "the return consumed the try"
+    print("PASS: a TD and the other side's +2 in one poll is a defensive return")
+
+
+def test_malformed_scoring_type_falls_back():
+    live = _make_live(favorite_teams=["KC"])
+    for bad in ("safety", ["safety"], None, 7):
+        assert live._kind_from_scoring_play(
+            [{"scoringType": bad, "awayScore": 0, "homeScore": 2}], 0, 2) is None
+    live._fetch_scoring_plays = lambda gid: [
+        {"scoringType": "touchdown", "awayScore": 0, "homeScore": 8}]
+    live._check_for_score(_game(away_score="0", home_score="0"))
+    live._check_for_score(_game(away_score="0", home_score="6"))
+    _expire(live)
+    live._check_for_score(_game(away_score="0", home_score="8"))
+    assert live.active_celebration["phrase"] == "KC 2PT GOOD!"
+    print("PASS: a malformed scoringType falls back to the score sequence")
 
 
 # ESPN scoringPlays entries, shaped like the summary endpoint returns them.
@@ -1028,6 +1109,13 @@ def main():
         test_touchdown_and_try_in_one_poll_is_one_touchdown,
         test_pending_try_cleared_when_game_goes_final,
         test_pending_try_cleared_on_first_sighting,
+        test_failed_try_then_same_side_safety_is_a_safety,
+        test_try_over_once_the_period_changes,
+        test_try_still_owed_when_the_clock_barely_moves,
+        test_unreadable_clock_keeps_the_try_owed,
+        test_score_correction_clears_the_owed_try,
+        test_touchdown_and_defensive_return_in_one_poll,
+        test_malformed_scoring_type_falls_back,
         test_scoring_play_classification,
         test_scoring_plays_name_a_conversion_the_sequence_missed,
         test_scoring_plays_confirm_a_safety,

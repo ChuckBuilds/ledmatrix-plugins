@@ -2344,10 +2344,10 @@ class SportsLive(SportsCelebrationMixin, SportsGameOverMixin, SportsLiveSharedMi
         # Active celebration dict (a snapshot, so a win survives the game leaving
         # live_games) or None. See _start_celebration for the shape.
         self.active_celebration: Optional[Dict[str, Any]] = None
-        # {game_id: side} for a side that just scored a +6 and still has its
-        # try (extra point or two-point conversion) to come. See
-        # _classify_score.
-        self._pending_try: Dict[str, str] = {}
+        # {game_id: {"side", "period", "clock"}} for a side that just scored a
+        # +6 and still has its try (extra point or two-point conversion) to
+        # come, with the game clock when it scored. See _try_still_owed.
+        self._pending_try: Dict[str, Dict[str, Any]] = {}
 
     # ------------------------------------------------------------------
     # Score / win celebration
@@ -2594,7 +2594,10 @@ class SportsLive(SportsCelebrationMixin, SportsGameOverMixin, SportsLiveSharedMi
             if (self._score_to_int(play.get("awayScore")) != away
                     or self._score_to_int(play.get("homeScore")) != home):
                 continue
-            stype = str(((play.get("scoringType") or {}).get("name")) or "").lower()
+            scoring_type = play.get("scoringType")
+            if not isinstance(scoring_type, dict):
+                return None
+            stype = str(scoring_type.get("name") or "").lower()
             if stype in self._ESPN_SCORING_TYPES:
                 return self._ESPN_SCORING_TYPES[stype]
             if stype == "touchdown":
@@ -2694,17 +2697,39 @@ class SportsLive(SportsCelebrationMixin, SportsGameOverMixin, SportsLiveSharedMi
 
         away_delta = away - baseline["away"]
         home_delta = home - baseline["home"]
+        if away_delta < 0 or home_delta < 0:
+            # A correction: the touchdown the owed try hangs on may be the
+            # very score ESPN just took back.
+            pending.pop(game_id, None)
         if away_delta <= 0 and home_delta <= 0:
             return
 
         # Track the try owed after a touchdown, whether or not this score is
         # celebrated, so the next change is read in context. A pending try
-        # lasts exactly one score change: whatever lands next consumes it.
-        pending_side = pending.pop(game_id, None)
-        if away_delta == 6:
-            pending[game_id] = "away"
-        elif home_delta == 6:
-            pending[game_id] = "home"
+        # lasts one score change at most -- whatever lands next consumes it
+        # -- and less if the clock shows the try is over (see
+        # _try_still_owed).
+        owed = pending.pop(game_id, None)
+        pending_side = (
+            owed["side"]
+            if isinstance(owed, dict) and self._try_still_owed(owed, game)
+            else None
+        )
+        deltas = {"away": away_delta, "home": home_delta}
+        for td_side, other in (("away", "home"), ("home", "away")):
+            if deltas[td_side] != 6:
+                continue
+            if deltas[other] == 0:
+                pending[game_id] = {
+                    "side": td_side,
+                    "period": game.get("period"),
+                    "clock": game.get("clock"),
+                }
+            elif deltas[other] == 2:
+                # Touchdown and the other side's +2 in one poll: the +2 is the
+                # defensive return on that very try, which it also consumed.
+                pending_side = td_side
+            break
 
         # A try that lands while the touchdown's takeover is still on screen
         # stays part of that takeover; one that lands after it gets its own.
@@ -2736,13 +2761,47 @@ class SportsLive(SportsCelebrationMixin, SportsGameOverMixin, SportsLiveSharedMi
             ),
         )
 
-    def _pending_try_map(self) -> Dict[str, str]:
+    def _pending_try_map(self) -> Dict[str, Dict[str, Any]]:
         """_pending_try, created on first use for instances built without
         __init__ (the tests' fakes)."""
         pending = getattr(self, "_pending_try", None)
         if pending is None:
             pending = self._pending_try = {}
         return pending
+
+    # How far the game clock may drift from the touchdown's reading before
+    # the try counts as over. The try is untimed, so the clock stands still
+    # until the kickoff; the slack absorbs a scoreboard that publishes the
+    # score a tick before the clock settles. A kickoff and a play take
+    # longer than this.
+    _TRY_CLOCK_SLACK_SECONDS: ClassVar[int] = 5
+
+    @staticmethod
+    def _clock_seconds(clock: Any) -> Optional[int]:
+        """'12:34' / '0:07' -> seconds, or None when it isn't a M:SS clock."""
+        try:
+            minutes, seconds = str(clock).strip().split(":")
+            return int(minutes) * 60 + int(float(seconds))
+        except (TypeError, ValueError):
+            return None
+
+    def _try_still_owed(self, owed: Dict[str, Any], game: Dict) -> bool:
+        """Is the try recorded in ``owed`` still to come?
+
+        A failed try changes no score, so a pending try is otherwise only
+        cleared by the next score -- and a safety by the same side a drive
+        later would be read as its conversion. The game clock settles it:
+        the try is over once the period has changed or the clock has run.
+        Unreadable clocks keep the try owed (the one-score-change limit
+        still applies).
+        """
+        if owed.get("period") != game.get("period"):
+            return False
+        then = self._clock_seconds(owed.get("clock"))
+        now = self._clock_seconds(game.get("clock"))
+        if then is None or now is None:
+            return True
+        return abs(then - now) <= self._TRY_CLOCK_SLACK_SECONDS
 
     def _keep_final_for_vegas(self, details: Dict) -> None:
         """Hold a game that just went final, so its live Vegas card shows FINAL.
