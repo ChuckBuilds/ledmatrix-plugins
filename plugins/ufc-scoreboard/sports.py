@@ -289,10 +289,6 @@ class SportsCore(SportsGameRulesMixin, SportsFetchMixin, SportsFavoritesMixin,
             return False
 
         if not self.current_game:
-            # Clear the display so old content doesn't persist
-            if force_clear:
-                self.display_manager.clear()
-                self.display_manager.update_display()
             current_time = time.time()
             if not hasattr(self, "_last_warning_time"):
                 self._last_warning_time = 0
@@ -1037,9 +1033,6 @@ class SportsUpcoming(SportsUpcomingFavoritesMixin, SportsCore):
     def _draw_scorebug_layout(self, game: Dict, force_clear: bool = False) -> None:
         """Draw the layout for an upcoming game."""
         try:
-            # Clear the display first to ensure full coverage (like weather plugin does)
-            if force_clear:
-                self.display_manager.clear()
 
             # Use display_manager.matrix dimensions directly to ensure full display coverage
             display_width = self.display_manager.matrix.width if hasattr(self.display_manager, 'matrix') and self.display_manager.matrix else self.display_width
@@ -1242,10 +1235,6 @@ class SportsUpcoming(SportsUpcomingFavoritesMixin, SportsCore):
             return False
 
         if not self.games_list:
-            # Clear the display so old content doesn't persist
-            if force_clear:
-                self.display_manager.clear()
-                self.display_manager.update_display()
             if self.current_game:
                 self.current_game = None  # Clear state if list empty
             current_time = time.time()
@@ -1549,9 +1538,6 @@ class SportsRecent(SportsRecentFavoritesMixin, SportsRecentSharedMixin, SportsCo
     def _draw_scorebug_layout(self, game: Dict, force_clear: bool = False) -> None:
         """Draw the layout for a recently completed game."""
         try:
-            # Clear the display first to ensure full coverage (like weather plugin does)
-            if force_clear:
-                self.display_manager.clear()
 
             # Use display_manager.matrix dimensions directly to ensure full display coverage
             display_width = self.display_manager.matrix.width if hasattr(self.display_manager, 'matrix') and self.display_manager.matrix else self.display_width
@@ -1754,10 +1740,6 @@ class SportsRecent(SportsRecentFavoritesMixin, SportsRecentSharedMixin, SportsCo
     def display(self, force_clear=False) -> bool:
         """Display recent games, handling switching."""
         if not self.is_enabled or not self.games_list:
-            # If disabled or no games, clear the display so old content doesn't persist
-            if force_clear or not self.games_list:
-                self.display_manager.clear()
-                self.display_manager.update_display()
             if not self.games_list and self.current_game:
                 self.current_game = None  # Clear internal state if list becomes empty
             return False

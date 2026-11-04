@@ -1,7 +1,7 @@
 {
   "id": "hockey-scoreboard",
   "name": "Hockey Scoreboard",
-  "version": "1.54.1",
+  "version": "1.54.2",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, NCAA Women's, OHL and PWHL hockey with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/hockey-scoreboard",
@@ -22,7 +22,7 @@
   ],
   "icon": "fas fa-hockey-puck",
   "compatible_versions": [
-    ">=3.8.7"
+    ">=3.9.0"
   ],
   "requires": {
     "python": ">=3.9",
@@ -72,10 +72,16 @@
   ],
   "versions": [
     {
-      "version": "1.54.1",
-      "released": "2026-10-26",
-      "ledmatrix_min_version": "3.8.7",
+      "version": "1.54.2",
+      "released": "2026-11-04",
+      "ledmatrix_min_version": "3.9.0",
       "notes": "With dynamic duration on, every turn after a mode's first shows all of its games again: the plugin overrides reset_cycle_state(), which the display controller calls when a different dynamic mode takes the panel, and clears the per-game progress there. Before, that hook fell through to the base no-op, so a granular mode (e.g. nhl_recent) reported its cycle complete at once and each later turn ended at the minimum duration just after flashing its second game."
+    },
+    {
+      "version": "1.54.1",
+      "released": "2026-11-03",
+      "ledmatrix_min_version": "3.9.0",
+      "notes": "Requires LEDMatrix core 3.9.0, the first release whose display controller blanks the panel once when every mode is empty; on older cores the last card would stay up. Switching screens no longer flashes the panel black. display_manager.clear() writes black straight to the matrix, and every card was drawn after a clear whenever force_clear was set: on a mode change, a block boundary, or a gap of over 5 s between display() calls (a slow update() holding the plugin lock). Rendering the card took long enough for the black to show, so a board with one favourite team flashed and came back on the same card. Each card is now drawn into a new frame that replaces the old one whole, so the panel keeps the previous frame until the new one is ready, and an unchanged card is not pushed at all. A mode with nothing to show no longer blanks the panel on its way past: it returns False and the controller moves on (and blanks the panel itself once when every mode is empty). The recent screen blanked on every frame while its list was empty, even without force_clear."
     },
     {
       "version": "1.54.0",
