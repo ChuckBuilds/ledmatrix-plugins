@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.45.2] - 2026-11-04
+
+### Fixed
+- With dynamic duration on, every turn after a mode's first shows all of its
+  games again. The plugin now overrides `reset_cycle_state()`, which the
+  display controller calls each time a different dynamic mode takes the
+  panel, and clears the per-game progress there (as basketball, soccer, afl
+  and nrl do). Before, the hook fell through to the base no-op and the
+  plugin's own new-cycle check never fires for granular modes such as
+  `lax_ncaa_mens_recent`, so after the first full turn the cycle read as
+  complete at once and every later turn ended at the minimum duration just
+  after flashing its second game.
+
 ## [1.45.1] - 2026-11-03
 
 ### Changed

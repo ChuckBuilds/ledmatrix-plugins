@@ -1,7 +1,7 @@
 {
   "id": "hockey-scoreboard",
   "name": "Hockey Scoreboard",
-  "version": "1.54.1",
+  "version": "1.54.2",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, NCAA Women's, OHL and PWHL hockey with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/hockey-scoreboard",
@@ -71,6 +71,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.54.2",
+      "released": "2026-11-04",
+      "ledmatrix_min_version": "3.9.0",
+      "notes": "With dynamic duration on, every turn after a mode's first shows all of its games again: the plugin overrides reset_cycle_state(), which the display controller calls when a different dynamic mode takes the panel, and clears the per-game progress there. Before, that hook fell through to the base no-op, so a granular mode (e.g. nhl_recent) reported its cycle complete at once and each later turn ended at the minimum duration just after flashing its second game."
+    },
     {
       "version": "1.54.1",
       "released": "2026-11-03",

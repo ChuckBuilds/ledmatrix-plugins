@@ -1489,6 +1489,25 @@ class HockeyScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
             self.logger.error(f"Error in display method: {e}", exc_info=True)
             return False
 
+    def reset_cycle_state(self) -> None:
+        """Start a fresh dynamic-duration cycle for the mode coming on screen.
+
+        The controller calls this each time a different dynamic mode takes the
+        panel. Without it the per-game progress from the previous turn was
+        kept, so every game already counted as shown, the cycle reported
+        complete at once, and each later turn ended at the minimum duration
+        just after flashing its second game.
+        """
+        super().reset_cycle_state()
+        self._dynamic_cycle_seen_modes.clear()
+        self._dynamic_mode_to_manager_key.clear()
+        self._dynamic_manager_progress.clear()
+        self._dynamic_managers_completed.clear()
+        self._single_game_manager_start_times.clear()
+        self._game_id_start_times.clear()
+        self._display_mode_to_managers.clear()
+        self._dynamic_cycle_complete = False
+
     def is_cycle_complete(self) -> bool:
         """Report whether the plugin has shown a full cycle of content."""
         if not self._dynamic_feature_enabled():
