@@ -2322,6 +2322,10 @@ class SportsLive(SportsCelebrationMixin, SportsGameOverMixin, SportsLiveSharedMi
         # Active celebration dict (a snapshot, so a win survives the game leaving
         # live_games) or None. See _start_celebration for the shape.
         self.active_celebration: Optional[Dict[str, Any]] = None
+        # {game_id: {"side", "period", "clock"}} for a side that just scored a
+        # +6 and still has its try (extra point or two-point conversion) to
+        # come, with the game clock when it scored. See _try_still_owed.
+        self._pending_try: Dict[str, Dict[str, Any]] = {}
 
     # ------------------------------------------------------------------
     # Score / win celebration
@@ -2463,34 +2467,151 @@ class SportsLive(SportsCelebrationMixin, SportsGameOverMixin, SportsLiveSharedMi
         c = self.active_celebration
         return bool(c) and (time.time() - c["started_at"] < self.celebration_duration)
 
+    # How long the scoring-play lookup may hold up an update. It runs on the
+    # update worker, only for an ambiguous +2, so a slow answer just falls
+    # back to the score-sequence inference.
+    _SCORING_PLAYS_TIMEOUT: ClassVar[float] = 3.0
+
+    # ESPN scoringType.name -> our score kind, for the plays ESPN types on
+    # their own. A try is folded into its touchdown's entry (see
+    # _kind_from_scoring_play), so it has no type of its own.
+    _ESPN_SCORING_TYPES: ClassVar[Dict[str, str]] = {
+        "safety": "safety",
+        "defensive-two-point-conversion": "def_two_pt",
+    }
+
     @staticmethod
-    def _score_phrase(points: int, team_abbr: str) -> str:
-        """Football-native phrase inferred from the points just scored. The
-        first increment of a touchdown drive is +6 (the extra point/2pt lands
-        as a separate, suppressed update), a field goal is +3, a safety +2."""
-        if points >= 6:
+    def _score_phrase(kind: str, team_abbr: str) -> str:
+        """Football-native headline for a score kind (see _classify_score)."""
+        if kind == "td":
             return secrets.choice(("TOUCHDOWN!", f"{team_abbr} TD!"))
-        if points == 3:
+        if kind == "fg":
             return f"{team_abbr} FIELD GOAL!"
-        if points == 2:
+        if kind == "safety":
             return f"{team_abbr} SAFETY!"
+        if kind == "two_pt":
+            return f"{team_abbr} 2PT GOOD!"
+        if kind == "pat":
+            return f"{team_abbr} EXTRA PT!"
+        if kind == "def_two_pt":
+            return f"{team_abbr} DEF 2PT!"
         return f"{team_abbr} SCORES!"
 
     @staticmethod
-    def _score_motif(points: int) -> str:
+    def _score_motif(kind: str) -> str:
         """Which scenery the takeover paints behind the headline.
 
         A field goal and an extra point are both kicks through the uprights,
-        so they share the goalposts; anything worth six or more gets the goal
-        line it was carried over. Inferred from the points for the same reason
-        the phrase is: ESPN's play description is only reachable through
-        _extract_game_details_common, which every scoreboard lineage shares.
+        so they share the goalposts; a touchdown and a two-point conversion
+        both cross the goal line. A safety or defensive return gets the
+        generic sunburst.
         """
-        if points in (1, 3):
+        if kind in ("fg", "pat"):
             return "kick"
-        if points >= 6:
+        if kind in ("td", "two_pt"):
             return "touchdown"
         return "score"
+
+    @staticmethod
+    def _kind_from_points(points: int) -> str:
+        """Score kind when only the size of the increment is known. +1 is
+        treated as an extra point: a one-point safety is all but unheard of."""
+        if points >= 6:
+            return "td"
+        if points == 3:
+            return "fg"
+        if points == 2:
+            return "safety"
+        if points == 1:
+            return "pat"
+        return "score"
+
+    def _fetch_scoring_plays(self, game_id: str) -> Optional[List[Dict[str, Any]]]:
+        """ESPN's ``scoringPlays`` for a game, from its summary endpoint.
+
+        The scoreboard the live poll reads carries no play types, so this is
+        the only place a safety and a two-point conversion can be told apart.
+        Deliberately not self.session: its retry adapter backs off for tens of
+        seconds, and this sits in the update path. None on any failure.
+        """
+        sport = getattr(self, "sport", None) or "football"
+        league = getattr(self, "league", None)
+        if not league:
+            return None
+        url = (
+            f"https://site.api.espn.com/apis/site/v2/sports/{sport}/{league}/summary"
+        )
+        try:
+            resp = requests.get(
+                url,
+                params={"event": game_id},
+                headers=getattr(self, "headers", None),
+                timeout=self._SCORING_PLAYS_TIMEOUT,
+            )
+            resp.raise_for_status()
+            plays = (resp.json() or {}).get("scoringPlays")
+        except Exception as e:  # network, HTTP or JSON: fall back quietly
+            self.logger.debug(f"Scoring plays unavailable for game {game_id}: {e}")
+            return None
+        return plays if isinstance(plays, list) else None
+
+    def _kind_from_scoring_play(
+        self, plays: List[Dict[str, Any]], away: int, home: int
+    ) -> Optional[str]:
+        """Classify the score from the ESPN scoring play that produced it.
+
+        A play matches when its running score equals the score we just saw.
+        ESPN folds the try into the touchdown's entry -- "Tony Pollard 1 Yd
+        Rush (Cam Ward Run for Two-Point Conversion)" -- so a touchdown entry
+        that matches the new score means the try was the latest change.
+        None when no play matches yet (the summary can lag the scoreboard).
+        """
+        for play in reversed(plays):
+            if not isinstance(play, dict):
+                continue
+            if (self._score_to_int(play.get("awayScore")) != away
+                    or self._score_to_int(play.get("homeScore")) != home):
+                continue
+            scoring_type = play.get("scoringType")
+            if not isinstance(scoring_type, dict):
+                return None
+            stype = str(scoring_type.get("name") or "").lower()
+            if stype in self._ESPN_SCORING_TYPES:
+                return self._ESPN_SCORING_TYPES[stype]
+            if stype == "touchdown":
+                text = str(play.get("text") or "").lower()
+                if "two-point" in text and "failed" not in text:
+                    return "two_pt"
+                if "kick" in text and "missed" not in text and "blocked" not in text:
+                    return "pat"
+                return "td"
+            return None
+        return None
+
+    def _classify_score(self, game_id: str, side: str, points: int,
+                        away: int, home: int, pending_side: Optional[str]) -> str:
+        """Name the score that just landed: td, fg, safety, pat, two_pt,
+        def_two_pt or score.
+
+        Only +2 is ambiguous: a safety, a two-point conversion after a
+        touchdown, and a defensive return on a try are all worth two. ESPN's
+        scoring plays settle it when they are up to date; otherwise the
+        score sequence does -- a +2 by the side that just scored a touchdown
+        is its conversion, a +2 by the other side while that try is pending
+        is a defensive return, and anything else is a safety.
+        """
+        if points != 2:
+            return self._kind_from_points(points)
+        plays = self._fetch_scoring_plays(game_id)
+        if plays:
+            kind = self._kind_from_scoring_play(plays, away, home)
+            if kind in ("safety", "two_pt", "def_two_pt"):
+                return kind
+        if pending_side == side:
+            return "two_pt"
+        if pending_side is not None:
+            return "def_two_pt"
+        return "safety"
 
     def _start_celebration(
         self,
@@ -2500,18 +2621,19 @@ class SportsLive(SportsCelebrationMixin, SportsGameOverMixin, SportsLiveSharedMi
         team_abbr: str,
         away_score: int,
         home_score: int,
-        points: int = 0,
+        score_kind: str = "score",
     ) -> None:
         """Arm a score or win celebration. ``scored_side`` is the side whose
-        score digit gets highlighted ('away' or 'home')."""
+        score digit gets highlighted ('away' or 'home'); ``score_kind`` is
+        what _classify_score named the score."""
         if kind == "win":
             phrase = f"{team_abbr} WINS!"
         else:
-            phrase = self._score_phrase(points, team_abbr)
+            phrase = self._score_phrase(score_kind, team_abbr)
 
         self.active_celebration = {
             "kind": kind,
-            "motif": "win" if kind == "win" else self._score_motif(points),
+            "motif": "win" if kind == "win" else self._score_motif(score_kind),
             "game": dict(game),  # snapshot: survives the game leaving live_games
             "scored_side": scored_side,
             "team_abbr": team_abbr,
@@ -2546,18 +2668,51 @@ class SportsLive(SportsCelebrationMixin, SportsGameOverMixin, SportsLiveSharedMi
         # (a game already in progress at boot would false-fire otherwise),
         # and a decrement (correction) just re-bases silently.
         self._score_baselines[game_id] = {"away": away, "home": home}
+        pending = self._pending_try_map()
         if baseline is None:
+            pending.pop(game_id, None)
             return
 
         away_delta = away - baseline["away"]
         home_delta = home - baseline["home"]
+        if away_delta < 0 or home_delta < 0:
+            # A correction: the touchdown the owed try hangs on may be the
+            # very score ESPN just took back.
+            pending.pop(game_id, None)
         if away_delta <= 0 and home_delta <= 0:
             return
 
-        # One takeover per scoring sequence: a touchdown lands as +6 then +1
-        # (the extra point) a few seconds later; suppress the follow-up while
-        # the first celebration is still on screen. The baseline above is still
-        # advanced, so nothing re-fires once the window closes.
+        # Track the try owed after a touchdown, whether or not this score is
+        # celebrated, so the next change is read in context. A pending try
+        # lasts one score change at most -- whatever lands next consumes it
+        # -- and less if the clock shows the try is over (see
+        # _try_still_owed).
+        owed = pending.pop(game_id, None)
+        pending_side = (
+            owed["side"]
+            if isinstance(owed, dict) and self._try_still_owed(owed, game)
+            else None
+        )
+        deltas = {"away": away_delta, "home": home_delta}
+        for td_side, other in (("away", "home"), ("home", "away")):
+            if deltas[td_side] != 6:
+                continue
+            if deltas[other] == 0:
+                pending[game_id] = {
+                    "side": td_side,
+                    "period": game.get("period"),
+                    "clock": game.get("clock"),
+                }
+            elif deltas[other] == 2:
+                # Touchdown and the other side's +2 in one poll: the +2 is the
+                # defensive return on that very try, which it also consumed.
+                pending_side = td_side
+            break
+
+        # A try that lands while the touchdown's takeover is still on screen
+        # stays part of that takeover; one that lands after it gets its own.
+        # The baseline above is still advanced, so nothing re-fires once the
+        # window closes.
         if self.has_active_celebration():
             return
 
@@ -2579,8 +2734,52 @@ class SportsLive(SportsCelebrationMixin, SportsGameOverMixin, SportsLiveSharedMi
             team_abbr=game.get(f"{scored_side}_abbr", ""),
             away_score=away,
             home_score=home,
-            points=points,
+            score_kind=self._classify_score(
+                game_id, scored_side, points, away, home, pending_side
+            ),
         )
+
+    def _pending_try_map(self) -> Dict[str, Dict[str, Any]]:
+        """_pending_try, created on first use for instances built without
+        __init__ (the tests' fakes)."""
+        pending = getattr(self, "_pending_try", None)
+        if pending is None:
+            pending = self._pending_try = {}
+        return pending
+
+    # How far the game clock may drift from the touchdown's reading before
+    # the try counts as over. The try is untimed, so the clock stands still
+    # until the kickoff; the slack absorbs a scoreboard that publishes the
+    # score a tick before the clock settles. A kickoff and a play take
+    # longer than this.
+    _TRY_CLOCK_SLACK_SECONDS: ClassVar[int] = 5
+
+    @staticmethod
+    def _clock_seconds(clock: Any) -> Optional[int]:
+        """'12:34' / '0:07' -> seconds, or None when it isn't a M:SS clock."""
+        try:
+            minutes, seconds = str(clock).strip().split(":")
+            return int(minutes) * 60 + int(float(seconds))
+        except (TypeError, ValueError):
+            return None
+
+    def _try_still_owed(self, owed: Dict[str, Any], game: Dict) -> bool:
+        """Is the try recorded in ``owed`` still to come?
+
+        A failed try changes no score, so a pending try is otherwise only
+        cleared by the next score -- and a safety by the same side a drive
+        later would be read as its conversion. The game clock settles it:
+        the try is over once the period has changed or the clock has run.
+        Unreadable clocks keep the try owed (the one-score-change limit
+        still applies).
+        """
+        if owed.get("period") != game.get("period"):
+            return False
+        then = self._clock_seconds(owed.get("clock"))
+        now = self._clock_seconds(game.get("clock"))
+        if then is None or now is None:
+            return True
+        return abs(then - now) <= self._TRY_CLOCK_SLACK_SECONDS
 
     def _keep_final_for_vegas(self, details: Dict) -> None:
         """Hold a game that just went final, so its live Vegas card shows FINAL.
@@ -2609,6 +2808,7 @@ class SportsLive(SportsCelebrationMixin, SportsGameOverMixin, SportsLiveSharedMi
             return
         # Consume the baseline so this can only fire once.
         self._score_baselines.pop(game_id, None)
+        self._pending_try_map().pop(game_id, None)
 
         away = self._score_to_int(game.get("away_score"))
         home = self._score_to_int(game.get("home_score"))
