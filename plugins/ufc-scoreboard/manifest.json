@@ -1,7 +1,7 @@
 {
   "id": "ufc-scoreboard",
   "name": "UFC Scoreboard",
-  "version": "1.27.1",
+  "version": "1.27.2",
   "author": "LegoGuy1000",
   "contributors": [
     {
@@ -32,6 +32,12 @@
   "default_duration": 15,
   "config_schema": "config_schema.json",
   "versions": [
+    {
+      "version": "1.27.2",
+      "released": "2026-11-04",
+      "ledmatrix_min_version": "3.9.0",
+      "notes": "With dynamic duration on, every turn after a mode's first shows all of its cards again. reset_cycle_state(), which the display controller calls each time a different dynamic mode takes the panel, cleared only the seen-mode flags, and nothing else ever cleared the per-card progress or the completed-manager set, so after a mode's first full turn every later turn ended at the minimum duration. It now clears the per-card progress, completed managers and start times, as basketball, soccer, afl, nrl, hockey and lacrosse do."
+    },
     {
       "version": "1.27.1",
       "released": "2026-11-03",

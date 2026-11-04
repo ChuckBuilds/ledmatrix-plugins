@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.27.2] - 2026-11-04
+
+### Fixed
+- With dynamic duration on, every turn after a mode's first shows all of its
+  cards again. `reset_cycle_state()`, which the display controller calls each
+  time a different dynamic mode takes the panel, cleared only the seen-mode
+  flags, and nothing else ever cleared the per-card progress or the
+  completed-manager set, so after a mode's first full turn every later turn
+  ended at the minimum duration. It now clears the per-card progress,
+  completed managers and start times, as basketball, soccer, afl, nrl, hockey
+  and lacrosse do.
+
 ## [1.27.1] - 2026-11-03
 
 ### Changed
