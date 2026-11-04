@@ -392,7 +392,7 @@
       "latest_version": "1.55.0",
       "icon": "fas fa-hockey-puck",
       "ledmatrix_min_version": "3.9.0",
-      "commit": "7a41cbcfbb419439f2f98ecf7f3a73225a8b5630"
+      "commit": "901ebcaba1d58ace34f7a55a98d306a8d3f915da"
     },
     {
       "id": "lacrosse-scoreboard",
