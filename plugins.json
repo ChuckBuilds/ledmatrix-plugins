@@ -81,7 +81,8 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "1.66.2",
-      "ledmatrix_min_version": "3.9.0"
+      "ledmatrix_min_version": "3.9.0",
+      "commit": "776431b23abc1fce71c4dc30e4e8268655bf9e8a"
     },
     {
       "id": "basketball-scoreboard",
@@ -1012,7 +1013,8 @@
       "screenshot": "",
       "latest_version": "1.27.2",
       "icon": "fas fa-fist-raised",
-      "ledmatrix_min_version": "3.9.0"
+      "ledmatrix_min_version": "3.9.0",
+      "commit": "776431b23abc1fce71c4dc30e4e8268655bf9e8a"
     },
     {
       "id": "weather",
