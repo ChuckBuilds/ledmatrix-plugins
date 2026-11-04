@@ -1031,8 +1031,10 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
             if scale <= self._LOGO_FIT_SETTING:
                 # "Fits the panel" has to hold on every panel: 0.67 is a
                 # shade over 1/1.5, and on a panel 200+ px tall that shade is
-                # a whole pixel off the bottom.
+                # a whole pixel off the bottom. The same shade puts a very
+                # wide mark a pixel past the side of a panel 200+ px wide.
                 max_height = min(max_height, self.display_height)
+                max_width = min(max_width, self.display_width)
             centre_gap = self._scorebug_centre_gap()
             if centre_gap > 0:
                 # Only once the score has grown into the middle -- see
