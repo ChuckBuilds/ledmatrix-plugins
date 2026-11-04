@@ -722,6 +722,16 @@ Nudge any element in pixels. All default to `0`, all **Advanced**, all under
 | `records` | `away_x_offset`, `home_x_offset`, `y_offset` | Away from the left, home from the right, both from the bottom |
 | `odds` | `x_offset`, `y_offset` | Default odds position |
 
+### Logo size
+
+`customization.layout.home_logo.scale` and `away_logo.scale` (**Advanced**,
+"Logo Size" in the web UI) size the logos on the live, recent and upcoming
+cards. `1.0`, the default, is the classic look: logos 1.5x the panel height,
+running off the top, bottom and sides. Lower it to keep more of each logo on
+the panel; at `0.67` or below a logo fits the panel height and is drawn whole,
+with no part pushed off the edge. Range `0.3`-`1.5`. Scroll and Vegas cards
+already fit their logos to the card and are not affected.
+
 ## Favorite team result colours
 
 A run of games against the same opponent is hard to read at a glance: in scroll

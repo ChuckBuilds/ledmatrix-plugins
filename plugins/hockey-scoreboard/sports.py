@@ -538,6 +538,30 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
     #: here because the logo sizing has to know it.
     _LOGO_EDGE_BLEED_PX: ClassVar[int] = 2
 
+    #: The logo scale at which a scorebug logo is exactly the panel's height:
+    #: the classic box is 1.5x the panel.
+    _LOGO_FIT_SCALE: ClassVar[float] = 1 / 1.5
+
+    #: The fit value the schema and README tell users to type. At or below it
+    #: a logo is held to the panel height outright.
+    _LOGO_FIT_SETTING: ClassVar[float] = 0.67
+
+    def _logo_edge_bleed(self, element: str, base: int) -> int:
+        """How far a scorebug logo is pushed outward, off its edge of the panel.
+
+        The shift is there because the classic logo is half again taller than
+        the panel and is meant to bleed off it. It eases to 0 as the user's
+        scale shrinks the logo to the panel height, so a logo scaled to fit
+        sits wholly on the panel instead of still losing a strip of its side.
+        """
+        scale = self._element_scale(element)
+        if scale >= 1.0:
+            return base
+        if scale <= self._LOGO_FIT_SCALE:
+            return 0
+        return int(round(base * (scale - self._LOGO_FIT_SCALE)
+                         / (1.0 - self._LOGO_FIT_SCALE)))
+
     #: How far the score may cross onto each logo. Held fixed rather than as a
     #: fraction of the score, so the crossing stays what it was tuned for as
     #: the score grows with the panel.
@@ -926,15 +950,25 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
     _LOGO_CACHE_MAX: ClassVar[int] = 64
 
     def _load_and_resize_logo(
-        self, team_id: str, team_abbrev: str, logo_path: Path, logo_url: str | None
+        self, team_id: str, team_abbrev: str, logo_path: Path, logo_url: str | None,
+        element: Optional[str] = None,
     ) -> Optional[Image.Image]:
-        """Load and resize a team logo, with caching and automatic download if missing."""
+        """Load and resize a team logo, with caching and automatic download if missing.
+
+        element names the layout block ('home_logo' / 'away_logo') whose
+        ``scale`` sizes this logo; without one the logo is drawn at 1.0.
+        """
         self.logger.debug(f"Logo path: {logo_path}")
-        if team_abbrev in self._logo_cache:
-            self.logger.debug(f"Using cached logo for {team_abbrev}")
+        scale = self._element_scale(element) if element else 1.0
+        # A team is home in one game and away in the next, and the two sides
+        # can be scaled differently, so a scaled logo gets its own entry. An
+        # unscaled one keeps the bare abbreviation it has always been cached on.
+        cache_key = team_abbrev if scale == 1.0 else f"{team_abbrev}@{scale!r}"
+        if cache_key in self._logo_cache:
+            self.logger.debug(f"Using cached logo for {cache_key}")
             if hasattr(self._logo_cache, "move_to_end"):
-                self._logo_cache.move_to_end(team_abbrev)
-            return self._logo_cache[team_abbrev]
+                self._logo_cache.move_to_end(cache_key)
+            return self._logo_cache[cache_key]
 
         try:
             # Try different filename variations first (for cases like TA&M vs TAANDM)
@@ -989,8 +1023,16 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
             # Without the cap this was 1.5x the panel WIDTH -- 288px on a
             # 192-wide panel -- so a wide mark ran most of the way to the
             # centre from both sides and the score was drawn on top of it.
-            max_height = int(self.display_height * 1.5)
-            max_width = int(self.display_width * 1.5)
+            #
+            # A user's layout scale multiplies that box, so 1.0 is the classic
+            # size and _LOGO_FIT_SCALE is a logo exactly the panel's height.
+            max_height = max(1, int(self.display_height * 1.5 * scale))
+            max_width = max(1, int(self.display_width * 1.5 * scale))
+            if scale <= self._LOGO_FIT_SETTING:
+                # "Fits the panel" has to hold on every panel: 0.67 is a
+                # shade over 1/1.5, and on a panel 200+ px tall that shade is
+                # a whole pixel off the bottom.
+                max_height = min(max_height, self.display_height)
             centre_gap = self._scorebug_centre_gap()
             if centre_gap > 0:
                 # Only once the score has grown into the middle -- see
@@ -1000,7 +1042,7 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
                          + self._LOGO_EDGE_BLEED_PX)
                 max_width = max(8, min(max_width, reach))
             logo.thumbnail((max_width, max_height), RESAMPLE_FILTER)
-            self._logo_cache[team_abbrev] = logo
+            self._logo_cache[cache_key] = logo
             # Insertion order is recency order (hits move_to_end above), so
             # the first key is always the least recently used.
             while len(self._logo_cache) > self._LOGO_CACHE_MAX:
@@ -1329,12 +1371,14 @@ class SportsUpcoming(SportsUpcomingFavoritesMixin, SportsCore):
                 game["home_abbr"],
                 game["home_logo_path"],
                 game.get("home_logo_url"),
+                element="home_logo",
             )
             away_logo = self._load_and_resize_logo(
                 game["away_id"],
                 game["away_abbr"],
                 game["away_logo_path"],
                 game.get("away_logo_url"),
+                element="away_logo",
             )
 
             if not home_logo or not away_logo:
@@ -1355,11 +1399,14 @@ class SportsUpcoming(SportsUpcomingFavoritesMixin, SportsCore):
             center_y = self.display_height // 2
 
             # MLB-style logo positions with layout offsets
-            home_x = self.display_width - home_logo.width + 2 + self._get_layout_offset('home_logo', 'x_offset')
+            home_x = (self.display_width - home_logo.width
+                      + self._logo_edge_bleed('home_logo', self._LOGO_EDGE_BLEED_PX)
+                      + self._get_layout_offset('home_logo', 'x_offset'))
             home_y = center_y - (home_logo.height // 2) + self._get_layout_offset('home_logo', 'y_offset')
             main_img.paste(home_logo, (home_x, home_y), home_logo)
 
-            away_x = -2 + self._get_layout_offset('away_logo', 'x_offset')
+            away_x = (-self._logo_edge_bleed('away_logo', self._LOGO_EDGE_BLEED_PX)
+                      + self._get_layout_offset('away_logo', 'x_offset'))
             away_y = center_y - (away_logo.height // 2) + self._get_layout_offset('away_logo', 'y_offset')
             main_img.paste(away_logo, (away_x, away_y), away_logo)
 
@@ -1795,12 +1842,14 @@ class SportsRecent(SportsRecentFavoritesMixin, SportsRecentSharedMixin, SportsCo
                 game["home_abbr"],
                 game["home_logo_path"],
                 game.get("home_logo_url"),
+                element="home_logo",
             )
             away_logo = self._load_and_resize_logo(
                 game["away_id"],
                 game["away_abbr"],
                 game["away_logo_path"],
                 game.get("away_logo_url"),
+                element="away_logo",
             )
 
             if not home_logo or not away_logo:
@@ -1822,11 +1871,14 @@ class SportsRecent(SportsRecentFavoritesMixin, SportsRecentSharedMixin, SportsCo
             center_y = self.display_height // 2
 
             # MLB-style logo positioning (closer to edges) with layout offsets
-            home_x = self.display_width - home_logo.width + 2 + self._get_layout_offset('home_logo', 'x_offset')
+            home_x = (self.display_width - home_logo.width
+                      + self._logo_edge_bleed('home_logo', self._LOGO_EDGE_BLEED_PX)
+                      + self._get_layout_offset('home_logo', 'x_offset'))
             home_y = center_y - (home_logo.height // 2) + self._get_layout_offset('home_logo', 'y_offset')
             main_img.paste(home_logo, (home_x, home_y), home_logo)
 
-            away_x = -2 + self._get_layout_offset('away_logo', 'x_offset')
+            away_x = (-self._logo_edge_bleed('away_logo', self._LOGO_EDGE_BLEED_PX)
+                      + self._get_layout_offset('away_logo', 'x_offset'))
             away_y = center_y - (away_logo.height // 2) + self._get_layout_offset('away_logo', 'y_offset')
             main_img.paste(away_logo, (away_x, away_y), away_logo)
 

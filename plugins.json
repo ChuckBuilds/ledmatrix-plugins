@@ -389,10 +389,10 @@
       "last_updated": "2026-11-04",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.54.2",
+      "latest_version": "1.55.0",
       "icon": "fas fa-hockey-puck",
       "ledmatrix_min_version": "3.9.0",
-      "commit": "c5044dc30a89d27f8457c4162c87f79623033e24"
+      "commit": "7a41cbcfbb419439f2f98ecf7f3a73225a8b5630"
     },
     {
       "id": "lacrosse-scoreboard",

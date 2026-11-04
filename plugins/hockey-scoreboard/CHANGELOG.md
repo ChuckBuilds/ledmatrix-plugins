@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.55.0] - 2026-11-04
+
+### Added
+- Logo Size (`customization.layout.home_logo.scale` / `away_logo.scale`,
+  Advanced): sizes the home and away logos on the live, recent and upcoming
+  cards. 1.0 is the classic 1.5x-panel logo that bleeds off the edges; 0.67
+  fits the logo to the panel height, and below that leaves a margin. The
+  outward push that runs each logo off its side eases to nothing as the logo
+  shrinks to fit, so a fitted logo is drawn whole. Unset renders exactly as
+  before.
+
 ## [1.54.2] - 2026-11-04
 
 ### Fixed

@@ -1,7 +1,7 @@
 {
   "id": "hockey-scoreboard",
   "name": "Hockey Scoreboard",
-  "version": "1.54.2",
+  "version": "1.55.0",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, NCAA Women's, OHL and PWHL hockey with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/hockey-scoreboard",
@@ -71,6 +71,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.55.0",
+      "released": "2026-11-04",
+      "ledmatrix_min_version": "3.9.0",
+      "notes": "Logo Size (customization.layout.home_logo.scale / away_logo.scale, Advanced) sizes the home and away logos on the live, recent and upcoming cards. 1.0 is the classic 1.5x-panel logo that bleeds off the edges; 0.67 fits the logo to the panel height and below that leaves a margin. The outward push off each side eases to nothing as the logo shrinks to fit. Unset renders exactly as before."
+    },
     {
       "version": "1.54.2",
       "released": "2026-11-04",

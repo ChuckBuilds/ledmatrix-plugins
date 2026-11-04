@@ -1325,12 +1325,14 @@ class HockeyLive(Hockey, SportsLive):
                 game["home_abbr"],
                 game["home_logo_path"],
                 game.get("home_logo_url"),
+                element="home_logo",
             )
             away_logo = self._load_and_resize_logo(
                 game["away_id"],
                 game["away_abbr"],
                 game["away_logo_path"],
                 game.get("away_logo_url"),
+                element="away_logo",
             )
 
             if not home_logo or not away_logo:
@@ -1353,12 +1355,13 @@ class HockeyLive(Hockey, SportsLive):
 
             # Draw logos (shifted slightly more inward than NHL perhaps) with layout offsets
             home_x = (
-                self.display_width - home_logo.width + 10 + self._get_layout_offset('home_logo', 'x_offset')
+                self.display_width - home_logo.width + self._logo_edge_bleed('home_logo', 10)
+                + self._get_layout_offset('home_logo', 'x_offset')
             )  # adjusted from 18 # Adjust position as needed
             home_y = center_y - (home_logo.height // 2) + self._get_layout_offset('home_logo', 'y_offset')
             main_img.paste(home_logo, (home_x, home_y), home_logo)
 
-            away_x = -10 + self._get_layout_offset('away_logo', 'x_offset')  # adjusted from 18 # Adjust position as needed
+            away_x = -self._logo_edge_bleed('away_logo', 10) + self._get_layout_offset('away_logo', 'x_offset')  # adjusted from 18 # Adjust position as needed
             away_y = center_y - (away_logo.height // 2) + self._get_layout_offset('away_logo', 'y_offset')
             main_img.paste(away_logo, (away_x, away_y), away_logo)
 

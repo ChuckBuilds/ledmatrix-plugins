@@ -3543,6 +3543,15 @@
               "type": "object",
               "title": "Home Team Logo",
               "properties": {
+                "scale": {
+                  "x-advanced": true,
+                  "type": "number",
+                  "title": "Logo Size",
+                  "default": 1.0,
+                  "minimum": 0.3,
+                  "maximum": 1.5,
+                  "description": "Size of the home logo on the live, recent and upcoming cards. 1.0 is the default, where logos are 1.5x the panel height and run off the edges; 0.67 fits the logo to the panel height with nothing cut off; smaller leaves a margin (default: 1.0)"
+                },
                 "x_offset": {
                   "x-advanced": true,
                   "type": "integer",
@@ -3562,6 +3571,15 @@
               "type": "object",
               "title": "Away Team Logo",
               "properties": {
+                "scale": {
+                  "x-advanced": true,
+                  "type": "number",
+                  "title": "Logo Size",
+                  "default": 1.0,
+                  "minimum": 0.3,
+                  "maximum": 1.5,
+                  "description": "Size of the away logo on the live, recent and upcoming cards. 1.0 is the default, where logos are 1.5x the panel height and run off the edges; 0.67 fits the logo to the panel height with nothing cut off; smaller leaves a margin (default: 1.0)"
+                },
                 "x_offset": {
                   "x-advanced": true,
                   "type": "integer",
