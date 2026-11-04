@@ -82,7 +82,7 @@
       "screenshot": "",
       "latest_version": "1.66.1",
       "ledmatrix_min_version": "3.9.0",
-      "commit": "df40e2c6911533915002810eeca0169f125ceeb6"
+      "commit": "c0aac20e0727d3d142a54724aa24d77bb2ec2894"
     },
     {
       "id": "basketball-scoreboard",
@@ -109,7 +109,7 @@
       "screenshot": "",
       "latest_version": "1.52.1",
       "ledmatrix_min_version": "3.9.0",
-      "commit": "df40e2c6911533915002810eeca0169f125ceeb6"
+      "commit": "c0aac20e0727d3d142a54724aa24d77bb2ec2894"
     },
     {
       "id": "calendar",
@@ -285,7 +285,7 @@
       "screenshot": "",
       "latest_version": "3.28.2",
       "ledmatrix_min_version": "3.9.0",
-      "commit": "df40e2c6911533915002810eeca0169f125ceeb6"
+      "commit": "c0aac20e0727d3d142a54724aa24d77bb2ec2894"
     },
     {
       "id": "geochron",
@@ -392,7 +392,7 @@
       "latest_version": "1.54.1",
       "icon": "fas fa-hockey-puck",
       "ledmatrix_min_version": "3.9.0",
-      "commit": "df40e2c6911533915002810eeca0169f125ceeb6"
+      "commit": "c0aac20e0727d3d142a54724aa24d77bb2ec2894"
     },
     {
       "id": "lacrosse-scoreboard",
@@ -418,7 +418,7 @@
       "latest_version": "1.45.1",
       "icon": "fas fa-baseball-ball",
       "ledmatrix_min_version": "3.9.0",
-      "commit": "df40e2c6911533915002810eeca0169f125ceeb6"
+      "commit": "c0aac20e0727d3d142a54724aa24d77bb2ec2894"
     },
     {
       "id": "birdnet-go",
@@ -853,7 +853,7 @@
       "screenshot": "",
       "latest_version": "2.50.1",
       "ledmatrix_min_version": "3.9.0",
-      "commit": "df40e2c6911533915002810eeca0169f125ceeb6"
+      "commit": "c0aac20e0727d3d142a54724aa24d77bb2ec2894"
     },
     {
       "id": "static-image",
@@ -1014,7 +1014,7 @@
       "latest_version": "1.27.1",
       "icon": "fas fa-fist-raised",
       "ledmatrix_min_version": "3.9.0",
-      "commit": "df40e2c6911533915002810eeca0169f125ceeb6"
+      "commit": "c0aac20e0727d3d142a54724aa24d77bb2ec2894"
     },
     {
       "id": "weather",
@@ -1171,7 +1171,7 @@
       "latest_version": "1.44.1",
       "last_updated": "2026-11-03",
       "ledmatrix_min_version": "3.9.0",
-      "commit": "df40e2c6911533915002810eeca0169f125ceeb6"
+      "commit": "c0aac20e0727d3d142a54724aa24d77bb2ec2894"
     },
     {
       "id": "tidbyt-baseball-scoreboard",
@@ -1219,7 +1219,7 @@
       "screenshot": "",
       "latest_version": "1.43.1",
       "ledmatrix_min_version": "3.9.0",
-      "commit": "df40e2c6911533915002810eeca0169f125ceeb6"
+      "commit": "c0aac20e0727d3d142a54724aa24d77bb2ec2894"
     },
     {
       "id": "jellyfin-now-playing",
