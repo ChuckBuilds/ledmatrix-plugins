@@ -390,7 +390,8 @@
       "screenshot": "",
       "latest_version": "1.54.2",
       "icon": "fas fa-hockey-puck",
-      "ledmatrix_min_version": "3.9.0"
+      "ledmatrix_min_version": "3.9.0",
+      "commit": "c5044dc30a89d27f8457c4162c87f79623033e24"
     },
     {
       "id": "lacrosse-scoreboard",
@@ -415,7 +416,8 @@
       "screenshot": "",
       "latest_version": "1.45.2",
       "icon": "fas fa-baseball-ball",
-      "ledmatrix_min_version": "3.9.0"
+      "ledmatrix_min_version": "3.9.0",
+      "commit": "c5044dc30a89d27f8457c4162c87f79623033e24"
     },
     {
       "id": "birdnet-go",
