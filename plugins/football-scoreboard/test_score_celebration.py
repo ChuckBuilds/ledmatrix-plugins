@@ -7,7 +7,10 @@ Covers:
   no-favorites fallback), first-sighting suppression, and correction decrements.
 - The football-specific stacked-score suppression: a touchdown lands as +6 then
   a +1 extra point a few seconds later, which must NOT fire a second takeover.
-- Points->phrase mapping (touchdown, field goal, safety).
+- The try after a touchdown: one that lands after the TD's takeover closed gets
+  its own (EXTRA PT / 2PT GOOD / DEF 2PT), never SAFETY; ESPN's scoring plays
+  name an ambiguous +2 when they are current, the score sequence otherwise.
+- Score-kind->phrase mapping (touchdown, field goal, safety, conversions).
 - Win detection on the live->final transition (favorite-only, ties, losses,
   and the "board booted after the final whistle" no-baseline case).
 - display() dispatch: a celebration takes over the screen until it expires,
@@ -141,8 +144,9 @@ def _make_live(favorite_teams=None, opponent_scores=False, duration=8, enabled=T
 
 
 def _game(gid="g1", away="DAL", home="KC", away_score="0", home_score="0",
-          is_final=False):
+          is_final=False, period=2, clock="7:30"):
     return {
+        "period": period, "clock": clock,
         "id": gid, "away_abbr": away, "home_abbr": home,
         "away_id": "2", "home_id": "1",
         "away_score": away_score, "home_score": home_score,
@@ -204,6 +208,7 @@ def test_field_goal_phrase():
 
 def test_safety_phrase():
     live = _make_live(favorite_teams=["KC"])
+    live._fetch_scoring_plays = lambda gid: None
     live._check_for_score(_game(away_score="0", home_score="0"))  # baseline
     live._check_for_score(_game(away_score="0", home_score="2"))  # KC safety
     c = live.active_celebration
@@ -213,12 +218,309 @@ def test_safety_phrase():
 
 def test_score_phrase_mapping():
     from sports import SportsLive
-    assert SportsLive._score_phrase(7, "DAL") in ("TOUCHDOWN!", "DAL TD!")
-    assert SportsLive._score_phrase(6, "DAL") in ("TOUCHDOWN!", "DAL TD!")
-    assert SportsLive._score_phrase(3, "DAL") == "DAL FIELD GOAL!"
-    assert SportsLive._score_phrase(2, "DAL") == "DAL SAFETY!"
-    assert SportsLive._score_phrase(1, "DAL") == "DAL SCORES!"
-    print("PASS: _score_phrase maps points to the right football phrase")
+    assert SportsLive._score_phrase("td", "DAL") in ("TOUCHDOWN!", "DAL TD!")
+    assert SportsLive._score_phrase("fg", "DAL") == "DAL FIELD GOAL!"
+    assert SportsLive._score_phrase("safety", "DAL") == "DAL SAFETY!"
+    assert SportsLive._score_phrase("two_pt", "DAL") == "DAL 2PT GOOD!"
+    assert SportsLive._score_phrase("pat", "DAL") == "DAL EXTRA PT!"
+    assert SportsLive._score_phrase("def_two_pt", "DAL") == "DAL DEF 2PT!"
+    assert SportsLive._score_phrase("score", "DAL") == "DAL SCORES!"
+    print("PASS: _score_phrase maps each score kind to the right football phrase")
+
+
+def test_points_to_kind_mapping():
+    from sports import SportsLive
+    assert SportsLive._kind_from_points(8) == "td"
+    assert SportsLive._kind_from_points(7) == "td"
+    assert SportsLive._kind_from_points(6) == "td"
+    assert SportsLive._kind_from_points(3) == "fg"
+    assert SportsLive._kind_from_points(2) == "safety"
+    assert SportsLive._kind_from_points(1) == "pat"
+    print("PASS: _kind_from_points names a score from its size alone")
+
+
+# ---------------------------------------------------------------------------
+# The try after a touchdown (user report: a two-point conversion was
+# celebrated as a safety). The try usually lands well after the touchdown's
+# takeover has closed, so it arrives as a lone +1 or +2.
+# ---------------------------------------------------------------------------
+def _expire(live):
+    """Close the active celebration's window, as the review/TV break would."""
+    live.active_celebration["started_at"] -= 1000
+
+
+def _no_scoring_plays(live):
+    live._fetch_scoring_plays = lambda game_id: None
+    return live
+
+
+def test_two_point_conversion_after_touchdown_is_not_a_safety():
+    live = _no_scoring_plays(_make_live(favorite_teams=["KC"]))
+    live._check_for_score(_game(away_score="0", home_score="0"))  # baseline
+    live._check_for_score(_game(away_score="0", home_score="6"))  # KC TD
+    _expire(live)
+    live._check_for_score(_game(away_score="0", home_score="8"))  # 2PT good
+    c = live.active_celebration
+    assert c["phrase"] == "KC 2PT GOOD!", c["phrase"]
+    assert c["motif"] == "touchdown", "a conversion crosses the goal line"
+    assert c["home_score"] == 8
+    print("PASS: a +2 right after a touchdown is the two-point conversion")
+
+
+def test_extra_point_after_touchdown_gets_its_own_celebration():
+    live = _no_scoring_plays(_make_live(favorite_teams=["KC"]))
+    live._check_for_score(_game(away_score="0", home_score="0"))
+    live._check_for_score(_game(away_score="0", home_score="6"))  # KC TD
+    _expire(live)
+    live._check_for_score(_game(away_score="0", home_score="7"))  # PAT
+    c = live.active_celebration
+    assert c["phrase"] == "KC EXTRA PT!", c["phrase"]
+    assert c["motif"] == "kick"
+    print("PASS: an extra point after the TD takeover gets its own takeover")
+
+
+def test_defensive_return_on_the_try_is_not_a_safety():
+    live = _no_scoring_plays(_make_live())  # no favorites: celebrate all
+    live._check_for_score(_game(away_score="0", home_score="0"))
+    live._check_for_score(_game(away_score="0", home_score="6"))  # KC TD
+    _expire(live)
+    live._check_for_score(_game(away_score="2", home_score="6"))  # DAL returns the try
+    c = live.active_celebration
+    assert c["phrase"] == "DAL DEF 2PT!", c["phrase"]
+    print("PASS: the other side's +2 during a pending try is a defensive return")
+
+
+def test_pending_try_lasts_one_score_change():
+    """TD, failed try, then a field goal: the try is gone, so a later +2 is
+    a safety again."""
+    live = _no_scoring_plays(_make_live(favorite_teams=["KC"]))
+    live._check_for_score(_game(away_score="0", home_score="0"))
+    live._check_for_score(_game(away_score="0", home_score="6"))  # TD, try fails
+    _expire(live)
+    live._check_for_score(_game(away_score="0", home_score="9"))  # FG
+    assert live.active_celebration["phrase"] == "KC FIELD GOAL!"
+    _expire(live)
+    live._check_for_score(_game(away_score="0", home_score="11"))  # safety
+    assert live.active_celebration["phrase"] == "KC SAFETY!"
+    print("PASS: a pending try is consumed by the next score change")
+
+
+def test_pending_try_tracked_while_celebration_suppressed():
+    """The TD itself isn't celebrated (opponent), but its try must still be
+    read as a try -- here the favorite's defensive return."""
+    live = _no_scoring_plays(_make_live(favorite_teams=["DAL"]))
+    live._check_for_score(_game(away_score="0", home_score="0"))
+    live._check_for_score(_game(away_score="0", home_score="6"))  # KC TD, not shown
+    assert live.active_celebration is None
+    live._check_for_score(_game(away_score="2", home_score="6"))  # DAL returns the try
+    assert live.active_celebration["phrase"] == "DAL DEF 2PT!"
+    print("PASS: the try is tracked even when the touchdown wasn't celebrated")
+
+
+def test_touchdown_and_try_in_one_poll_is_one_touchdown():
+    live = _no_scoring_plays(_make_live(favorite_teams=["KC"]))
+    live._check_for_score(_game(away_score="0", home_score="0"))
+    live._check_for_score(_game(away_score="0", home_score="8"))
+    assert live.active_celebration["phrase"] in ("TOUCHDOWN!", "KC TD!")
+    assert "g1" not in live._pending_try, "no try is owed after a +8"
+    print("PASS: a +8 in one poll is a single touchdown")
+
+
+def test_pending_try_cleared_when_game_goes_final():
+    live = _no_scoring_plays(_make_live(favorite_teams=["KC"]))
+    live._check_for_score(_game(away_score="0", home_score="0"))
+    live._check_for_score(_game(away_score="0", home_score="6"))
+    assert live._pending_try["g1"]["side"] == "home"
+    live._check_for_win(_game(away_score="0", home_score="6", is_final=True))
+    assert "g1" not in live._pending_try
+    print("PASS: a final whistle clears the pending try")
+
+
+def test_pending_try_cleared_on_first_sighting():
+    live = _no_scoring_plays(_make_live(favorite_teams=["KC"]))
+    live._pending_try_map()["g1"] = {"side": "home", "period": 2,
+                                     "clock": "7:30"}  # left over from an earlier run
+    live._check_for_score(_game(away_score="0", home_score="6"))  # first sighting
+    assert "g1" not in live._pending_try
+    print("PASS: a first sighting starts with no pending try")
+
+
+def test_failed_try_then_same_side_safety_is_a_safety():
+    """TD, try fails (no score change), a drive later the same side scores a
+    safety: the clock has run, so the owed try is over."""
+    live = _no_scoring_plays(_make_live(favorite_teams=["KC"]))
+    live._check_for_score(_game(away_score="0", home_score="0", clock="9:00"))
+    live._check_for_score(_game(away_score="0", home_score="6", clock="7:30"))  # TD
+    _expire(live)
+    live._check_for_score(_game(away_score="0", home_score="8", clock="5:12"))
+    assert live.active_celebration["phrase"] == "KC SAFETY!"
+    print("PASS: once the clock has run, a same-side +2 is a safety")
+
+
+def test_try_over_once_the_period_changes():
+    live = _no_scoring_plays(_make_live(favorite_teams=["KC"]))
+    live._check_for_score(_game(away_score="0", home_score="0"))
+    live._check_for_score(_game(away_score="0", home_score="6", period=2, clock="0:00"))
+    _expire(live)
+    live._check_for_score(_game(away_score="0", home_score="8", period=3, clock="0:00"))
+    assert live.active_celebration["phrase"] == "KC SAFETY!"
+    print("PASS: a new period ends the owed try")
+
+
+def test_try_still_owed_when_the_clock_barely_moves():
+    """The scoreboard can publish the score a tick before the clock settles."""
+    live = _no_scoring_plays(_make_live(favorite_teams=["KC"]))
+    live._check_for_score(_game(away_score="0", home_score="0"))
+    live._check_for_score(_game(away_score="0", home_score="6", clock="7:30"))
+    _expire(live)
+    live._check_for_score(_game(away_score="0", home_score="8", clock="7:28"))
+    assert live.active_celebration["phrase"] == "KC 2PT GOOD!"
+    print("PASS: a clock within the slack keeps the try owed")
+
+
+def test_unreadable_clock_keeps_the_try_owed():
+    live = _no_scoring_plays(_make_live(favorite_teams=["KC"]))
+    live._check_for_score(_game(away_score="0", home_score="0", clock=""))
+    live._check_for_score(_game(away_score="0", home_score="6", clock=""))
+    _expire(live)
+    live._check_for_score(_game(away_score="0", home_score="8", clock=""))
+    assert live.active_celebration["phrase"] == "KC 2PT GOOD!"
+    print("PASS: with no clock to read, the score sequence still decides")
+
+
+def test_score_correction_clears_the_owed_try():
+    live = _no_scoring_plays(_make_live(favorite_teams=["KC"]))
+    live._check_for_score(_game(away_score="0", home_score="0"))
+    live._check_for_score(_game(away_score="0", home_score="6"))  # TD...
+    _expire(live)
+    live._check_for_score(_game(away_score="0", home_score="0"))  # ...overturned
+    assert "g1" not in live._pending_try
+    live._check_for_score(_game(away_score="0", home_score="2"))
+    assert live.active_celebration["phrase"] == "KC SAFETY!"
+    print("PASS: a score correction clears the owed try")
+
+
+def test_touchdown_and_defensive_return_in_one_poll():
+    live = _no_scoring_plays(_make_live(favorite_teams=["DAL"]))  # KC not shown
+    live._check_for_score(_game(away_score="0", home_score="0"))
+    live._check_for_score(_game(away_score="2", home_score="6"))
+    assert live.active_celebration["phrase"] == "DAL DEF 2PT!"
+    assert "g1" not in live._pending_try, "the return consumed the try"
+    print("PASS: a TD and the other side's +2 in one poll is a defensive return")
+
+
+def test_malformed_scoring_type_falls_back():
+    live = _make_live(favorite_teams=["KC"])
+    for bad in ("safety", ["safety"], None, 7):
+        assert live._kind_from_scoring_play(
+            [{"scoringType": bad, "awayScore": 0, "homeScore": 2}], 0, 2) is None
+    live._fetch_scoring_plays = lambda gid: [
+        {"scoringType": "touchdown", "awayScore": 0, "homeScore": 8}]
+    live._check_for_score(_game(away_score="0", home_score="0"))
+    live._check_for_score(_game(away_score="0", home_score="6"))
+    _expire(live)
+    live._check_for_score(_game(away_score="0", home_score="8"))
+    assert live.active_celebration["phrase"] == "KC 2PT GOOD!"
+    print("PASS: a malformed scoringType falls back to the score sequence")
+
+
+# ESPN scoringPlays entries, shaped like the summary endpoint returns them.
+# Texts are verbatim from NFL games in October 2026.
+def _play(stype, text, away, home):
+    return {"scoringType": {"name": stype}, "text": text,
+            "awayScore": away, "homeScore": home}
+
+
+def test_scoring_play_classification():
+    live = _make_live()
+    k = live._kind_from_scoring_play
+    two = _play("touchdown", "Tony Pollard 1 Yd Rush (Cam Ward Run for "
+                "Two-Point Conversion)", 21, 21)
+    failed = _play("touchdown", "DJ Moore 11 Yd pass from Josh Allen "
+                   "(Two-Point Pass Conversion Failed)", 10, 29)
+    kick = _play("touchdown", "AJ Barner 1 Yd Rush (Jason Myers Kick)", 0, 7)
+    safety = _play("safety", "Demetrius Knight Jr. Safety", 21, 23)
+    d2p = _play("defensive-two-point-conversion",
+                "Zyon McCollum Defensive PAT Conversion", 19, 6)
+    assert k([two], 21, 21) == "two_pt"
+    assert k([failed], 10, 29) == "td"
+    assert k([kick], 0, 7) == "pat"
+    assert k([safety], 21, 23) == "safety"
+    assert k([d2p], 19, 6) == "def_two_pt"
+    assert k([two, safety], 21, 23) == "safety", "newest matching play wins"
+    assert k([two], 21, 23) is None, "no play matches: the summary lags"
+    print("PASS: ESPN scoring plays classify by type and the try's wording")
+
+
+def test_scoring_plays_name_a_conversion_the_sequence_missed():
+    """Board booted between the TD and the try: no pending try is known, but
+    ESPN's entry says the +2 was the conversion."""
+    live = _make_live(favorite_teams=["KC"])
+    live._fetch_scoring_plays = lambda gid: [_play(
+        "touchdown", "Nate Adkins 2 Yd pass from Bo Nix (Bo Nix Pass to "
+        "Jaylen Waddle for Two-Point Conversion)", 0, 8)]
+    live._check_for_score(_game(away_score="0", home_score="6"))  # first sighting
+    live._check_for_score(_game(away_score="0", home_score="8"))
+    assert live.active_celebration["phrase"] == "KC 2PT GOOD!"
+    print("PASS: scoring plays name a conversion the score sequence missed")
+
+
+def test_scoring_plays_confirm_a_safety():
+    live = _make_live(favorite_teams=["KC"])
+    live._fetch_scoring_plays = lambda gid: [
+        _play("safety", "Demetrius Knight Jr. Safety", 0, 2)]
+    live._check_for_score(_game(away_score="0", home_score="0"))
+    live._check_for_score(_game(away_score="0", home_score="2"))
+    assert live.active_celebration["phrase"] == "KC SAFETY!"
+    print("PASS: a typed safety play is celebrated as a safety")
+
+
+def test_stale_scoring_plays_fall_back_to_the_sequence():
+    """The summary still shows the TD at 0-6 (try not folded in yet): fall
+    back to the pending try rather than calling it a safety."""
+    live = _make_live(favorite_teams=["KC"])
+    live._fetch_scoring_plays = lambda gid: [
+        _play("touchdown", "Rachaad White 1 Yd Rush", 0, 6)]
+    live._check_for_score(_game(away_score="0", home_score="0"))
+    live._check_for_score(_game(away_score="0", home_score="6"))
+    _expire(live)
+    live._check_for_score(_game(away_score="0", home_score="8"))
+    assert live.active_celebration["phrase"] == "KC 2PT GOOD!"
+    print("PASS: a lagging summary falls back to the score sequence")
+
+
+def test_scoring_plays_only_fetched_for_an_ambiguous_two():
+    live = _make_live(favorite_teams=["KC"])
+    calls = []
+    live._fetch_scoring_plays = lambda gid: calls.append(gid) or None
+    live._check_for_score(_game(away_score="0", home_score="0"))
+    for score in ("6", "7", "10"):  # TD, PAT, FG
+        live._check_for_score(_game(away_score="0", home_score=score))
+        _expire(live)
+    assert calls == [], f"fetched for unambiguous scores: {calls}"
+    live._check_for_score(_game(away_score="0", home_score="12"))
+    assert calls == ["g1"]
+    print("PASS: the summary is fetched only for a +2")
+
+
+def test_fetch_scoring_plays_url_and_failure():
+    import sports
+    live = _make_live()
+    live.sport, live.league, live.headers = "football", "college-football", {}
+    resp = mock.Mock()
+    resp.json.return_value = {"scoringPlays": [{"id": "1"}]}
+    with mock.patch.object(sports.requests, "get", return_value=resp) as get:
+        assert live._fetch_scoring_plays("401") == [{"id": "1"}]
+    url = get.call_args[0][0]
+    assert url.endswith("/sports/football/college-football/summary"), url
+    assert get.call_args[1]["params"] == {"event": "401"}
+    assert get.call_args[1]["timeout"] <= 5, "must not stall the update"
+    with mock.patch.object(sports.requests, "get",
+                           side_effect=sports.requests.ConnectionError("down")):
+        assert live._fetch_scoring_plays("401") is None
+    live.league = None
+    assert live._fetch_scoring_plays("401") is None
+    print("PASS: the summary fetch builds the league URL and fails quietly")
 
 
 def test_opponent_score_suppressed_by_default():
@@ -667,12 +969,13 @@ def test_team_colors_can_be_switched_off():
 def test_score_motif_mapping():
     from sports import SportsLive
 
-    assert SportsLive._score_motif(6) == "touchdown"
-    assert SportsLive._score_motif(7) == "touchdown"
-    assert SportsLive._score_motif(3) == "kick", "a field goal is a kick"
-    assert SportsLive._score_motif(1) == "kick", "an extra point is a kick too"
-    assert SportsLive._score_motif(2) == "score"
-    print("PASS: _score_motif maps points to the right scenery")
+    assert SportsLive._score_motif("td") == "touchdown"
+    assert SportsLive._score_motif("two_pt") == "touchdown", "a conversion crosses the line"
+    assert SportsLive._score_motif("fg") == "kick", "a field goal is a kick"
+    assert SportsLive._score_motif("pat") == "kick", "an extra point is a kick too"
+    assert SportsLive._score_motif("safety") == "score"
+    assert SportsLive._score_motif("def_two_pt") == "score"
+    print("PASS: _score_motif maps each score kind to the right scenery")
 
 
 def test_celebration_records_the_motif_it_was_armed_with():
@@ -797,6 +1100,28 @@ def main():
         test_field_goal_phrase,
         test_safety_phrase,
         test_score_phrase_mapping,
+        test_points_to_kind_mapping,
+        test_two_point_conversion_after_touchdown_is_not_a_safety,
+        test_extra_point_after_touchdown_gets_its_own_celebration,
+        test_defensive_return_on_the_try_is_not_a_safety,
+        test_pending_try_lasts_one_score_change,
+        test_pending_try_tracked_while_celebration_suppressed,
+        test_touchdown_and_try_in_one_poll_is_one_touchdown,
+        test_pending_try_cleared_when_game_goes_final,
+        test_pending_try_cleared_on_first_sighting,
+        test_failed_try_then_same_side_safety_is_a_safety,
+        test_try_over_once_the_period_changes,
+        test_try_still_owed_when_the_clock_barely_moves,
+        test_unreadable_clock_keeps_the_try_owed,
+        test_score_correction_clears_the_owed_try,
+        test_touchdown_and_defensive_return_in_one_poll,
+        test_malformed_scoring_type_falls_back,
+        test_scoring_play_classification,
+        test_scoring_plays_name_a_conversion_the_sequence_missed,
+        test_scoring_plays_confirm_a_safety,
+        test_stale_scoring_plays_fall_back_to_the_sequence,
+        test_scoring_plays_only_fetched_for_an_ambiguous_two,
+        test_fetch_scoring_plays_url_and_failure,
         test_opponent_score_suppressed_by_default,
         test_opponent_score_celebrated_when_enabled,
         test_no_favorites_celebrates_any_score,
