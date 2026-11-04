@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.66.2] - 2026-11-04
+
+### Fixed
+- With dynamic duration on, every turn of a granular mode (`mlb_recent`,
+  `milb_upcoming`, ...) after its first shows all of its games again.
+  `reset_cycle_state()` keeps per-game progress on purpose, for quick mode
+  switches, and the 10-second new-cycle check in `_record_dynamic_progress`
+  never ran for granular modes (`display_mode` equals `actual_mode` there), so
+  after a mode's first full turn every game counted as shown and each later
+  turn ended at the minimum duration. A granular mode back on screen after
+  `GRANULAR_NEW_TURN_SECONDS` (10 s) now starts a fresh turn; a shorter gap
+  still continues the turn. Same defect hockey and lacrosse fixed in 1.54.2
+  and 1.45.2.
+
 ## [1.66.1] - 2026-11-03
 
 ### Changed

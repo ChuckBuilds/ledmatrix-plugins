@@ -77,12 +77,11 @@
       "plugin_path": "plugins/baseball-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-11-03",
+      "last_updated": "2026-11-04",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.66.1",
-      "ledmatrix_min_version": "3.9.0",
-      "commit": "c0aac20e0727d3d142a54724aa24d77bb2ec2894"
+      "latest_version": "1.66.2",
+      "ledmatrix_min_version": "3.9.0"
     },
     {
       "id": "basketball-scoreboard",
@@ -1008,13 +1007,12 @@
       "plugin_path": "plugins/ufc-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-11-03",
+      "last_updated": "2026-11-04",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.27.1",
+      "latest_version": "1.27.2",
       "icon": "fas fa-fist-raised",
-      "ledmatrix_min_version": "3.9.0",
-      "commit": "c0aac20e0727d3d142a54724aa24d77bb2ec2894"
+      "ledmatrix_min_version": "3.9.0"
     },
     {
       "id": "weather",
