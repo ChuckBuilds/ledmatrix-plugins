@@ -1,0 +1,31 @@
+{
+  "moonraker-klipper": {
+    "enabled": true,
+    "printers": [
+      {
+        "name": "Voron 2.4",
+        "url": "http://192.168.1.25:7125",
+        "api_key": "",
+        "enabled": true
+      },
+      {
+        "name": "Ender 3",
+        "url": "http://192.168.1.26:7125",
+        "api_key": "",
+        "enabled": true
+      }
+    ],
+    "seconds_per_printer": 10,
+    "refresh_seconds": 10,
+    "show_thumbnail": true,
+    "show_idle": false,
+    "show_offline": false,
+    "show_complete": true,
+    "temperature_unit": "C",
+    "display_duration": 20,
+    "dynamic_duration": {
+      "enabled": true,
+      "max_duration_seconds": 3600
+    }
+  }
+}
