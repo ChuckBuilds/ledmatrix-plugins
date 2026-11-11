@@ -101,6 +101,16 @@ def main():
         check("scale 0.67 fits on a 200-tall panel too (no 1px overhang)",
               logo is not None and logo.size[1] <= 200, logo and logo.size)
 
+        # 0.67 is a shade over 1/1.5 on the width too: 257px on a 256-wide
+        # panel, so a very wide mark would lose its edge column.
+        wide_path = Path(tmp) / "WID.png"
+        Image.new("RGBA", (2000, 100), (200, 0, 0, 255)).save(wide_path)
+        wide = make_core({"home_logo": {"scale": 0.67}}, width=256, height=32)
+        logo = wide._load_and_resize_logo("2", "WID", wide_path, None,
+                                          element="home_logo")
+        check("scale 0.67 keeps a very wide logo inside a 256-wide panel",
+              logo is not None and logo.size[0] <= 256, logo and logo.size)
+
         near = make_core({"home_logo": {"scale": 0.4999999},
                           "away_logo": {"scale": 0.5000001}})
         near._load_and_resize_logo("1", "TOR", logo_path, None, element="home_logo")
