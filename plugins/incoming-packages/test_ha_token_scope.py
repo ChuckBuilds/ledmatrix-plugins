@@ -61,6 +61,9 @@ p.config = {"ha_token": "secret-token", "ha_base_url": ""}  # nosec B105 - test 
 check("with no base URL nothing gets the token", p._image_headers("http://anything/x") == {})
 p.provider_name = "aftership"
 check("other providers never send it", p._image_headers("http://homeassistant.local:8123/x") == {})
+p.provider_name = "parcel"
+p.config = {"ha_token": "secret-token", "ha_base_url": "http://homeassistant.local:8123"}  # nosec B105 - test fixture
+check("the parcel provider never sends it", p._image_headers("http://homeassistant.local:8123/x") == {})
 
 print()
 failed = [case for case, passed in results if not passed]

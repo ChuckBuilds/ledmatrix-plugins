@@ -155,7 +155,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 | Plugin | Description | Preview |
 |--------|-------------|---------|
 | [Pomodoro Timer](./plugins/pomodoro-timer/) | Focus/break timer with MQTT control and Home Assistant discovery | <a href="./plugins/pomodoro-timer/"><img src="./plugins/pomodoro-timer/assets/hero.png" width="240" alt="pomodoro-timer on an LED panel"></a> |
-| [Incoming Packages](./plugins/incoming-packages/) | Rotating carrier cards for packages arriving today, via Home Assistant | <a href="./plugins/incoming-packages/"><img src="./docs/assets/incoming-packages/hero.png" width="240" alt="incoming-packages on an LED panel"></a> |
+| [Incoming Packages](./plugins/incoming-packages/) | Rotating carrier cards for packages arriving today, via Home Assistant, AfterShip or Parcel | <a href="./plugins/incoming-packages/"><img src="./docs/assets/incoming-packages/hero.png" width="240" alt="incoming-packages on an LED panel"></a> |
 
 ### Games (1)
 

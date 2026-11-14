@@ -10,8 +10,8 @@ It does NOT use the Shop app (Shopify exposes no consumer API). Instead it reads
 a normalized snapshot from a pluggable provider — by default the Home Assistant
 "Mail and Packages" integration you already run: the email scanning happens
 locally inside Home Assistant, and this plugin only ever holds an HA URL + token
-and reads sensor states over the LAN. AfterShip and a built-in demo provider are
-also available. See incoming_packages_sources.py.
+and reads sensor states over the LAN. AfterShip, Parcel and a built-in demo
+provider are also available. See incoming_packages_sources.py.
 
 The renderer is fully size-adaptive: it reads the panel dimensions every frame,
 picks a crisp bitmap font tier for the panel, and marquee-scrolls or truncates
@@ -39,6 +39,7 @@ except ImportError:  # pragma: no cover - core ships pytz; fall back to system t
     pytz = None
 
 from incoming_packages_sources import (
+    PARCEL_MIN_INTERVAL,
     AuthError,
     ProviderError,
     Snapshot,
@@ -89,6 +90,9 @@ class IncomingPackagesPlugin(BasePlugin):
 
         self.provider_name = (config.get("provider") or "homeassistant").strip().lower()
         self.update_interval = int(config.get("update_interval", 600))
+        if self.provider_name == "parcel":
+            # Parcel allows 20 requests an hour; never refresh faster than that.
+            self.update_interval = max(self.update_interval, PARCEL_MIN_INTERVAL)
         self.rotation_interval = float(config.get("rotation_interval", 6))
         self.max_cards = int(config.get("max_cards", 8))
         self.include_delivered = bool(config.get("include_delivered", False))
