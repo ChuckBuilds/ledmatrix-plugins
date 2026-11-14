@@ -537,9 +537,39 @@ class IncomingPackagesPlugin(BasePlugin):
                              self.provider_name)
         return True
 
+    # State a reload carries over for Parcel so the request deadline survives it.
+    _FETCH_STATE = ("_last_fetch", "_has_fetched", "_snapshot", "_error",
+                    "_stale", "_last_success")
+
+    def _keep_parcel_deadline(self, carried: Dict[str, Any], old_source: str,
+                              old_key: str) -> None:
+        """Keep Parcel's request deadline across a settings save.
+
+        Parcel allows 20 requests an hour. A failed fetch caches nothing, and
+        __init__ forgets the last attempt, so a save right after one fetched
+        again at once, inside the minimum interval. When the data source and
+        key are unchanged and the interval has not elapsed, carry the attempt
+        time over with whatever it left on screen (the error card, or the
+        stale cards). A changed key is a fix, so it still retries immediately.
+        """
+        if self.provider_name != "parcel" or not carried["_has_fetched"]:
+            return
+        if self._snapshot_cache_key() != old_source:
+            return
+        if (self.config.get("parcel_api_key") or "").strip() != old_key:
+            return
+        if time.time() - carried["_last_fetch"] >= self.update_interval:
+            return
+        for name in self._FETCH_STATE:
+            setattr(self, name, carried[name])
+        if self._snapshot is not None:
+            self._cards = self._build_cards(self._snapshot)
+
     def on_config_change(self, new_config: Dict[str, Any]) -> None:
         old_source = self._snapshot_cache_key()
         old_images, old_image_sig = self._images, self._image_sig
+        carried = {name: getattr(self, name) for name in self._FETCH_STATE}
+        old_key = (self.config.get("parcel_api_key") or "").strip()
         super().on_config_change(new_config)
         self.__init__(self.plugin_id, new_config, self.display_manager,
                       self.cache_manager, self.plugin_manager)
@@ -550,6 +580,7 @@ class IncomingPackagesPlugin(BasePlugin):
         # usual.
         snap = self._load_cached_snapshot()
         if snap is None:
+            self._keep_parcel_deadline(carried, old_source, old_key)
             return
         if self._snapshot_cache_key() == old_source:
             # Same data source: its images are still right. Each is keyed by
