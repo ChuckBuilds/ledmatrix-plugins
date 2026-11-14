@@ -30,8 +30,9 @@ This plugin reads those sensors over your LAN via Home Assistant's REST API. The
 email scanning stays entirely inside Home Assistant; **the plugin itself only holds
 an HA URL + token and never accesses your email**.
 
-> Don't run Home Assistant? Use `provider: mock` to preview it, or `provider:
-> aftership` with an AfterShip account (see [Providers](#providers)).
+> Don't run Home Assistant? Use `provider: parcel` if you use the Parcel app,
+> `provider: aftership` with an AfterShip account, or `provider: mock` to preview
+> it (see [Providers](#providers)).
 
 ## Setup (Home Assistant)
 
@@ -58,11 +59,43 @@ per-carrier or per-package setup. It reads each carrier's *delivering* (arriving
 today) and *packages* (in transit) counts, the delivered totals, the USPS mail
 count/image, and Home Assistant's own summary string.
 
+## Setup (Parcel)
+
+Parcel's API is for premium users of the [Parcel](https://parcelapp.net) app.
+
+1. Generate an API key at [web.parcelapp.net](https://web.parcelapp.net).
+2. In the plugin's settings set `provider` to `parcel` and paste the key into
+   `parcel_api_key`.
+3. Enable the plugin and add `incoming_packages` to your display rotation.
+
+Things to know:
+
+- **What counts:** active deliveries only. Out for delivery and waiting for
+  pickup count as arriving today, as does anything Parcel expects today;
+  frozen and not-found packages are left out. Delivered packages are never
+  shown, and Parcel provides no delivery photos or USPS mail image, so
+  `show_delivered`, `include_delivered`, `show_delivery_images` and
+  `show_usps_mail_image` have no effect with this provider.
+- **Refresh rate:** Parcel allows 20 requests an hour and answers from its own
+  cache, so this provider refreshes at most every 180 seconds even if
+  `update_interval` is lower. The default (600) is well inside the limit. If
+  the limit is hit the last-good data stays on screen with the amber "Xm ago"
+  marker, for up to `stale_after_minutes` (or twice the refresh interval,
+  whichever is longer); after that the panel shows the error instead.
+- **Carriers:** the major ones (USPS, UPS, FedEx, DHL, Amazon, Walmart, …) get
+  their own badge. Any other Parcel carrier, and packages with no carrier set,
+  are grouped together under a generic "Package" card.
+- **"Today":** uses Parcel's expected-delivery time, put in the `timezone`
+  setting (or the global LEDMatrix timezone).
+
 ## Providers
 
 - **`homeassistant`** (default) — Mail and Packages sensors, as above.
 - **`aftership`** — set `provider: aftership` and an AfterShip `api_key`; reads your
   AfterShip tracking list and aggregates it into the same per-carrier snapshot.
+- **`parcel`** — set `provider: parcel` and a `parcel_api_key`; reads your active
+  deliveries from the [Parcel](https://parcelapp.net) app — see
+  [Setup (Parcel)](#setup-parcel).
 - **`mock`** — built-in demo data to preview the layout on the panel with no
   credentials (also used by the offline test harness).
 
@@ -116,12 +149,13 @@ under `incoming-packages`. The full schema is
 | Key | Default | Notes |
 |---|---|---|
 | `enabled` | `false` | Master switch |
-| `provider` | `homeassistant` | `homeassistant`, `aftership`, or `mock` — see [Providers](#providers) |
+| `provider` | `homeassistant` | `homeassistant`, `aftership`, `parcel`, or `mock` — see [Providers](#providers) |
 | `ha_base_url` | `""` | Home Assistant URL, e.g. `http://homeassistant.local:8123`. Used by the `homeassistant` provider |
 | `ha_token` | — | Home Assistant long-lived access token. Stored as a secret, so the web UI masks it |
 | `api_key` | — | AfterShip API key. Only read when `provider` is `aftership`. Also a secret |
+| `parcel_api_key` | — | Parcel app API key. Only read when `provider` is `parcel`. Also a secret — see [Setup (Parcel)](#setup-parcel) |
 | `entity_prefix` | `sensor.mail_` | Mail and Packages entity prefix. Advanced; the provider auto-discovers the sensors, so this is rarely needed |
-| `update_interval` | `600` | Seconds between provider refreshes (60–7200). Advanced |
+| `update_interval` | `600` | Seconds between provider refreshes (60–7200). With `parcel` it never goes below 180 (Parcel's rate limit). Advanced |
 | `stale_after_minutes` | `60` | Data older than this gets the amber "Xm ago" freshness marker (5–1440). Advanced |
 
 ### What appears on the cards

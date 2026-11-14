@@ -10,8 +10,8 @@ It does NOT use the Shop app (Shopify exposes no consumer API). Instead it reads
 a normalized snapshot from a pluggable provider — by default the Home Assistant
 "Mail and Packages" integration you already run: the email scanning happens
 locally inside Home Assistant, and this plugin only ever holds an HA URL + token
-and reads sensor states over the LAN. AfterShip and a built-in demo provider are
-also available. See incoming_packages_sources.py.
+and reads sensor states over the LAN. AfterShip, Parcel and a built-in demo
+provider are also available. See incoming_packages_sources.py.
 
 The renderer is fully size-adaptive: it reads the panel dimensions every frame,
 picks a crisp bitmap font tier for the panel, and marquee-scrolls or truncates
@@ -39,6 +39,7 @@ except ImportError:  # pragma: no cover - core ships pytz; fall back to system t
     pytz = None
 
 from incoming_packages_sources import (
+    PARCEL_MIN_INTERVAL,
     AuthError,
     ProviderError,
     Snapshot,
@@ -89,6 +90,9 @@ class IncomingPackagesPlugin(BasePlugin):
 
         self.provider_name = (config.get("provider") or "homeassistant").strip().lower()
         self.update_interval = int(config.get("update_interval", 600))
+        if self.provider_name == "parcel":
+            # Parcel allows 20 requests an hour; never refresh faster than that.
+            self.update_interval = max(self.update_interval, PARCEL_MIN_INTERVAL)
         self.rotation_interval = float(config.get("rotation_interval", 6))
         self.max_cards = int(config.get("max_cards", 8))
         self.include_delivered = bool(config.get("include_delivered", False))
@@ -533,9 +537,39 @@ class IncomingPackagesPlugin(BasePlugin):
                              self.provider_name)
         return True
 
+    # State a reload carries over for Parcel so the request deadline survives it.
+    _FETCH_STATE = ("_last_fetch", "_has_fetched", "_snapshot", "_error",
+                    "_stale", "_last_success")
+
+    def _parcel_deadline_holds(self, carried: Dict[str, Any], old_source: str,
+                               old_key: str) -> bool:
+        """True while a settings save should not reset Parcel's request deadline.
+
+        Parcel allows 20 requests an hour, and __init__ forgets the last
+        attempt. The deadline holds when the data source and key are unchanged
+        and the interval since that attempt has not elapsed. A changed key is a
+        fix, so it does not hold: that still retries immediately.
+        """
+        return (self.provider_name == "parcel"
+                and bool(carried["_has_fetched"])
+                and self._snapshot_cache_key() == old_source
+                and (self.config.get("parcel_api_key") or "").strip() == old_key
+                and time.time() - carried["_last_fetch"] < self.update_interval)
+
+    def _keep_parcel_state(self, carried: Dict[str, Any]) -> None:
+        """No cached snapshot to show: carry over what the last attempt left on
+        screen too (the error card, or the stale cards), so the save neither
+        refetches nor falls back to 'Loading...'."""
+        for name in self._FETCH_STATE:
+            setattr(self, name, carried[name])
+        if self._snapshot is not None:
+            self._cards = self._build_cards(self._snapshot)
+
     def on_config_change(self, new_config: Dict[str, Any]) -> None:
         old_source = self._snapshot_cache_key()
         old_images, old_image_sig = self._images, self._image_sig
+        carried = {name: getattr(self, name) for name in self._FETCH_STATE}
+        old_key = (self.config.get("parcel_api_key") or "").strip()
         super().on_config_change(new_config)
         self.__init__(self.plugin_id, new_config, self.display_manager,
                       self.cache_manager, self.plugin_manager)
@@ -545,8 +579,16 @@ class IncomingPackagesPlugin(BasePlugin):
         # web thread. _last_fetch stays 0, so the next update() refreshes as
         # usual.
         snap = self._load_cached_snapshot()
+        holds = self._parcel_deadline_holds(carried, old_source, old_key)
         if snap is None:
+            if holds:
+                self._keep_parcel_state(carried)
             return
+        if holds:
+            # Showing the cached snapshot, but the last attempt still counts: if
+            # the entry is evicted before the next update(), that must not fetch
+            # inside the interval.
+            self._last_fetch = carried["_last_fetch"]
         if self._snapshot_cache_key() == old_source:
             # Same data source: its images are still right. Each is keyed by
             # URL and panel size, so update() refetches any that changed.

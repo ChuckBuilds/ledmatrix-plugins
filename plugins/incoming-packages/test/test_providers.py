@@ -2,7 +2,7 @@
 
 import os
 import sys
-from datetime import date
+from datetime import date, datetime
 
 import pytest
 
@@ -14,7 +14,9 @@ from incoming_packages_sources import (  # noqa: E402
     HomeAssistantProvider,
     MockProvider,
     Package,
+    ParcelProvider,
     Snapshot,
+    make_provider,
     normalize_carrier,
 )
 
@@ -171,6 +173,212 @@ def test_aftership_aggregates_and_classifies():
     assert by["usps"].delivering_today == 1  # eta == today
     assert "fedex" not in by                 # delivered dropped
     assert len(snap.packages) == 3
+
+
+# ─── Parcel provider ────────────────────────────────────────────────────────
+
+def _parcel(tz=None):
+    p = ParcelProvider({"parcel_api_key": "k"}, _log())
+    p.tz = tz
+    return p
+
+
+def test_parcel_status_mapping_and_today_rules():
+    today = date.today().isoformat()
+    deliveries = [
+        {"carrier_code": "ups", "status_code": 4, "description": "Cables",
+         "tracking_number": "1Z1", "events": []},                     # out for delivery
+        {"carrier_code": "ups", "status_code": 2, "tracking_number": "1Z2",
+         "date_expected": "2099-01-01 12:00:00", "events": []},       # in transit
+        {"carrier_code": "usps", "status_code": 2, "tracking_number": "94x",
+         "date_expected": today + " 10:00:00", "events": []},         # eta today
+        {"carrier_code": "fedex", "status_code": 3, "tracking_number": "7",
+         "events": []},                                                # pickup -> today
+        {"carrier_code": "dhl", "status_code": 8, "tracking_number": "8",
+         "events": []},                                                # info only
+        {"carrier_code": "dhl", "status_code": 7, "tracking_number": "9",
+         "events": []},                                                # exception
+        {"carrier_code": "gls", "status_code": 0, "tracking_number": "d",
+         "events": []},                                                # delivered: dropped
+        {"carrier_code": "gls", "status_code": 1, "tracking_number": "f",
+         "events": []},                                                # frozen: excluded
+        {"carrier_code": "gls", "status_code": 5, "tracking_number": "n",
+         "events": []},                                                # not found: excluded
+        "junk",
+    ]
+    snap = _parcel()._parse(deliveries)
+    by = {c.carrier: c for c in snap.carriers}
+    assert by["ups"].delivering_today == 1 and by["ups"].in_transit == 1
+    assert by["usps"].delivering_today == 1
+    assert by["fedex"].delivering_today == 1
+    assert by["dhl"].in_transit == 2
+    assert "gls" not in by
+    assert len(snap.packages) == 6
+    assert snap.packages[0].title == "Cables"
+    assert snap.packages[1].title == "1Z2"          # falls back to the number
+    assert snap.total_delivered_today == 0          # `active` filter: no delivered data
+
+
+def test_parcel_unknown_and_missing_status_count_as_in_transit():
+    snap = _parcel()._parse([
+        {"carrier_code": "ups", "status_code": 99, "tracking_number": "a"},
+        {"carrier_code": "ups", "tracking_number": "b"},
+    ])
+    assert snap.carriers[0].in_transit == 2
+
+
+def test_parcel_timestamp_wins_over_date_string():
+    import pytz
+    tz = pytz.timezone("Pacific/Auckland")
+    now = datetime.now(tz)
+    snap = _parcel(tz)._parse([{
+        "carrier_code": "ups", "status_code": 2, "tracking_number": "t",
+        "timestamp_expected": int(now.timestamp()),
+        "date_expected": "2099-01-01",
+    }])
+    assert snap.carriers[0].delivering_today == 1
+    assert snap.packages[0].eta == now.date()
+
+
+def test_parcel_bad_dates_do_not_raise():
+    snap = _parcel()._parse([
+        {"carrier_code": "ups", "status_code": 2, "tracking_number": "x",
+         "date_expected": "sometime soon", "timestamp_expected": 10 ** 20},
+    ])
+    assert snap.carriers[0].in_transit == 1
+    assert snap.packages[0].eta is None
+
+
+def test_parcel_carrier_codes():
+    from incoming_packages_sources import _parcel_carrier
+    for code, slug in {
+        "ups": "ups", "upsmi": "ups", "usps": "usps", "fedex": "fedex",
+        "dhl": "dhl", "dhluk": "dhl", "amzlus": "amazon", "amshipuk": "amazon",
+        "swiship": "amazon", "walmart": "walmart", "ont": "ontrac",
+        "laser": "lasership", "rm": "royalmail", "cp": "canadapost",
+        "au": "auspost", "dp": "deutschepost", "dpdat": "dpd", "gls": "gls",
+        "gso": "gls", "hermes": "hermes", "nonesuch": "other", "": "other",
+    }.items():
+        assert _parcel_carrier(code) == slug, code
+
+
+def test_parcel_real_response_shape():
+    """Shape seen in a live response: no timestamp_expected, 'YYYY-MM-DD
+    HH:MM:SS' dates, extra keys, and carrier codes outside our known list
+    (Parcel's own 'pholder' placeholder, AliExpress 'aliex'/'speedpak')."""
+    today = date.today().isoformat()
+    snap = _parcel()._parse([
+        {"carrier_code": "pholder", "status_code": 8, "tracking_number": "a",
+         "description": "No carrier", "events": [],
+         "date_expected": "2099-01-01 00:00:00", "date_expected_end": "2099-01-02 00:00:00",
+         "extra_information": "12345"},
+        {"carrier_code": "aliex", "status_code": 2, "tracking_number": "b",
+         "events": [], "date_expected": today + " 17:00:00"},
+        {"carrier_code": "speedpak", "status_code": 8, "tracking_number": "c",
+         "events": []},
+    ])
+    assert [c.carrier for c in snap.carriers] == ["other"]     # one 'Package' bucket
+    other = snap.carriers[0]
+    assert other.delivering_today == 1 and other.in_transit == 2
+    assert len(snap.packages) == 3
+
+
+class _Resp:
+    def __init__(self, status=200, body=None, bad_json=False):
+        self.status_code, self._body, self._bad = status, body, bad_json
+
+    def json(self):
+        if self._bad:
+            raise ValueError("no json")
+        return self._body
+
+
+def _fetch_with(monkeypatch, resp=None, exc=None, key="k"):
+    import incoming_packages_sources as src
+    seen = {}
+
+    def fake_get(url, **kw):
+        seen["url"], seen["kw"] = url, kw
+        if exc:
+            raise exc
+        return resp
+    monkeypatch.setattr(src.requests, "get", fake_get)
+    return ParcelProvider({"parcel_api_key": key}, _log()), seen
+
+
+def test_parcel_fetch_request_shape_and_success(monkeypatch):
+    body = {"success": True, "deliveries": [
+        {"carrier_code": "ups", "status_code": 4, "tracking_number": "1"}]}
+    p, seen = _fetch_with(monkeypatch, _Resp(200, body))
+    snap = p.fetch()
+    assert seen["url"] == "https://api.parcel.app/external/deliveries/"
+    assert seen["kw"]["headers"] == {"api-key": "k"}
+    assert seen["kw"]["params"] == {"filter_mode": "active"}
+    assert snap.total_delivering_today == 1
+
+
+def test_parcel_fetch_errors(monkeypatch):
+    import requests
+    from incoming_packages_sources import AuthError, ProviderError
+    for status, exc in ((401, AuthError), (403, AuthError),
+                        (429, ProviderError), (500, ProviderError)):
+        p, _ = _fetch_with(monkeypatch, _Resp(status))
+        with pytest.raises(exc):
+            p.fetch()
+    p, _ = _fetch_with(monkeypatch, _Resp(200, bad_json=True))
+    with pytest.raises(ProviderError):
+        p.fetch()
+    p, _ = _fetch_with(monkeypatch, _Resp(200, [1, 2]))
+    with pytest.raises(ProviderError):
+        p.fetch()
+    p, _ = _fetch_with(monkeypatch, _Resp(200, {"success": False,
+                                                "error_message": "bad"}))
+    with pytest.raises(ProviderError):
+        p.fetch()
+    p, _ = _fetch_with(monkeypatch, _Resp(200, {"success": True,
+                                                "deliveries": "x"}))
+    with pytest.raises(ProviderError):
+        p.fetch()
+    p, _ = _fetch_with(monkeypatch, exc=requests.exceptions.ConnectionError("x"))
+    with pytest.raises(ProviderError):
+        p.fetch()
+
+
+def test_parcel_non_list_deliveries_is_an_error_not_empty(monkeypatch):
+    """A malformed `deliveries` (even a falsey one) must raise so the plugin
+    keeps showing its last-good cards, rather than reading as 'no packages'."""
+    from incoming_packages_sources import ProviderError
+    for bad in ({}, "", 0, False, "x", {"a": 1}, 5):
+        p, _ = _fetch_with(monkeypatch, _Resp(200, {"success": True, "deliveries": bad}))
+        with pytest.raises(ProviderError):
+            p.fetch()
+    # absent or null genuinely means nothing is active
+    for body in ({"success": True}, {"success": True, "deliveries": None},
+                 {"success": True, "deliveries": []}):
+        p, _ = _fetch_with(monkeypatch, _Resp(200, body))
+        snap = p.fetch()
+        assert snap.carriers == [] and snap.total_in_transit == 0
+
+
+def test_parcel_missing_key_makes_no_request(monkeypatch):
+    from incoming_packages_sources import AuthError
+    p, seen = _fetch_with(monkeypatch, _Resp(200, {}), key="  ")
+    with pytest.raises(AuthError):
+        p.fetch()
+    assert seen == {}
+
+
+def test_parcel_error_never_contains_key(monkeypatch):
+    from incoming_packages_sources import ProviderError
+    p, _ = _fetch_with(monkeypatch, _Resp(500), key="SECRET-KEY-123")
+    with pytest.raises(ProviderError) as info:
+        p.fetch()
+    assert "SECRET-KEY-123" not in str(info.value)
+
+
+def test_make_provider_selects_parcel():
+    assert isinstance(make_provider("parcel", {}, _log()), ParcelProvider)
+    assert isinstance(make_provider("PARCEL", {}, _log()), ParcelProvider)
 
 
 # ─── Mock provider ──────────────────────────────────────────────────────────

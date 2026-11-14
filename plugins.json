@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-11-08",
+  "last_updated": "2026-11-13",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -1250,7 +1250,7 @@
     {
       "id": "incoming-packages",
       "name": "Incoming Packages",
-      "description": "Rotating cards for packages headed your way - per carrier, with the count arriving today highlighted. Reads a normalized snapshot from a pluggable provider: the Home Assistant Mail and Packages integration (default), AfterShip, or a built-in demo. Email scanning stays inside Home Assistant; the plugin only stores an API URL + token.",
+      "description": "Rotating cards for packages headed your way - per carrier, with the count arriving today highlighted. Reads a normalized snapshot from a pluggable provider: the Home Assistant Mail and Packages integration (default), AfterShip, the Parcel app, or a built-in demo. Email scanning stays inside Home Assistant; the plugin only stores an API URL + token.",
       "author": "ChuckBuilds",
       "category": "productivity",
       "tags": [
@@ -1259,6 +1259,7 @@
         "tracking",
         "delivery",
         "home-assistant",
+        "parcel",
         "logistics"
       ],
       "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
@@ -1266,13 +1267,12 @@
       "plugin_path": "plugins/incoming-packages",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-02",
+      "last_updated": "2026-11-13",
       "verified": true,
       "screenshot": "https://raw.githubusercontent.com/ChuckBuilds/ledmatrix-plugins/main/plugins/incoming-packages/assets/screenshot.png",
-      "latest_version": "1.1.4",
+      "latest_version": "1.2.0",
       "icon": "fas fa-box",
-      "ledmatrix_min_version": "3.4.0",
-      "commit": "886d2038d22a35c962beac0ea261543339cffec9"
+      "ledmatrix_min_version": "3.4.0"
     },
     {
       "id": "pomodoro-timer",
