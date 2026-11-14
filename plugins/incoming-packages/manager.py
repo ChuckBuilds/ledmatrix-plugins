@@ -541,25 +541,25 @@ class IncomingPackagesPlugin(BasePlugin):
     _FETCH_STATE = ("_last_fetch", "_has_fetched", "_snapshot", "_error",
                     "_stale", "_last_success")
 
-    def _keep_parcel_deadline(self, carried: Dict[str, Any], old_source: str,
-                              old_key: str) -> None:
-        """Keep Parcel's request deadline across a settings save.
+    def _parcel_deadline_holds(self, carried: Dict[str, Any], old_source: str,
+                               old_key: str) -> bool:
+        """True while a settings save should not reset Parcel's request deadline.
 
-        Parcel allows 20 requests an hour. A failed fetch caches nothing, and
-        __init__ forgets the last attempt, so a save right after one fetched
-        again at once, inside the minimum interval. When the data source and
-        key are unchanged and the interval has not elapsed, carry the attempt
-        time over with whatever it left on screen (the error card, or the
-        stale cards). A changed key is a fix, so it still retries immediately.
+        Parcel allows 20 requests an hour, and __init__ forgets the last
+        attempt. The deadline holds when the data source and key are unchanged
+        and the interval since that attempt has not elapsed. A changed key is a
+        fix, so it does not hold: that still retries immediately.
         """
-        if self.provider_name != "parcel" or not carried["_has_fetched"]:
-            return
-        if self._snapshot_cache_key() != old_source:
-            return
-        if (self.config.get("parcel_api_key") or "").strip() != old_key:
-            return
-        if time.time() - carried["_last_fetch"] >= self.update_interval:
-            return
+        return (self.provider_name == "parcel"
+                and bool(carried["_has_fetched"])
+                and self._snapshot_cache_key() == old_source
+                and (self.config.get("parcel_api_key") or "").strip() == old_key
+                and time.time() - carried["_last_fetch"] < self.update_interval)
+
+    def _keep_parcel_state(self, carried: Dict[str, Any]) -> None:
+        """No cached snapshot to show: carry over what the last attempt left on
+        screen too (the error card, or the stale cards), so the save neither
+        refetches nor falls back to 'Loading...'."""
         for name in self._FETCH_STATE:
             setattr(self, name, carried[name])
         if self._snapshot is not None:
@@ -579,9 +579,16 @@ class IncomingPackagesPlugin(BasePlugin):
         # web thread. _last_fetch stays 0, so the next update() refreshes as
         # usual.
         snap = self._load_cached_snapshot()
+        holds = self._parcel_deadline_holds(carried, old_source, old_key)
         if snap is None:
-            self._keep_parcel_deadline(carried, old_source, old_key)
+            if holds:
+                self._keep_parcel_state(carried)
             return
+        if holds:
+            # Showing the cached snapshot, but the last attempt still counts: if
+            # the entry is evicted before the next update(), that must not fetch
+            # inside the interval.
+            self._last_fetch = carried["_last_fetch"]
         if self._snapshot_cache_key() == old_source:
             # Same data source: its images are still right. Each is keyed by
             # URL and panel size, so update() refetches any that changed.

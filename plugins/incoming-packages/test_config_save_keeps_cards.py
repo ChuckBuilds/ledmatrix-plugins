@@ -198,7 +198,37 @@ t.update()
 check("(parcel) a save keeps the stale cards and does not refetch",
       c6 == [] and t._stale and len(t._cards) > 0)
 
-# 5. other providers are unchanged: a save still refreshes on the next update()
+# 5. a save that shows the cached snapshot keeps the deadline too: if the cache
+# entry is then evicted or unreadable, update() must not fetch inside the interval
+u_cache = DictCache()
+u = parcel_plugin(u_cache)
+c9 = []
+succeed_with(u, c9)
+u.update()
+u.on_config_change({**PARCEL, "rotation_interval": 9})
+check("(parcel) setup: the save showed the cached snapshot", len(u._cards) > 0 and u._has_fetched)
+u_cache.store.clear()                       # evicted / unreadable after the save
+c10 = []
+fail_with(u, c10)
+u.update()
+check("(parcel) a cache miss after a cached save does not fetch inside the interval", c10 == [])
+check("(parcel) ...and the cards stay up", len(u._cards) > 0 and u._error is None)
+u._last_fetch -= 601
+u.update()
+check("(parcel) once the interval has passed it fetches again", c10 == [1])
+
+v_cache = DictCache()
+v = parcel_plugin(v_cache)
+succeed_with(v, [])
+v.update()
+v.on_config_change({**PARCEL, "parcel_api_key": "k2"})  # nosec B105 - test fixture
+v_cache.store.clear()
+c11 = []
+fail_with(v, c11)
+v.update()
+check("(parcel) with a changed key the cached path does not hold the deadline", c11 == [1])
+
+# 6. other providers are unchanged: a save still refreshes on the next update()
 m = IncomingPackagesPlugin("incoming-packages", {"enabled": True, "provider": "aftership",
                            "api_key": "x"}, FakeDM(), DictCache(), types.SimpleNamespace())  # nosec B105
 c7 = []
