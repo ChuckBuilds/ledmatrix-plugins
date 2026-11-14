@@ -80,7 +80,8 @@ Things to know:
   cache, so this provider refreshes at most every 180 seconds even if
   `update_interval` is lower. The default (600) is well inside the limit. If
   the limit is hit the last-good data stays on screen with the amber "Xm ago"
-  marker.
+  marker, for up to `stale_after_minutes` (or twice the refresh interval,
+  whichever is longer); after that the panel shows the error instead.
 - **Carriers:** the major ones (USPS, UPS, FedEx, DHL, Amazon, Walmart, …) get
   their own badge. Any other Parcel carrier, and packages with no carrier set,
   are grouped together under a generic "Package" card.

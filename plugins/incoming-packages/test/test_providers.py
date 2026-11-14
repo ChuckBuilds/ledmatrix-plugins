@@ -344,6 +344,22 @@ def test_parcel_fetch_errors(monkeypatch):
         p.fetch()
 
 
+def test_parcel_non_list_deliveries_is_an_error_not_empty(monkeypatch):
+    """A malformed `deliveries` (even a falsey one) must raise so the plugin
+    keeps showing its last-good cards, rather than reading as 'no packages'."""
+    from incoming_packages_sources import ProviderError
+    for bad in ({}, "", 0, False, "x", {"a": 1}, 5):
+        p, _ = _fetch_with(monkeypatch, _Resp(200, {"success": True, "deliveries": bad}))
+        with pytest.raises(ProviderError):
+            p.fetch()
+    # absent or null genuinely means nothing is active
+    for body in ({"success": True}, {"success": True, "deliveries": None},
+                 {"success": True, "deliveries": []}):
+        p, _ = _fetch_with(monkeypatch, _Resp(200, body))
+        snap = p.fetch()
+        assert snap.carriers == [] and snap.total_in_transit == 0
+
+
 def test_parcel_missing_key_makes_no_request(monkeypatch):
     from incoming_packages_sources import AuthError
     p, seen = _fetch_with(monkeypatch, _Resp(200, {}), key="  ")

@@ -485,8 +485,10 @@ class ParcelProvider(PackageProvider):
             self.logger.warning("Parcel reported an error: %s",
                                 str(payload.get("error_message") or "")[:120])
             raise ProviderError("Parcel error")
-        deliveries = payload.get("deliveries") or []
-        if not isinstance(deliveries, list):
+        deliveries = payload.get("deliveries")
+        if deliveries is None:                 # absent/null: nothing active
+            deliveries = []
+        if not isinstance(deliveries, list):   # {} / "" / 0 are bad data, not "empty"
             raise ProviderError("Parcel bad response")
         return self._parse(deliveries)
 
