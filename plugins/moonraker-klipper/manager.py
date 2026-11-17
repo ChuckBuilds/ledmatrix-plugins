@@ -50,6 +50,7 @@ class MoonrakerKlipperPlugin(BasePlugin):
         self.records=[]
         self.thumbnails={}
         self._thumb_job={}
+        self._completed_since={}
         self._load(config)
         self.reset_cycle_state()
 
@@ -61,6 +62,7 @@ class MoonrakerKlipperPlugin(BasePlugin):
         self.show_idle=bool(config.get("show_idle",False))
         self.show_offline=bool(config.get("show_offline",False))
         self.show_complete=bool(config.get("show_complete",True))
+        self.completed_display_minutes=int(config.get("completed_display_minutes",60))
         self.temperature_unit=config.get("temperature_unit","C")
         self.font_sizes=config.get("font_sizes",{})
         self.colors=config.get("colors",{})
@@ -85,7 +87,10 @@ class MoonrakerKlipperPlugin(BasePlugin):
                     return False
                 if not isinstance(color,str) or len(color)!=7 or color[0]!="#" or any(c not in "0123456789abcdefABCDEF" for c in color[1:]):
                     return False
-            return 0<=self.preprint_threshold<=0.1 and 3<=int(self.config.get("seconds_per_printer",10))<=120 and 5<=int(self.config.get("refresh_seconds",10))<=300
+            return (0<=self.preprint_threshold<=0.1
+                    and 1<=self.completed_display_minutes<=10080
+                    and 3<=int(self.config.get("seconds_per_printer",10))<=120
+                    and 5<=int(self.config.get("refresh_seconds",10))<=300)
         except (ValueError,TypeError,KeyError,AttributeError):
             return False
 
@@ -128,7 +133,10 @@ class MoonrakerKlipperPlugin(BasePlugin):
             allowed.add("complete")
         if self.show_offline:
             allowed.add("offline")
-        return [p for p in self.records if p["state"] in allowed]
+        now=time.time()
+        return [p for p in self.records if p["state"] in allowed
+                and not (p.get("completed_since") is not None
+                         and now-p["completed_since"]>=self.completed_display_minutes*60)]
 
     def _headers(self,printer):
         headers={"User-Agent":"LEDMatrix-Moonraker-Klipper/1.0"}
@@ -159,6 +167,28 @@ class MoonrakerKlipperPlugin(BasePlugin):
             return None
         with Image.open(io.BytesIO(payload)) as im:
             return im.convert("RGBA").copy()
+
+    def _history_completion(self,base,headers,filename):
+        """Use Moonraker job history for a completion timestamp that survives restarts."""
+        if not filename:
+            return None
+        try:
+            response=self._get(base,"/server/history/list",headers,{"limit":1})
+            jobs=(response.json().get("result") or {}).get("jobs") or []
+            if not jobs:
+                return None
+            job=jobs[0]
+            if job.get("filename")!=filename or job.get("status")!="completed":
+                return None
+            ended=job.get("end_time")
+            if ended is None:
+                return None
+            stamp=float(ended)
+            now=time.time()
+            return stamp if 0<stamp<=now+60 else None
+        except (requests.RequestException,ValueError,TypeError,KeyError,AttributeError) as exc:
+            self.logger.debug("Moonraker job history unavailable: %s",exc)
+            return None
 
     def update(self):
         records=[]
@@ -203,11 +233,26 @@ class MoonrakerKlipperPlugin(BasePlugin):
                         activity="STARTING"
                 else:
                     activity=""
-                record.update(state=state,progress=progress,filename=filename,activity=activity,
+                key=name+"|"+base
+                finished=state=="complete" or (state in ("printing","paused") and progress>=1.0)
+                if finished:
+                    ended=self._history_completion(base,headers,filename) if state=="complete" else None
+                    cached=self._completed_since.get(key)
+                    if ended is not None:
+                        completed_since=ended
+                    elif cached is not None and cached[0]==filename:
+                        completed_since=cached[1]
+                    else:
+                        completed_since=time.time()
+                    self._completed_since[key]=(filename,completed_since)
+                else:
+                    self._completed_since.pop(key,None)
+                    completed_since=None
+                record.update(state=state,progress=progress,filename=filename,
+                    completed_since=completed_since,activity=activity,
                     nozzle=_seconds(extruder.get("temperature")),bed=_seconds(bed.get("temperature")),
                     target_nozzle=_seconds(extruder.get("target")),target_bed=_seconds(bed.get("target")),
                     elapsed=elapsed,remaining=max(0,elapsed/progress-elapsed) if progress>0.01 else 0)
-                key=name+"|"+base
                 if self._thumb_job.get(key)!=filename:
                     self.thumbnails.pop(key,None)
                     self._thumb_job[key]=filename
