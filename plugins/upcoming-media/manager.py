@@ -203,7 +203,17 @@ class UpcomingMediaPlugin(BasePlugin):
         # Sources, window or filters may have changed: refetch on next update().
         self._fetched = {m: False for m in MODES}
 
+    # While a screen that should show has no data yet (first start, or new
+    # settings such as an API key just saved), ask the core to update soon
+    # instead of after a full update_interval: otherwise "Loading..." can
+    # sit on the panel for 15 minutes after the key is entered.
+    PENDING_UPDATE_INTERVAL = 10.0
+
     def get_update_interval(self) -> Optional[float]:
+        pending = any(not self._fetched[m] for m in MODES
+                      if (src := self._source_for(m)) is not None and src.configured)
+        if pending:
+            return min(self.PENDING_UPDATE_INTERVAL, float(self.update_interval_config))
         return float(self.update_interval_config)
 
     # ------------------------------------------------------------------

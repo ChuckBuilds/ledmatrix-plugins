@@ -304,3 +304,17 @@ def test_wide_padded_range_never_clips_on_a_narrow_panel():
     line = plugin.renderer._num_line(item, font, 62, separate_name=True)
     assert line == "S1E100-102"
     assert plugin.renderer.text_width(line, font) <= 62
+
+
+def test_new_settings_are_fetched_within_seconds_not_a_full_interval():
+    plugin, _ = make(seed=False)
+    assert plugin.get_update_interval() == plugin.PENDING_UPDATE_INTERVAL   # nothing fetched yet
+    plugin.cache_manager.reset()
+    for key, value in FIXTURES.items():
+        plugin.cache_manager.set(key, copy.deepcopy(value))
+    plugin.update()
+    assert plugin.get_update_interval() == 900                           # back to normal
+    plugin.on_config_change(dict(BASE, sonarr_api_key="new-key"))          # e.g. key just saved
+    assert plugin.get_update_interval() == plugin.PENDING_UPDATE_INTERVAL
+    nothing, _ = make({"sonarr_url": "", "radarr_url": ""})
+    assert nothing.get_update_interval() == 900                          # nothing to wait for
