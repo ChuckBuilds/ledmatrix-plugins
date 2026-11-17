@@ -156,7 +156,7 @@
        ' · thumbnail '+(thumbnail?'on':'off')+
        ' · startup threshold '+Number(setting('preprint_threshold',.01))*100+'%'+
        ' · dynamic rotation '+(setting('dynamic_duration.enabled',true)?'on':'off')+
-       ' · display duration '+setting('display_duration',30)+'s · preview uses sample telemetry; unsaved styling shown';
+       ' · display duration '+setting('display_duration',30)+'s · finished jobs shown for '+setting('completed_display_minutes',60)+'m · preview uses sample telemetry; unsaved styling shown';
    }
    const change=()=>{index=Math.max(0,Number(printerSelect.value)||0);draw();};
    printerSelect.addEventListener('change',change);
@@ -176,7 +176,7 @@
    draw();
  }
  window.LEDMatrixWidgets.register('moonraker-color-picker',{
-   name:'Moonraker Color Picker',version:'1.6.0',render:widgetColor,
+   name:'Moonraker Color Picker',version:'1.7.0',render:widgetColor,
    getValue:function(fieldId){return widgetById.get(String(fieldId))?.input.value||'#ffffff';},
    setValue:function(fieldId,value){const widget=widgetById.get(String(fieldId));if(widget&&/^#[0-9a-f]{6}$/i.test(value)){widget.input.value=value;colorValues.set(widget.key,value);notify();}},
    handlers:{}
