@@ -256,6 +256,14 @@
       "title": "Live LEDMatrix Preview",
       "description": "Visual 320x32 representation of your unsaved settings including colors, font sizes, printer names and rotation, thumbnails, status options and temperature units.",
       "x-widget": "moonraker-live-preview"
+    },
+    "completed_display_minutes": {
+      "type": "integer",
+      "title": "Hide finished print after (minutes)",
+      "description": "Keep a completed print visible for this many minutes after it finishes. Default is 60 minutes. Requires Show Complete enabled.",
+      "minimum": 1,
+      "maximum": 10080,
+      "default": 60
     }
   },
   "required": [
