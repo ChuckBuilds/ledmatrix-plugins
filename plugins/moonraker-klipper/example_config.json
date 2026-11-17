@@ -27,5 +27,6 @@
       "enabled": true,
       "max_duration_seconds": 3600
     }
-  }
+  },
+  "completed_display_minutes": 60
 }
