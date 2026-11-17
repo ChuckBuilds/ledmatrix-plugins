@@ -26,7 +26,7 @@ from dataclasses import dataclass, field, replace
 from datetime import date, datetime, timedelta, timezone
 from io import BytesIO
 from typing import Any, Callable, Dict, Iterable, List, Optional, Tuple
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlsplit
 
 try:  # requests is a declared dependency; the guard keeps the parsers testable
     import requests
@@ -137,6 +137,18 @@ def _int_or_none(value: Any) -> Optional[int]:
     return number if number > 0 else None
 
 
+def _origin(url: str) -> Tuple[str, str]:
+    parts = urlsplit(url or "")
+    host = (parts.hostname or "").lower()
+    port = parts.port or {"http": 80, "https": 443}.get(parts.scheme.lower(), 0)
+    return parts.scheme.lower(), f"{host}:{port}"
+
+
+def _url_tag(url: str) -> str:
+    """Short stable tag for a server URL, so cache keys differ per server."""
+    return hashlib.sha256((url or "").strip().rstrip("/").lower().encode("utf-8")).hexdigest()[:10]
+
+
 def _image_urls(images: Any, base_url: str) -> Dict[str, Dict[str, str]]:
     """Pick logo and poster out of an *arr ``images`` list.
 
@@ -157,7 +169,11 @@ def _image_urls(images: Any, base_url: str) -> Dict[str, Dict[str, str]]:
         if isinstance(local, str) and local:
             # urljoin keeps a URL base (/sonarr) the server already put in the
             # path, instead of doubling it.
-            entry["local"] = urljoin(base_url.rstrip("/") + "/", local)
+            joined = urljoin(base_url.rstrip("/") + "/", local)
+            # Only the server's own copy is "local" (and gets the API key); an
+            # absolute URL to another host must never receive it.
+            if _origin(joined) == _origin(base_url):
+                entry["local"] = joined
         remote = image.get("remoteUrl")
         if isinstance(remote, str) and remote.startswith("http"):
             entry["remote"] = remote
@@ -456,7 +472,8 @@ class _ArrSource:
         return bool(self.url and self.api_key)
 
     def cache_key(self, days_ahead: int) -> str:
-        return f"upcoming-media:{self.cache_name}:d{int(days_ahead)}:u{int(self.include_unmonitored)}"
+        return (f"upcoming-media:{self.cache_name}:{_url_tag(self.url)}:"
+                f"d{int(days_ahead)}:u{int(self.include_unmonitored)}")
 
     def fetch_raw(self, now: datetime, days_ahead: int) -> Any:
         start = (now - timedelta(days=1)).date().isoformat()
@@ -503,7 +520,7 @@ class JellyfinSource:
     cache_name = "jellyfin"
 
     def __init__(self, url: str, api_key: str, username: str = "",
-                 libraries: Iterable[str] = (), limit: int = 50):
+                 libraries: Iterable[str] = (), limit: int = 200):
         self.url = (url or "").strip().rstrip("/")
         self.api_key = (api_key or "").strip()
         self.username = (username or "").strip()
@@ -521,7 +538,7 @@ class JellyfinSource:
 
     def cache_key(self, days_ahead: int) -> str:
         libs = ",".join(sorted(lib.lower() for lib in self.libraries)) or "all"
-        return f"upcoming-media:jellyfin:{self.username.lower() or '-'}:{libs}"
+        return f"upcoming-media:jellyfin:{_url_tag(self.url)}:{self.username.lower() or '-'}:{libs}"
 
     def _resolve_user(self) -> Optional[str]:
         if self._user_id is not None:
@@ -615,7 +632,7 @@ class ImageStore:
 
     @staticmethod
     def cache_key(url: str) -> str:
-        return "upcoming-media:img:" + hashlib.sha1(url.encode("utf-8")).hexdigest()[:20]
+        return "upcoming-media:img:" + hashlib.sha256(url.encode("utf-8")).hexdigest()[:20]
 
     @staticmethod
     def encode(image: Image.Image) -> str:
@@ -663,8 +680,9 @@ class ImageStore:
             if self.cache is not None:
                 try:
                     self.cache.set(self.cache_key(url), self.encode(img), ttl=self.cache_max_age)
-                except Exception:  # noqa: BLE001 -- caching is best-effort
-                    pass
+                except Exception as e:  # noqa: BLE001 -- caching is best-effort
+                    if self.logger:
+                        self.logger.debug("Image cache write failed: %s", type(e).__name__)
             return True
         except Exception as e:  # noqa: BLE001 -- any bad image just falls back
             self._failed[url] = self._clock()

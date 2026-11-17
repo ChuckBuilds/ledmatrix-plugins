@@ -323,3 +323,16 @@ def test_unreadable_logos_are_rejected():
     assert not ImageStore.readable(ImageStore.brighten(_logo((0, 0, 0))))       # black art
     assert not ImageStore.readable(ImageStore.brighten(_logo((255, 255, 255), fill=0.05)))  # hairline
     assert not ImageStore.readable(None)
+
+
+def test_foreign_host_image_never_gets_the_api_key():
+    ep = sonarr_ep(1, 1, "Show", "2026-11-17T02:00:00Z", images=[
+        {"coverType": "poster", "url": "http://evil.example/x.jpg",
+         "remoteUrl": "https://img.example/poster.jpg"}])
+    item = parse_sonarr_calendar([ep], "http://sonarr:8989", "secret")[0]
+    assert item.images["poster"] == "https://img.example/poster.jpg"
+    assert "poster" not in item.image_headers
+    own = sonarr_ep(2, 2, "Show", "2026-11-17T02:00:00Z", images=[
+        {"coverType": "poster", "url": "/MediaCover/2/poster.jpg"}])
+    item = parse_sonarr_calendar([own], "http://SONARR:8989/", "secret")[0]
+    assert item.image_headers["poster"] == {"X-Api-Key": "secret"}

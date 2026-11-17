@@ -243,6 +243,10 @@ class UpcomingMediaPlugin(BasePlugin):
     def _now(self) -> datetime:
         return datetime.now(timezone.utc)
 
+    def _local_day(self):
+        """Today in the display timezone; "Tomorrow" becomes "Today" at midnight."""
+        return self._now().astimezone(self._tz()).date()
+
     def _load_font(self, name: str, size: int):
         """A font from the core's assets/fonts. ``size`` 0 means the face's own
         size (bdf) or its crisp default (ttf)."""
@@ -334,7 +338,7 @@ class UpcomingMediaPlugin(BasePlugin):
             if self.render_settings.image_type != "none":
                 for item in items:
                     keep_urls.extend(self._prefetch_images(item))
-            if [i.uid for i in items] != [i.uid for i in self._items[mode]] or not self._fetched[mode]:
+            if self._render_key(items) != self._render_key(self._items[mode]) or not self._fetched[mode]:
                 changed = True
             self._items[mode] = items
             self._fetched[mode] = True
@@ -354,9 +358,24 @@ class UpcomingMediaPlugin(BasePlugin):
             url = item.images.get(slot)
             if url and self.images.prefetch(url, item.image_headers.get(slot)):
                 kept.append(url)
-                if slot == "poster":
+                if slot == "poster" and self._poster_usable():
                     break
         return kept
+
+    def _poster_usable(self) -> bool:
+        """Whether this panel can draw a side poster. A square panel cannot in
+        switch mode, so the logo must be loaded as the fallback there."""
+        if self.display_mode == "scroll":
+            return True
+        return self.renderer.poster_fits(*self._dims())
+
+    def _render_key(self, items: List[UpcomingItem]) -> List[Tuple[Any, ...]]:
+        """Everything about ``items`` that changes what is drawn, so a refresh
+        that edits a title, air time or artwork (same uid) still redraws."""
+        return [(i.uid, i.title, i.when, i.has_time, i.season, i.episode, i.episode_end,
+                 i.episode_title, i.overview, i.runtime_min, i.release_label,
+                 tuple(sorted((slot, url, self.images.has(url)) for slot, url in i.images.items())))
+                for i in items]
 
     def _wanted_slots(self) -> Tuple[str, ...]:
         pref = self.render_settings.image_type
@@ -435,7 +454,7 @@ class UpcomingMediaPlugin(BasePlugin):
         marquee_t = (now_t - state["since"]) if self.marquee_enabled else None
         # Redraw only when something can have changed: a new card, new data,
         # or a marquee step.
-        sig = (item.uid, self._data_version, width, height,
+        sig = (item.uid, self._data_version, width, height, self._local_day(),
                int(marquee_t * self.renderer.MARQUEE_SPEED)
                if state.get("moving") and marquee_t is not None else None)
         if sig == state["frame_sig"] and not force_clear:

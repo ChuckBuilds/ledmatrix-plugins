@@ -31,6 +31,7 @@ from PIL import Image  # noqa: E402
 
 import manager as plugin_module  # noqa: E402
 from manager import MODE_EPISODES, MODE_MOVIES, UpcomingMediaPlugin  # noqa: E402
+from upcoming_media_sources import UpcomingItem  # noqa: E402
 
 FIXTURES = json.loads((HERE / "test" / "fixtures" / "mock.json").read_text())
 NOW = datetime(2026, 11, 16, 18, 0, tzinfo=timezone.utc)
@@ -61,8 +62,10 @@ def no_network():
     """Any request is a bug here: data and art come from the seeded cache."""
     def boom(*args, **kwargs):
         raise AssertionError(f"network call: {args} {kwargs}")
-    with mock.patch("upcoming_media_sources.requests.get", side_effect=boom):
+    with mock.patch("upcoming_media_sources.requests.get", side_effect=boom) as get:
         yield
+    # update() swallows exceptions, so check the call count too.
+    assert not get.called, f"network call: {get.call_args_list}"
 
 
 def test_update_reads_the_cache_and_selects_the_week():
@@ -246,3 +249,47 @@ def test_unreadable_logo_falls_back_to_poster():
     used = [c.args[0] for c in fitted.call_args_list]
     assert used[-1] == item.images["poster"]
     assert card.size == (128, 64)
+
+
+def test_poster_only_on_square_panel_also_loads_the_logo():
+    plugin, _ = make({"image_type": "poster"}, size=(64, 64))
+    assert not plugin._poster_usable()
+    calls = []
+    with mock.patch.object(plugin.images, "prefetch", side_effect=lambda url, h=None: calls.append(url) or True):
+        item = UpcomingItem(kind="episode", uid="u", group_id="g", title="T", when=NOW, has_time=True,
+                            images={"poster": "http://h/p.jpg", "logo": "http://h/l.png"})
+        kept = plugin._prefetch_images(item)
+    assert kept == ["http://h/p.jpg", "http://h/l.png"]
+    plugin2, _ = make({"image_type": "poster"}, size=(128, 32))
+    with mock.patch.object(plugin2.images, "prefetch", return_value=True):
+        assert plugin2._prefetch_images(item) == ["http://h/p.jpg"]
+
+
+def test_metadata_change_with_same_uid_redraws():
+    plugin, _ = make()
+    plugin.update()
+    version = plugin._data_version
+    plugin.update()
+    assert plugin._data_version == version            # nothing changed
+    raw_key = plugin.sonarr.cache_key(plugin.days_ahead)
+    payload = copy.deepcopy(plugin.cache_manager.get(raw_key))
+    payload[0]["title"] = "A Renamed Episode"
+    plugin.cache_manager.set(raw_key, payload)
+    plugin.update()
+    assert plugin._data_version == version + 1
+
+
+def test_static_card_redraws_at_local_midnight():
+    plugin, dm = make({"max_items": 1}, size=(128, 32))
+    plugin.update()
+    plugin.display(display_mode=MODE_EPISODES, force_clear=True)
+    sig = plugin._switch[MODE_EPISODES]["frame_sig"]
+    plugin._now = lambda: NOW.replace(day=NOW.day + 1)
+    plugin.display(display_mode=MODE_EPISODES)
+    assert plugin._switch[MODE_EPISODES]["frame_sig"] != sig
+
+
+def test_calendar_cache_key_differs_per_server():
+    a, _ = make({"sonarr_url": "http://a:8989"})
+    b, _ = make({"sonarr_url": "http://b:8989"})
+    assert a.sonarr.cache_key(7) != b.sonarr.cache_key(7)

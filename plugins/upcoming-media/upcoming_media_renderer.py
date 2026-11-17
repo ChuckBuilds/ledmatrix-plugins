@@ -20,7 +20,7 @@ The module name is plugin-unique (CLAUDE.md non-negotiable 4).
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from PIL import Image, ImageDraw
