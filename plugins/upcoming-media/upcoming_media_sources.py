@@ -315,6 +315,12 @@ def parse_jellyfin_upcoming(payload: Any, base_url: str, api_key: str = "") -> L
         when = parse_iso(premiere)
         if when is None:
             continue
+        # Jellyfin knows only the air *date*, stamped as midnight in the
+        # server's zone (05:00Z on an Eastern server), never a real time.
+        # Snap it to the nearest UTC midnight so the date survives for
+        # servers east or west of UTC, and treat it as date-only.
+        when = datetime.combine((when + timedelta(hours=12)).date(), datetime.min.time(),
+                                tzinfo=timezone.utc)
         series_id = row.get("SeriesId") or row.get("Id") or ""
         ticks = row.get("RunTimeTicks")
         runtime = None
@@ -326,8 +332,7 @@ def parse_jellyfin_upcoming(payload: Any, base_url: str, api_key: str = "") -> L
             group_id=f"jellyfin:{series_id}",
             title=str(row.get("SeriesName") or row.get("Name") or "Unknown series"),
             when=when,
-            # Jellyfin stores an air *date*; the time part is midnight filler.
-            has_time=not is_date_only(premiere),
+            has_time=False,
             season=row.get("ParentIndexNumber") if isinstance(row.get("ParentIndexNumber"), int) else None,
             episode=row.get("IndexNumber") if isinstance(row.get("IndexNumber"), int) else None,
             episode_title=str(row.get("Name") or "") if row.get("SeriesName") else "",
@@ -337,6 +342,8 @@ def parse_jellyfin_upcoming(payload: Any, base_url: str, api_key: str = "") -> L
             year=_int_or_none(row.get("ProductionYear")),
             source="jellyfin",
         )
+        if item.episode_title.upper() in ("TBA", "TBD"):
+            item.episode_title = ""
         if series_id:
             item.images["logo"] = f"{base}/Items/{series_id}/Images/Logo"
             item.images["poster"] = f"{base}/Items/{series_id}/Images/Primary"

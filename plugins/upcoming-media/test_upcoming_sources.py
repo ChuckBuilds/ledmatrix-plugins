@@ -336,3 +336,17 @@ def test_foreign_host_image_never_gets_the_api_key():
         {"coverType": "poster", "url": "/MediaCover/2/poster.jpg"}])
     item = parse_sonarr_calendar([own], "http://SONARR:8989/", "secret")[0]
     assert item.image_headers["poster"] == {"X-Api-Key": "secret"}
+
+
+def test_jellyfin_local_midnight_keeps_its_day_and_hides_tba():
+    def row(premiere, name="Ep"):
+        return {"Id": premiere, "Name": name, "SeriesName": "Show", "SeriesId": "s1",
+                "ParentIndexNumber": 1, "IndexNumber": 1, "PremiereDate": premiere}
+    items = parse_jellyfin_upcoming({"Items": [
+        row("2026-11-18T05:00:00.0000000Z", "TBA"),   # midnight on an Eastern server
+        row("2026-11-17T14:00:00.0000000Z"),          # midnight on a UTC+10 server
+    ]}, "http://jf")
+    assert [i.local_date(NY).isoformat() for i in items] == ["2026-11-18", "2026-11-18"]
+    assert all(not i.has_time for i in items)          # never "12:00AM"
+    assert items[0].episode_title == ""
+    assert format_when(items[0], NOW, NY, "relative", "12h", 0) == "Wed"
