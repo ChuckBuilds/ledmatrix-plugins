@@ -334,7 +334,7 @@ class SportsCore(SportsCardOptionsMixin, SportsGameRulesMixin, SportsFetchMixin,
             if not hasattr(self, "_last_warning_time"):
                 self._last_warning_time = 0
             if current_time - getattr(self, "_last_warning_time", 0) > 300:
-                self.logger.warning(
+                self.logger.debug(
                     f"No game data available to display in {self.__class__.__name__}"
                 )
                 setattr(self, "_last_warning_time", current_time)

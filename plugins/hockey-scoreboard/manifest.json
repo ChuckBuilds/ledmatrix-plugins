@@ -1,7 +1,7 @@
 {
   "id": "hockey-scoreboard",
   "name": "Hockey Scoreboard",
-  "version": "1.55.0",
+  "version": "1.55.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, NCAA Women's, OHL and PWHL hockey with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/hockey-scoreboard",
@@ -71,6 +71,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.55.1",
+      "released": "2026-11-17",
+      "ledmatrix_min_version": "3.9.0",
+      "notes": "'No game data available' (a live screen with no game on, which is normal) is logged at debug instead of as a warning every 5 minutes, as basketball-scoreboard already does."
+    },
     {
       "version": "1.55.0",
       "released": "2026-11-04",
