@@ -1,7 +1,7 @@
 {
   "id": "moonraker-klipper",
   "name": "Moonraker-Klipper",
-  "version": "1.6.0",
+  "version": "1.7.0",
   "author": "airbornetrooper82573",
   "description": "Cycle through Klipper printers with live Moonraker thumbnails on wide RGB LED matrices.",
   "entry_point": "manager.py",
@@ -16,8 +16,14 @@
   "update_interval": 10,
   "vegas_participation": "pause",
   "config_schema": "config_schema.json",
-  "last_updated": "2026-10-20",
+  "last_updated": "2026-11-16",
   "versions": [
+    {
+      "version": "1.7.0",
+      "released": "2026-11-16",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Hide completed prints after configurable time (default 60 minutes), based on Moonraker job history when available."
+    },
     {
       "version": "1.6.0",
       "released": "2026-10-20",
