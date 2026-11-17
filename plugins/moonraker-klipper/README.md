@@ -54,3 +54,9 @@ The preview reacts to the unsaved settings in the LEDMatrix form: enabled printe
 ## v1.6.0 adaptive live preview
 
 The preview reads unsaved values directly from the LEDMatrix settings form's `data-setting-key` containers. It attempts to load `display.hardware.rows`, `cols`, `chain_length`, and `parallel` from `/api/v3/config/main` and sizes the browser canvas to the configured matrix dimensions. If that endpoint cannot be read, it falls back to 320×32 and identifies the fallback in the preview. The renderer scales the 320×32 reference design to the actual canvas size; it is not yet a pixel-perfect mirror of every physical arrangement. Changes should appear without Save; verify in the user's installed LEDMatrix UI.
+
+## v1.7.0 — Completed print expiration
+
+Set **Hide finished print after (minutes)** (`completed_display_minutes`) to control how long a completed job remains in rotation. Default: **60 minutes**. Valid range: 1–10080 minutes (one week). The timer begins when the job is complete or when its reported progress reaches 100%. Once the timeout is reached, the job is skipped; other printers continue normally. If none are eligible, this plugin yields to the other LEDMatrix plugins.
+
+For completed jobs the plugin looks up Moonraker's latest `/server/history/list` entry and reads its `end_time`, so the timeout survives an LEDMatrix restart. If job history is unavailable, the timer starts when LEDMatrix first notices completion, and restarts if LEDMatrix itself restarts while the printer remains completed. A new print resets the timer. Turning off **Show Complete** continues to hide completed-state jobs immediately.
