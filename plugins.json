@@ -1248,6 +1248,33 @@
       "commit": "886d2038d22a35c962beac0ea261543339cffec9"
     },
     {
+      "id": "upcoming-media",
+      "name": "Upcoming Episodes & Movies",
+      "description": "What's coming out next: upcoming TV episodes from Sonarr or Jellyfin and movie releases from Radarr, with show logo or poster, S3E4, episode name, air date, runtime and a short description",
+      "author": "ChuckBuilds",
+      "category": "media",
+      "tags": [
+        "jellyfin",
+        "sonarr",
+        "radarr",
+        "media",
+        "tv",
+        "movies",
+        "calendar"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "branch": "main",
+      "plugin_path": "plugins/upcoming-media",
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2026-11-16",
+      "verified": false,
+      "screenshot": "",
+      "latest_version": "1.0.0",
+      "ledmatrix_min_version": "3.8.0",
+      "commit": ""
+    },
+    {
       "id": "incoming-packages",
       "name": "Incoming Packages",
       "description": "Rotating cards for packages headed your way - per carrier, with the count arriving today highlighted. Reads a normalized snapshot from a pluggable provider: the Home Assistant Mail and Packages integration (default), AfterShip, or a built-in demo. Email scanning stays inside Home Assistant; the plugin only stores an API URL + token.",
