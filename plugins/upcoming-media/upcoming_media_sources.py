@@ -714,7 +714,10 @@ class ImageStore:
             if bbox:
                 img = img.crop(bbox)
         scale = min(box[0] / img.width, box[1] / img.height)
-        size = (max(1, int(img.width * scale)), max(1, int(img.height * scale)))
+        # Round, not truncate: a 2:3 poster in a 32-px slot is 31.5 px tall
+        # and should fill all 32 rows.
+        size = (max(1, min(int(box[0]), round(img.width * scale))),
+                max(1, min(int(box[1]), round(img.height * scale))))
         fitted = img.resize(size, Image.Resampling.LANCZOS)
         if brighten:
             fitted = self.brighten(fitted)
@@ -774,7 +777,8 @@ class ImageStore:
 
     @classmethod
     def readable(cls, img: Optional[Image.Image]) -> bool:
-        return img is not None and img.height >= 6 and cls.ink(img) >= cls.LOGO_MIN_INK
+        # Under 9 px tall a wordmark's letters merge into a smear.
+        return img is not None and img.height >= 9 and cls.ink(img) >= cls.LOGO_MIN_INK
 
     def forget_unused(self, keep: Iterable[str]) -> None:
         keep = set(keep)

@@ -34,10 +34,13 @@ ELLIPSIS = "..."
 # crisp grid (src.common.font_layout.FONT_PIXEL_GRID).
 TIER_FONTS: Dict[str, Dict[str, Tuple[str, int]]] = {
     "small": {
-        "title": ("5x7.bdf", 7),
-        "episode": ("4x6-font.ttf", 7),
-        "date": ("4x6-font.ttf", 7),
-        "description": ("4x6-font.ttf", 7),
+        # 6-px-wide faces: 5-px ones (4x6, 5x7) leave 3 px for m/w and they
+        # smear on a real panel. Three lines fit in 32 px; the description
+        # is the line that drops.
+        "title": ("6x10.bdf", 10),
+        "episode": ("6x9.bdf", 9),
+        "date": ("6x9.bdf", 9),
+        "description": ("6x9.bdf", 9),
     },
     "medium": {
         "title": ("6x13B.bdf", 13),
@@ -97,6 +100,7 @@ class _Line:
     element: str
     right: str = ""          # right-aligned companion (runtime)
     color: Optional[Tuple[int, int, int]] = None
+    keep: int = 0            # leading chars never cut ("S1E8" before the name)
 
 
 # ---------------------------------------------------------------------------
@@ -249,6 +253,18 @@ class UpcomingRenderer:
                 hi = mid - 1
         return text[:lo].rstrip() + ELLIPSIS
 
+    def _fit_keeping(self, line: "_Line", font, max_width: int) -> str:
+        """Truncate ``line`` but never into its first ``keep`` characters:
+        "S1E8 Low Tide" becomes "S1E8 Lo..." or just "S1E8", not "S1E...".
+        """
+        if not line.keep or self.text_width(line.text, font) <= max_width:
+            return self.fit_text(line.text, font, max_width)
+        head, rest = line.text[:line.keep], line.text[line.keep:]
+        room = max_width - self.text_width(head, font)
+        tail = self.fit_text(rest, font, room) if room > 0 else ""
+        # A lone "..." after the number says nothing; drop it.
+        return head + tail if tail.strip() not in ("", ELLIPSIS.strip()) else head
+
     def wrap(self, text: str, font, max_width: int, max_lines: int) -> List[str]:
         """Greedy word wrap into at most ``max_lines``; the last line gets an
         ellipsis when text is left over."""
@@ -283,11 +299,19 @@ class UpcomingRenderer:
     # -- layout -----------------------------------------------------------
 
     @staticmethod
+    def poster_box_width(height: int) -> int:
+        """Width allowed for a side poster. Posters are 2:3 (TVDB) to 0.68
+        (TMDB); a box a little wider than 2:3 lets either fill the full panel
+        height instead of being width-limited a row or two short."""
+        return int(round(height * 0.7)) + 1
+
+    @staticmethod
     def poster_fits(width: int, height: int) -> bool:
         """Whether a side poster (2:3 at panel height) still leaves a usable
         text column. On a square 64x64 panel it would leave ~20 px."""
         text_w = width - int(round(height * 2 / 3)) - 3
-        return text_w >= max(40, int(width * 0.45))
+        # ~9 characters of a 6-px font; 64x32 would leave 40 px (6 chars).
+        return text_w >= max(54, int(width * 0.45))
 
     def _image_plan(self, item: UpcomingItem, width: int, height: int):
         """(placement, url, trim): placement is 'top', 'side' or None."""
@@ -389,7 +413,12 @@ class UpcomingRenderer:
                 heights.append(h_title)
             num = self._num_line(item, f_ep, width, separate)
             if num:
-                lines.append(_Line(num, "episode"))
+                number = format_episode_number(item, "compact") if item.kind == "episode" else ""
+                keep = len(number) if number and num.startswith(number) else 0
+                if not keep and item.kind == "episode":
+                    full = format_episode_number(item, self.settings.episode_format)
+                    keep = len(full) if full and num.startswith(full) else 0
+                lines.append(_Line(num, "episode", keep=keep))
                 heights.append(h_ep)
             if separate:
                 lines.append(_Line(name, "episode"))
@@ -411,7 +440,10 @@ class UpcomingRenderer:
         else:
             used = 0
 
-        if s.show_description and item.overview:
+        # A description in a column under ~12 characters wraps a word per
+        # line ("A / cartogr... / discove..."); leave it out there.
+        desc_fits = width >= self.text_width("M" * 12, f_desc)
+        if s.show_description and item.overview and desc_fits:
             blurb = short_description(item.overview, s.description_max_chars)
             room = height - used - (gap if chosen else 0)
             max_lines = max(0, (room + gap) // (h_desc + gap))
@@ -492,7 +524,7 @@ class UpcomingRenderer:
                 draw.text((period - offset, -top), line.text, font=font, fill=color)
                 moving = True
             else:
-                draw.text((0, -top), self.fit_text(line.text, font, avail), font=font, fill=color)
+                draw.text((0, -top), self._fit_keeping(line, font, avail), font=font, fill=color)
             canvas.paste(strip, (x0, y))
             y += lh + self.LINE_GAP
         return moving
@@ -537,7 +569,7 @@ class UpcomingRenderer:
                 placement, url = ("side", poster) if usable else (None, None)
         if placement == "side":
             if not trim:
-                img = self.images.fitted(url, (max(2, int(round(height * 2 / 3))), height))
+                img = self.images.fitted(url, (max(2, self.poster_box_width(height)), height))
             if img is not None:
                 img_w, img_h = img.size
                 text_x = img_w + 2

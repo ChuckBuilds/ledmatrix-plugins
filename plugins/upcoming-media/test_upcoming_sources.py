@@ -250,7 +250,7 @@ def test_image_store_cache_roundtrip():
     store = ImageStore(cache=cache)
     assert store.prefetch(url)  # served from the cache, no request
     fitted = store.fitted(url, (10, 10))
-    assert fitted is not None and fitted.size == (6, 10)
+    assert fitted is not None and fitted.size == (7, 10)  # 6.67 rounds up
 
 
 # -- same-day grouping ------------------------------------------------------

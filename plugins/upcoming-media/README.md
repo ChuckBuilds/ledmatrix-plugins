@@ -70,8 +70,9 @@ screen with nothing in the window is skipped (set `show_empty_message` to show
 
 The layout picks fonts and artwork from the panel size:
 
-- **Short panels** (32 px tall) draw the poster on the left with up to four
-  lines: title, episode, date/runtime, and one line of description.
+- **Short panels** (32 px tall) draw the poster on the left with three
+  lines: title, episode number and name, and date/runtime. The description
+  shows on taller panels (or pick a smaller font under Customization).
 - **Tall panels** (64 px and up) put the show's logo across the top (it
   replaces the title line) with larger fonts and more lines of description.
   Without a logo, the poster is used.
