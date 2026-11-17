@@ -293,3 +293,14 @@ def test_calendar_cache_key_differs_per_server():
     a, _ = make({"sonarr_url": "http://a:8989"})
     b, _ = make({"sonarr_url": "http://b:8989"})
     assert a.sonarr.cache_key(7) != b.sonarr.cache_key(7)
+
+
+def test_wide_padded_range_never_clips_on_a_narrow_panel():
+    plugin, _ = make({"episode_format": "padded", "image_type": "none"}, size=(64, 32))
+    plugin.update()
+    item = copy.deepcopy(plugin._items[MODE_EPISODES][0])
+    item.season, item.episode, item.episode_end, item.episode_count = 1, 100, 102, 3
+    font = plugin.renderer.font("episode", "small")
+    line = plugin.renderer._num_line(item, font, 62, separate_name=True)
+    assert line == "S1E100-102"
+    assert plugin.renderer.text_width(line, font) <= 62

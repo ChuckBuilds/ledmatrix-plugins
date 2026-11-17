@@ -20,7 +20,7 @@ The module name is plugin-unique (CLAUDE.md non-negotiable 4).
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from PIL import Image, ImageDraw
@@ -260,6 +260,9 @@ class UpcomingRenderer:
         if not line.keep or self.text_width(line.text, font) <= max_width:
             return self.fit_text(line.text, font, max_width)
         head, rest = line.text[:line.keep], line.text[line.keep:]
+        if self.text_width(head, font) > max_width:
+            # Even the number alone is too wide: cut it rather than clip it.
+            return self.fit_text(line.text, font, max_width)
         room = max_width - self.text_width(head, font)
         tail = self.fit_text(rest, font, room) if room > 0 else ""
         # A lone "..." after the number says nothing; drop it.
@@ -352,6 +355,8 @@ class UpcomingRenderer:
                 label = str(item.year)
             return label
         number = format_episode_number(item, self.settings.episode_format)
+        if self.settings.episode_format == "padded" and number and self.text_width(number, font) > width:
+            number = format_episode_number(item, "compact")
         name = item.episode_title if self.settings.show_episode_title else ""
         if self.settings.episode_format == "long" and number:
             joined = f"{number} {name}".strip() if not separate_name else number
