@@ -469,15 +469,14 @@
       "plugin_path": "plugins/ledmatrix-leaderboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-03",
+      "last_updated": "2026-11-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.5.6",
+      "latest_version": "1.5.7",
       "ledmatrix_min_version": "3.4.0",
       "aliases": [
         "ledmatrix-leaderboard"
-      ],
-      "commit": "c202cd9a6f4b421d7cee4445b707a4e300b45490"
+      ]
     },
     {
       "id": "ledmatrix-flights",
