@@ -82,7 +82,7 @@
       "screenshot": "",
       "latest_version": "1.66.3",
       "ledmatrix_min_version": "3.9.0",
-      "commit": "3e236464c9c8ea1a786dcb377e699607304c74ba"
+      "commit": "8b3ed4ba3036326ee94af0e605dc7e9488fee06e"
     },
     {
       "id": "basketball-scoreboard",
@@ -285,7 +285,7 @@
       "screenshot": "",
       "latest_version": "3.28.3",
       "ledmatrix_min_version": "3.9.0",
-      "commit": "3e236464c9c8ea1a786dcb377e699607304c74ba"
+      "commit": "8b3ed4ba3036326ee94af0e605dc7e9488fee06e"
     },
     {
       "id": "geochron",
@@ -391,7 +391,8 @@
       "screenshot": "",
       "latest_version": "1.55.2",
       "icon": "fas fa-hockey-puck",
-      "ledmatrix_min_version": "3.9.0"
+      "ledmatrix_min_version": "3.9.0",
+      "commit": "8b3ed4ba3036326ee94af0e605dc7e9488fee06e"
     },
     {
       "id": "lacrosse-scoreboard",
@@ -417,7 +418,7 @@
       "latest_version": "1.45.3",
       "icon": "fas fa-baseball-ball",
       "ledmatrix_min_version": "3.9.0",
-      "commit": "3e236464c9c8ea1a786dcb377e699607304c74ba"
+      "commit": "8b3ed4ba3036326ee94af0e605dc7e9488fee06e"
     },
     {
       "id": "birdnet-go",
@@ -852,7 +853,7 @@
       "screenshot": "",
       "latest_version": "2.50.2",
       "ledmatrix_min_version": "3.9.0",
-      "commit": "3e236464c9c8ea1a786dcb377e699607304c74ba"
+      "commit": "8b3ed4ba3036326ee94af0e605dc7e9488fee06e"
     },
     {
       "id": "static-image",
@@ -1013,7 +1014,7 @@
       "latest_version": "1.27.3",
       "icon": "fas fa-fist-raised",
       "ledmatrix_min_version": "3.9.0",
-      "commit": "3e236464c9c8ea1a786dcb377e699607304c74ba"
+      "commit": "8b3ed4ba3036326ee94af0e605dc7e9488fee06e"
     },
     {
       "id": "weather",
@@ -1170,7 +1171,7 @@
       "latest_version": "1.44.2",
       "last_updated": "2026-11-17",
       "ledmatrix_min_version": "3.9.0",
-      "commit": "3e236464c9c8ea1a786dcb377e699607304c74ba"
+      "commit": "8b3ed4ba3036326ee94af0e605dc7e9488fee06e"
     },
     {
       "id": "tidbyt-baseball-scoreboard",
@@ -1218,7 +1219,7 @@
       "screenshot": "",
       "latest_version": "1.43.2",
       "ledmatrix_min_version": "3.9.0",
-      "commit": "3e236464c9c8ea1a786dcb377e699607304c74ba"
+      "commit": "8b3ed4ba3036326ee94af0e605dc7e9488fee06e"
     },
     {
       "id": "jellyfin-now-playing",
