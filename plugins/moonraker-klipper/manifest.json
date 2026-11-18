@@ -42,7 +42,7 @@
       "version": "1.7.1",
       "released": "2026-11-18",
       "ledmatrix_min_version": "2.0.0",
-      "notes": "Fits every panel size. Below 160 columns the right column (temperatures, ETA) is dropped and the state and ETA take the filename row, so nothing is cut off on 64x32, 96x48 or 128x32. Panels taller than 32 rows show the card scaled up by a whole factor (or centred) instead of leaving the bottom black. Adds a LICENSE file and the Plugin Store entry. Text is drawn without anti-aliasing (crisp pixels), and the Live Preview setting is display-only, so it is no longer saved into config.json."
+      "notes": "Fits every panel size. Below 160 columns the right column (temperatures, ETA) is dropped and the state and ETA take the filename row, so nothing is cut off on 64x32, 96x48 or 128x32. Panels taller than 32 rows show the card scaled up by a whole factor (or centred) instead of leaving the bottom black. Adds a LICENSE file and the Plugin Store entry. Text is drawn without anti-aliasing (crisp pixels), and the Live Preview setting is display-only, so it is no longer saved into config.json. An unreachable printer is warned about once per outage (then logged at debug, with an info line when it comes back) instead of every refresh."
     },
     {
       "version": "1.7.0",

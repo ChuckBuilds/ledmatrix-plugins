@@ -50,6 +50,9 @@ class MoonrakerKlipperPlugin(BasePlugin):
         self.thumbnails={}
         self._thumb_job={}
         self._completed_since={}
+        # printer name -> when it went unreachable. An offline printer is
+        # polled every refresh_seconds; warn once per outage, not per poll.
+        self._down_since={}
         self._load(config)
         self.reset_cycle_state()
 
@@ -262,8 +265,15 @@ class MoonrakerKlipperPlugin(BasePlugin):
                         self.logger.debug("Thumbnail not available for %s: %s",name,exc)
                         self.thumbnails[key]=None
                 record["thumb_key"]=key
+                if name in self._down_since:
+                    self.logger.info("Moonraker %s reachable again after %.0fs",name,
+                                     time.time()-self._down_since.pop(name))
             except (requests.RequestException,ValueError,KeyError) as exc:
-                self.logger.warning("Moonraker %s unavailable: %s",name,exc)
+                if name not in self._down_since:
+                    self._down_since[name]=time.time()
+                    self.logger.warning("Moonraker %s unavailable: %s",name,exc)
+                else:
+                    self.logger.debug("Moonraker %s still unavailable: %s",name,exc)
             records.append(record)
         self.records=records
 
