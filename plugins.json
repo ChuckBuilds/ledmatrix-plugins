@@ -501,12 +501,12 @@
       "plugin_path": "plugins/ledmatrix-flights",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-30",
+      "last_updated": "2026-11-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.16.0",
+      "latest_version": "1.16.1",
       "ledmatrix_min_version": "3.8.0",
-      "commit": "90423a2e81d3c64aa99434ebf1e77341fb8e4880"
+      "commit": "6f9d6d0d2c8b916b2019544754ae8214f3a58fa4"
     },
     {
       "id": "march-madness",

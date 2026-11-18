@@ -107,6 +107,12 @@ class _RemoteThrottle:
 class AircraftFetcher(ABC):
     """Base class for aircraft data source fetchers."""
 
+    #: True when the last fetch() returned None because the throttle held the
+    #: request back on purpose (pacing or a rate-limit pause), not because
+    #: the request failed. The manager keeps its last aircraft either way, but
+    #: only a real failure is worth a warning.
+    last_skipped: bool = False
+
     @abstractmethod
     def fetch(
         self,
@@ -310,7 +316,8 @@ class FR24Fetcher(AircraftFetcher):
             "adsb": 1, "gnd": 0, "air": 1, "vehicles": 0,
             "estimated": 1, "maxage": FR24_MAX_AGE_SECONDS, "gliders": 0, "stats": 1,
         }
-        if self._throttle.should_skip():
+        self.last_skipped = self._throttle.should_skip()
+        if self.last_skipped:
             return None
 
         try:
@@ -484,7 +491,8 @@ class OpenSkyFetcher(AircraftFetcher):
             "extended": 1,
         }
 
-        if self._throttle.should_skip():
+        self.last_skipped = self._throttle.should_skip()
+        if self.last_skipped:
             return None
 
         try:
@@ -643,7 +651,8 @@ class AdsbNetFetcher(AircraftFetcher):
             )
             radius_nm = self.max_nm
 
-        if self._throttle.should_skip():
+        self.last_skipped = self._throttle.should_skip()
+        if self.last_skipped:
             return None
 
         url = f"{self.base_url}/v2/lat/{center_lat}/lon/{center_lon}/dist/{radius_nm}"
