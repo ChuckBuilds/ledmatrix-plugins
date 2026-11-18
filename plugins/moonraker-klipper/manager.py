@@ -1,9 +1,8 @@
 """Native LEDMatrix Moonraker monitor: one wide-screen printer at a time."""
 import io
-import math
 import posixpath
 import time
-from urllib.parse import quote, urlparse, urljoin
+from urllib.parse import quote, urlparse
 
 import requests
 from PIL import Image, ImageDraw, ImageFont
