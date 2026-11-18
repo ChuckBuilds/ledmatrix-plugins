@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-11-17",
+  "last_updated": "2026-11-18",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -476,7 +476,8 @@
       "ledmatrix_min_version": "3.4.0",
       "aliases": [
         "ledmatrix-leaderboard"
-      ]
+      ],
+      "commit": "7c0463f5417cb80aa37a318e192068acdbfa0251"
     },
     {
       "id": "ledmatrix-flights",
