@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-11-17",
+  "last_updated": "2026-11-18",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -133,7 +133,8 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "1.2.13",
-      "ledmatrix_min_version": "3.3.0"
+      "ledmatrix_min_version": "3.3.0",
+      "commit": "fd2498da74e1e6ffaa0f7050ffa8b7923c1a7f8f"
     },
     {
       "id": "christmas-countdown",
@@ -443,7 +444,8 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "1.2.10",
-      "ledmatrix_min_version": "2.0.0"
+      "ledmatrix_min_version": "2.0.0",
+      "commit": "fd2498da74e1e6ffaa0f7050ffa8b7923c1a7f8f"
     },
     {
       "id": "leaderboard",
@@ -467,15 +469,15 @@
       "plugin_path": "plugins/ledmatrix-leaderboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-03",
+      "last_updated": "2026-11-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.5.6",
+      "latest_version": "1.5.7",
       "ledmatrix_min_version": "3.4.0",
       "aliases": [
         "ledmatrix-leaderboard"
       ],
-      "commit": "c202cd9a6f4b421d7cee4445b707a4e300b45490"
+      "commit": "7c0463f5417cb80aa37a318e192068acdbfa0251"
     },
     {
       "id": "ledmatrix-flights",
@@ -499,12 +501,12 @@
       "plugin_path": "plugins/ledmatrix-flights",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-30",
+      "last_updated": "2026-11-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.16.0",
+      "latest_version": "1.16.1",
       "ledmatrix_min_version": "3.8.0",
-      "commit": "90423a2e81d3c64aa99434ebf1e77341fb8e4880"
+      "commit": "6f9d6d0d2c8b916b2019544754ae8214f3a58fa4"
     },
     {
       "id": "march-madness",
@@ -716,7 +718,8 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "1.8.1",
-      "ledmatrix_min_version": "3.8.1"
+      "ledmatrix_min_version": "3.8.1",
+      "commit": "fd2498da74e1e6ffaa0f7050ffa8b7923c1a7f8f"
     },
     {
       "id": "of-the-day",
@@ -1243,6 +1246,33 @@
       "latest_version": "1.3.3",
       "ledmatrix_min_version": "3.4.0",
       "commit": "886d2038d22a35c962beac0ea261543339cffec9"
+    },
+    {
+      "id": "upcoming-media",
+      "name": "Upcoming Episodes & Movies",
+      "description": "What's coming out next: upcoming TV episodes from Sonarr or Jellyfin and movie releases from Radarr, with show logo or poster, S3E4, episode name, air date, runtime and a short description",
+      "author": "ChuckBuilds",
+      "category": "media",
+      "tags": [
+        "jellyfin",
+        "sonarr",
+        "radarr",
+        "media",
+        "tv",
+        "movies",
+        "calendar"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "branch": "main",
+      "plugin_path": "plugins/upcoming-media",
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2026-11-16",
+      "verified": false,
+      "screenshot": "",
+      "latest_version": "1.0.0",
+      "ledmatrix_min_version": "3.8.0",
+      "commit": "cf49c9296613e822837086dfadd66a27d1651c78"
     },
     {
       "id": "incoming-packages",
