@@ -1561,7 +1561,8 @@
       "screenshot": "",
       "latest_version": "1.4.0",
       "icon": "fas fa-clock",
-      "ledmatrix_min_version": "2.0.0"
+      "ledmatrix_min_version": "2.0.0",
+      "commit": "d1684f61b28ee308226cd5192e6aa0117e398d5f"
     }
   ]
 }
