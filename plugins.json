@@ -1538,6 +1538,30 @@
       "icon": "fas fa-cube",
       "ledmatrix_min_version": "2.0.0",
       "commit": "793a4fe4f1e0327a7df699c7717c1dec40f36420"
+    },
+    {
+      "id": "chromaclock-wide",
+      "name": "ChromaClock Wide",
+      "description": "Native-width animated clock for five-panel LEDMatrix displays",
+      "author": "airbornetrooper82573",
+      "category": "clocks",
+      "tags": [
+        "P5",
+        "animated",
+        "clock",
+        "wide"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "branch": "main",
+      "plugin_path": "plugins/chromaclock-wide",
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2026-11-18",
+      "verified": false,
+      "screenshot": "",
+      "latest_version": "1.4.0",
+      "icon": "fas fa-clock",
+      "ledmatrix_min_version": "2.0.0"
     }
   ]
 }
