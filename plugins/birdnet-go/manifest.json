@@ -1,7 +1,7 @@
 {
   "id": "birdnet-go",
   "name": "BirdNET-Go",
-  "version": "1.2.9",
+  "version": "1.2.10",
   "author": "ChuckBuilds",
   "description": "Show what BirdNET-Go is hearing. One screen cycles a different species each turn \u2014 name, confidence, how many times it has been heard today, and a photo \u2014 and a second shows today's stats: species count, total detections and the most-heard species. Polls the BirdNET-Go REST API, with optional MQTT for instant pop-ups.",
   "category": "integration",
@@ -21,6 +21,12 @@
   "entry_point": "manager.py",
   "class_name": "BirdNetGoPlugin",
   "versions": [
+    {
+      "version": "1.2.10",
+      "released": "2026-11-17",
+      "ledmatrix_min_version": "2.0.0",
+      "changelog": "BirdNET's non-bird sound labels (Engine, Fireworks, Siren, Dog, Human vocal...) no longer request a species picture that cannot exist, which logged an HTTP 404 warning every 30 minutes. A species BirdNET-Go has no picture for is logged once at info and asked again after a day, not every half hour."
+    },
     {
       "released": "2026-10-05",
       "version": "1.2.9",

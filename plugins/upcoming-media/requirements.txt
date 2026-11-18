@@ -1,0 +1,4 @@
+# Explicitly listed so minimal hosts don't hit ImportError at load time
+requests>=2.33.0
+certifi>=2026.10.18
+Pillow>=12.3.0
