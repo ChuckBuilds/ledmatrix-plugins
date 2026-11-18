@@ -1,7 +1,7 @@
 {
   "id": "odds-ticker",
   "name": "Odds Ticker",
-  "version": "1.8.0",
+  "version": "1.8.1",
   "description": "Displays scrolling odds and betting lines for upcoming games across multiple sports leagues including NFL, NBA, MLB, NCAA Football, and more",
   "author": "ChuckBuilds",
   "category": "sports",
@@ -20,6 +20,12 @@
   "branch": "main",
   "plugin_path": "plugins/odds-ticker",
   "versions": [
+    {
+      "version": "1.8.1",
+      "released": "2026-11-17",
+      "ledmatrix_min_version": "3.8.1",
+      "notes": "Channel logos for networks ESPN spells in mixed case: 'Fox' now finds the FOX logo (the match was case-sensitive), and Prime Video gets the Prime logo. Keys match as whole words ignoring case, so a short key never fires inside another name. A network with no logo is logged once at info instead of a warning on every ticker rebuild."
+    },
     {
       "version": "1.8.0",
       "released": "2026-10-05",

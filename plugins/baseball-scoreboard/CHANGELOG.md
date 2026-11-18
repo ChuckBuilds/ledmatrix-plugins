@@ -1,5 +1,43 @@
 # Changelog
 
+## [1.66.2] - 2026-11-04
+
+### Fixed
+- With dynamic duration on, every turn of a granular mode (`mlb_recent`,
+  `milb_upcoming`, ...) after its first shows all of its games again.
+  `reset_cycle_state()` keeps per-game progress on purpose, for quick mode
+  switches, and the 10-second new-cycle check in `_record_dynamic_progress`
+  never ran for granular modes (`display_mode` equals `actual_mode` there), so
+  after a mode's first full turn every game counted as shown and each later
+  turn ended at the minimum duration. A granular mode back on screen after
+  `GRANULAR_NEW_TURN_SECONDS` (10 s) now starts a fresh turn; a shorter gap
+  still continues the turn. Same defect hockey and lacrosse fixed in 1.54.2
+  and 1.45.2.
+
+## [1.66.1] - 2026-11-03
+
+### Changed
+- Requires LEDMatrix core 3.9.0 (`ledmatrix_min_version` and
+  `compatible_versions`), the first release whose display controller blanks
+  the panel once when every mode is empty. This version no longer blanks the
+  panel itself, so on an older core the last card would stay up. The store
+  refuses to install or update this version onto an older core.
+
+### Fixed
+- Switching screens no longer flashes the panel black. `display_manager.clear()`
+  writes black straight to the matrix, and every card was drawn after a clear
+  whenever `force_clear` was set: on a mode change, a block boundary, or a gap
+  of over 5 s between `display()` calls (a slow `update()` holding the plugin
+  lock). Rendering the card took long enough for the black to show, so a board
+  with one favourite team flashed and came back on the same card. Each card is
+  now drawn into a new frame that replaces the old one whole: the panel keeps
+  the previous frame until the new one is ready, and an unchanged card is not
+  pushed at all.
+- A mode with nothing to show no longer blanks the panel on its way past. It
+  returns False and the controller moves on, and blanks the panel itself once
+  when every mode is empty. The recent screen blanked on every frame while its
+  list was empty, even without `force_clear`.
+
 ## [1.66.0] - 2026-10-19
 
 ### Changed

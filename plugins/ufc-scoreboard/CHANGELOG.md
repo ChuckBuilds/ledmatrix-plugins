@@ -1,5 +1,41 @@
 # Changelog
 
+## [1.27.2] - 2026-11-04
+
+### Fixed
+- With dynamic duration on, every turn after a mode's first shows all of its
+  cards again. `reset_cycle_state()`, which the display controller calls each
+  time a different dynamic mode takes the panel, cleared only the seen-mode
+  flags, and nothing else ever cleared the per-card progress or the
+  completed-manager set, so after a mode's first full turn every later turn
+  ended at the minimum duration. It now clears the per-card progress,
+  completed managers and start times, as basketball, soccer, afl, nrl, hockey
+  and lacrosse do.
+
+## [1.27.1] - 2026-11-03
+
+### Changed
+- Requires LEDMatrix core 3.9.0 (`ledmatrix_min_version` and
+  `compatible_versions`), the first release whose display controller blanks
+  the panel once when every mode is empty. This version no longer blanks the
+  panel itself, so on an older core the last card would stay up. The store
+  refuses to install or update this version onto an older core.
+
+### Fixed
+- Switching screens no longer flashes the panel black. `display_manager.clear()`
+  writes black straight to the matrix, and every card was drawn after a clear
+  whenever `force_clear` was set: on a mode change, a block boundary, or a gap
+  of over 5 s between `display()` calls (a slow `update()` holding the plugin
+  lock). Rendering the card took long enough for the black to show, so a board
+  with one favourite team flashed and came back on the same card. Each card is
+  now drawn into a new frame that replaces the old one whole: the panel keeps
+  the previous frame until the new one is ready, and an unchanged card is not
+  pushed at all.
+- A mode with nothing to show no longer blanks the panel on its way past. It
+  returns False and the controller moves on, and blanks the panel itself once
+  when every mode is empty. The recent screen blanked on every frame while its
+  list was empty, even without `force_clear`.
+
 ## [1.27.0] - 2026-10-19
 
 ### Changed

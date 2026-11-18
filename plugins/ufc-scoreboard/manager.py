@@ -1073,11 +1073,23 @@ class UFCScoreboardPlugin(SportsPluginHostMixin, BasePlugin if BasePlugin else o
         return None
 
     def reset_cycle_state(self) -> None:
-        """Reset dynamic cycle tracking."""
+        """Start a fresh dynamic-duration cycle for the mode coming on screen.
+
+        The controller calls this each time a different dynamic mode takes the
+        panel. Nothing else ever clears the per-game progress here, so without
+        clearing it the first turn's games stayed marked shown, the cycle read
+        as complete at once, and every later turn ended at the minimum
+        duration (as in hockey and lacrosse before 1.54.2 / 1.45.2).
+        """
         if BasePlugin:
             super().reset_cycle_state()
         self._dynamic_cycle_seen_modes.clear()
         self._dynamic_mode_to_manager_key.clear()
+        self._dynamic_manager_progress.clear()
+        self._dynamic_managers_completed.clear()
+        self._single_game_manager_start_times.clear()
+        self._game_id_start_times.clear()
+        self._display_mode_to_managers.clear()
         self._dynamic_cycle_complete = False
         self.logger.debug("Dynamic cycle state reset")
 

@@ -1315,6 +1315,25 @@ class LacrosseScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
             self.logger.error(f"Error in display method: {e}", exc_info=True)
             return False
 
+    def reset_cycle_state(self) -> None:
+        """Start a fresh dynamic-duration cycle for the mode coming on screen.
+
+        The controller calls this each time a different dynamic mode takes the
+        panel. Without it the per-game progress from the previous turn was
+        kept, so every game already counted as shown, the cycle reported
+        complete at once, and each later turn ended at the minimum duration
+        just after flashing its second game.
+        """
+        super().reset_cycle_state()
+        self._dynamic_cycle_seen_modes.clear()
+        self._dynamic_mode_to_manager_key.clear()
+        self._dynamic_manager_progress.clear()
+        self._dynamic_managers_completed.clear()
+        self._single_game_manager_start_times.clear()
+        self._game_id_start_times.clear()
+        self._display_mode_to_managers.clear()
+        self._dynamic_cycle_complete = False
+
     def is_cycle_complete(self) -> bool:
         """Report whether the plugin has shown a full cycle of content."""
         if not self._dynamic_feature_enabled():
@@ -2566,15 +2585,6 @@ class LacrosseScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
                 )
             except Exception as progress_err:  # pylint: disable=broad-except
                 self.logger.debug(f"Dynamic progress tracking failed: {progress_err}")
-        else:
-            # Manager returned False (no content) - ensure display is cleared
-            # This is a safety measure in case the manager didn't clear it
-            if force_clear:
-                try:
-                    self.display_manager.clear()
-                    self.display_manager.update_display()
-                except Exception as clear_err:
-                    self.logger.debug(f"Error clearing display when manager returned False: {clear_err}")
         
         current_mode = self.modes[self.current_mode_index] if self.modes else None
         self._evaluate_dynamic_cycle_completion(display_mode=current_mode)

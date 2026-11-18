@@ -1,5 +1,45 @@
 # Changelog
 
+## [3.28.2] - 2026-11-03
+
+### Changed
+- Requires LEDMatrix core 3.9.0 (`ledmatrix_min_version` and
+  `compatible_versions`), the first release whose display controller blanks
+  the panel once when every mode is empty. This version no longer blanks the
+  panel itself, so on an older core the last card would stay up. The store
+  refuses to install or update this version onto an older core.
+
+### Fixed
+- Switching screens no longer flashes the panel black. `display_manager.clear()`
+  writes black straight to the matrix, and every card was drawn after a clear
+  whenever `force_clear` was set: on a mode change, a block boundary, or a gap
+  of over 5 s between `display()` calls (a slow `update()` holding the plugin
+  lock). Rendering the card took long enough for the black to show, so a board
+  with one favourite team flashed and came back on the same card. Each card is
+  now drawn into a new frame that replaces the old one whole: the panel keeps
+  the previous frame until the new one is ready, and an unchanged card is not
+  pushed at all.
+- A mode with nothing to show no longer blanks the panel on its way past. It
+  returns False and the controller moves on, and blanks the panel itself once
+  when every mode is empty. The recent screen blanked on every frame while its
+  list was empty, even without `force_clear`.
+## [3.28.1] - 2026-11-03
+
+### Fixed
+- A two-point conversion is no longer celebrated as a safety. The try after a
+  touchdown usually lands after the touchdown's takeover has closed, so it
+  arrived as a lone +2 and was named from its size alone. An ambiguous +2 is
+  now named from ESPN's scoring plays (the game's summary, fetched only for a
+  +2, with a 3 s timeout) when they are up to date, and otherwise from the
+  score sequence: the touchdown side's next +2 is its conversion
+  ("2PT GOOD!"), the other side's is a defensive return ("DEF 2PT!"), and any
+  other +2 is a safety. The owed try ends at the next score, a score
+  correction, a new period, or once the game clock has run (the try is
+  untimed), so a failed try followed by a safety is still a safety.
+- An extra point that lands after the touchdown's takeover gets its own
+  ("EXTRA PT!", goalposts) instead of "SCORES!". One that lands while the
+  touchdown is still on screen stays part of it, as before.
+
 ## [3.28.0] - 2026-10-19
 
 ### Changed
