@@ -264,7 +264,9 @@ class ChromaClockWidePlugin(BasePlugin):
                         draw.line((x, h//2,x+13,h//2),fill=secondary)
                 elif style=="morph":
                     for x in range(start+5,end-4,14):
-                        height=int(3+abs(math.sin(tick*1.6+x))*(h-8))
+                        # At least 4 rows: the bar is drawn down to h-4, and a
+                        # shorter one gave Pillow y0 > y1 (ValueError).
+                        height=int(4+abs(math.sin(tick*1.6+x))*(h-8))
                         draw.rectangle((x,h-height,x+8,h-4),outline=accent)
                 else:
                     draw.rectangle((start+4,4,end-5,h-5),outline=accent)
