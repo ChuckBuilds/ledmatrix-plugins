@@ -1,0 +1,46 @@
+{
+  "id": "upcoming-media",
+  "name": "Upcoming Episodes & Movies",
+  "version": "1.0.0",
+  "author": "ChuckBuilds",
+  "description": "What's coming out next: upcoming TV episodes from Sonarr or Jellyfin and movie releases from Radarr, with show logo or poster, S3E4, episode name, air date, runtime and a short description",
+  "category": "media",
+  "tags": [
+    "jellyfin",
+    "sonarr",
+    "radarr",
+    "media",
+    "tv",
+    "movies",
+    "calendar"
+  ],
+  "entry_point": "manager.py",
+  "class_name": "UpcomingMediaPlugin",
+  "display_modes": [
+    "upcoming-episodes",
+    "upcoming-movies"
+  ],
+  "update_interval": 900,
+  "config_schema": "config_schema.json",
+  "requirements_file": "requirements.txt",
+  "dependencies": [
+    "requests",
+    "pillow"
+  ],
+  "versions": [
+    {
+      "released": "2026-11-16",
+      "version": "1.0.0",
+      "ledmatrix_min_version": "3.8.0",
+      "changelog": "Initial release: upcoming episodes (Sonarr calendar, or Jellyfin's Upcoming list when Sonarr is not set up, with library selection) and upcoming movie releases (Radarr calendar: in theaters, digital, physical). Switch, scroll and Vegas modes; show logo or poster art; S3E4 / S03E04 / Season 3 Episode 4; toggleable episode name, short description, date and runtime; fonts and colors per element; layouts that scale from 64x32 to large panels."
+    }
+  ],
+  "last_updated": "2026-11-16",
+  "stars": 0,
+  "downloads": 0,
+  "verified": false,
+  "screenshot": "",
+  "compatible_versions": [
+    ">=3.8.0"
+  ]
+}

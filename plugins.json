@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-11-13",
+  "last_updated": "2026-11-18",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -77,12 +77,12 @@
       "plugin_path": "plugins/baseball-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-11-04",
+      "last_updated": "2026-11-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.66.2",
+      "latest_version": "1.66.3",
       "ledmatrix_min_version": "3.9.0",
-      "commit": "776431b23abc1fce71c4dc30e4e8268655bf9e8a"
+      "commit": "8b3ed4ba3036326ee94af0e605dc7e9488fee06e"
     },
     {
       "id": "basketball-scoreboard",
@@ -129,12 +129,12 @@
       "plugin_path": "plugins/calendar",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-03",
+      "last_updated": "2026-11-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.12",
+      "latest_version": "1.2.13",
       "ledmatrix_min_version": "3.3.0",
-      "commit": "738fe34597055fe045c2eb0b5e94be0040b9c3fd"
+      "commit": "3d36f77c87d3a4bfd315c674f171e41eda1ecbd0"
     },
     {
       "id": "christmas-countdown",
@@ -280,12 +280,12 @@
       "plugin_path": "plugins/football-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-11-03",
+      "last_updated": "2026-11-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "3.28.2",
+      "latest_version": "3.28.3",
       "ledmatrix_min_version": "3.9.0",
-      "commit": "c0aac20e0727d3d142a54724aa24d77bb2ec2894"
+      "commit": "8b3ed4ba3036326ee94af0e605dc7e9488fee06e"
     },
     {
       "id": "geochron",
@@ -386,13 +386,13 @@
       "plugin_path": "plugins/hockey-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-11-04",
+      "last_updated": "2026-11-18",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.55.0",
+      "latest_version": "1.55.2",
       "icon": "fas fa-hockey-puck",
       "ledmatrix_min_version": "3.9.0",
-      "commit": "901ebcaba1d58ace34f7a55a98d306a8d3f915da"
+      "commit": "8b3ed4ba3036326ee94af0e605dc7e9488fee06e"
     },
     {
       "id": "lacrosse-scoreboard",
@@ -412,13 +412,13 @@
       "plugin_path": "plugins/lacrosse-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-11-04",
+      "last_updated": "2026-11-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.45.2",
+      "latest_version": "1.45.3",
       "icon": "fas fa-baseball-ball",
       "ledmatrix_min_version": "3.9.0",
-      "commit": "c5044dc30a89d27f8457c4162c87f79623033e24"
+      "commit": "8b3ed4ba3036326ee94af0e605dc7e9488fee06e"
     },
     {
       "id": "birdnet-go",
@@ -440,12 +440,12 @@
       "plugin_path": "plugins/birdnet-go",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-05",
+      "last_updated": "2026-11-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.9",
+      "latest_version": "1.2.10",
       "ledmatrix_min_version": "2.0.0",
-      "commit": "650b0f53b24d1ac830c8a97be49841974a12ca30"
+      "commit": "3d36f77c87d3a4bfd315c674f171e41eda1ecbd0"
     },
     {
       "id": "leaderboard",
@@ -469,15 +469,15 @@
       "plugin_path": "plugins/ledmatrix-leaderboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-03",
+      "last_updated": "2026-11-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.5.6",
+      "latest_version": "1.5.7",
       "ledmatrix_min_version": "3.4.0",
       "aliases": [
         "ledmatrix-leaderboard"
       ],
-      "commit": "c202cd9a6f4b421d7cee4445b707a4e300b45490"
+      "commit": "7c0463f5417cb80aa37a318e192068acdbfa0251"
     },
     {
       "id": "ledmatrix-flights",
@@ -501,12 +501,12 @@
       "plugin_path": "plugins/ledmatrix-flights",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-09-30",
+      "last_updated": "2026-11-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.16.0",
+      "latest_version": "1.16.1",
       "ledmatrix_min_version": "3.8.0",
-      "commit": "90423a2e81d3c64aa99434ebf1e77341fb8e4880"
+      "commit": "f75357d4b47653714e1a902630edee161fcef74f"
     },
     {
       "id": "march-madness",
@@ -714,12 +714,12 @@
       "plugin_path": "plugins/odds-ticker",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-05",
+      "last_updated": "2026-11-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.8.0",
+      "latest_version": "1.8.1",
       "ledmatrix_min_version": "3.8.1",
-      "commit": "751e973768d3205b420e9bed9c03df8601678601"
+      "commit": "3d36f77c87d3a4bfd315c674f171e41eda1ecbd0"
     },
     {
       "id": "of-the-day",
@@ -848,12 +848,12 @@
       "plugin_path": "plugins/soccer-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-11-03",
+      "last_updated": "2026-11-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.50.1",
+      "latest_version": "2.50.2",
       "ledmatrix_min_version": "3.9.0",
-      "commit": "c0aac20e0727d3d142a54724aa24d77bb2ec2894"
+      "commit": "8b3ed4ba3036326ee94af0e605dc7e9488fee06e"
     },
     {
       "id": "static-image",
@@ -1008,13 +1008,13 @@
       "plugin_path": "plugins/ufc-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-11-04",
+      "last_updated": "2026-11-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.27.2",
+      "latest_version": "1.27.3",
       "icon": "fas fa-fist-raised",
       "ledmatrix_min_version": "3.9.0",
-      "commit": "776431b23abc1fce71c4dc30e4e8268655bf9e8a"
+      "commit": "8b3ed4ba3036326ee94af0e605dc7e9488fee06e"
     },
     {
       "id": "weather",
@@ -1168,10 +1168,10 @@
       "downloads": 0,
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.44.1",
-      "last_updated": "2026-11-03",
+      "latest_version": "1.44.2",
+      "last_updated": "2026-11-17",
       "ledmatrix_min_version": "3.9.0",
-      "commit": "c0aac20e0727d3d142a54724aa24d77bb2ec2894"
+      "commit": "8b3ed4ba3036326ee94af0e605dc7e9488fee06e"
     },
     {
       "id": "tidbyt-baseball-scoreboard",
@@ -1214,12 +1214,12 @@
       "plugin_path": "plugins/nrl-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-11-03",
+      "last_updated": "2026-11-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.43.1",
+      "latest_version": "1.43.2",
       "ledmatrix_min_version": "3.9.0",
-      "commit": "c0aac20e0727d3d142a54724aa24d77bb2ec2894"
+      "commit": "8b3ed4ba3036326ee94af0e605dc7e9488fee06e"
     },
     {
       "id": "jellyfin-now-playing",
@@ -1248,6 +1248,33 @@
       "commit": "886d2038d22a35c962beac0ea261543339cffec9"
     },
     {
+      "id": "upcoming-media",
+      "name": "Upcoming Episodes & Movies",
+      "description": "What's coming out next: upcoming TV episodes from Sonarr or Jellyfin and movie releases from Radarr, with show logo or poster, S3E4, episode name, air date, runtime and a short description",
+      "author": "ChuckBuilds",
+      "category": "media",
+      "tags": [
+        "jellyfin",
+        "sonarr",
+        "radarr",
+        "media",
+        "tv",
+        "movies",
+        "calendar"
+      ],
+      "repo": "https://github.com/ChuckBuilds/ledmatrix-plugins",
+      "branch": "main",
+      "plugin_path": "plugins/upcoming-media",
+      "stars": 0,
+      "downloads": 0,
+      "last_updated": "2026-11-16",
+      "verified": false,
+      "screenshot": "",
+      "latest_version": "1.0.0",
+      "ledmatrix_min_version": "3.8.0",
+      "commit": "cf49c9296613e822837086dfadd66a27d1651c78"
+    },
+    {
       "id": "incoming-packages",
       "name": "Incoming Packages",
       "description": "Rotating cards for packages headed your way - per carrier, with the count arriving today highlighted. Reads a normalized snapshot from a pluggable provider: the Home Assistant Mail and Packages integration (default), AfterShip, the Parcel app, or a built-in demo. Email scanning stays inside Home Assistant; the plugin only stores an API URL + token.",
@@ -1272,7 +1299,8 @@
       "screenshot": "https://raw.githubusercontent.com/ChuckBuilds/ledmatrix-plugins/main/plugins/incoming-packages/assets/screenshot.png",
       "latest_version": "1.2.0",
       "icon": "fas fa-box",
-      "ledmatrix_min_version": "3.4.0"
+      "ledmatrix_min_version": "3.4.0",
+      "commit": "63b0d06e8f004cc74e0e62ae3b4e0a8793727dc7"
     },
     {
       "id": "pomodoro-timer",

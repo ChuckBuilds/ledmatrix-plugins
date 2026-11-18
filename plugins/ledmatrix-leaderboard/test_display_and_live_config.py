@@ -158,6 +158,11 @@ def test_update_interval_and_live_save():
     requested = getattr(settings, "requested_pixels_per_second", None)
     check(requested is not None and abs(requested - 50.0) < 0.01,
           f"the scroll resolver re-ran for the new 50 px/s (got {requested})")
+    # Right after a save, update() is asked for within seconds to rebuild the
+    # image off the render thread; after that the new interval applies.
+    check(plugin.get_update_interval() == plugin.REBUILD_SOON_SECONDS,
+          f"a save asks for a quick rebuild (got {plugin.get_update_interval()})")
+    plugin._needs_rebuild = False
     check(plugin.get_update_interval() == 1800,
           f"a new update_interval applies without a restart (got {plugin.get_update_interval()})")
     check(plugin.league_config.get_enabled_leagues() == ["nba", "nhl"],
@@ -269,3 +274,25 @@ if __name__ == "__main__":
             print(f"  FAIL: {test.__name__} raised {exc!r}")
     print(f"\n{len(failures)} failed")
     sys.exit(1 if failures else 0)
+
+
+def test_new_rotation_does_not_rebuild_the_image():
+    """display(force_clear=True) runs every time the screen enters the
+    rotation; it must only restart the scroll. Rebuilding there loaded every
+    team logo on the render thread and stalled the panel for seconds."""
+    from unittest import mock
+    plugin = make({"enabled": True, "enabled_sports": ONLY_NBA, "global": {}}, FakeDisplay())
+    plugin.leaderboard_data = [{"league": "nba", "league_config": {}, "teams": []}]
+    with mock.patch.object(plugin.image_renderer, "create_leaderboard_image",
+                           return_value=__import__("PIL.Image", fromlist=["Image"]).new("RGB", (400, plugin.display_height))) as build:
+        plugin.display(force_clear=True)      # first frame: no image yet, built once
+        plugin.display(force_clear=True)      # next rotation: reuse it
+        plugin.display(force_clear=True)
+    assert build.call_count == 1
+    plugin.on_config_change({"enabled": True, "enabled_sports": ONLY_NBA, "global": {}})
+    assert plugin.scroll_helper.cached_image is not None   # keeps drawing meanwhile
+    with mock.patch.object(plugin.image_renderer, "create_leaderboard_image",
+                           return_value=__import__("PIL.Image", fromlist=["Image"]).new("RGB", (300, plugin.display_height))) as build:
+        plugin.last_update = __import__("time").time()        # not due: rebuild only, no fetch
+        plugin.update()
+    assert build.call_count == 1 and not plugin._needs_rebuild
