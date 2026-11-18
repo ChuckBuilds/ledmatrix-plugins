@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.55.2] - 2026-11-18
+
+### Changed
+- "No game data available" (a live screen with no game on, which is normal)
+  is logged at debug instead of as a warning every 5 minutes, as
+  basketball-scoreboard already does.
+
 ## [1.55.1] - 2026-11-04
 
 ### Fixed

@@ -77,12 +77,12 @@
       "plugin_path": "plugins/baseball-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-11-04",
+      "last_updated": "2026-11-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.66.2",
+      "latest_version": "1.66.3",
       "ledmatrix_min_version": "3.9.0",
-      "commit": "776431b23abc1fce71c4dc30e4e8268655bf9e8a"
+      "commit": "3e236464c9c8ea1a786dcb377e699607304c74ba"
     },
     {
       "id": "basketball-scoreboard",
@@ -280,12 +280,12 @@
       "plugin_path": "plugins/football-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-11-03",
+      "last_updated": "2026-11-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "3.28.2",
+      "latest_version": "3.28.3",
       "ledmatrix_min_version": "3.9.0",
-      "commit": "c0aac20e0727d3d142a54724aa24d77bb2ec2894"
+      "commit": "3e236464c9c8ea1a786dcb377e699607304c74ba"
     },
     {
       "id": "geochron",
@@ -386,13 +386,12 @@
       "plugin_path": "plugins/hockey-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-11-04",
+      "last_updated": "2026-11-18",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.55.1",
+      "latest_version": "1.55.2",
       "icon": "fas fa-hockey-puck",
-      "ledmatrix_min_version": "3.9.0",
-      "commit": "3a2861e4b032fcb64340a33de3a193d6c708a53b"
+      "ledmatrix_min_version": "3.9.0"
     },
     {
       "id": "lacrosse-scoreboard",
@@ -412,13 +411,13 @@
       "plugin_path": "plugins/lacrosse-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-11-04",
+      "last_updated": "2026-11-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.45.2",
+      "latest_version": "1.45.3",
       "icon": "fas fa-baseball-ball",
       "ledmatrix_min_version": "3.9.0",
-      "commit": "c5044dc30a89d27f8457c4162c87f79623033e24"
+      "commit": "3e236464c9c8ea1a786dcb377e699607304c74ba"
     },
     {
       "id": "birdnet-go",
@@ -848,12 +847,12 @@
       "plugin_path": "plugins/soccer-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-11-03",
+      "last_updated": "2026-11-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.50.1",
+      "latest_version": "2.50.2",
       "ledmatrix_min_version": "3.9.0",
-      "commit": "c0aac20e0727d3d142a54724aa24d77bb2ec2894"
+      "commit": "3e236464c9c8ea1a786dcb377e699607304c74ba"
     },
     {
       "id": "static-image",
@@ -1008,13 +1007,13 @@
       "plugin_path": "plugins/ufc-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-11-04",
+      "last_updated": "2026-11-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.27.2",
+      "latest_version": "1.27.3",
       "icon": "fas fa-fist-raised",
       "ledmatrix_min_version": "3.9.0",
-      "commit": "776431b23abc1fce71c4dc30e4e8268655bf9e8a"
+      "commit": "3e236464c9c8ea1a786dcb377e699607304c74ba"
     },
     {
       "id": "weather",
@@ -1168,10 +1167,10 @@
       "downloads": 0,
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.44.1",
-      "last_updated": "2026-11-03",
+      "latest_version": "1.44.2",
+      "last_updated": "2026-11-17",
       "ledmatrix_min_version": "3.9.0",
-      "commit": "c0aac20e0727d3d142a54724aa24d77bb2ec2894"
+      "commit": "3e236464c9c8ea1a786dcb377e699607304c74ba"
     },
     {
       "id": "tidbyt-baseball-scoreboard",
@@ -1214,12 +1213,12 @@
       "plugin_path": "plugins/nrl-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-11-03",
+      "last_updated": "2026-11-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.43.1",
+      "latest_version": "1.43.2",
       "ledmatrix_min_version": "3.9.0",
-      "commit": "c0aac20e0727d3d142a54724aa24d77bb2ec2894"
+      "commit": "3e236464c9c8ea1a786dcb377e699607304c74ba"
     },
     {
       "id": "jellyfin-now-playing",

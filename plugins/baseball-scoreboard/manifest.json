@@ -1,7 +1,7 @@
 {
   "id": "baseball-scoreboard",
   "name": "Baseball Scoreboard",
-  "version": "1.66.2",
+  "version": "1.66.3",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming baseball games across MLB, MiLB, and NCAA Baseball with real-time scores and schedules",
@@ -31,6 +31,12 @@
   "branch": "main",
   "plugin_path": "plugins/baseball-scoreboard",
   "versions": [
+    {
+      "version": "1.66.3",
+      "released": "2026-11-17",
+      "ledmatrix_min_version": "3.9.0",
+      "notes": "'No game data available' (a live screen with no game on, which is normal) is logged at debug instead of as a warning every 5 minutes, as basketball-scoreboard already does."
+    },
     {
       "version": "1.66.2",
       "released": "2026-11-04",

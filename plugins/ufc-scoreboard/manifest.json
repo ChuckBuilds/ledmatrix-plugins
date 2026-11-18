@@ -1,7 +1,7 @@
 {
   "id": "ufc-scoreboard",
   "name": "UFC Scoreboard",
-  "version": "1.27.2",
+  "version": "1.27.3",
   "author": "LegoGuy1000",
   "contributors": [
     {
@@ -32,6 +32,12 @@
   "default_duration": 15,
   "config_schema": "config_schema.json",
   "versions": [
+    {
+      "version": "1.27.3",
+      "released": "2026-11-17",
+      "ledmatrix_min_version": "3.9.0",
+      "notes": "'No game data available' (a live screen with no game on, which is normal) is logged at debug instead of as a warning every 5 minutes, as basketball-scoreboard already does."
+    },
     {
       "version": "1.27.2",
       "released": "2026-11-04",
