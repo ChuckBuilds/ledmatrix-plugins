@@ -2,7 +2,7 @@
 Package data sources for the Incoming Packages plugin.
 
 A `PackageProvider` fetches a normalized `Snapshot` of incoming-package activity.
-The plugin is provider-agnostic; today three providers ship:
+The plugin is provider-agnostic; today four providers ship:
 
 * `HomeAssistantProvider` (default) — reads the "Mail and Packages" integration's
   sensors from a Home Assistant instance over its REST API. The email scanning
@@ -10,6 +10,9 @@ The plugin is provider-agnostic; today three providers ship:
   the HA base URL + a long-lived token and reads sensor states.
 * `AfterShipProvider` — reads a per-package tracking list from the AfterShip API
   and aggregates it into the same per-carrier snapshot.
+* `ParcelProvider` — reads the active deliveries from the Parcel app's API with
+  the user's personal API key (20 requests/hour, so refreshes are floored at
+  `PARCEL_MIN_INTERVAL`).
 * `MockProvider` — built-in demo data for the offline safety harness and for a
   no-credentials preview on the panel.
 
@@ -398,6 +401,142 @@ def _aftership_eta(tr: Dict[str, Any]) -> Optional[str]:
             or tr.get("shipment_delivery_date"))
 
 
+# ─── Parcel ────────────────────────────────────────────────────────────────
+
+# Parcel allows 20 requests per hour; one call every 180 s is exactly that, so
+# this is the shortest refresh interval the plugin will use for Parcel.
+PARCEL_MIN_INTERVAL = 180
+
+# Parcel `status_code` -> our status bucket. 0 (delivered) is dropped. 1 (frozen:
+# no updates for a long time) and 5 (not found) are left out so a dead
+# tracking number never inflates the "in transit" count. Unknown codes count as
+# in transit, as with AfterShip.
+_PARCEL_STATUS = {
+    2: STATUS_IN_TRANSIT,
+    3: STATUS_OUT_FOR_DELIVERY,    # waiting for pickup
+    4: STATUS_OUT_FOR_DELIVERY,
+    6: STATUS_EXCEPTION,           # failed delivery attempt
+    7: STATUS_EXCEPTION,
+    8: STATUS_INFO_RECEIVED,       # carrier has the info, not the package
+}
+_PARCEL_DELIVERED = 0
+_PARCEL_EXCLUDED = frozenset({1, 5})
+
+# Parcel carrier codes that normalize_carrier() would not recognize. Codes it
+# already handles by substring (ups, usps, fedex, dhl*, walmart, dpd*, gls*,
+# hermes) are not repeated here.
+_PARCEL_CARRIERS = {
+    "ont": "ontrac", "laser": "lasership", "rm": "royalmail", "cp": "canadapost",
+    "au": "auspost", "dp": "deutschepost", "dpr": "deutschepost",
+    "fedpl": "fedex", "swiship": "amazon",
+    "gso": "gls", "dicom": "gls", "asmred": "gls",
+}
+
+
+def _parcel_carrier(code: str) -> str:
+    slug = re.sub(r"[^a-z0-9]+", "", (code or "").lower())
+    if slug in _PARCEL_CARRIERS:
+        return _PARCEL_CARRIERS[slug]
+    if slug.startswith(("amzl", "amship")):     # amzlus, amzlca, amshipuk, ...
+        return "amazon"
+    return normalize_carrier(slug)
+
+
+class ParcelProvider(PackageProvider):
+    """Reads the active deliveries from the Parcel app's API (personal API key).
+
+    `filter_mode=active` leaves out delivered packages on Parcel's side, and
+    Parcel gives no delivery time, so `delivered_today` stays 0 and there are no
+    delivery or mail images.
+    """
+
+    requires_token = True
+    URL = "https://api.parcel.app/external/deliveries/"
+
+    def __init__(self, config, logger):
+        super().__init__(config, logger)
+        self.api_key = (config.get("parcel_api_key") or "").strip()
+
+    def fetch(self) -> Snapshot:
+        if not self.api_key:
+            raise AuthError("Set Parcel key")
+        try:
+            resp = requests.get(
+                self.URL,
+                params={"filter_mode": "active"},
+                headers={"api-key": self.api_key},
+                timeout=10,
+            )
+        except requests.exceptions.RequestException as exc:
+            raise ProviderError("Parcel down") from exc
+        if resp.status_code in (401, 403):
+            raise AuthError("Update Parcel key")
+        if resp.status_code == 429:
+            raise ProviderError("Parcel rate limit")
+        if resp.status_code >= 400:
+            raise ProviderError(f"Parcel {resp.status_code}")
+        try:
+            payload = resp.json()
+        except ValueError as exc:
+            raise ProviderError("Parcel bad JSON") from exc
+        if not isinstance(payload, dict):
+            raise ProviderError("Parcel bad response")
+        if not payload.get("success", False):
+            self.logger.warning("Parcel reported an error: %s",
+                                str(payload.get("error_message") or "")[:120])
+            raise ProviderError("Parcel error")
+        deliveries = payload.get("deliveries")
+        if deliveries is None:                 # absent/null: nothing active
+            deliveries = []
+        if not isinstance(deliveries, list):   # {} / "" / 0 are bad data, not "empty"
+            raise ProviderError("Parcel bad response")
+        return self._parse(deliveries)
+
+    def _eta(self, delivery: Dict[str, Any]) -> Optional[date]:
+        """Expected date: the epoch when Parcel has one (exact, so it can be put
+        in our timezone), else the timezone-less `date_expected` string."""
+        ts = delivery.get("timestamp_expected")
+        if isinstance(ts, (int, float)) and not isinstance(ts, bool):
+            try:
+                return datetime.fromtimestamp(ts, self.tz).date()
+            except (OverflowError, OSError, ValueError):
+                pass
+        return _parse_date(delivery.get("date_expected"))
+
+    def _parse(self, deliveries: List[Dict[str, Any]]) -> Snapshot:
+        snap = Snapshot()
+        stats: Dict[str, CarrierStat] = {}
+        today = self._today()
+        for delivery in deliveries:
+            if not isinstance(delivery, dict):
+                continue
+            try:
+                code = int(delivery.get("status_code"))
+            except (TypeError, ValueError):
+                code = None
+            if code == _PARCEL_DELIVERED or code in _PARCEL_EXCLUDED:
+                continue
+            status = _PARCEL_STATUS.get(code, STATUS_IN_TRANSIT)
+            slug = _parcel_carrier(delivery.get("carrier_code", ""))
+            eta = self._eta(delivery)
+            is_today = status == STATUS_OUT_FOR_DELIVERY or eta == today
+            cs = stats.setdefault(slug, CarrierStat(carrier=slug))
+            if is_today:
+                cs.delivering_today += 1
+            else:
+                cs.in_transit += 1
+            number = str(delivery.get("tracking_number") or "")
+            snap.packages.append(Package(
+                carrier=slug,
+                title=str(delivery.get("description") or number),
+                status=status,
+                eta=eta,
+                tracking_number=number,
+            ))
+        snap.carriers = list(stats.values())
+        return snap.finalize()
+
+
 # ─── Mock ──────────────────────────────────────────────────────────────────
 
 class MockProvider(PackageProvider):
@@ -425,6 +564,7 @@ def make_provider(name: str, config: Dict[str, Any], logger) -> PackageProvider:
     providers = {
         "homeassistant": HomeAssistantProvider,
         "aftership": AfterShipProvider,
+        "parcel": ParcelProvider,
         "mock": MockProvider,
     }
     cls = providers.get((name or "homeassistant").lower(), HomeAssistantProvider)
