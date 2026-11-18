@@ -1,0 +1,24 @@
+{
+  "plugin": "moonraker-klipper",
+  "defaults": {
+    "width": 256,
+    "height": 32,
+    "scale": 3,
+    "skip_update": true,
+    "config": {
+      "enabled": true,
+      "printers": [{"name": "Voron 2.4", "url": "http://127.0.0.1:1"}]
+    },
+    "attrs": {
+      "records": [
+        {"name": "Voron 2.4", "state": "printing", "progress": 0.42,
+         "filename": "benchy_0.2mm_PLA.gcode", "activity": "", "nozzle": 215.3,
+         "bed": 60.1, "remaining": 5400, "elapsed": 3600, "completed_since": null,
+         "thumb_key": null}
+      ]
+    }
+  },
+  "shots": [
+    { "name": "hero" }
+  ]
+}
