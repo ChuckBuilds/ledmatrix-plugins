@@ -1300,7 +1300,7 @@
       "latest_version": "1.2.0",
       "icon": "fas fa-box",
       "ledmatrix_min_version": "3.4.0",
-      "commit": "63b0d06e8f004cc74e0e62ae3b4e0a8793727dc7"
+      "commit": "93a363c91aae8fb9f08c00fb1af072f46cb5a004"
     },
     {
       "id": "pomodoro-timer",
