@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.55.1] - 2026-11-04
+
+### Fixed
+- A logo set to Logo Size `0.67` or below stays inside the panel's width as
+  well as its height. `0.67` is a shade over 1/1.5, so the width box was
+  1.005x the panel (257 px on a 256-wide panel) and a very wide mark lost an
+  edge column despite "fits the panel". The default size is unchanged.
+
 ## [1.55.0] - 2026-11-04
 
 ### Added

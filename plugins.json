@@ -134,7 +134,7 @@
       "screenshot": "",
       "latest_version": "1.2.13",
       "ledmatrix_min_version": "3.3.0",
-      "commit": "3d36f77c87d3a4bfd315c674f171e41eda1ecbd0"
+      "commit": "7fe112fa2ef83a47c155d894f4ad6521247eb1d5"
     },
     {
       "id": "christmas-countdown",
@@ -389,10 +389,10 @@
       "last_updated": "2026-11-04",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.55.0",
+      "latest_version": "1.55.1",
       "icon": "fas fa-hockey-puck",
       "ledmatrix_min_version": "3.9.0",
-      "commit": "901ebcaba1d58ace34f7a55a98d306a8d3f915da"
+      "commit": "dc3fb40dc9746f9b6854ef8bcaafee8c72bccec0"
     },
     {
       "id": "lacrosse-scoreboard",
@@ -445,7 +445,7 @@
       "screenshot": "",
       "latest_version": "1.2.10",
       "ledmatrix_min_version": "2.0.0",
-      "commit": "3d36f77c87d3a4bfd315c674f171e41eda1ecbd0"
+      "commit": "7fe112fa2ef83a47c155d894f4ad6521247eb1d5"
     },
     {
       "id": "leaderboard",
@@ -477,7 +477,7 @@
       "aliases": [
         "ledmatrix-leaderboard"
       ],
-      "commit": "7c0463f5417cb80aa37a318e192068acdbfa0251"
+      "commit": "7fe112fa2ef83a47c155d894f4ad6521247eb1d5"
     },
     {
       "id": "ledmatrix-flights",
@@ -506,7 +506,7 @@
       "screenshot": "",
       "latest_version": "1.16.1",
       "ledmatrix_min_version": "3.8.0",
-      "commit": "f75357d4b47653714e1a902630edee161fcef74f"
+      "commit": "7fe112fa2ef83a47c155d894f4ad6521247eb1d5"
     },
     {
       "id": "march-madness",
@@ -719,7 +719,7 @@
       "screenshot": "",
       "latest_version": "1.8.1",
       "ledmatrix_min_version": "3.8.1",
-      "commit": "3d36f77c87d3a4bfd315c674f171e41eda1ecbd0"
+      "commit": "7fe112fa2ef83a47c155d894f4ad6521247eb1d5"
     },
     {
       "id": "of-the-day",
@@ -1272,7 +1272,7 @@
       "screenshot": "",
       "latest_version": "1.0.0",
       "ledmatrix_min_version": "3.8.0",
-      "commit": "cf49c9296613e822837086dfadd66a27d1651c78"
+      "commit": "7fe112fa2ef83a47c155d894f4ad6521247eb1d5"
     },
     {
       "id": "incoming-packages",

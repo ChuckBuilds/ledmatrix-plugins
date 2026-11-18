@@ -1,7 +1,7 @@
 {
   "id": "hockey-scoreboard",
   "name": "Hockey Scoreboard",
-  "version": "1.55.0",
+  "version": "1.55.1",
   "author": "ChuckBuilds",
   "description": "Live, recent, and upcoming hockey games across NHL, NCAA Men's, NCAA Women's, OHL and PWHL hockey with real-time scores and schedules",
   "homepage": "https://github.com/ChuckBuilds/ledmatrix-plugins/tree/main/plugins/hockey-scoreboard",
@@ -71,6 +71,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.55.1",
+      "released": "2026-11-04",
+      "ledmatrix_min_version": "3.9.0",
+      "notes": "A logo set to Logo Size 0.67 or below stays inside the panel's width as well as its height. 0.67 is a shade over 1/1.5, so the width box was 1.005x the panel (257 px on a 256-wide panel) and a very wide mark lost an edge column despite \"fits the panel\". The default size is unchanged."
+    },
     {
       "version": "1.55.0",
       "released": "2026-11-04",
