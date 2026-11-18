@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-leaderboard",
   "name": "Sports Leaderboard",
-  "version": "1.5.6",
+  "version": "1.5.7",
   "description": "Displays scrolling leaderboards and standings for multiple sports leagues including NFL, NBA, MLB, NCAA Football, NCAA Basketball, and more",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -31,6 +31,12 @@
   "requirements_file": "requirements.txt",
   "min_ledmatrix_version": "3.4.0",
   "versions": [
+    {
+      "version": "1.5.7",
+      "released": "2026-11-17",
+      "ledmatrix_min_version": "3.4.0",
+      "notes": "The scrolling image is built in update() right after each fetch instead of in display(). display() rebuilt it, loading every team logo of every league, each time the screen entered the rotation, which stalled the whole panel for several seconds on a Pi. A new rotation now just restarts the scroll, and a settings change keeps showing the current image until update() rebuilds it a few seconds later."
+    },
     {
       "version": "1.5.6",
       "released": "2026-10-03",
