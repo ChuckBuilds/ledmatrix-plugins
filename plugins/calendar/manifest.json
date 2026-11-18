@@ -1,7 +1,7 @@
 {
   "id": "calendar",
   "name": "Google Calendar",
-  "version": "1.2.12",
+  "version": "1.2.13",
   "author": "ChuckBuilds",
   "description": "Display upcoming events from Google Calendar with date, time, and event details. Shows next 1-3 events with automatic rotation and timezone support.",
   "category": "productivity",
@@ -35,6 +35,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.2.13",
+      "released": "2026-11-17",
+      "ledmatrix_min_version": "3.3.0",
+      "notes": "Without Google sign-in, the 'Calendar service not available' warning is logged once instead of on every update; the panel's sign-in screen is unchanged. Also fixes display() raising AttributeError (datetime_font) when the Google libraries are not installed."
+    },
     {
       "version": "1.2.12",
       "released": "2026-10-03",

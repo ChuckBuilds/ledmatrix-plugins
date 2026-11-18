@@ -1,0 +1,30 @@
+{
+  "_comment": "Renders both screens from recorded-shape Sonarr v4 / Radarr v5 calendar payloads for made-up shows and movies, seeded through the mock cache under the keys update() reads, so no request is made. The artwork is synthetic (gradient posters, plain-text logos) and also comes from the cache, where the plugin keeps every downloaded image; 'Night Shift Diaries' has no artwork, to exercise the text-only fallback, and 'The Orchard Kings' has a poster but no logo. The URLs point at 127.0.0.1:9 so a cache miss is refused at once rather than reaching a network. Frozen at 18:00 UTC on Mon 2026-11-16 so the relative dates (Today, Tmrw, Thu) are stable. The scroll variant keeps the ticker path crash- and bounds-checked; the text variant covers image_type none with the long episode format; the setup variant renders the no-sources screen.",
+  "config": {
+    "enabled": true,
+    "sonarr_url": "http://127.0.0.1:9",
+    "sonarr_api_key": "harness",
+    "radarr_url": "http://127.0.0.1:9",
+    "radarr_api_key": "harness",
+    "marquee_enabled": false
+  },
+  "mock_data": "test/fixtures/mock.json",
+  "freeze_time": "2026-11-16 18:00:00",
+  "variants": [
+    {
+      "name": "scroll",
+      "config": {"display_mode": "scroll"},
+      "golden_dir": "test/golden-scroll"
+    },
+    {
+      "name": "text",
+      "config": {"image_type": "none", "episode_format": "long", "show_description": false},
+      "golden_dir": "test/golden-text"
+    },
+    {
+      "name": "setup",
+      "config": {"sonarr_url": "", "sonarr_api_key": "", "radarr_url": "", "radarr_api_key": ""},
+      "golden_dir": "test/golden-setup"
+    }
+  ]
+}

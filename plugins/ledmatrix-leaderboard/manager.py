@@ -194,7 +194,14 @@ class LeaderboardPlugin(BasePlugin):
         interval = float(self.update_interval)
         if not self.leaderboard_data:
             return min(interval, float(self.NO_DATA_RETRY_SECONDS))
+        if getattr(self, "_needs_rebuild", False):
+            # A settings change is waiting to be drawn: update() rebuilds the
+            # image off the render thread, so ask for it soon.
+            return min(interval, float(self.REBUILD_SOON_SECONDS))
         return interval
+
+    #: How soon update() runs after a settings change, to rebuild the image.
+    REBUILD_SOON_SECONDS = 5
 
     def on_config_change(self, new_config: Dict[str, Any]) -> None:
         """Apply a web-UI save without a restart.
@@ -210,7 +217,10 @@ class LeaderboardPlugin(BasePlugin):
         self.data_fetcher.cache_max_age = self.update_interval // 2
         self.image_renderer = ImageRenderer(self.display_height, self.logger, self.appearance)
         self._configure_scroll()
-        self.scroll_helper.clear_cache()
+        # Keep showing the current image until update() has rebuilt it: the
+        # build (every team logo of every league) takes seconds on a Pi and
+        # must not run on the render thread.
+        self._needs_rebuild = True
         self._cycle_complete = False
         self.last_update = 0  # the next update() re-fetches with the new leagues
         self.logger.info(
@@ -233,6 +243,10 @@ class LeaderboardPlugin(BasePlugin):
         # (get_update_interval), and display() no longer fetches on its own.
         if (not force and self.leaderboard_data
                 and current_time - self.last_update < self.update_interval):
+            if getattr(self, "_needs_rebuild", False):
+                self._create_leaderboard_image()
+                self._needs_rebuild = False
+                return
             self.logger.debug(f"Skipping update - only {current_time - self.last_update:.1f}s since last update (interval: {self.update_interval}s)")
             return
         
@@ -281,8 +295,14 @@ class LeaderboardPlugin(BasePlugin):
             # display() only ever reads local files, never downloads.
             self.image_renderer.download_missing_logos(self.leaderboard_data)
 
-            # Clear scroll cache when data updates
-            self.scroll_helper.clear_cache()
+            # Build the scrolling image here, on the update worker, not in
+            # display(): it loads every team logo and took several seconds
+            # per rotation on a Pi, stalling the whole panel.
+            if self.leaderboard_data:
+                self._create_leaderboard_image()
+            else:
+                self.scroll_helper.clear_cache()
+            self._needs_rebuild = False
             
             total_teams = sum(len(d['teams']) for d in self.leaderboard_data)
             self.logger.info(f"Updated standings data: {len(self.leaderboard_data)} leagues, "
@@ -314,8 +334,10 @@ class LeaderboardPlugin(BasePlugin):
             self._display_fallback_message()
             return
         
-        # Create scrolling image if needed
-        if not self.scroll_helper.cached_image or force_clear:
+        # update() builds the image after each fetch; building here is only a
+        # fallback for the first frame if that build failed. force_clear (a
+        # new rotation) just restarts the scroll -- it no longer rebuilds.
+        if not self.scroll_helper.cached_image:
             self.logger.info("Creating leaderboard image...")
             self._create_leaderboard_image()
             if not self.scroll_helper.cached_image:

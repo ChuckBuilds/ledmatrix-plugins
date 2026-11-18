@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-flights",
   "name": "Flight Tracker",
-  "version": "1.16.0",
+  "version": "1.16.1",
   "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky/adsb.fi/adsb.lol data, map backgrounds, area mode, flight tracking, anchor airport, flight records, and optional airport weather (METAR/TAF/PIREP/SIGMET via the free NOAA Aviation Weather Center API)",
   "author": "ChuckBuilds",
   "category": "custom",
@@ -37,6 +37,12 @@
   ],
   "min_ledmatrix_version": "3.8.0",
   "versions": [
+    {
+      "version": "1.16.1",
+      "released": "2026-11-17",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "No more 'no data received' warning every few seconds. When the fetcher's throttle holds a request back on purpose (pacing to the provider's limit, or a rate-limit pause it already announced), that is logged at debug: with update_interval near that pace, about every other update was such a skip and was logged as a failure. A real outage now warns once, then every 5 minutes while it lasts, and logs once when data comes back."
+    },
     {
       "version": "1.16.0",
       "released": "2026-09-30",
