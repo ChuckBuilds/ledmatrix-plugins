@@ -68,6 +68,10 @@ class CalendarPlugin(BasePlugin):
         self.service = None
         self.events = []
         self.current_event_index = 0
+        # display() draws the sign-in screen with these, also on the early
+        # return below (no Google libraries), where it raised AttributeError.
+        self.datetime_font = None
+        self.title_font = None
         self.last_rotation = time.time()
         self._read_settings(config)
 
@@ -405,8 +409,15 @@ class CalendarPlugin(BasePlugin):
         Plugin system handles update interval scheduling.
         """
         if not self.service:
-            self.logger.warning("Calendar service not available - authentication may be required")
+            # The panel already shows the sign-in screen; say it in the log
+            # once, not on every update until someone signs in.
+            if not getattr(self, "_warned_no_service", False):
+                self._warned_no_service = True
+                self.logger.warning("Calendar service not available - authentication may be required")
+            else:
+                self.logger.debug("Calendar service not available; skipping update")
             return
+        self._warned_no_service = False
         
         # Check cache first. The calendar IDs are hashed, not joined into the
         # key: the key becomes a filename, and a few long Google calendar IDs

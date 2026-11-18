@@ -23,6 +23,7 @@ Features:
 API Version: 1.1.0
 """
 
+import re
 import time
 import logging
 import queue
@@ -134,6 +135,17 @@ logger = logging.getLogger(__name__)
 class OddsTickerPlugin(BasePlugin, BaseOddsManager):
     """Manager for displaying scrolling odds ticker for multiple sports leagues."""
     
+    @staticmethod
+    def _broadcast_key_matches(key: str, name: str) -> bool:
+        """Whether BROADCAST_LOGO_MAP ``key`` names the network in ``name``.
+
+        ESPN spells networks in mixed case ("Fox" for FOX), so after the old
+        exact substring test, match the key as a whole word ignoring case --
+        whole word so a short key never fires inside another name.
+        """
+        return key in name or re.search(
+            rf"(?<![A-Za-z0-9]){re.escape(key)}(?![A-Za-z0-9])", name, re.IGNORECASE) is not None
+
     BROADCAST_LOGO_MAP = {
         "ACC Network": "accn",
         "ACCN": "accn",
@@ -169,6 +181,8 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         "Hulu": "espn",
         "Disney+": "espn",
         "Apple TV+": "nbc",
+        "Prime Video": "prime",
+        "Amazon Prime Video": "prime",
         # Regional sports networks
         "MASN": "cbs",
         "MASN2": "cbs",
@@ -247,6 +261,7 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
         self.display_duration = get_config(display_options, 'display_duration', 30)
         self.loop = get_config(display_options, 'loop', True)
         self.show_channel_logos = get_config(display_options, 'show_channel_logos', True)
+        self._unmapped_broadcasts_warned = set()
         self.broadcast_logo_height_ratio = get_config(display_options, 'broadcast_logo_height_ratio', 0.8)
         self.broadcast_logo_max_width_ratio = get_config(display_options, 'broadcast_logo_max_width_ratio', 0.8)
 
@@ -1779,7 +1794,7 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
                 for b_name in broadcast_names:
                     logger.debug(f"Game {game.get('id')}: Checking broadcast name: '{b_name}'")
                     for key in sorted_keys:
-                        if key in b_name:
+                        if self._broadcast_key_matches(key, b_name):
                             logo_name = self.BROADCAST_LOGO_MAP[key]
                             logger.debug(f"Game {game.get('id')}: Matched '{key}' to logo '{logo_name}' for broadcast '{b_name}'")
                             break  # Found the best match for this b_name
@@ -1798,7 +1813,14 @@ class OddsTickerPlugin(BasePlugin, BaseOddsManager):
                         # Check if the file exists
                         logger.warning(f"Game {game.get('id')}: Logo file exists: {logo_path.exists()}")
                 else:
-                    logger.warning(f"Game {game.get('id')}: No mapping found for broadcast names {broadcast_names} in BROADCAST_LOGO_MAP")
+                    # Regional networks often have no logo; say so once per
+                    # set of names, not on every rebuild of the ticker.
+                    unmapped = tuple(broadcast_names)
+                    if unmapped not in self._unmapped_broadcasts_warned:
+                        self._unmapped_broadcasts_warned.add(unmapped)
+                        logger.info(f"No channel logo for broadcast names {list(unmapped)}; showing none")
+                    else:
+                        logger.debug(f"Game {game.get('id')}: No mapping found for broadcast names {broadcast_names}")
             else:
                 logger.debug(f"Game {game.get('id')}: No broadcast info available.")
 

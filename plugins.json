@@ -129,12 +129,12 @@
       "plugin_path": "plugins/calendar",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-03",
+      "last_updated": "2026-11-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.12",
+      "latest_version": "1.2.13",
       "ledmatrix_min_version": "3.3.0",
-      "commit": "738fe34597055fe045c2eb0b5e94be0040b9c3fd"
+      "commit": "fd2498da74e1e6ffaa0f7050ffa8b7923c1a7f8f"
     },
     {
       "id": "christmas-countdown",
@@ -440,12 +440,12 @@
       "plugin_path": "plugins/birdnet-go",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-05",
+      "last_updated": "2026-11-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.2.9",
+      "latest_version": "1.2.10",
       "ledmatrix_min_version": "2.0.0",
-      "commit": "650b0f53b24d1ac830c8a97be49841974a12ca30"
+      "commit": "fd2498da74e1e6ffaa0f7050ffa8b7923c1a7f8f"
     },
     {
       "id": "leaderboard",
@@ -714,12 +714,12 @@
       "plugin_path": "plugins/odds-ticker",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-05",
+      "last_updated": "2026-11-17",
       "verified": true,
       "screenshot": "",
-      "latest_version": "1.8.0",
+      "latest_version": "1.8.1",
       "ledmatrix_min_version": "3.8.1",
-      "commit": "751e973768d3205b420e9bed9c03df8601678601"
+      "commit": "fd2498da74e1e6ffaa0f7050ffa8b7923c1a7f8f"
     },
     {
       "id": "of-the-day",
