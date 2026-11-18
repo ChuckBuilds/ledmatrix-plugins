@@ -160,6 +160,11 @@ class BaseballScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
     delegating to the proven manager classes from LEDMatrix core.
     """
 
+    #: A granular mode back on screen after at least this long starts a fresh
+    #: dynamic-duration turn; a shorter gap continues the turn. Same threshold
+    #: as the external-call new-cycle check in _record_dynamic_progress.
+    GRANULAR_NEW_TURN_SECONDS = 10.0
+
     def __init__(
         self,
         plugin_id: str,
@@ -2125,15 +2130,6 @@ class BaseballScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
                 )
             except Exception as progress_err:  # pylint: disable=broad-except
                 self.logger.debug(f"Dynamic progress tracking failed: {progress_err}")
-        else:
-            # Manager returned False (no content) - ensure display is cleared
-            # This is a safety measure in case the manager didn't clear it
-            if force_clear:
-                try:
-                    self.display_manager.clear()
-                    self.display_manager.update_display()
-                except Exception as clear_err:
-                    self.logger.debug(f"Error clearing display when manager returned False: {clear_err}")
         
         current_mode = self.modes[self.current_mode_index] if self.modes else None
         self._evaluate_dynamic_cycle_completion(display_mode=current_mode)
@@ -3977,7 +3973,28 @@ class BaseballScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
                 if manager_key in self._dynamic_manager_progress:
                     self.logger.info(f"New cycle for {display_mode}: clearing progress for {manager_key}")
                     self._dynamic_manager_progress[manager_key].clear()
-        
+        elif display_mode and display_mode == current_mode:
+            # Granular mode (mlb_recent, ...): display_mode equals actual_mode,
+            # so the check above never runs, and reset_cycle_state keeps the
+            # progress on purpose. Without this, a mode's first turn left every
+            # game marked shown and each later turn ended at the minimum.
+            # Measured per mode: back after GRANULAR_NEW_TURN_SECONDS off
+            # screen starts a fresh turn; a shorter gap (a brief interruption)
+            # continues the turn, keeping the quick-switch persistence above.
+            last_seen_by_mode = self.__dict__.setdefault("_granular_mode_last_seen", {})
+            last_seen = last_seen_by_mode.get(display_mode)
+            last_seen_by_mode[display_mode] = current_time
+            if last_seen is not None and current_time - last_seen >= self.GRANULAR_NEW_TURN_SECONDS:
+                self.logger.info(
+                    f"New turn for {display_mode}: back after {current_time - last_seen:.1f}s, "
+                    f"clearing progress for {manager_key}"
+                )
+                self._single_game_manager_start_times.pop(manager_key, None)
+                self._dynamic_managers_completed.discard(manager_key)
+                self._game_id_start_times.pop(manager_key, None)
+                if manager_key in self._dynamic_manager_progress:
+                    self._dynamic_manager_progress[manager_key].clear()
+
         # Now add to tracking AFTER checking for new cycle
         if display_mode and display_mode != current_mode:
             # Store mapping from display_mode to manager_key for completion checking

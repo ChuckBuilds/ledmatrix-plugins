@@ -1459,6 +1459,33 @@ class FlightTrackerPlugin(BasePlugin):
 
         self._update_flight_records()
 
+    #: A run of failed fetches is warned about once, then at most this often.
+    NO_DATA_WARN_EVERY_S = 300.0
+
+    def _note_no_data(self) -> None:
+        """Log a fetch that returned nothing, without a warning per tick.
+
+        The fetcher's throttle holds requests back on purpose (pacing to the
+        provider's limit, or a rate-limit pause it already announced), and
+        with update_interval near that pace about every other tick is such a
+        skip. Those are expected and go to debug. A real failure warns once,
+        then every NO_DATA_WARN_EVERY_S while it lasts.
+        """
+        if getattr(self._fetcher, "last_skipped", False):
+            self.logger.debug("[Flight Tracker] %s: request held back by the throttle", self.data_source)
+            return
+        now = time.time()
+        if getattr(self, "_no_data_since", None) is None:
+            self._no_data_since = now
+            self._no_data_warned_at = 0.0
+        if now - getattr(self, "_no_data_warned_at", 0.0) >= self.NO_DATA_WARN_EVERY_S:
+            self._no_data_warned_at = now
+            self.logger.warning("[Flight Tracker] %s: no data received%s", self.data_source,
+                                "" if now - self._no_data_since < 1 else
+                                f" (for {now - self._no_data_since:.0f}s)")
+        else:
+            self.logger.debug("[Flight Tracker] %s: no data received", self.data_source)
+
     def _update_from_fetcher(self) -> None:
         """Fetch aircraft data via self._fetcher (adsbfi, adsblol, opensky) and integrate results.
 
@@ -1481,8 +1508,12 @@ class FlightTrackerPlugin(BasePlugin):
             self.altitude_colors,
         )
         if result is None:
-            self.logger.warning(f"[Flight Tracker] {self.data_source}: no data received")
+            self._note_no_data()
             return
+        if getattr(self, "_no_data_since", None) is not None:
+            self.logger.info("[Flight Tracker] %s: receiving data again after %.0fs",
+                             self.data_source, time.time() - self._no_data_since)
+            self._no_data_since = None
 
         current_time = time.time()
         _ENRICH_PRESERVE = (

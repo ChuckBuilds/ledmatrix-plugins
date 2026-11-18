@@ -2080,15 +2080,6 @@ class BasketballScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
                 )
             except Exception as progress_err:  # pylint: disable=broad-except
                 self.logger.debug(f"Dynamic progress tracking failed: {progress_err}")
-        else:
-            # Manager returned False (no content) - ensure display is cleared
-            # This is a safety measure in case the manager didn't clear it
-            if force_clear:
-                try:
-                    self.display_manager.clear()
-                    self.display_manager.update_display()
-                except Exception as clear_err:
-                    self.logger.debug(f"Error clearing display when manager returned False: {clear_err}")
         
         current_mode = self.modes[self.current_mode_index] if self.modes else None
         self._evaluate_dynamic_cycle_completion(display_mode=current_mode)

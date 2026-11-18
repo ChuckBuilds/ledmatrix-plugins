@@ -55,6 +55,17 @@ _MAX_PANEL_IMAGES = 16
 
 # Seconds before a species whose image fetch failed is tried again.
 _IMAGE_RETRY_S = 1800
+# A 404 means BirdNET-Go has no picture for that name; it will not grow one
+# in half an hour, so wait a day before asking again.
+_IMAGE_MISSING_RETRY_S = 86400
+
+# BirdNET also labels sounds that are not birds. Their "scientific name" is
+# the label itself, so there is no species picture to fetch. Single-word
+# labels (Engine, Fireworks, Gun, Siren, Dog, Noise) are caught by the
+# two-word rule in _is_species_name; these are the multi-word ones.
+_NON_SPECIES_LABELS = frozenset({
+    "human vocal", "human non-vocal", "human whistle", "power tools",
+})
 
 # Narrow fallback face for long names beside the photo; crisp only at 7px.
 NARROW_FONT_PATH = 'assets/fonts/4x6-font.ttf'
@@ -162,7 +173,7 @@ class BirdNetGoPlugin(BasePlugin):
         # species -> when its image fetch last failed; retried after
         # _IMAGE_RETRY_S. A permanent set meant one timeout (BirdNET-Go
         # downloads a photo upstream on first request) hid it until restart.
-        self._species_img_failed: Dict[str, float] = {}
+        self._species_img_failed: Dict[str, float] = {}  # species -> retry-at (epoch s)
         self._pending_image_fetch: Optional[str] = None
         self._scroll_pos = 0.0
         self._scroll_cache: Optional[Image.Image] = None
@@ -725,9 +736,18 @@ class BirdNetGoPlugin(BasePlugin):
             return image.width, image.height
         return 128, 32
 
+    @staticmethod
+    def _is_species_name(name: str) -> bool:
+        """True for a binomial like "Turdus migratorius"; False for BirdNET's
+        non-bird sound labels ("Engine", "Fireworks", "Human vocal")."""
+        name = " ".join((name or "").split())
+        return len(name.split(" ")) >= 2 and name.lower() not in _NON_SPECIES_LABELS
+
     def _fetch_species_image(self, species: str) -> Optional[Image.Image]:
         if not self.api_base_url or not species:
             return None
+        if not self._is_species_name(species):
+            return None  # a sound label, not a bird: no picture exists
         if self._image_failed_recently(species):
             return None
 
@@ -747,8 +767,13 @@ class BirdNetGoPlugin(BasePlugin):
             self.logger.info("Fetching species image: %s", url)
             resp = requests.get(url, timeout=self.api_timeout)
             if resp.status_code != 200:
-                self.logger.warning("Species image HTTP %s for %s", resp.status_code, species)
-                self._species_img_failed[species] = time.time()
+                if resp.status_code == 404:
+                    # No picture for this name: expected for rare species.
+                    self.logger.info("No species image for %s", species)
+                    self._species_img_failed[species] = time.time() + _IMAGE_MISSING_RETRY_S
+                else:
+                    self.logger.warning("Species image HTTP %s for %s", resp.status_code, species)
+                    self._species_img_failed[species] = time.time() + _IMAGE_RETRY_S
                 return None
             img = Image.open(BytesIO(resp.content))
             img.load()
@@ -763,12 +788,12 @@ class BirdNetGoPlugin(BasePlugin):
             return img
         except Exception as e:
             self.logger.warning("Error fetching species image for %s: %s", species, e)
-            self._species_img_failed[species] = time.time()
+            self._species_img_failed[species] = time.time() + _IMAGE_RETRY_S
             return None
 
     def _image_failed_recently(self, species: str) -> bool:
-        failed_at = self._species_img_failed.get(species)
-        return failed_at is not None and time.time() - failed_at < _IMAGE_RETRY_S
+        retry_at = self._species_img_failed.get(species)
+        return retry_at is not None and time.time() < retry_at
 
     def _resize_image(self, img: Image.Image, box_w: int, box_h: int) -> Image.Image:
         """Fill the box edge to edge, zoomed in so the bird isn't a speck.
@@ -1140,6 +1165,7 @@ class BirdNetGoPlugin(BasePlugin):
         deadline = time.time() + max(2.0, self.api_timeout * 1.5)
         for species in wanted:
             if (not species or species in self._species_img_cache
+                    or not self._is_species_name(species)
                     or self._image_failed_recently(species)):
                 continue
             if time.time() >= deadline:

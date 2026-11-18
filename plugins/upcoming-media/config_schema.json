@@ -1,0 +1,732 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Upcoming Episodes & Movies Configuration",
+  "description": "Upcoming TV episodes (Sonarr or Jellyfin) and movie releases (Radarr). Minimal setup: one URL + API key.",
+  "type": "object",
+  "$comment": "movie_release_types renders as a checkbox group, whose widget also posts a hidden movie_release_types_data field; it is permitted (and never read) so the core does not flag the UI's own save as an unknown key.",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Enable or disable the Upcoming Episodes & Movies plugin"
+    },
+    "display_duration": {
+      "type": "number",
+      "default": 30,
+      "minimum": 5,
+      "maximum": 600,
+      "description": "Seconds each mode stays on screen when dynamic duration is off (switch mode always shows every card once)"
+    },
+    "sonarr_url": {
+      "type": "string",
+      "default": "",
+      "description": "Sonarr base URL for upcoming episodes, e.g. http://192.168.1.50:8989 (include a URL base such as /sonarr if you use one). Preferred over Jellyfin when set.",
+      "x-placeholder": "http://192.168.1.50:8989"
+    },
+    "sonarr_api_key": {
+      "type": "string",
+      "default": "",
+      "description": "Sonarr API key (Settings > General > Security)",
+      "x-secret": true
+    },
+    "radarr_url": {
+      "type": "string",
+      "default": "",
+      "description": "Radarr base URL for upcoming movies, e.g. http://192.168.1.50:7878",
+      "x-placeholder": "http://192.168.1.50:7878"
+    },
+    "radarr_api_key": {
+      "type": "string",
+      "default": "",
+      "description": "Radarr API key (Settings > General > Security)",
+      "x-secret": true
+    },
+    "jellyfin_url": {
+      "type": "string",
+      "default": "",
+      "description": "Jellyfin base URL. Used for upcoming episodes when Sonarr is not set up (Jellyfin only knows unaired episodes of shows already in your library, and has no upcoming movies).",
+      "x-placeholder": "http://192.168.1.50:8096"
+    },
+    "jellyfin_api_key": {
+      "type": "string",
+      "default": "",
+      "description": "Jellyfin API key (Dashboard > API Keys)",
+      "x-secret": true
+    },
+    "jellyfin_libraries": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Jellyfin TV library names to include, e.g. 'TV Shows'. Leave empty for all libraries."
+    },
+    "jellyfin_username": {
+      "type": "string",
+      "default": "",
+      "description": "Jellyfin user whose libraries are read (empty = the first administrator)",
+      "x-advanced": true
+    },
+    "show_episodes": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show the Upcoming Episodes screen"
+    },
+    "show_movies": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show the Upcoming Movies screen"
+    },
+    "display_mode": {
+      "type": "string",
+      "enum": [
+        "switch",
+        "scroll"
+      ],
+      "default": "switch",
+      "description": "'switch' shows one item at a time, rotating; 'scroll' scrolls every item past as a ticker. Vegas mode always uses scrolling cards."
+    },
+    "window": {
+      "type": "string",
+      "enum": [
+        "upcoming_list",
+        "next_per_show"
+      ],
+      "default": "upcoming_list",
+      "description": "'upcoming_list' shows everything in the next days_ahead days; 'next_per_show' only each show's next episode."
+    },
+    "days_ahead": {
+      "type": "integer",
+      "default": 7,
+      "minimum": 0,
+      "maximum": 60,
+      "description": "How many days ahead to look (7 = this week; 0 = today only)"
+    },
+    "show_episode_title": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show the episode name next to (or under) the season/episode number"
+    },
+    "show_description": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show a short description when there is room (first sentence, trimmed to description_max_chars)"
+    },
+    "show_date": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show the release date (and air time when the source knows it)"
+    },
+    "show_runtime": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show the runtime (e.g. 45m, 2h 5m)"
+    },
+    "episode_format": {
+      "type": "string",
+      "enum": [
+        "compact",
+        "padded",
+        "long"
+      ],
+      "default": "compact",
+      "description": "Episode number style: compact 'S3E4', padded 'S03E04', or long 'Season 3 Episode 4' (falls back to compact when it does not fit)"
+    },
+    "image_type": {
+      "type": "string",
+      "enum": [
+        "auto",
+        "logo",
+        "poster",
+        "none"
+      ],
+      "default": "auto",
+      "description": "Artwork: 'auto' uses the show's logo on tall panels and the poster on short ones; 'logo' / 'poster' force one (falling back to the other); 'none' is text only"
+    },
+    "episode_source": {
+      "type": "string",
+      "enum": [
+        "auto",
+        "sonarr",
+        "jellyfin"
+      ],
+      "default": "auto",
+      "description": "Where episodes come from: 'auto' uses Sonarr when configured, else Jellyfin",
+      "x-advanced": true
+    },
+    "movie_release_types": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "cinema",
+          "digital",
+          "physical"
+        ]
+      },
+      "uniqueItems": true,
+      "default": [
+        "cinema",
+        "digital",
+        "physical"
+      ],
+      "description": "Which Radarr release dates count as 'coming out'. Leave all unchecked for all three.",
+      "x-widget": "checkbox-group",
+      "x-advanced": true
+    },
+    "include_unmonitored": {
+      "type": "boolean",
+      "default": false,
+      "description": "Include unmonitored episodes and movies from Sonarr/Radarr",
+      "x-advanced": true
+    },
+    "include_aired_today": {
+      "type": "boolean",
+      "default": true,
+      "description": "Keep showing today's episodes after they air (until midnight)",
+      "x-advanced": true
+    },
+    "include_downloaded": {
+      "type": "boolean",
+      "default": true,
+      "description": "Keep items that are already downloaded",
+      "x-advanced": true
+    },
+    "group_episodes": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show back-to-back episodes of a show on the same day as one card (S3E5-6)",
+      "x-advanced": true
+    },
+    "max_items": {
+      "type": "integer",
+      "default": 10,
+      "minimum": 1,
+      "maximum": 50,
+      "description": "Most items shown per screen",
+      "x-advanced": true
+    },
+    "description_max_chars": {
+      "type": "integer",
+      "default": 60,
+      "minimum": 10,
+      "maximum": 300,
+      "description": "Longest description, in characters, before it is cut at a word",
+      "x-advanced": true
+    },
+    "date_format": {
+      "type": "string",
+      "enum": [
+        "relative",
+        "short",
+        "numeric"
+      ],
+      "default": "relative",
+      "description": "'relative' (Today 9PM, Tomorrow, Thu, Nov 24), 'short' (Nov 24) or 'numeric' (11/24)",
+      "x-advanced": true
+    },
+    "time_format": {
+      "type": "string",
+      "enum": [
+        "12h",
+        "24h"
+      ],
+      "default": "12h",
+      "description": "Air-time format",
+      "x-advanced": true
+    },
+    "highlight_today": {
+      "type": "boolean",
+      "default": true,
+      "description": "Draw the date of anything coming out today in the Today color",
+      "x-advanced": true
+    },
+    "show_empty_message": {
+      "type": "boolean",
+      "default": false,
+      "description": "Show 'No upcoming episodes/movies' instead of skipping a screen that has nothing",
+      "x-advanced": true
+    },
+    "switch_duration": {
+      "type": "number",
+      "default": 6,
+      "minimum": 2,
+      "maximum": 60,
+      "description": "Switch mode: seconds per item",
+      "x-advanced": true
+    },
+    "marquee_enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Switch mode: scroll a title or episode name that is too long to fit, instead of cutting it off with ...",
+      "x-advanced": true
+    },
+    "scroll_speed": {
+      "type": "number",
+      "default": 1.0,
+      "minimum": 0.5,
+      "maximum": 5,
+      "description": "Scroll mode: pixels per frame (with scroll_delay; effective speed = scroll_speed / scroll_delay px/s)",
+      "x-advanced": true
+    },
+    "scroll_delay": {
+      "type": "number",
+      "default": 0.02,
+      "minimum": 0.005,
+      "maximum": 0.1,
+      "description": "Scroll mode: seconds per frame",
+      "x-advanced": true
+    },
+    "dynamic_duration": {
+      "type": "object",
+      "title": "Dynamic Duration",
+      "description": "Scroll mode: stay on screen until every item has scrolled past",
+      "x-advanced": true,
+      "properties": {
+        "enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Size the scroll screen's time to its content"
+        },
+        "min_duration_seconds": {
+          "type": "integer",
+          "default": 15,
+          "minimum": 5,
+          "maximum": 600,
+          "description": "Shortest scroll screen"
+        },
+        "max_duration_seconds": {
+          "type": "integer",
+          "default": 180,
+          "minimum": 10,
+          "maximum": 1800,
+          "description": "Longest scroll screen"
+        }
+      },
+      "x-propertyOrder": [
+        "enabled",
+        "min_duration_seconds",
+        "max_duration_seconds"
+      ],
+      "additionalProperties": false
+    },
+    "vegas_mode": {
+      "type": "string",
+      "enum": [
+        "scroll",
+        "fixed",
+        "static"
+      ],
+      "default": "scroll",
+      "description": "Vegas mode: 'scroll' joins the marquee as cards; 'static' pauses the marquee while this plugin shows",
+      "x-advanced": true
+    },
+    "update_interval": {
+      "type": "integer",
+      "default": 900,
+      "minimum": 60,
+      "maximum": 86400,
+      "description": "Seconds between calendar refreshes",
+      "x-advanced": true
+    },
+    "customization": {
+      "type": "object",
+      "title": "Display Customization",
+      "description": "Fonts and colors",
+      "properties": {
+        "title_text": {
+          "type": "object",
+          "title": "Title",
+          "description": "Show or movie title (hidden when the show's logo is drawn)",
+          "properties": {
+            "font": {
+              "type": "string",
+              "title": "Font",
+              "description": "Font face. 'auto' picks one sized for the panel (small, medium or large tier).",
+              "enum": [
+                "auto",
+                "4x6-font.ttf",
+                "5by7.regular.ttf",
+                "PressStart2P-Regular.ttf",
+                "4x6.bdf",
+                "tom-thumb.bdf",
+                "5x7.bdf",
+                "5x8.bdf",
+                "6x9.bdf",
+                "6x10.bdf",
+                "6x13.bdf",
+                "6x13B.bdf",
+                "7x13.bdf",
+                "7x13B.bdf",
+                "8x13B.bdf",
+                "9x15.bdf",
+                "9x15B.bdf",
+                "10x20.bdf",
+                "MatrixLight6.bdf",
+                "MatrixChunky8.bdf"
+              ],
+              "default": "auto",
+              "x-advanced": true
+            },
+            "font_size": {
+              "type": "integer",
+              "title": "Font Size",
+              "description": "Pixel size; 0 = automatic (a bitmap .bdf face always draws at its own size; 4x6-font is crisp at multiples of 7, PressStart2P at multiples of 8).",
+              "minimum": 0,
+              "maximum": 32,
+              "default": 0,
+              "x-advanced": true
+            },
+            "text_color": {
+              "type": "array",
+              "title": "Text Color",
+              "description": "Text color (RGB)",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "default": [
+                255,
+                255,
+                255
+              ],
+              "x-widget": "color-picker"
+            }
+          },
+          "x-propertyOrder": [
+            "font",
+            "font_size",
+            "text_color"
+          ],
+          "additionalProperties": false
+        },
+        "episode_text": {
+          "type": "object",
+          "title": "Episode",
+          "description": "Season/episode number, episode name, movie release type",
+          "properties": {
+            "font": {
+              "type": "string",
+              "title": "Font",
+              "description": "Font face. 'auto' picks one sized for the panel (small, medium or large tier).",
+              "enum": [
+                "auto",
+                "4x6-font.ttf",
+                "5by7.regular.ttf",
+                "PressStart2P-Regular.ttf",
+                "4x6.bdf",
+                "tom-thumb.bdf",
+                "5x7.bdf",
+                "5x8.bdf",
+                "6x9.bdf",
+                "6x10.bdf",
+                "6x13.bdf",
+                "6x13B.bdf",
+                "7x13.bdf",
+                "7x13B.bdf",
+                "8x13B.bdf",
+                "9x15.bdf",
+                "9x15B.bdf",
+                "10x20.bdf",
+                "MatrixLight6.bdf",
+                "MatrixChunky8.bdf"
+              ],
+              "default": "auto",
+              "x-advanced": true
+            },
+            "font_size": {
+              "type": "integer",
+              "title": "Font Size",
+              "description": "Pixel size; 0 = automatic (a bitmap .bdf face always draws at its own size; 4x6-font is crisp at multiples of 7, PressStart2P at multiples of 8).",
+              "minimum": 0,
+              "maximum": 32,
+              "default": 0,
+              "x-advanced": true
+            },
+            "text_color": {
+              "type": "array",
+              "title": "Text Color",
+              "description": "Text color (RGB)",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "default": [
+                120,
+                200,
+                255
+              ],
+              "x-widget": "color-picker"
+            }
+          },
+          "x-propertyOrder": [
+            "font",
+            "font_size",
+            "text_color"
+          ],
+          "additionalProperties": false
+        },
+        "date_text": {
+          "type": "object",
+          "title": "Date",
+          "description": "Release date, time and runtime",
+          "properties": {
+            "font": {
+              "type": "string",
+              "title": "Font",
+              "description": "Font face. 'auto' picks one sized for the panel (small, medium or large tier).",
+              "enum": [
+                "auto",
+                "4x6-font.ttf",
+                "5by7.regular.ttf",
+                "PressStart2P-Regular.ttf",
+                "4x6.bdf",
+                "tom-thumb.bdf",
+                "5x7.bdf",
+                "5x8.bdf",
+                "6x9.bdf",
+                "6x10.bdf",
+                "6x13.bdf",
+                "6x13B.bdf",
+                "7x13.bdf",
+                "7x13B.bdf",
+                "8x13B.bdf",
+                "9x15.bdf",
+                "9x15B.bdf",
+                "10x20.bdf",
+                "MatrixLight6.bdf",
+                "MatrixChunky8.bdf"
+              ],
+              "default": "auto",
+              "x-advanced": true
+            },
+            "font_size": {
+              "type": "integer",
+              "title": "Font Size",
+              "description": "Pixel size; 0 = automatic (a bitmap .bdf face always draws at its own size; 4x6-font is crisp at multiples of 7, PressStart2P at multiples of 8).",
+              "minimum": 0,
+              "maximum": 32,
+              "default": 0,
+              "x-advanced": true
+            },
+            "text_color": {
+              "type": "array",
+              "title": "Text Color",
+              "description": "Text color (RGB)",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "default": [
+                255,
+                190,
+                60
+              ],
+              "x-widget": "color-picker"
+            }
+          },
+          "x-propertyOrder": [
+            "font",
+            "font_size",
+            "text_color"
+          ],
+          "additionalProperties": false
+        },
+        "description_text": {
+          "type": "object",
+          "title": "Description",
+          "description": "Short description",
+          "properties": {
+            "font": {
+              "type": "string",
+              "title": "Font",
+              "description": "Font face. 'auto' picks one sized for the panel (small, medium or large tier).",
+              "enum": [
+                "auto",
+                "4x6-font.ttf",
+                "5by7.regular.ttf",
+                "PressStart2P-Regular.ttf",
+                "4x6.bdf",
+                "tom-thumb.bdf",
+                "5x7.bdf",
+                "5x8.bdf",
+                "6x9.bdf",
+                "6x10.bdf",
+                "6x13.bdf",
+                "6x13B.bdf",
+                "7x13.bdf",
+                "7x13B.bdf",
+                "8x13B.bdf",
+                "9x15.bdf",
+                "9x15B.bdf",
+                "10x20.bdf",
+                "MatrixLight6.bdf",
+                "MatrixChunky8.bdf"
+              ],
+              "default": "auto",
+              "x-advanced": true
+            },
+            "font_size": {
+              "type": "integer",
+              "title": "Font Size",
+              "description": "Pixel size; 0 = automatic (a bitmap .bdf face always draws at its own size; 4x6-font is crisp at multiples of 7, PressStart2P at multiples of 8).",
+              "minimum": 0,
+              "maximum": 32,
+              "default": 0,
+              "x-advanced": true
+            },
+            "text_color": {
+              "type": "array",
+              "title": "Text Color",
+              "description": "Text color (RGB)",
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255
+              },
+              "minItems": 3,
+              "maxItems": 3,
+              "default": [
+                170,
+                170,
+                170
+              ],
+              "x-widget": "color-picker"
+            }
+          },
+          "x-propertyOrder": [
+            "font",
+            "font_size",
+            "text_color"
+          ],
+          "additionalProperties": false
+        },
+        "today_color": {
+          "type": "array",
+          "title": "Today Color",
+          "description": "Date color for anything out today",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [
+            90,
+            255,
+            120
+          ],
+          "x-widget": "color-picker"
+        },
+        "accent_color": {
+          "type": "array",
+          "title": "Accent Color",
+          "description": "Divider between cards in scroll mode",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [
+            124,
+            77,
+            255
+          ],
+          "x-widget": "color-picker"
+        },
+        "background_color": {
+          "type": "array",
+          "title": "Background Color",
+          "description": "Card background",
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 255
+          },
+          "minItems": 3,
+          "maxItems": 3,
+          "default": [
+            0,
+            0,
+            0
+          ],
+          "x-widget": "color-picker"
+        }
+      },
+      "x-propertyOrder": [
+        "title_text",
+        "episode_text",
+        "date_text",
+        "description_text",
+        "today_color",
+        "accent_color",
+        "background_color"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "x-propertyOrder": [
+    "enabled",
+    "sonarr_url",
+    "sonarr_api_key",
+    "radarr_url",
+    "radarr_api_key",
+    "jellyfin_url",
+    "jellyfin_api_key",
+    "jellyfin_libraries",
+    "show_episodes",
+    "show_movies",
+    "display_mode",
+    "window",
+    "days_ahead",
+    "show_episode_title",
+    "show_description",
+    "show_date",
+    "show_runtime",
+    "episode_format",
+    "image_type",
+    "display_duration",
+    "customization",
+    "jellyfin_username",
+    "episode_source",
+    "movie_release_types",
+    "include_unmonitored",
+    "include_aired_today",
+    "include_downloaded",
+    "group_episodes",
+    "max_items",
+    "description_max_chars",
+    "date_format",
+    "time_format",
+    "highlight_today",
+    "show_empty_message",
+    "switch_duration",
+    "marquee_enabled",
+    "scroll_speed",
+    "scroll_delay",
+    "dynamic_duration",
+    "vegas_mode",
+    "update_interval"
+  ],
+  "required": [
+    "enabled"
+  ],
+  "patternProperties": {
+    "^movie_release_types_data$": {
+      "$comment": "Written by the web UI checkbox-group widget, not a setting."
+    }
+  },
+  "additionalProperties": false
+}

@@ -219,10 +219,6 @@ class FootballLive(Football, SportsLive):
             if self._adaptive_scorebug(game, "live", force_clear):
                 return
 
-            # Clear the display first to ensure full coverage (like weather plugin does)
-            if force_clear:
-                self.display_manager.clear()
-            
             # Use display_manager.matrix dimensions directly to ensure full display coverage
             display_width = self.display_manager.matrix.width if hasattr(self.display_manager, 'matrix') and self.display_manager.matrix else self.display_width
             display_height = self.display_manager.matrix.height if hasattr(self.display_manager, 'matrix') and self.display_manager.matrix else self.display_height

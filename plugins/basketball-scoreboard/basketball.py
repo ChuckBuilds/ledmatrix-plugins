@@ -162,9 +162,6 @@ class BasketballLive(Basketball, SportsLive):
     def _draw_scorebug_layout(self, game: Dict, force_clear: bool = False) -> None:
         """Draw the detailed scorebug layout for a live Basketball game."""
         try:
-            # Clear the display first to ensure full coverage
-            if force_clear:
-                self.display_manager.clear()
             
             # Use display_manager.matrix dimensions directly
             display_width = self.display_manager.matrix.width if hasattr(self.display_manager, 'matrix') and self.display_manager.matrix else self.display_width

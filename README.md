@@ -127,13 +127,14 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 | [Weather Display](./plugins/ledmatrix-weather/) | Current conditions, hourly & daily forecasts (Open-Meteo) | <a href="./plugins/ledmatrix-weather/"><img src="./docs/assets/ledmatrix-weather/hero.png" width="240" alt="ledmatrix-weather on an LED panel"></a> |
 | [Tide Display](./plugins/tide-display/) | Coastal tides with animated wave level, schedule & 24-hour chart (NOAA) | <a href="./plugins/tide-display/"><img src="./docs/assets/tide-display/hero.png" width="240" alt="tide-display on an LED panel"></a> |
 
-### Media (3)
+### Media (4)
 
 | Plugin | Description | Preview |
 |--------|-------------|---------|
 | [Jellyfin Now Playing](./plugins/jellyfin-now-playing/) | Poster, title and playback progress from your Jellyfin server | <a href="./plugins/jellyfin-now-playing/"><img src="./docs/assets/jellyfin-now-playing/hero.png" width="240" alt="jellyfin-now-playing on an LED panel"></a> |
 | [Music Player](./plugins/ledmatrix-music/) | Now playing with album art (Spotify & YouTube Music) | <a href="./plugins/ledmatrix-music/"><img src="./docs/assets/ledmatrix-music/hero.png" width="240" alt="ledmatrix-music on an LED panel"></a> |
 | [Static Image Display](./plugins/static-image/) | Image display with scaling and transparency | <a href="./plugins/static-image/"><img src="./docs/assets/static-image/hero.png" width="240" alt="static-image on an LED panel"></a> |
+| [Upcoming Episodes & Movies](./plugins/upcoming-media/) | Next TV episodes (Sonarr or Jellyfin) and movie releases (Radarr) with art, S3E4, date and runtime | <a href="./plugins/upcoming-media/"><img src="./docs/assets/upcoming-media/hero.png" width="240" alt="upcoming-media on an LED panel"></a> |
 
 ### Content (2)
 
@@ -155,7 +156,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 | Plugin | Description | Preview |
 |--------|-------------|---------|
 | [Pomodoro Timer](./plugins/pomodoro-timer/) | Focus/break timer with MQTT control and Home Assistant discovery | <a href="./plugins/pomodoro-timer/"><img src="./plugins/pomodoro-timer/assets/hero.png" width="240" alt="pomodoro-timer on an LED panel"></a> |
-| [Incoming Packages](./plugins/incoming-packages/) | Rotating carrier cards for packages arriving today, via Home Assistant | <a href="./plugins/incoming-packages/"><img src="./docs/assets/incoming-packages/hero.png" width="240" alt="incoming-packages on an LED panel"></a> |
+| [Incoming Packages](./plugins/incoming-packages/) | Rotating carrier cards for packages arriving today, via Home Assistant, AfterShip or Parcel | <a href="./plugins/incoming-packages/"><img src="./docs/assets/incoming-packages/hero.png" width="240" alt="incoming-packages on an LED panel"></a> |
 
 ### Games (1)
 
