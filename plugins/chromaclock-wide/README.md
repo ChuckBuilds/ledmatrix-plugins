@@ -19,11 +19,9 @@ On LEDMatrix releases supporting plugin-supplied custom widgets, the **Live LEDM
 
 ## Installation
 
-1. Use **Code → Download ZIP** and extract this repository.
-2. In your existing Raspberry Pi LEDMatrix checkout, place `manager.py`, `manifest.json`, `config_schema.json`, and `requirements.txt` into `plugin-repos/chromaclock-wide/`. If your version offers third-party GitHub installation, you can try installing this repository directly through the Plugin Manager instead.
-3. Ensure Pillow is available in LEDMatrix's Python environment; restart/rescan LEDMatrix if it does not discover the new plugin.
-4. Enable **ChromaClock Wide** under the Plugin Manager and configure timezone, style and preferences.
-5. For a preview on your matrix, set **Preview Mode** to true and choose **Preview Style**. Save; then disable preview when done.
+1. In the LEDMatrix web UI, open **Plugin Manager**, find **ChromaClock Wide** in the Plugin Store, and install it.
+2. Enable it and set the timezone, style and preferences in its settings tab.
+3. To try a style on the matrix, turn on **Preview Mode** and choose **Preview Style**, then save. Turn Preview Mode off again to go back to cycling.
 
 LEDMatrix must already be configured with your physical 5-panel chain. The plugin follows its reported width and height.
 

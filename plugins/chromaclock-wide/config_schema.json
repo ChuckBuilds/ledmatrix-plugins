@@ -132,10 +132,9 @@
       "default": 30
     },
     "live_preview": {
-      "type": "string",
-      "default": "live",
+      "type": "null",
       "title": "Live LEDMatrix Preview",
-      "description": "Live browser preview of unsaved clock settings",
+      "description": "Live browser preview of unsaved clock settings (display only: nothing is saved)",
       "x-widget": "chromaclock-live-preview"
     }
   },

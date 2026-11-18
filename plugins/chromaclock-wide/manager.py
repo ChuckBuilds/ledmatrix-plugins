@@ -26,6 +26,9 @@ def get_font(size, bold=True):
     paths = (["/usr/share/fonts/truetype/dejavu/DejaVuSansMono-Bold.ttf",
               "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"] if bold else
              ["/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf"])
+    # Bare names last: Pillow looks them up in the system font folders, so
+    # distros that keep DejaVu elsewhere still get the real face.
+    paths = paths + [path.rsplit("/", 1)[1] for path in paths]
     for path in paths:
         try:
             return ImageFont.truetype(path, size)
@@ -288,6 +291,7 @@ class ChromaClockWidePlugin(BasePlugin):
                 a, b = (65, 255, 135), (15, 95, 60)
             img = Image.new("RGB", (w, h))
             draw = ImageDraw.Draw(img)
+            draw.fontmode = "1"  # no anti-aliasing: crisp pixels on an LED panel
             self._decor(draw, w, h, self.current_style, tick, a, b)
             self._original_style(draw, w, h, self.current_style, tick, now, a, b)
             text = now.strftime("%H:%M" if self.use_24h else "%I:%M")

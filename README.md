@@ -111,7 +111,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 | [Stocks Ticker](./plugins/ledmatrix-stocks/) | Real-time stock & crypto prices with charts | <a href="./plugins/ledmatrix-stocks/"><img src="./docs/assets/ledmatrix-stocks/hero.png" width="240" alt="ledmatrix-stocks on an LED panel"></a> |
 | [Stock News](./plugins/stock-news/) | Financial headlines from RSS feeds | <a href="./plugins/stock-news/"><img src="./docs/assets/stock-news/hero.png" width="240" alt="stock-news on an LED panel"></a> |
 
-### Time & Calendar (4)
+### Time & Calendar (5)
 
 | Plugin | Description | Preview |
 |--------|-------------|---------|
@@ -119,6 +119,7 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 | [7-Segment Clock](./plugins/7-segment-clock/) | Retro-style 7-segment clock with customizable colors | <a href="./plugins/7-segment-clock/"><img src="./docs/assets/7-segment-clock/hero.png" width="240" alt="7-segment-clock on an LED panel"></a> |
 | [Google Calendar](./plugins/calendar/) | Upcoming events from Google Calendar | <a href="./plugins/calendar/"><img src="./docs/assets/calendar/hero.png" width="240" alt="calendar on an LED panel"></a> |
 | [Geochron World Clock](./plugins/geochron/) | World map with the real-time day/night terminator | <a href="./plugins/geochron/"><img src="./docs/assets/geochron/hero.png" width="240" alt="geochron on an LED panel"></a> |
+| [ChromaClock Wide](./plugins/chromaclock-wide/) | Native-width animated clock with 28 styles for wide panels (designed on 320x32) | <a href="./plugins/chromaclock-wide/"><img src="./docs/assets/chromaclock-wide/hero.png" width="240" alt="chromaclock-wide on an LED panel"></a> |
 
 ### Weather (2)
 

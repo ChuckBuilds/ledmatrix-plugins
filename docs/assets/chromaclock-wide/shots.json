@@ -1,0 +1,13 @@
+{
+  "plugin": "chromaclock-wide",
+  "defaults": {
+    "width": 256,
+    "height": 32,
+    "scale": 3,
+    "freeze_time": "2026-11-18T19:42:30Z",
+    "config": {"enabled": true, "style": "neon", "timezone": "America/New_York"}
+  },
+  "shots": [
+    { "name": "hero" }
+  ]
+}
