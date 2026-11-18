@@ -251,10 +251,9 @@
       "default": 0.01
     },
     "live_preview": {
-      "type": "string",
-      "default": "live",
+      "type": "null",
       "title": "Live LEDMatrix Preview",
-      "description": "Visual 320x32 representation of your unsaved settings including colors, font sizes, printer names and rotation, thumbnails, status options and temperature units.",
+      "description": "Visual 320x32 representation of your unsaved settings including colors, font sizes, printer names and rotation, thumbnails, status options and temperature units. Display only: nothing is saved.",
       "x-widget": "moonraker-live-preview"
     },
     "completed_display_minutes": {

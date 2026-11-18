@@ -315,9 +315,31 @@ class MoonrakerKlipperPlugin(BasePlugin):
             text=text[:-1]
         return text
 
+    #: Below this card width the right column (state, temperatures, ETA) is
+    #: dropped and state + ETA take the filename row instead.
+    COMPACT_WIDTH=160
+    #: The card is laid out for this many rows.
+    CARD_HEIGHT=32
+
     def _image(self,record,width,height):
+        """Fit the 32-row card to any panel: a taller panel gets the card
+        scaled up by a whole factor (rendered narrower, so it stays inside
+        the width), centred, else the card centred at 1x."""
+        card_h=self.CARD_HEIGHT
+        if height<=card_h:
+            return self._card(record,width,height)
+        scale=max(1,min(height//card_h,width//64))
+        card=self._card(record,width//scale,card_h)
+        if scale>1:
+            card=card.resize((card.width*scale,card.height*scale),Image.Resampling.NEAREST)
+        img=Image.new("RGB",(width,height),(0,0,0))
+        img.paste(card,((width-card.width)//2,(height-card.height)//2))
+        return img
+
+    def _card(self,record,width,height):
         img=Image.new("RGB",(width,height),(0,0,0))
         d=ImageDraw.Draw(img)
+        d.fontmode="1"  # no anti-aliasing: crisp pixels on an LED panel
         font=self._font("printer",10)
         filename_font=self._font("filename",9)
         state_font=self._font("status",9)
@@ -337,19 +359,29 @@ class MoonrakerKlipperPlugin(BasePlugin):
         else:
             d.rectangle((2,4,max(3,thumb_side-2),max(5,height-5)),outline=BLUE)
             d.line((4,height-9,thumb_side//2,6,thumb_side-4,height-9),fill=BLUE,width=1)
+        compact=width<self.COMPACT_WIDTH
         right_width=max(75,width//3)
-        main_right=max(left+45,width-right_width)
+        main_right=width if compact else max(left+45,width-right_width)
         state=record["state"]
         color=self._color(state)
+        activity=record.get("activity","")
+        bottom=("ETA "+_fmt(record["remaining"])) if state=="printing" and not activity else ("STARTUP" if activity else state.upper())
         d.text((left,0),self._fit(d,record["name"],font,main_right-left-2),
                fill=self._user_color("printer",WHITE),font=font)
-        d.text((main_right+2,0),self._fit(d,state.upper(),state_font,width-main_right-3),
-               fill=self._user_color("status",color),font=state_font)
-        job=posixpath.basename(record["filename"]) or "No active job"
-        d.text((left,11),self._fit(d,job,filename_font,main_right-left-3),
-               fill=self._user_color("filename",MUTED),font=filename_font)
+        if compact:
+            # No room for the right column: state, then the ETA, on row two.
+            status=state.upper()
+            if bottom.startswith("ETA "):
+                status+=" "+bottom[4:]
+            d.text((left,11),self._fit(d,status,state_font,main_right-left-2),
+                   fill=self._user_color("status",color),font=state_font)
+        else:
+            d.text((main_right+2,0),self._fit(d,state.upper(),state_font,width-main_right-3),
+                   fill=self._user_color("status",color),font=state_font)
+            job=posixpath.basename(record["filename"]) or "No active job"
+            d.text((left,11),self._fit(d,job,filename_font,main_right-left-6),
+                   fill=self._user_color("filename",MUTED),font=filename_font)
 
-        activity=record.get("activity","")
         if activity:
             # Replace the progress bar and percentage until extrusion begins.
             preprint_color=self._user_color("preprint",YELLOW)
@@ -366,6 +398,8 @@ class MoonrakerKlipperPlugin(BasePlugin):
                         fill=self._user_color("progress",color))
             d.text((bar_right+3,21),value,fill=self._user_color("progress",color),font=progress_font)
 
+        if compact:
+            return img
         nozzle_x=main_right+2
         nozzle_color=self._user_color("nozzle",ORANGE)
         bed_color=self._user_color("bed",BLUE)
@@ -375,7 +409,6 @@ class MoonrakerKlipperPlugin(BasePlugin):
         bed_x=nozzle_x+8+int(d.textlength(nozzle_value,font=temp_font))+6
         self._temperature_icon(d,bed_x,12,"bed",bed_color)
         d.text((bed_x+9,11),"%d°"%self._temp(record["bed"]),fill=bed_color,font=temp_font)
-        bottom=("ETA "+_fmt(record["remaining"])) if state=="printing" and not activity else ("STARTUP" if activity else state.upper())
         d.text((main_right+2,22),self._fit(d,bottom,eta_font,width-main_right-3),
                fill=self._user_color("eta",WHITE),font=eta_font)
         return img

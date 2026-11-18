@@ -1,12 +1,20 @@
 {
   "id": "moonraker-klipper",
   "name": "Moonraker-Klipper",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "author": "airbornetrooper82573",
   "description": "Cycle through Klipper printers with live Moonraker thumbnails on wide RGB LED matrices.",
   "entry_point": "manager.py",
   "class_name": "MoonrakerKlipperPlugin",
   "category": "utility",
+  "icon": "fas fa-cube",
+  "tags": [
+    "3d-printing",
+    "klipper",
+    "moonraker",
+    "printer",
+    "monitoring"
+  ],
   "display_modes": [
     "moonraker-klipper"
   ],
@@ -16,8 +24,26 @@
   "update_interval": 10,
   "vegas_participation": "pause",
   "config_schema": "config_schema.json",
-  "last_updated": "2026-11-16",
+  "widgets": [
+    {
+      "name": "moonraker-color-picker",
+      "script": "moonraker-controls.js",
+      "description": "Native browser color picker for display elements"
+    },
+    {
+      "name": "moonraker-live-preview",
+      "script": "moonraker-controls.js",
+      "description": "Live 320x32 multi-printer preview"
+    }
+  ],
+  "last_updated": "2026-11-18",
   "versions": [
+    {
+      "version": "1.7.1",
+      "released": "2026-11-18",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "Fits every panel size. Below 160 columns the right column (temperatures, ETA) is dropped and the state and ETA take the filename row, so nothing is cut off on 64x32, 96x48 or 128x32. Panels taller than 32 rows show the card scaled up by a whole factor (or centred) instead of leaving the bottom black. Adds a LICENSE file and the Plugin Store entry. Text is drawn without anti-aliasing (crisp pixels), and the Live Preview setting is display-only, so it is no longer saved into config.json."
+    },
     {
       "version": "1.7.0",
       "released": "2026-11-16",
@@ -77,18 +103,6 @@
       "released": "2026-10-20",
       "ledmatrix_min_version": "2.0.0",
       "notes": "Initial multi-printer rotation and thumbnail support."
-    }
-  ],
-  "widgets": [
-    {
-      "name": "moonraker-color-picker",
-      "script": "moonraker-controls.js",
-      "description": "Native browser color picker for display elements"
-    },
-    {
-      "name": "moonraker-live-preview",
-      "script": "moonraker-controls.js",
-      "description": "Live 320x32 multi-printer preview"
     }
   ]
 }

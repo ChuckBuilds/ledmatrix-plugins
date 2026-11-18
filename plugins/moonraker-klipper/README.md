@@ -17,10 +17,13 @@ In plugin settings, add entries to **Printers** with their own name, URL and opt
 
 Select a **seconds_per_printer** value such as 10. Enable dynamic duration so each printer is displayed once, then the regular LEDMatrix rotation resumes. Enable **show_thumbnail** for the print object on the left. Each printer's slicer must embed thumbnails in its G-code for previews to appear.
 
+## Panel sizes
+The card is laid out for 32 rows and works best on wide panels (256x32, 320x32). Below 160 columns it drops the right column (temperatures and ETA); the second row then shows the state and ETA instead of the filename. On panels taller than 32 rows the card is scaled up by a whole factor, or centred when the panel is not tall enough to scale.
+
 ## Limitations
 The LEDMatrix schema-driven editor's support for adding/removing array-of-object items varies by core release; where unsupported, edit the `printers` list in `config/config.json` directly. The preview is constrained by the physical panel resolution: for 5 x 64x32 P5 panels in a row the canvas is **320x32**. Progress ETA is estimated from elapsed time and progress (not Moonraker's slicer ETA).
 
-The plugin is read-only, and makes HTTP GET requests to the configured Moonraker hosts. Avoid exposing Moonraker unsecured to the Internet. No physical LEDMatrix hardware or Moonraker printers were available for live integration tests.
+The plugin is read-only, and makes HTTP GET requests to the configured Moonraker hosts. Avoid exposing Moonraker unsecured to the Internet. A printer's optional `api_key` is stored in plain text in LEDMatrix's `config/config.json` (not `config_secrets.json`), and it shows in the settings form. Most LAN Moonraker installs do not need one. No physical LEDMatrix hardware or Moonraker printers were available for live integration tests.
 
 ## Development
 Install Python dependencies with `pip install -r requirements.txt`. See the [LEDMatrix plugin API](https://github.com/ChuckBuilds/LEDMatrix/blob/main/docs/PLUGIN_API_REFERENCE.md).
