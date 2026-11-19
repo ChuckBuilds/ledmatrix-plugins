@@ -232,8 +232,16 @@ class YTMClient:
         costs a handful of lines an hour instead of thousands.
         """
         self._consecutive_failures += 1
+        # Cap the exponent before multiplying. 2 ** n is an exact int that
+        # never overflows, but BASE * it is a float, and past n = 1024 that
+        # raised OverflowError -- after ~1,025 failures in a row, about 3.5
+        # days of the companion being off at the 300 s cap. The exception
+        # escaped connect_client() and killed the poll thread on every
+        # attempt from then on: ~17,000 tracebacks a day on a live Pi until a
+        # restart reset the count. The cap is reached by n = 7 anyway.
+        exponent = min(self._consecutive_failures - 1, 16)
         delay = min(
-            self._RECONNECT_BACKOFF_BASE * (2 ** (self._consecutive_failures - 1)),
+            self._RECONNECT_BACKOFF_BASE * (2 ** exponent),
             self._RECONNECT_BACKOFF_MAX,
         )
         self._next_retry_at = time.monotonic() + delay

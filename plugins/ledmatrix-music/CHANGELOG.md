@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.5.6] - 2026-11-19
+
+### Fixed
+- YouTube Music: a companion left off for days no longer crashes the poll
+  thread. The reconnect delay was `5.0 * 2 ** (failures - 1)` capped *after*
+  multiplying; past 1,024 consecutive failures (about 3.5 days at the 300 s
+  cap) the float multiply raised `OverflowError`, which escaped
+  `connect_client()` and killed the poll thread on every attempt -- seen on a
+  live Pi as ~17,000 tracebacks a day until a restart reset the count. The
+  exponent is now capped before multiplying.
+
 ## [1.5.5] - 2026-10-03
 
 ### Fixed

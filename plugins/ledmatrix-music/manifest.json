@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-music",
   "name": "Music Player - Now Playing",
-  "version": "1.5.5",
+  "version": "1.5.6",
   "description": "Real-time now playing display for Spotify and YouTube Music with album art, scrolling text, and progress bars",
   "author": "ChuckBuilds",
   "entry_point": "manager.py",
@@ -65,6 +65,12 @@
     }
   ],
   "versions": [
+    {
+      "version": "1.5.6",
+      "released": "2026-11-19",
+      "ledmatrix_min_version": "2.0.0",
+      "notes": "YouTube Music: a companion left off for days no longer crashes the poll thread. After about 1,025 failed reconnects in a row (roughly 3.5 days at the 5-minute cap) working out the next retry delay raised OverflowError, which killed the poll thread on every attempt from then on -- about 17,000 tracebacks a day until a restart. The delay now stays at the 5-minute cap however long the companion is away."
+    },
     {
       "version": "1.5.5",
       "released": "2026-10-03",
@@ -217,7 +223,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-10-02",
+  "last_updated": "2026-11-19",
   "stars": 0,
   "downloads": 0,
   "verified": true,
