@@ -28,6 +28,7 @@ import random
 import threading
 import time
 import requests
+import hashlib
 import html
 import re
 from datetime import datetime
@@ -508,8 +509,10 @@ class StockNewsTickerPlugin(BasePlugin):
         """Worker thread: do the network for one batch and queue the results.
 
         Touches no state display() reads. Headlines go back as ('items', key,
-        list); each logo as ('logo', symbol, saved?). The request budget and
-        the HTTP session are only used from here once the plugin is running.
+        list, source) -- source is the feed URL, None for a symbol, so a result
+        the config has moved on from can be told apart; each logo as ('logo',
+        symbol, saved?, None). The request budget and the HTTP session are only
+        used from here once the plugin is running.
         """
         try:
             for key, kind, name, url, max_items in jobs:
@@ -517,16 +520,30 @@ class StockNewsTickerPlugin(BasePlugin):
                     items = self._fetch_stock_news(name, max_items)
                 else:
                     items = self._fetch_rss_feed(name, url or "", max_items=max_items)
-                self._fetch_results.put(('items', key, items))
+                self._fetch_results.put(('items', key, items, url))
             for symbol in logos:
-                self._fetch_results.put(('logo', symbol, self._download_logo(symbol)))
+                self._fetch_results.put(('logo', symbol, self._download_logo(symbol), None))
         except Exception:  # pylint: disable=broad-except
             self.logger.exception("[Stock News] Fetch worker failed")
         # Vegas redraws on update(); this batch finished between updates.
         try:
             self.notify_vegas_data_changed()
-        except Exception:  # pylint: disable=broad-except
-            pass
+        except Exception as e:  # pylint: disable=broad-except
+            self.logger.debug("[Stock News] Could not notify Vegas: %s", e)
+
+    def _result_is_current(self, key: str, source: Optional[str]) -> bool:
+        """Is a fetched result still wanted by the config as it is now?
+
+        A fetch runs while the config can change. Storing a result the config
+        has moved on from would undo on_config_change(): a removed symbol's
+        headlines would come back, or a feed whose URL changed mid-fetch would
+        show the old URL's stories under its name. Results for anything still
+        configured as it was are kept.
+        """
+        if key.startswith('_feed_'):
+            return self._get_custom_feeds().get(key[len('_feed_'):]) == source
+        configured = self.feeds_config.get('stock_symbols', [])
+        return key in configured or key in self._get_stocks_plugin_symbols()
 
     def _apply_fetch_results(self) -> None:
         """Apply what the worker queued. Runs under the plugin lock; cheap."""
@@ -536,10 +553,13 @@ class StockNewsTickerPlugin(BasePlugin):
         logo_saved = False
         while True:
             try:
-                kind, key, value = self._fetch_results.get_nowait()
+                kind, key, value, source = self._fetch_results.get_nowait()
             except queue.Empty:
                 break
             if kind == 'items':
+                if not self._result_is_current(key, source):
+                    self.logger.debug("[Stock News] Dropping a fetch for %s: config changed", key)
+                    continue
                 fetched = self._store_items(key, value) or fetched
             elif kind == 'logo':
                 if value:
@@ -792,7 +812,11 @@ class StockNewsTickerPlugin(BasePlugin):
     def _fetch_rss_feed(self, feed_name: str, url: str, max_items: int = 3) -> List[Dict]:
         """Fetch and parse any RSS feed with caching and budget enforcement."""
         bucket = int(time.time() // self.update_interval)
-        cache_key = f"stock_rss_{feed_name}_{bucket}"
+        # The URL is part of the key: a feed whose URL changes keeps its name,
+        # and keyed on the name alone the new URL got the old URL's cached
+        # stories until the bucket rolled over.
+        url_id = hashlib.sha1(url.encode('utf-8'), usedforsecurity=False).hexdigest()[:10]
+        cache_key = f"stock_rss_{feed_name}_{url_id}_{bucket}"
         cached = self.cache_manager.get(cache_key)
         if cached:
             self.logger.debug("[Stock News] Cache hit (RSS): %s", feed_name)
