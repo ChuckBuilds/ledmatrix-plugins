@@ -932,12 +932,11 @@
       "plugin_path": "plugins/stock-news",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-10-02",
+      "last_updated": "2026-11-19",
       "verified": true,
       "screenshot": "",
-      "latest_version": "2.9.0",
-      "ledmatrix_min_version": "3.4.0",
-      "commit": "f41dad77bdc21c4b2474ea778b863ef72e0daa7c"
+      "latest_version": "2.9.1",
+      "ledmatrix_min_version": "3.4.0"
     },
     {
       "id": "stocks",
