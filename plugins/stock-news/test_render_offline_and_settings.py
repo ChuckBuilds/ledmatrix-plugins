@@ -161,10 +161,12 @@ def test_logos_not_downloaded_while_drawing():
     check(session.urls == [], f"building the strip and Vegas content made no requests (got {session.urls})")
 
     plugin.update()
+    plugin._wait_for_fetches()     # the download runs on update()'s worker thread
     check(any("ZZTEST" in url for url in session.urls),
           f"update() downloads the missing logo (requests {session.urls})")
     check((plugin._logo_dir / "ZZTEST.png").exists(), "the logo is cached to disk by update()")
     check(not list(plugin._logo_dir.glob("*.part")), "no partial logo file is left behind")
+    plugin.update()                # applies the worker's result under the lock
     check(plugin.scroll_helper.cached_image is not None and plugin._strip_rebuild_pending,
           "a logo landing mid-pass does not clear the strip; the rebuild waits for the pass to end")
 

@@ -1,7 +1,7 @@
 {
   "id": "stock-news",
   "name": "Stock News Ticker",
-  "version": "2.9.0",
+  "version": "2.9.1",
   "author": "ChuckBuilds",
   "description": "Live stock headlines via Yahoo Finance search API with RSS fallback, company logos, configurable display styles (logo+ticker, ticker only, logo only), Vegas scroll integration, and per-day/hour request budgeting",
   "entry_point": "manager.py",
@@ -25,6 +25,12 @@
   "branch": "main",
   "plugin_path": "plugins/stock-news",
   "versions": [
+    {
+      "version": "2.9.1",
+      "released": "2026-11-19",
+      "notes": "The ticker no longer freezes while headlines are fetched. Each fetch ran inside update(), which the core runs holding the plugin's lock, so the scrolling strip stopped for one Yahoo round trip (300-750 ms on a Pi) every time a symbol came due, and for the whole retry chain during an outage. Headlines and logos are now fetched on a background thread and applied between frames.",
+      "ledmatrix_min_version": "3.4.0"
+    },
     {
       "version": "2.9.0",
       "released": "2026-10-02",
@@ -208,7 +214,7 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-10-02",
+  "last_updated": "2026-11-19",
   "stars": 0,
   "downloads": 0,
   "verified": true,

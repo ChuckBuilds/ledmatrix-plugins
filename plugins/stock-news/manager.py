@@ -23,9 +23,12 @@ Features:
 """
 
 import logging
+import queue
 import random
+import threading
 import time
 import requests
+import hashlib
 import html
 import re
 from datetime import datetime
@@ -88,6 +91,10 @@ class StockNewsTickerPlugin(BasePlugin):
         self._vegas_cache: Optional[list] = None
         self._was_stale: bool = False
         self.last_update: float = 0
+        # Network work runs on a worker thread, never under the plugin lock;
+        # see update(). It hands back what it fetched through this queue.
+        self._fetch_results: "queue.SimpleQueue" = queue.SimpleQueue()
+        self._fetch_thread: Optional[threading.Thread] = None
         self.initialized = True
 
         # HTTP session with retry/backoff
@@ -416,7 +423,28 @@ class StockNewsTickerPlugin(BasePlugin):
     # -------------------------------------------------------------------------
 
     def update(self) -> None:
+        """Apply finished fetches, then start the next batch on a worker thread.
+
+        The core runs update() holding this plugin's lock, and display() skips
+        every frame while that lock is held -- a frozen strip. The requests
+        used to run right here: one Yahoo or RSS round trip is 300-750 ms on a
+        Pi, so the ticker froze for that long every time a symbol came due
+        (logged as "Display of stock-news held N ms by its update()"), and for
+        the whole retry/timeout chain during an outage. Now update() only
+        decides what is due and hands it to a worker; the worker does the
+        network and queues what it got; the results are applied, cheaply and
+        under the lock, by the next update(), display() or get_vegas_content().
+        One batch at a time: nothing new is scheduled while one is running.
+        """
         if not self.initialized:
+            return
+
+        busy = self._fetch_thread is not None and self._fetch_thread.is_alive()
+        # Drain after reading `busy`: a worker seen finished has queued
+        # everything it will, so its results are applied before the schedule
+        # below looks at _symbol_data (the eager fill depends on it).
+        self._apply_fetch_results()
+        if busy:
             return
 
         now = time.time()
@@ -425,7 +453,8 @@ class StockNewsTickerPlugin(BasePlugin):
         # Merge: configured first, then any extras from stocks plugin (deduped, order preserved)
         stock_symbols = list(dict.fromkeys(configured_symbols + synced_symbols))
         custom_feeds = self._get_custom_feeds()
-        fetched = False
+        # (store key, kind, name, url-or-None, max items) for the worker.
+        jobs: List[Tuple[str, str, str, Optional[str], int]] = []
 
         # Per-symbol interval: spread all symbols evenly within update_interval
         n = max(len(stock_symbols), 1)
@@ -445,18 +474,14 @@ class StockNewsTickerPlugin(BasePlugin):
 
         if unseen:
             symbol = unseen[0]
-            max_h = self._get_symbol_max_headlines(symbol)
-            items = self._fetch_stock_news(symbol, max_h)
-            fetched = self._store_items(symbol, items)
+            jobs.append((symbol, 'symbol', symbol, None, self._get_symbol_max_headlines(symbol)))
             self._fetch_index = (stock_symbols.index(symbol) + 1) % len(stock_symbols)
             self._last_symbol_fetch = now
         # Fetch exactly one symbol per call (rotating)
         elif stock_symbols and (now - self._last_symbol_fetch) >= per_sym:
             idx = self._fetch_index % len(stock_symbols)
             symbol = stock_symbols[idx]
-            max_h = self._get_symbol_max_headlines(symbol)
-            items = self._fetch_stock_news(symbol, max_h)
-            fetched = self._store_items(symbol, items)
+            jobs.append((symbol, 'symbol', symbol, None, self._get_symbol_max_headlines(symbol)))
             self._fetch_index = (self._fetch_index + 1) % len(stock_symbols)
             self._last_symbol_fetch = now
 
@@ -464,28 +489,103 @@ class StockNewsTickerPlugin(BasePlugin):
         for feed_name, feed_url in custom_feeds.items():
             last = self._feed_last_fetch.get(feed_name, 0)
             if now - last >= self.update_interval:
-                items = self._fetch_rss_feed(feed_name, feed_url,
-                                             max_items=self._pool_size(self.headlines_per_rotation))
-                fetched = self._store_items(f"_feed_{feed_name}", items) or fetched
+                jobs.append((f"_feed_{feed_name}", 'feed', feed_name, feed_url,
+                             self._pool_size(self.headlines_per_rotation)))
                 self._feed_last_fetch[feed_name] = now
                 break  # one feed per update() call
+
+        # Logos are downloaded by the worker too, never while drawing: the
+        # render path and get_vegas_content() only read the disk cache.
+        logos = self._logos_to_download()
+
+        if jobs or logos:
+            self._fetch_thread = threading.Thread(
+                target=self._run_fetches, args=(jobs, logos),
+                name="stock-news-fetch", daemon=True)
+            self._fetch_thread.start()
+
+    def _run_fetches(self, jobs: List[Tuple[str, str, str, Optional[str], int]],
+                     logos: List[str]) -> None:
+        """Worker thread: do the network for one batch and queue the results.
+
+        Touches no state display() reads. Headlines go back as ('items', key,
+        list, source) -- source is the feed URL, None for a symbol, so a result
+        the config has moved on from can be told apart; each logo as ('logo',
+        symbol, saved?, None). The request budget and the HTTP session are only
+        used from here once the plugin is running.
+        """
+        try:
+            for key, kind, name, url, max_items in jobs:
+                if kind == 'symbol':
+                    items = self._fetch_stock_news(name, max_items)
+                else:
+                    items = self._fetch_rss_feed(name, url or "", max_items=max_items)
+                self._fetch_results.put(('items', key, items, url))
+            for symbol in logos:
+                self._fetch_results.put(('logo', symbol, self._download_logo(symbol), None))
+        except Exception:  # pylint: disable=broad-except
+            self.logger.exception("[Stock News] Fetch worker failed")
+        # Vegas redraws on update(); this batch finished between updates.
+        try:
+            self.notify_vegas_data_changed()
+        except Exception as e:  # pylint: disable=broad-except
+            self.logger.debug("[Stock News] Could not notify Vegas: %s", e)
+
+    def _result_is_current(self, key: str, source: Optional[str]) -> bool:
+        """Is a fetched result still wanted by the config as it is now?
+
+        A fetch runs while the config can change. Storing a result the config
+        has moved on from would undo on_config_change(): a removed symbol's
+        headlines would come back, or a feed whose URL changed mid-fetch would
+        show the old URL's stories under its name. Results for anything still
+        configured as it was are kept.
+        """
+        if key.startswith('_feed_'):
+            return self._get_custom_feeds().get(key[len('_feed_'):]) == source
+        configured = self.feeds_config.get('stock_symbols', [])
+        return key in configured or key in self._get_stocks_plugin_symbols()
+
+    def _apply_fetch_results(self) -> None:
+        """Apply what the worker queued. Runs under the plugin lock; cheap."""
+        if self._fetch_results.empty():
+            return
+        fetched = False
+        logo_saved = False
+        while True:
+            try:
+                kind, key, value, source = self._fetch_results.get_nowait()
+            except queue.Empty:
+                break
+            if kind == 'items':
+                if not self._result_is_current(key, source):
+                    self.logger.debug("[Stock News] Dropping a fetch for %s: config changed", key)
+                    continue
+                fetched = self._store_items(key, value) or fetched
+            elif kind == 'logo':
+                if value:
+                    logo_saved = True
+                else:
+                    self._logo_failed.add(key)
 
         if fetched:
             self._rebuild_all_news_items()
 
-        # Logos are downloaded here, never while drawing: the render path and
-        # get_vegas_content() only read the disk cache. A story whose logo
-        # arrives now is drawn with it on the next strip rebuild.
-        #
-        # Not by clearing the strip here: rebuilding resets the scroll to the
-        # start, and at startup logos land one update() after another, so the
-        # ticker restarted mid-pass again and again. display() rebuilds once
-        # the current pass completes; a strip not built yet picks them up
+        # A story whose logo arrives now is drawn with it on the next strip
+        # rebuild -- not by clearing the strip here: rebuilding resets the
+        # scroll to the start, and at startup logos land one after another, so
+        # the ticker restarted mid-pass again and again. display() rebuilds
+        # once the current pass completes; a strip not built yet picks them up
         # anyway. Vegas fetches its content per cycle, so its cache can go now.
-        if self._download_missing_logos():
+        if logo_saved:
             self._vegas_cache = None
             if self.scroll_helper.cached_image is not None:
                 self._strip_rebuild_pending = True
+
+    def _wait_for_fetches(self, timeout: float = 10.0) -> None:
+        """Block until the current batch finishes (tests and cleanup)."""
+        thread = self._fetch_thread
+        if thread is not None:
+            thread.join(timeout)
 
     def _store_items(self, key: str, items: List[Dict]) -> bool:
         """Keep what a fetch returned; True when it returned headlines.
@@ -712,7 +812,11 @@ class StockNewsTickerPlugin(BasePlugin):
     def _fetch_rss_feed(self, feed_name: str, url: str, max_items: int = 3) -> List[Dict]:
         """Fetch and parse any RSS feed with caching and budget enforcement."""
         bucket = int(time.time() // self.update_interval)
-        cache_key = f"stock_rss_{feed_name}_{bucket}"
+        # The URL is part of the key: a feed whose URL changes keeps its name,
+        # and keyed on the name alone the new URL got the old URL's cached
+        # stories until the bucket rolled over.
+        url_id = hashlib.sha256(url.encode('utf-8')).hexdigest()[:12]
+        cache_key = f"stock_rss_{feed_name}_{url_id}_{bucket}"
         cached = self.cache_manager.get(cache_key)
         if cached:
             self.logger.debug("[Stock News] Cache hit (RSS): %s", feed_name)
@@ -887,45 +991,44 @@ class StockNewsTickerPlugin(BasePlugin):
                                           max_width=self.logo_size * 4,
                                           max_height=self.logo_size)
 
-    def _download_missing_logos(self) -> bool:
-        """Download logos the current stories need and the disk cache lacks.
+    def _logos_to_download(self) -> List[str]:
+        """Symbols the current stories need a logo for and the disk cache lacks.
 
-        Called from update() only. Failed downloads are remembered for the
-        session to avoid repeated attempts. Returns True if any logo was saved,
-        so the caller can rebuild the strip with it.
+        Runs in update(), under the lock. Symbols whose download failed this
+        session are skipped, so a missing logo is not retried every update.
         """
         if not self.logo_fetch_enabled or self.display_style not in ('logo_and_ticker', 'logo_only'):
-            return False
-        downloaded = False
-        seen = set()
+            return []
+        wanted: List[str] = []
         for item in self.all_news_items:
             symbol = item.get('symbol', item.get('feed_name', '?'))
-            if symbol in seen or symbol in self._logo_failed:
+            if symbol in wanted or symbol in self._logo_failed:
                 continue
-            seen.add(symbol)
-            _, logo_path = self._logo_file(symbol)
-            if logo_path.exists():
-                continue
-            # URL uses the original symbol
-            url = self.logo_url_template.replace('{symbol}', symbol)
-            try:
-                resp = self._session.get(url, timeout=10)
-                if resp.status_code == 200 and resp.content:
-                    # Atomic: Vegas reads logos without the plugin lock, and a
-                    # half-written file would fail to decode (and look present,
-                    # so it would never be fetched again).
-                    tmp_path = logo_path.with_name(logo_path.name + '.part')
-                    tmp_path.write_bytes(resp.content)
-                    tmp_path.replace(logo_path)
-                    self.logger.info("[Stock News] Downloaded logo for %s", symbol)
-                    downloaded = True
-                    continue
-                self.logger.debug("[Stock News] Logo not available for %s (HTTP %d)",
-                                  symbol, resp.status_code)
-            except Exception as e:
-                self.logger.debug("[Stock News] Logo fetch failed for %s: %s", symbol, e)
-            self._logo_failed.add(symbol)
-        return downloaded
+            if not self._logo_file(symbol)[1].exists():
+                wanted.append(symbol)
+        return wanted
+
+    def _download_logo(self, symbol: str) -> bool:
+        """Worker thread: fetch one logo to the disk cache. True if saved."""
+        _, logo_path = self._logo_file(symbol)
+        # URL uses the original symbol
+        url = self.logo_url_template.replace('{symbol}', symbol)
+        try:
+            resp = self._session.get(url, timeout=10)
+            if resp.status_code == 200 and resp.content:
+                # Atomic: drawing reads logos from disk without waiting on this
+                # thread, and a half-written file would fail to decode (and
+                # look present, so it would never be fetched again).
+                tmp_path = logo_path.with_name(logo_path.name + '.part')
+                tmp_path.write_bytes(resp.content)
+                tmp_path.replace(logo_path)
+                self.logger.info("[Stock News] Downloaded logo for %s", symbol)
+                return True
+            self.logger.debug("[Stock News] Logo not available for %s (HTTP %d)",
+                              symbol, resp.status_code)
+        except Exception as e:
+            self.logger.debug("[Stock News] Logo fetch failed for %s: %s", symbol, e)
+        return False
 
     # -------------------------------------------------------------------------
     # Display
@@ -935,6 +1038,10 @@ class StockNewsTickerPlugin(BasePlugin):
         if not self.initialized:
             self._display_error("Stock news ticker not initialized")
             return
+
+        # A fetch that finished since the last update() lands now rather than
+        # up to update_interval later. One empty() check when there is none.
+        self._apply_fetch_results()
 
         if not self.all_news_items:
             self._display_no_news()
@@ -1155,6 +1262,7 @@ class StockNewsTickerPlugin(BasePlugin):
     # -------------------------------------------------------------------------
 
     def get_vegas_content(self) -> Optional[list]:
+        self._apply_fetch_results()
         if not self.all_news_items:
             return None
         if self._vegas_cache is None:
