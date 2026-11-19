@@ -174,11 +174,12 @@ curl -X POST http://your-pi-ip:5000/api/v3/plugins/install \
 | [Countdown Display](./plugins/countdown/) | Customizable countdowns for birthdays, events, holidays | <a href="./plugins/countdown/"><img src="./docs/assets/countdown/hero.png" width="240" alt="countdown on an LED panel"></a> |
 | [Election Results](./plugins/ledmatrix-elections/) | Live election results ticker with full-screen race interrupts | <a href="./plugins/ledmatrix-elections/"><img src="./docs/assets/ledmatrix-elections/hero.png" width="240" alt="ledmatrix-elections on an LED panel"></a> |
 
-### Holiday (1)
+### Holiday (2)
 
 | Plugin | Description | Preview |
 |--------|-------------|---------|
 | [Christmas Countdown](./plugins/christmas-countdown/) | Festive countdown with Christmas tree display | <a href="./plugins/christmas-countdown/"><img src="./docs/assets/christmas-countdown/hero.png" width="240" alt="christmas-countdown on an LED panel"></a> |
+| [Santa's Countdown](https://github.com/BigC07/ledmatrix-santa-countdown) | Animated Christmas countdown for kids: fourteen scenes drawn in code &mdash; Santa's sleigh, elves, snowmen, an advent calendar, a Nice List and a Christmas Eve Santa tracker &mdash; *third-party, by [BigC07](https://github.com/BigC07)* | <a href="https://github.com/BigC07/ledmatrix-santa-countdown"><img src="./docs/assets/santa-countdown/hero.png" width="240" alt="santa-countdown on an LED panel"></a> |
 
 ### Social (1)
 
@@ -228,6 +229,7 @@ outside this monorepo, so review their source before installing.
 | Dresden Departures | [@ryug0](https://github.com/ryug0) | [ledmatrix-dresden-departures](https://github.com/ryug0/ledmatrix-dresden-departures) — Dresden VVO departure board |
 | Tidbyt Baseball Scoreboard | [@trsadler](https://github.com/trsadler) | [MLB-Scoreboard-LEDMatrix](https://github.com/trsadler/MLB-Scoreboard-LEDMatrix) — split team-color MLB live scoreboard |
 | F1 Live | [@BigC07](https://github.com/BigC07) | [ledmatrix-f1-live](https://github.com/BigC07/ledmatrix-f1-live) — F1 Scoreboard fork with live timing, flags and the podium from F1's live feed |
+| Santa's Countdown | [@BigC07](https://github.com/BigC07) | [ledmatrix-santa-countdown](https://github.com/BigC07/ledmatrix-santa-countdown) — animated Christmas countdown for kids, all art drawn in code, no network |
 | Sleeper Fantasy | [@ant456](https://github.com/ant456) | [ledmatrix-sleeper-fantasy](https://github.com/ant456/ledmatrix-sleeper-fantasy) — fantasy football matchups and scores from Sleeper |
 | NASCAR Race Leaderboard | [@crazzybrad](https://github.com/crazzybrad) | [LEDMATRIX-NASCAR-PLUGIN](https://github.com/crazzybrad/LEDMATRIX-NASCAR-PLUGIN) — live NASCAR lap status, favourite-driver position and rotating leaderboard pages |
 | Home Assistant | [@airbornetrooper82573](https://github.com/airbornetrooper82573) | [LEDMatrix-Home-Assistant](https://github.com/airbornetrooper82573/LEDMatrix-Home-Assistant) — Home Assistant entities, calendars and priority alerts, with guided setup and entity discovery |
