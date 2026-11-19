@@ -144,6 +144,23 @@ def main():
               ytm_client.YTMClient._RECONNECT_BACKOFF_MAX <= 600,
               "cap is %ss" % ytm_client.YTMClient._RECONNECT_BACKOFF_MAX)
 
+        print("\na companion off for days does not overflow the delay")
+        # 5.0 * 2 ** 1024 raised OverflowError; it escaped connect_client()
+        # and killed the poll thread on every attempt (~1,025 failures in, at
+        # the 300 s cap that is about 3.5 days -- seen on a live Pi).
+        c6 = _client(clock)
+        c6._consecutive_failures = 5000
+        try:
+            c6.connect_client(timeout=1)
+            raised = None
+        except OverflowError as e:
+            raised = e
+        check("no OverflowError after thousands of failures", raised is None, repr(raised))
+        check("the delay is still the cap",
+              abs((c6._next_retry_at - clock["t"])
+                  - ytm_client.YTMClient._RECONNECT_BACKOFF_MAX) < 1e-6,
+              repr(c6._next_retry_at - clock["t"]))
+
         print("\nrecovery clears the backoff")
         c3 = _client(clock)
         c3.connect_client(timeout=1)
