@@ -815,7 +815,7 @@ class StockNewsTickerPlugin(BasePlugin):
         # The URL is part of the key: a feed whose URL changes keeps its name,
         # and keyed on the name alone the new URL got the old URL's cached
         # stories until the bucket rolled over.
-        url_id = hashlib.sha1(url.encode('utf-8'), usedforsecurity=False).hexdigest()[:10]
+        url_id = hashlib.sha256(url.encode('utf-8')).hexdigest()[:12]
         cache_key = f"stock_rss_{feed_name}_{url_id}_{bucket}"
         cached = self.cache_manager.get(cache_key)
         if cached:
