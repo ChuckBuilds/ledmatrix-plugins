@@ -1,7 +1,7 @@
 {
   "id": "ledmatrix-flights",
   "name": "Flight Tracker",
-  "version": "1.16.1",
+  "version": "1.16.2",
   "description": "Real-time aircraft tracking with ADS-B/FlightRadar24/OpenSky/adsb.fi/adsb.lol data, map backgrounds, area mode, flight tracking, anchor airport, flight records, and optional airport weather (METAR/TAF/PIREP/SIGMET via the free NOAA Aviation Weather Center API)",
   "author": "ChuckBuilds",
   "category": "custom",
@@ -37,6 +37,12 @@
   ],
   "min_ledmatrix_version": "3.8.0",
   "versions": [
+    {
+      "version": "1.16.2",
+      "released": "2026-11-20",
+      "ledmatrix_min_version": "3.8.0",
+      "notes": "FR24 detail lookups back off when FlightRadar24 answers 429 (Too Many Requests). A refused lookup used to be retried on the very next cycle, three at a time, each refusal logging its own warning. Lookups now go out at most one a second, pause for a doubling interval after a 429 (or for Retry-After), and stay queued while paused."
+    },
     {
       "version": "1.16.1",
       "released": "2026-11-17",
@@ -354,5 +360,5 @@
       "ledmatrix_min_version": "2.0.0"
     }
   ],
-  "last_updated": "2026-09-30"
+  "last_updated": "2026-11-20"
 }

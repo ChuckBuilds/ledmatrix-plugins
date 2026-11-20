@@ -19,6 +19,7 @@ from unittest import mock
 
 sys.path.insert(0, os.path.dirname(__file__))
 from manager import FlightTrackerPlugin  # noqa: E402
+from fetcher import _RemoteThrottle  # noqa: E402
 
 failures = []
 
@@ -37,6 +38,7 @@ def plugin():
     p._bounds_warning_pruned_at = 0.0
     p.fr24_detail_cache = {}
     p.fr24_detail_cache_ttl = 12 * 3600
+    p._fr24_detail_throttle = _RemoteThrottle("FR24 detail", min_interval=1.0)
     # display_width/height are read-only properties off the display manager.
     p._display_manager_ref = SimpleNamespace(matrix=SimpleNamespace(width=128, height=32))
     p.center_lat, p.center_lon = 27.95, -82.46
