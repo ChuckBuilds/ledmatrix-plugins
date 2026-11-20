@@ -965,7 +965,8 @@
       "ledmatrix_min_version": "3.4.0",
       "aliases": [
         "ledmatrix-stocks"
-      ]
+      ],
+      "commit": "acec131ea27f3fa3a1a3aa22b8da6d9dec62212d"
     },
     {
       "id": "text-display",
