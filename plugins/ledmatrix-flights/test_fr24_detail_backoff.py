@@ -104,6 +104,23 @@ def test_retry_after_is_honoured():
 
 
 @_fail_loudly
+def test_retry_after_zero_still_backs_off():
+    # What FR24 actually sends: 429 with "Retry-After: 0". Taken at its word
+    # that was no pause, and the Pi logged three refusals in one second.
+    p = plugin()
+    clock = [1000.0]
+    with mock.patch("fetcher.time.monotonic", side_effect=lambda: clock[0]), \
+            mock.patch("manager.requests.get",
+                       return_value=response(429, {"Retry-After": "0"})) as get:
+        p._background_fetch_fr24_details()
+        p._background_fetch_fr24_details()
+        clock[0] += 1.5
+        p._background_fetch_fr24_details()
+        check("Retry-After: 0 does not cancel the backoff (%d requests)" % get.call_count,
+              get.call_count == 1)
+
+
+@_fail_loudly
 def test_success_paces_one_lookup_per_second():
     p = plugin()
     clock = [1000.0]
@@ -120,7 +137,7 @@ def test_success_paces_one_lookup_per_second():
 
 if __name__ == "__main__":
     for test in (test_a_429_pauses_lookups_and_keeps_the_queue, test_retry_after_is_honoured,
-                 test_success_paces_one_lookup_per_second):
+                 test_retry_after_zero_still_backs_off, test_success_paces_one_lookup_per_second):
         try:
             test()
         except AssertionError:

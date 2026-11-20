@@ -94,12 +94,13 @@ class _RemoteThrottle:
         self._next_allowed = time.monotonic() + self.min_interval
 
     def note_rate_limited(self, retry_after: Optional[float] = None) -> float:
-        if retry_after is not None:
-            wait = retry_after
-        else:
-            base = max(self._penalty * 2, self.min_interval * 2)
-            self._penalty = min(base, _MAX_BACKOFF_SECONDS)
-            wait = self._penalty
+        # Retry-After is a floor, not the whole answer: FR24's clickhandler
+        # sends "Retry-After: 0" with its 429s, which taken alone meant no
+        # pause at all and three refusals in the same second. The doubling
+        # backoff applies either way; a longer Retry-After wins.
+        base = max(self._penalty * 2, self.min_interval * 2)
+        self._penalty = min(base, _MAX_BACKOFF_SECONDS)
+        wait = max(self._penalty, retry_after or 0.0)
         self._next_allowed = time.monotonic() + wait
         return wait
 

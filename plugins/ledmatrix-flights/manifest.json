@@ -41,7 +41,7 @@
       "version": "1.16.2",
       "released": "2026-11-20",
       "ledmatrix_min_version": "3.8.0",
-      "notes": "FR24 detail lookups back off when FlightRadar24 answers 429 (Too Many Requests). A refused lookup used to be retried on the very next cycle, three at a time, each refusal logging its own warning. Lookups now go out at most one a second, pause for a doubling interval after a 429 (or for Retry-After), and stay queued while paused."
+      "notes": "FR24 detail lookups back off when FlightRadar24 answers 429 (Too Many Requests). A refused lookup used to be retried on the very next cycle, three at a time, each refusal logging its own warning. Lookups now go out at most one a second, pause for a doubling interval after a 429 (or for Retry-After), and stay queued while paused. A Retry-After header is a minimum, not the whole wait: FR24 sends 'Retry-After: 0' with its 429s, which alone meant no pause. This applies to the feed fetchers' throttle too."
     },
     {
       "version": "1.16.1",

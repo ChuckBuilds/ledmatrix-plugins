@@ -8,6 +8,9 @@
   cycle, three at a time, each refusal logging a warning. Lookups now go
   out at most one a second, pause for a doubling interval after a 429 (or
   for Retry-After) with one warning per pause, and stay queued while paused.
+- Retry-After is now a minimum wait for every public feed's throttle, not the
+  whole wait: FR24 answers 429 with `Retry-After: 0`, which alone meant no
+  pause at all.
 
 ## [1.16.0] - 2026-09-30
 
