@@ -170,6 +170,9 @@ class StockTickerPlugin(BasePlugin):
                 fetched_data = self.data_fetcher.fetch_all_data()
                 self.stock_data = fetched_data
                 self.last_update_time = current_time
+                # Once per symbol: a no-op when every stock has a logo.
+                self.data_fetcher.download_missing_logos(
+                    [s for s in self.data_fetcher.stock_symbols if s in fetched_data])
                 
                 # Clear scroll cache when data updates
                 if hasattr(self.scroll_helper, 'cached_image'):

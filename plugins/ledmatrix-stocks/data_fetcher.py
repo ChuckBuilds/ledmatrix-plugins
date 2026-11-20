@@ -5,13 +5,31 @@ Handles all API calls and data fetching for stock and cryptocurrency data
 from Yahoo Finance.
 """
 
+import re
 import time
-from typing import Dict, Any, Optional
+from pathlib import Path
+from typing import Dict, Any, Iterable, Optional
 from datetime import datetime
 
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+
+#: Logos the core's icon set lacks (ETFs such as VOO, SPY or QQQ have none)
+#: are downloaded here once, from the source stock-news uses.
+LOGO_CACHE_DIR = Path(__file__).resolve().parent / "assets" / "logos"
+LOGO_URL = "https://financialmodelingprep.com/image-stock/{symbol}.png"
+BUNDLED_ICON = "assets/stocks/ticker_icons/{symbol}.png"
+_SAFE_SYMBOL = re.compile(r"[A-Z0-9][A-Z0-9.\-]{0,11}")
+
+
+def downloaded_logo_path(symbol: str) -> Optional[Path]:
+    """Where a downloaded logo for ``symbol`` lives; None for a symbol that
+    cannot safely name a file."""
+    if not _SAFE_SYMBOL.fullmatch(symbol or ""):
+        return None
+    return LOGO_CACHE_DIR / f"{symbol}.png"
+
 
 def _round_money(value: float) -> float:
     """Cents, as always, from $0.10 up. Below that the value is kept whole:
@@ -40,6 +58,9 @@ class StockDataFetcher:
         self.stock_symbols = config_manager.stock_symbols
         self.crypto_symbols = config_manager.crypto_symbols
         
+        # Symbols whose logo download failed, so it is tried once per run.
+        self._logo_failed = set()
+
         # Initialize HTTP session
         self._init_http_session()
 
@@ -217,6 +238,34 @@ class StockDataFetcher:
             self.logger.error("Unexpected error fetching data for %s: %s", api_symbol, e)
             return None
     
+    def download_missing_logos(self, symbols: Iterable[str]) -> int:
+        """Fetch a logo for each stock with neither a bundled icon nor a
+        downloaded one. Each symbol is asked for once per run (a miss or
+        error is remembered), so this costs nothing once logos exist.
+        Returns the number saved."""
+        saved = 0
+        for symbol in symbols:
+            path = downloaded_logo_path(symbol)
+            if (path is None or symbol in self._logo_failed or path.exists()
+                    or Path(BUNDLED_ICON.format(symbol=symbol)).exists()):
+                continue
+            try:
+                resp = self.session.get(LOGO_URL.format(symbol=symbol), timeout=self.timeout)
+                if resp.status_code == 200 and resp.content.startswith(b"\x89PNG"):
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    # Atomic: a half-written file would look present and fail to decode.
+                    tmp = path.with_name(path.name + ".part")
+                    tmp.write_bytes(resp.content)
+                    tmp.replace(path)
+                    self.logger.info("Downloaded logo for %s", symbol)
+                    saved += 1
+                    continue
+                self.logger.debug("No logo available for %s (HTTP %s)", symbol, resp.status_code)
+            except (requests.RequestException, OSError) as e:
+                self.logger.debug("Logo download failed for %s: %s", symbol, e)
+            self._logo_failed.add(symbol)
+        return saved
+
     def cleanup(self):
         """Clean up resources."""
         if self.session:
