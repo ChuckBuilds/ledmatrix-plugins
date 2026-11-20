@@ -536,7 +536,8 @@
       "verified": true,
       "screenshot": "",
       "latest_version": "1.16.2",
-      "ledmatrix_min_version": "3.8.0"
+      "ledmatrix_min_version": "3.8.0",
+      "commit": "a2d8635f6194029eae6a5f544ccc9b5c2db615a9"
     },
     {
       "id": "march-madness",
