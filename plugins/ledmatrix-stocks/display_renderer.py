@@ -13,6 +13,8 @@ from PIL import Image, ImageDraw, ImageFont
 # Import common utilities
 from src.common import ScrollHelper, LogoHelper
 
+from data_fetcher import BUNDLED_ICON, downloaded_logo_path
+
 
 def _pixel_draw(image):
     """ImageDraw that renders text crisply on the LED grid.
@@ -504,8 +506,11 @@ class StockDisplayRenderer:
                 # Try crypto icons first
                 logo_path = f"assets/stocks/crypto_icons/{symbol}.png"
             else:
-                # Try stock icons
-                logo_path = f"assets/stocks/ticker_icons/{symbol}.png"
+                # The core's icon set, else one download_missing_logos() saved
+                logo_path = BUNDLED_ICON.format(symbol=symbol)
+                downloaded = downloaded_logo_path(symbol)
+                if not os.path.exists(logo_path) and downloaded is not None and downloaded.exists():
+                    logo_path = str(downloaded)
             
             # Use same sizing as old stock manager (display_width/1.2, display_height/1.2)
             max_size = min(int(self.display_width / 1.2), int(self.display_height / 1.2))
