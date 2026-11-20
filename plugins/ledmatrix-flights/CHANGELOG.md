@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.16.2] - 2026-11-20
+### Fixed
+- FR24 detail lookups (the clickhandler endpoint: airline name, airports,
+  timing) back off when FlightRadar24 answers 429. A refused lookup was
+  dropped and re-queued on the next pass, so it was asked again every
+  cycle, three at a time, each refusal logging a warning. Lookups now go
+  out at most one a second, pause for a doubling interval after a 429 (or
+  for Retry-After) with one warning per pause, and stay queued while paused.
+- Retry-After is now a minimum wait for every public feed's throttle, not the
+  whole wait: FR24 answers 429 with `Retry-After: 0`, which alone meant no
+  pause at all.
+
 ## [1.16.0] - 2026-09-30
 
 ### Added

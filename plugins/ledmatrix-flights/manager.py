@@ -67,7 +67,8 @@ from utils import (
     source_send_time, FR24_MAX_AGE_SECONDS,
 )
 from units import format_distance
-from fetcher import create_fetcher, FR24DetailFetcher, FALLBACK_MAX_AGE_SECONDS
+from fetcher import (create_fetcher, FR24DetailFetcher, FALLBACK_MAX_AGE_SECONDS,
+                     _RemoteThrottle, _retry_after_seconds)
 from enrichment import create_enrichment_provider
 from renderer import FlightRenderer
 from data_model import MapSnapshot, TrackedFlight
@@ -400,6 +401,10 @@ class FlightTrackerPlugin(BasePlugin):
         self.fr24_detail_cache_ttl = 12 * 3600  # 12 hours
         # Pending FR24 detail fetches keyed by FR24 flight ID -> icao
         self.pending_fr24_details: Dict[str, str] = {}
+        # Paces the clickhandler lookups and pauses them when FR24 answers 429.
+        # Without it every refused lookup was retried on the next cycle, three
+        # at a time, and each refusal logged its own warning.
+        self._fr24_detail_throttle = _RemoteThrottle("FR24 detail", min_interval=1.0)
 
         # FR24 headers — use gzip only to avoid needing the Brotli package
         self._fr24_headers = {
@@ -1357,15 +1362,23 @@ class FlightTrackerPlugin(BasePlugin):
             return cached
 
         url = "https://data-live.flightradar24.com/clickhandler/"
+        throttle = self._fr24_detail_throttle
         try:
             response = requests.get(url, params={"flight": fr24_id}, headers=self._fr24_headers, timeout=8)
+            if response.status_code == 429:
+                wait = throttle.note_rate_limited(_retry_after_seconds(response))
+                self.logger.warning(
+                    "[Flight Tracker] FR24 detail lookups rate limited, pausing them for %.0fs", wait)
+                return None
             response.raise_for_status()
             data = response.json()
             data['_fetched_at'] = time.time()
             self.fr24_detail_cache[fr24_id] = data
             self._evict_fr24_detail_cache()
+            throttle.note_success()
             return data
         except Exception as e:
+            throttle.note_error()
             self.logger.warning(f"[Flight Tracker] FR24 detail fetch failed for {fr24_id}: {e}")
             return None
 
@@ -1612,9 +1625,13 @@ class FlightTrackerPlugin(BasePlugin):
         if not self.pending_fr24_details:
             return
 
-        # Process up to 3 per update cycle to avoid blocking
+        # Up to 3 per update cycle, at the throttle's pace. While it holds
+        # lookups back (pacing, or a pause after a 429) the rest stay queued
+        # for a later cycle instead of being dropped and re-queued at once.
         to_process = list(self.pending_fr24_details.items())[:3]
         for fr24_id, icao in to_process:
+            if self._fr24_detail_throttle.should_skip():
+                return
             if icao in self.aircraft_data:
                 self._enrich_aircraft_from_fr24_detail(self.aircraft_data[icao])
             del self.pending_fr24_details[fr24_id]
