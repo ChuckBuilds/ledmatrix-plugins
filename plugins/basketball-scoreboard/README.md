@@ -273,6 +273,7 @@ Defaults are the schema defaults, which is what the web UI writes.
 | `schedule_lookahead_days` | 1–60 | `7` | **Advanced.** How far ahead to fetch for Upcoming. A game beyond this horizon is never fetched. |
 | `no_data_interval_seconds` | 5–86400 s | `300` | **Advanced.** Wait between live checks when nothing is live. Backs off further the longer nothing is found. |
 | `live_idle_max_interval_seconds` | 5–86400 s | `900` | **Advanced.** Ceiling for that back-off. Useful out of season. |
+| `yield_live_to_music` | boolean | `false` | **Advanced.** While the Music Player plugin is playing with live priority, live games stop taking over the display, so the song stays on screen. |
 
 ### Background service
 

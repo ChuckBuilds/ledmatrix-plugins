@@ -1494,8 +1494,41 @@ class BasketballScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
             fastest = interval if fastest is None else min(fastest, interval)
         return fastest
 
+    #: Plugin ids the music player is installed under (store id, legacy id).
+    _MUSIC_PLUGIN_IDS = ("ledmatrix-music", "music")
+
+    def _music_is_playing(self) -> bool:
+        """yield_live_to_music: whether the music plugin is playing with live
+        priority, so a live game should step aside and leave it the panel.
+
+        Asks the music plugin through the plugin manager; any failure (no
+        music plugin, an older core) reads as "not playing", which keeps the
+        normal live behaviour.
+        """
+        if not self.config.get("yield_live_to_music", False):
+            return False
+        getter = getattr(getattr(self, "plugin_manager", None), "get_plugin", None)
+        if getter is None:
+            return False
+        for plugin_id in self._MUSIC_PLUGIN_IDS:
+            try:
+                music = getter(plugin_id)
+                if music is None:
+                    continue
+                return bool(
+                    getattr(music, "enabled", True)
+                    and music.has_live_priority()
+                    and music.has_live_content()
+                )
+            except Exception:  # noqa: BLE001 - never break the live check
+                return False
+        return False
+
     def has_live_content(self) -> bool:
         if not self.is_enabled:
+            return False
+
+        if self._music_is_playing():
             return False
 
         # Check NBA live content

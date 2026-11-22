@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.53.0] - 2026-11-22
+
+### Added
+- `yield_live_to_music` (default off). While the Music Player plugin
+  (`ledmatrix-music`) is playing with live priority, live basketball games stop
+  taking over the display, so the song holds the panel instead of alternating
+  with the game. They take over again as soon as the music stops. If the music
+  plugin is missing or cannot be asked, live games behave as before.
+
 ## [1.52.1] - 2026-11-03
 
 ### Changed
