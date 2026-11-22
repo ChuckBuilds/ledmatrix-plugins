@@ -3185,6 +3185,12 @@
       "description": "How long to wait between checks for live games when there are none. Backs off further the longer nothing is found, up to the cap below.",
       "x-advanced": true
     },
+    "yield_live_to_music": {
+      "x-advanced": true,
+      "type": "boolean",
+      "default": false,
+      "description": "While the Music Player plugin is playing with live priority, live basketball games stop taking over the display, so the song stays on screen. They take over again as soon as the music stops."
+    },
     "live_idle_max_interval_seconds": {
       "type": "integer",
       "default": 900,

@@ -1,7 +1,7 @@
 {
   "id": "basketball-scoreboard",
   "name": "Basketball Scoreboard",
-  "version": "1.52.1",
+  "version": "1.53.0",
   "update_interval": 60,
   "description": "Live, recent, and upcoming basketball games across NBA, NCAA Men's, NCAA Women's, and WNBA with real-time scores, schedules, and March Madness tournament support",
   "author": "ChuckBuilds",
@@ -19,6 +19,12 @@
   "branch": "main",
   "plugin_path": "plugins/basketball-scoreboard",
   "versions": [
+    {
+      "version": "1.53.0",
+      "released": "2026-11-22",
+      "ledmatrix_min_version": "3.9.0",
+      "notes": "New top-level setting yield_live_to_music (default off). While the Music Player plugin (ledmatrix-music) is playing with live priority, live basketball games stop taking over the display, so the song holds the panel instead of alternating with the game. The games take over again as soon as the music stops. Any problem reaching the music plugin keeps the normal live behaviour."
+    },
     {
       "version": "1.52.1",
       "released": "2026-11-03",
