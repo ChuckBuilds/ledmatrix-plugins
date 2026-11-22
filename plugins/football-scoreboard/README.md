@@ -467,6 +467,7 @@ poll to rank against.
 |---|---|---|---|
 | `<league>.filtering.show_favorite_teams_only` | boolean | `true` | Show only your teams' games. |
 | `<league>.filtering.show_all_live` | boolean | `false` | **Advanced.** Show every live game regardless of favorites. `exclude_teams` still applies. |
+| `<league>.filtering.live_priority_show_todays_finals` | boolean | `false` | **Advanced.** While a favorite's live game holds the panel, add today's final scores to the live scroll after the games in progress. Needs `live_display_mode: scroll`. `exclude_teams` still applies. |
 | `<league>.filtering.favorite_live_boost` | 1–5 | `2` | **Advanced.** Turns a favorite's live game gets per one turn for other live games. `1` is even rotation. |
 
 ### Game limits

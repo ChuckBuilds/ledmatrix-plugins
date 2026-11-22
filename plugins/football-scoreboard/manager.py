@@ -755,6 +755,9 @@ class FootballScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
                 "live_priority": league_config.get("live_priority", False),
                 "show_favorite_teams_only": show_favorites_only,
                 "show_all_live": show_all_live,
+                "live_priority_show_todays_finals": bool(
+                    filtering.get("live_priority_show_todays_finals", False)
+                ),
                 "celebration_enabled": league_config.get("celebration_enabled", True),
                 "celebration_duration": league_config.get("celebration_duration", 8),
                 "celebrate_opponent_scores": league_config.get(
@@ -1649,6 +1652,16 @@ class FootballScoreboardPlugin(SportsPluginHostMixin, SportsLiveScrollMixin,
 
             if live_priority_active:
                 games = [g for g in games if g.get('is_live', False) and not g.get('is_final', False)]
+                # A favourite's game holds the panel: optionally follow the
+                # games in progress with today's finals (oldest kickoff first).
+                if getattr(manager, 'show_todays_finals_in_live', False) and hasattr(manager, 'get_todays_finals'):
+                    live_ids = {g.get('id') for g in games}
+                    for final in manager.get_todays_finals():
+                        if final.get('id') in live_ids:
+                            continue
+                        final['league'] = league
+                        final['status'] = dict(final.get('status') or {}, state='post')
+                        games.append(final)
 
             if not games:
                 self.logger.debug(f"No games to scroll for {display_mode}")

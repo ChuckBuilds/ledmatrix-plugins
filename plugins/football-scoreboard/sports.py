@@ -2279,6 +2279,14 @@ class SportsLive(SportsCelebrationMixin, SportsGameOverMixin, SportsLiveSharedMi
         self.last_update = 0
         self.live_games = []
         self._rotation_schedule: List[str] = []  # game IDs, may repeat for favorite_live_boost
+        # Games that went final today, keyed by game id, for
+        # live_priority_show_todays_finals. Filled from the live poll (today's
+        # scoreboard), so a final shows up within one live_update_interval.
+        self.todays_finals: Dict[str, Dict] = {}
+        self._todays_finals_date = None
+        self.show_todays_finals_in_live: bool = bool(
+            self.mode_config.get("live_priority_show_todays_finals", False)
+        )
         self.current_game_index = 0
         self.last_game_switch = 0  # Will be set to current_time when games are first loaded
         self.game_display_duration = self.mode_config.get("live_game_duration", 20)
@@ -2781,6 +2789,51 @@ class SportsLive(SportsCelebrationMixin, SportsGameOverMixin, SportsLiveSharedMi
             return True
         return abs(then - now) <= self._TRY_CLOCK_SLACK_SECONDS
 
+    def _note_todays_final(self, details: Dict) -> None:
+        """Remember a game that is over, if it was played today (local time).
+
+        Excluded teams stay hidden here too (spoiler protection)."""
+        if not getattr(self, "show_todays_finals_in_live", False):
+            return
+        game_id = details.get("id")
+        start = details.get("start_time_utc")
+        if not game_id or not isinstance(start, datetime):
+            return
+        if (details.get("home_abbr") in self.exclude_teams
+                or details.get("away_abbr") in self.exclude_teams):
+            return
+        try:
+            tz = self._get_timezone()
+            today = datetime.now(tz).date()
+            if start.tzinfo is None:
+                start = start.replace(tzinfo=timezone.utc)
+            if start.astimezone(tz).date() != today:
+                return
+        except Exception:  # noqa: BLE001 - never let this break the live poll
+            return
+        with self._games_lock:
+            if self._todays_finals_date != today:
+                self.todays_finals = {}
+                self._todays_finals_date = today
+            self.todays_finals[game_id] = details
+
+    def get_todays_finals(self) -> List[Dict]:
+        """Today's finished games, earliest kickoff first (copies)."""
+        if not getattr(self, "show_todays_finals_in_live", False):
+            return []
+        try:
+            today = datetime.now(self._get_timezone()).date()
+        except Exception:  # noqa: BLE001
+            return []
+        with self._games_lock:
+            if self._todays_finals_date != today:
+                return []
+            finals = [dict(g) for g in self.todays_finals.values()]
+        return sorted(
+            finals,
+            key=lambda g: g.get("start_time_utc") or datetime.now(timezone.utc),
+        )
+
     def _keep_final_for_vegas(self, details: Dict) -> None:
         """Hold a game that just went final, so its live Vegas card shows FINAL.
 
@@ -2980,6 +3033,7 @@ class SportsLive(SportsCelebrationMixin, SportsGameOverMixin, SportsLiveSharedMi
                         if details.get("is_final", False):
                             self._check_for_win(details)
                             self._keep_final_for_vegas(details)
+                            self._note_todays_final(details)
                             self.logger.info(
                                 f"[{self.sport_key.upper()} Live] Filtered out final game: {details.get('away_abbr')}@{details.get('home_abbr')} "
                                 f"(is_final={details.get('is_final')}, clock={details.get('clock')}, period={details.get('period')})"
@@ -2990,6 +3044,7 @@ class SportsLive(SportsCelebrationMixin, SportsGameOverMixin, SportsLiveSharedMi
                         if self._is_game_really_over(details):
                             self._check_for_win(details)
                             self._keep_final_for_vegas(details)
+                            self._note_todays_final(details)
                             self.logger.info(
                                 f"[{self.sport_key.upper()} Live] Skipping game that appears final: {details.get('away_abbr')}@{details.get('home_abbr')} "
                                 f"(clock={details.get('clock')}, period={details.get('period')}, period_text={details.get('period_text')})"
