@@ -1,5 +1,17 @@
 # Changelog
 
+## [3.29.0] - 2026-11-22
+
+### Added
+- `<league>.filtering.live_priority_show_todays_finals` (default off). While a
+  favorite team's live game has taken over the panel, the live scroll follows
+  the games in progress with today's final scores, earliest kickoff first. A
+  board watching one team's game can then catch up on the rest of the day
+  without leaving the live screen. Finals come from the live poll (today's
+  scoreboard), so one appears within a `live_update_interval` of its game
+  ending; games from earlier days are left out and `exclude_teams` still
+  applies. Scroll live display mode only.
+
 ## [3.28.2] - 2026-11-03
 
 ### Changed

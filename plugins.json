@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "last_updated": "2026-11-20",
+  "last_updated": "2026-11-22",
   "plugins": [
     {
       "id": "cricket-scoreboard",
@@ -311,12 +311,11 @@
       "plugin_path": "plugins/football-scoreboard",
       "stars": 0,
       "downloads": 0,
-      "last_updated": "2026-11-17",
+      "last_updated": "2026-11-22",
       "verified": true,
       "screenshot": "",
-      "latest_version": "3.28.3",
-      "ledmatrix_min_version": "3.9.0",
-      "commit": "8b3ed4ba3036326ee94af0e605dc7e9488fee06e"
+      "latest_version": "3.29.0",
+      "ledmatrix_min_version": "3.9.0"
     },
     {
       "id": "geochron",

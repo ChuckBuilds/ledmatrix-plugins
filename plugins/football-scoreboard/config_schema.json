@@ -675,6 +675,12 @@
               "default": false,
               "description": "Show all live games, not just favorites"
             },
+            "live_priority_show_todays_finals": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": false,
+              "description": "While a favorite team's live game has taken over the display, add today's final scores to the live scroll after the games in progress. Live display mode must be scroll."
+            },
             "favorite_live_boost": {
               "x-advanced": true,
               "type": "integer",
@@ -1216,6 +1222,12 @@
               "type": "boolean",
               "default": false,
               "description": "Show all live games, not just favorites"
+            },
+            "live_priority_show_todays_finals": {
+              "x-advanced": true,
+              "type": "boolean",
+              "default": false,
+              "description": "While a favorite team's live game has taken over the display, add today's final scores to the live scroll after the games in progress. Live display mode must be scroll."
             },
             "favorite_live_boost": {
               "x-advanced": true,

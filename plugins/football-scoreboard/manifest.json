@@ -1,7 +1,7 @@
 {
   "id": "football-scoreboard",
   "name": "Football Scoreboard",
-  "version": "3.28.3",
+  "version": "3.29.0",
   "update_interval": 60,
   "author": "ChuckBuilds",
   "class_name": "FootballScoreboardPlugin",
@@ -25,6 +25,12 @@
     "ncaa_fb_live"
   ],
   "versions": [
+    {
+      "version": "3.29.0",
+      "released": "2026-11-22",
+      "ledmatrix_min_version": "3.9.0",
+      "notes": "New nfl/ncaa_fb filtering setting live_priority_show_todays_finals (default off). While a favorite team's live game has taken over the panel, the live scroll follows the games in progress with today's final scores, earliest kickoff first. Finals come from the live poll, so one shows up within a live_update_interval of the game ending; excluded teams stay hidden. Scroll live display mode only."
+    },
     {
       "version": "3.28.3",
       "released": "2026-11-17",
